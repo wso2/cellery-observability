@@ -25,6 +25,8 @@ hs_err_pid*
 # Idea files
 .idea/
 *.iml
+*.iws
+*.ipr
 
 # Maven
 **/target/*
@@ -34,3 +36,6 @@ hs_err_pid*
 **/dist/*
 **/build/*
 **/coverage/*
+
+# OS
+.DS_Store
