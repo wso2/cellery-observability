@@ -55,6 +55,11 @@
             </dependency>
             <dependency>
                 <groupId>org.wso2.siddhi</groupId>
+                <artifactId>siddhi-query-compiler</artifactId>
+                <version>${siddhi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.siddhi</groupId>
                 <artifactId>siddhi-annotations</artifactId>
                 <version>${siddhi.version}</version>
             </dependency>
@@ -84,6 +89,11 @@
                 <version>${commons.lang.version}</version>
             </dependency>
             <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons.io.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
                 <version>${protobuf.java.version}</version>
@@ -109,6 +119,16 @@
                 <artifactId>gogoproto-java</artifactId>
                 <version>${gogoproto.orbit.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.zipkin.zipkin2</groupId>
+                <artifactId>zipkin</artifactId>
+                <version>${zipkin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.thrift</groupId>
+                <artifactId>libthrift</artifactId>
+                <version>${thrift.version}</version>
+            </dependency>
             <!-- External dependencies end here -->
         </dependencies>
     </dependencyManagement>
@@ -128,9 +148,12 @@
         <k8s.client-java.version>3.0.0</k8s.client-java.version>
         <guava.version>25.1-jre</guava.version>
         <commons.lang.version>3.7</commons.lang.version>
+        <commons.io.version>2.6</commons.io.version>
         <protobuf.java.version>3.6.1</protobuf.java.version>
         <grpc.core>1.15.0</grpc.core>
         <grpc.netty>1.15.0</grpc.netty>
         <gogoproto.orbit.version>0.1.0-celleryv1</gogoproto.orbit.version>
+        <zipkin.version>2.11.6</zipkin.version>
+        <thrift.version>0.10.0</thrift.version>
     </properties>
 </project>

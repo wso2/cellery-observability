@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+  ~ Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
   ~
   ~ WSO2 Inc. licenses this file to you under the Apache License,
   ~ Version 2.0 (the "License"); you may not use this file except
@@ -22,15 +22,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
-        <groupId>org.wso2.vick</groupId>
-        <artifactId>org.wso2.vick.global.plane.observability</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <groupId>io.cellery.observability</groupId>
+        <artifactId>io.cellery.observability.core</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>org.wso2.vick.tracing.receiver</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-    <name>WSO2 VICK - Observability Tracing Receiver</name>
+    <artifactId>io.cellery.observability.tracing.receiver</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <name>Cellery Observability Components - Global Plane - Core - Tracing Receiver</name>
     <packaging>bundle</packaging>
 
     <dependencies>
@@ -79,12 +79,12 @@
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Name>${project.artifactId}</Bundle-Name>
                         <Private-Package>
-                            org.wso2.vick.tracing.receiver.generated.thrift.*,
-                            org.wso2.vick.tracing.receiver.internal.*
+                            io.cellery.observability.tracing.receiver.generated.thrift.*,
+                            io.cellery.observability.tracing.receiver.internal.*
                         </Private-Package>
                         <Export-Package>
-                            org.wso2.vick.tracing.receiver.*,
-                            !org.wso2.vick.tracing.receiver.internal
+                            io.cellery.observability.tracing.receiver.*,
+                            !io.cellery.observability.tracing.receiver.internal
                         </Export-Package>
                         <Import-Package>
                             *;resolution:=optional
@@ -100,7 +100,7 @@
     </build>
 
     <properties>
-        <maven.checkstyleplugin.excludes>**/org/wso2/vick/tracing/receiver/generated/**</maven.checkstyleplugin.excludes>
+        <maven.checkstyleplugin.excludes>**/io/cellery/observability/tracing/receiver/generated/**</maven.checkstyleplugin.excludes>
         <mavan.findbugsplugin.exclude.file>spotbugs-exclude.xml</mavan.findbugsplugin.exclude.file>
     </properties>
 </project>

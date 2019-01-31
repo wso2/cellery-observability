@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * WSO2 Inc. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,13 +16,15 @@
  * under the License.
  */
 
-package org.wso2.vick.tracing.receiver;
+package io.cellery.observability.tracing.receiver;
 
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import io.cellery.observability.tracing.receiver.internal.Codec;
+import io.cellery.observability.tracing.receiver.internal.ZipkinSpan;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
@@ -36,8 +38,6 @@ import org.wso2.siddhi.core.stream.input.source.Source;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
 import org.wso2.siddhi.core.util.config.ConfigReader;
 import org.wso2.siddhi.core.util.transport.OptionHolder;
-import org.wso2.vick.tracing.receiver.internal.Codec;
-import org.wso2.vick.tracing.receiver.internal.ZipkinSpan;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -32,6 +32,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>io.cellery.observability.tracing.receiver</module>
         <module>io.cellery.observability.k8s.api.server.client</module>
         <module>io.cellery.observability.model.generator</module>
         <module>io.cellery.observability.api</module>

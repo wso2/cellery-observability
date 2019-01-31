@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * WSO2 Inc. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,18 +16,18 @@
  * under the License.
  */
 
-package org.wso2.vick.tracing.receiver.internal;
+package io.cellery.observability.tracing.receiver.internal;
 
+import io.cellery.observability.tracing.receiver.Constants;
+import io.cellery.observability.tracing.receiver.generated.thrift.Annotation;
+import io.cellery.observability.tracing.receiver.generated.thrift.BinaryAnnotation;
+import io.cellery.observability.tracing.receiver.generated.thrift.Span;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TTransport;
-import org.wso2.vick.tracing.receiver.Constants;
-import org.wso2.vick.tracing.receiver.generated.thrift.Annotation;
-import org.wso2.vick.tracing.receiver.generated.thrift.BinaryAnnotation;
-import org.wso2.vick.tracing.receiver.generated.thrift.Span;
 import zipkin2.SpanBytesDecoderDetector;
 import zipkin2.codec.BytesDecoder;
 
