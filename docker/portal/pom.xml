@@ -16,16 +16,18 @@
   -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <parent>
-        <groupId>org.wso2.vick</groupId>
-        <artifactId>org.wso2.vick.global.plane.dockerfiles.observability</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <groupId>io.cellery.observability</groupId>
+        <artifactId>io.cellery.observability.docker</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>org.wso2.vick.global.plane.dockerfiles.observability.portal</artifactId>
-    <description>Docker File for WSO2 VICK Observability Portal</description>
-    <name>WSO2 VICK - Dockerfiles - Observability Portal</name>
+    <artifactId>io.cellery.observability.docker.portal</artifactId>
+    <name>Cellery Observability Docker - Portal</name>
+    <description>Dockerfiles for Cellery Observability Portal</description>
     <packaging>pom</packaging>
 
     <build>
@@ -46,9 +48,9 @@
                 <configuration>
                     <artifactItems>
                         <artifactItem>
-                            <groupId>org.wso2.vick</groupId>
-                            <artifactId>org.wso2.vick.observability.ui</artifactId>
-                            <version>${vick.version}</version>
+                            <groupId>io.cellery.observability</groupId>
+                            <artifactId>io.cellery.observability.ui</artifactId>
+                            <version>${cellery.observability.version}</version>
                             <type>zip</type>
                             <overWrite>true</overWrite>
                             <outputDirectory>${project.build.directory}/files/</outputDirectory>

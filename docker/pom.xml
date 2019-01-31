@@ -33,5 +33,6 @@
 
     <modules>
         <module>sp</module>
+        <module>portal</module>
     </modules>
 </project>
