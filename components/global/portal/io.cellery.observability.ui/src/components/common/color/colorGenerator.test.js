@@ -35,7 +35,7 @@ describe("ColorGenerator", () => {
     describe("constructor()", () => {
         afterEach(clearPersistedData);
 
-        it("should have VICK and Istio keys by default", () => {
+        it("should have Cellery and Istio keys by default", () => {
             const colorGenerator = new ColorGenerator();
 
             expect(Object.keys(colorGenerator.colorMap)).toHaveLength(INITIAL_KEY_COUNT);

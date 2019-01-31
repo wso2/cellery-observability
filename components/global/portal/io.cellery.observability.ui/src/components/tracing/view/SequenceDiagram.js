@@ -229,7 +229,7 @@ class SequenceDiagram extends React.Component {
         let j = 0;
         treeRoot.walk(
             (span) => {
-                if (!span.isFromIstioSystemComponent() && !span.isFromVICKSystemComponent()) {
+                if (!span.isFromIstioSystemComponent() && !span.isFromCellerySystemComponent()) {
                     if (!span.callingId && parentName === span.cell.name) {
                         if (span.parent.serviceName !== span.serviceName) {
                             j += 1;
@@ -241,11 +241,11 @@ class SequenceDiagram extends React.Component {
                 }
             }, null,
             (span) => {
-                if (!span.isFromIstioSystemComponent() && !span.isFromVICKSystemComponent()) {
+                if (!span.isFromIstioSystemComponent() && !span.isFromCellerySystemComponent()) {
                     data2 += SequenceDiagram.updateTextDataWithReturn(span, parentName);
                 }
             },
-            (span) => (!span.isFromIstioSystemComponent() && !span.isFromVICKSystemComponent()
+            (span) => (!span.isFromIstioSystemComponent() && !span.isFromCellerySystemComponent()
                 && !span.callingId && parentName !== span.parent.cell.name)
         );
         data2 += `deactivate ${SequenceDiagram.removeDash(treeRoot.serviceName)}\n`;

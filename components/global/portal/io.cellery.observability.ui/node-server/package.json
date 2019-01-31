@@ -1,5 +1,5 @@
 {
-  "name": "org.wso2.vick.observability.ui.server",
+  "name": "io.cellery.observability.ui.server",
   "version": "1.0.0",
   "description": "Cellery Observability Portal - Server",
   "main": "serve.js",

@@ -146,7 +146,7 @@ class Overview extends React.Component {
 
         this.defaultState = {
             summary: {
-                topic: "VICK Deployment",
+                topic: "Cellery Deployment",
                 content: [
                     {
                         key: "Total",

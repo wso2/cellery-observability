@@ -215,11 +215,11 @@ class Span {
     isFromSideCar = () => this.tags.component === "proxy";
 
     /**
-     * Check whether a span belongs to the VICK System.
+     * Check whether a span belongs to the Cellery System.
      *
      * @returns {boolean} True if the component to which the span belongs to is a system component
      */
-    isFromVICKSystemComponent = () => (
+    isFromCellerySystemComponent = () => (
         this.isFromCellGateway() || Constants.System.GLOBAL_GATEWAY_NAME_PATTERN.test(this.serviceName)
             || Constants.System.SIDECAR_AUTH_FILTER_OPERATION_NAME_PATTERN.test(this.operationName)
     );
