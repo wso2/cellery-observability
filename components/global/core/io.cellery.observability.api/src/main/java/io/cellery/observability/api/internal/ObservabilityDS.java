@@ -135,7 +135,7 @@ public class ObservabilityDS {
     }
 
     @Reference(
-            name = "org.wso2.vick.observability.model.generator.ModelManager",
+            name = "io.cellery.observability.model.generator.ModelManager",
             service = ModelManager.class,
             cardinality = ReferenceCardinality.MANDATORY,
             policy = ReferencePolicy.DYNAMIC,

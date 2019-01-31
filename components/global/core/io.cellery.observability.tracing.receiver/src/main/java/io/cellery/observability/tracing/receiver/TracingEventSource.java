@@ -53,7 +53,7 @@ import java.util.Objects;
 @Extension(
         name = "tracing-receiver",
         namespace = "source",
-        description = "This is the tracing Receiver for VICK. This accepts Zipkin encoded tracing data. " +
+        description = "This is the tracing Receiver for Cellery. This accepts Zipkin encoded tracing data. " +
                 "The event source outputs a map of attributes. Therefore a key-value mapper needs to be used.",
         parameters = {
                 @Parameter(

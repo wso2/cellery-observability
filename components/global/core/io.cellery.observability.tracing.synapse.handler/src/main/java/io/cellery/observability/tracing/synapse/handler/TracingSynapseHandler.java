@@ -76,7 +76,7 @@ public class TracingSynapseHandler extends AbstractSynapseHandler {
                 .textMapPropagation(Format.Builtin.HTTP_HEADERS, B3Propagation.B3_STRING)
                 .build();
 
-        logger.info("Initialized VICK Tracer");
+        logger.info("Initialized Cellery Tracer");
     }
 
     @Override

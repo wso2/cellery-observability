@@ -58,26 +58,26 @@ public enum SiddhiStoreQueryTemplates {
             "on sourceCell == \"${" + Params.CELL + "}\" or destinationCell == \"${" + Params.CELL + "}\"" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"${" + Params.TIME_GRANULARITY + "}\"\n" +
-            "select sourceCell, sourceVICKService, destinationCell, destinationVICKService, httpResponseGroup, " +
+            "select sourceCell, sourceComponent, destinationCell, destinationComponent, httpResponseGroup, " +
             "sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, " +
             "sum(requestCount) as requestCount\n" +
-            "group by sourceCell, sourceVICKService, destinationCell, destinationVICKService, httpResponseGroup"
+            "group by sourceCell, sourceComponent, destinationCell, destinationComponent, httpResponseGroup"
     ),
     REQUEST_AGGREGATION_MICROSERVICES_METADATA("from RequestAggregation\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"seconds\"\n" +
-            "select sourceCell, sourceVICKService, destinationCell, destinationVICKService\n" +
-            "group by sourceCell, sourceVICKService, destinationCell, destinationVICKService"
+            "select sourceCell, sourceComponent, destinationCell, destinationComponent\n" +
+            "group by sourceCell, sourceComponent, destinationCell, destinationComponent"
     ),
     REQUEST_AGGREGATION_MICROSERVICES_METRICS("from RequestAggregation\n" +
             "on (\"${" + Params.SOURCE_CELL + "}\" == \"\" or sourceCell == \"${" + Params.SOURCE_CELL + "}\") " +
             "and (\"${" + Params.SOURCE_MICROSERVICE + "}\" == \"\" " +
-            "or sourceVICKService == \"${" + Params.SOURCE_MICROSERVICE + "}\") " +
+            "or sourceComponent == \"${" + Params.SOURCE_MICROSERVICE + "}\") " +
             "and (\"${" + Params.DESTINATION_CELL + "}\" == \"\" " +
             "or destinationCell == \"${" + Params.DESTINATION_CELL + "}\")\n" +
             "and (\"${" + Params.DESTINATION_MICROSERVICE + "}\" == \"\" " +
-            "or destinationVICKService == \"${" + Params.DESTINATION_MICROSERVICE + "}\") " +
-            "and (sourceCell != destinationCell or sourceVICKService != destinationVICKService)\n" +
+            "or destinationComponent == \"${" + Params.DESTINATION_MICROSERVICE + "}\") " +
+            "and (sourceCell != destinationCell or sourceComponent != destinationComponent)\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"${" + Params.TIME_GRANULARITY + "}\"\n" +
             "select AGG_TIMESTAMP, httpResponseGroup, sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, " +
