@@ -17,28 +17,29 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <groupId>org.wso2.vick</groupId>
-        <artifactId>org.wso2.vick.global.plane.dockerfiles.sp</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <groupId>io.cellery.observability</groupId>
+        <artifactId>io.cellery.observability.docker</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>org.wso2.vick.global.plane.dockerfiles.sp.worker</artifactId>
-    <name>WSO2 VICK - Dockerfiles - Stream Processor Worker</name>
-    <description>Dockerfiles for WSO2 VICK Stream Processor Worker</description>
+    <artifactId>io.cellery.observability.docker.sp</artifactId>
+    <name>Cellery Observability Docker - Stream Processor</name>
+    <description>Dockerfiles for Cellery Stream Processor Worker</description>
     <packaging>pom</packaging>
 
     <dependencies>
         <dependency>
-            <groupId>org.wso2.vick</groupId>
-            <artifactId>org.wso2.vick.telemetry.receiver</artifactId>
+            <groupId>io.cellery.observability</groupId>
+            <artifactId>io.cellery.observability.telemetry.receiver</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.wso2.vick</groupId>
+            <groupId>io.cellery.observability</groupId>
             <artifactId>gogoproto-java</artifactId>
         </dependency>
         <dependency>
@@ -54,8 +55,8 @@
             <artifactId>grpc-stub</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.grpc.wso2</groupId>
-            <artifactId>grpc-wso2</artifactId>
+            <groupId>io.cellery.observability</groupId>
+            <artifactId>grpc</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opencensus</groupId>
@@ -66,16 +67,16 @@
             <artifactId>opencensus-contrib-grpc-metrics</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.wso2.vick</groupId>
-            <artifactId>org.wso2.vick.tracing.receiver</artifactId>
+            <groupId>io.cellery.observability</groupId>
+            <artifactId>io.cellery.observability.tracing.receiver</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.api.grpc</groupId>
             <artifactId>proto-google-common-protos</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.google.protobuf.wso2</groupId>
-            <artifactId>protobuf-wso2</artifactId>
+            <groupId>io.cellery.observability</groupId>
+            <artifactId>protobuf</artifactId>
         </dependency>
         <dependency>
             <groupId>io.zipkin.zipkin2</groupId>
@@ -146,16 +147,16 @@
             <artifactId>bcprov-ext-jdk15on</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.wso2.vick</groupId>
-            <artifactId>org.wso2.vick.observability.api</artifactId>
+            <groupId>io.cellery.observability</groupId>
+            <artifactId>io.cellery.observability.api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.wso2.vick</groupId>
-            <artifactId>org.wso2.vick.observability.model.generator</artifactId>
+            <groupId>io.cellery.observability</groupId>
+            <artifactId>io.cellery.observability.model.generator</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.wso2.vick</groupId>
-            <artifactId>org.wso2.vick.observability.k8s.api.server.client</artifactId>
+            <groupId>io.cellery.observability</groupId>
+            <artifactId>io.cellery.observability.k8s.api.server.client</artifactId>
         </dependency>
     </dependencies>
 
@@ -194,10 +195,10 @@
                             <includeScope>runtime</includeScope>
                             <outputDirectory>${project.build.directory}/files/non-osgi/</outputDirectory>
                             <excludeArtifactIds>
-                                org.wso2.vick.telemetry.receiver, commons-io, gogoproto-java, grpc-wso2,
-                                org.wso2.vick.tracing.receiver, protobuf-wso2, org.wso2.vick.observability.api,
-                                org.wso2.vick.observability.model.generator, siddhi-io-http, siddhi-store-rdbms,
-                                org.wso2.vick.observability.k8s.api.server.client, joda-time, zipkin, client-java,
+                                io.cellery.observability.telemetry.receiver, commons-io, gogoproto-java, grpc,
+                                io.cellery.observability.tracing.receiver, protobuf, io.cellery.observability.observability.api,
+                                io.cellery.observability.observability.model.generator, siddhi-io-http, siddhi-store-rdbms,
+                                io.cellery.observability.observability.k8s.api.server.client, joda-time, zipkin, client-java,
                                 client-java-api, guava, commons-codec, commons-compress, commons-lang3,
                                 client-java-proto, bcpkix-jdk15on, bcprov-ext-jdk15on
                             </excludeArtifactIds>
@@ -245,7 +246,7 @@
                 </dependencies>
             </plugin>
 
-             <!--Build Docker image-->
+            <!--Build Docker image-->
             <plugin>
                 <groupId>com.spotify</groupId>
                 <artifactId>dockerfile-maven-plugin</artifactId>
@@ -256,7 +257,7 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
-                            <repository>${docker.repo.name}/wso2sp-worker</repository>
+                            <repository>${docker.repo.name}/sp-worker</repository>
                         </configuration>
                     </execution>
                 </executions>
