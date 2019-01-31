@@ -30,7 +30,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>orbit</module>
         <module>observability</module>
         <module>auth</module>
     </modules>
