@@ -20,27 +20,28 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
+    <parent>
+        <groupId>io.cellery.observability</groupId>
+        <artifactId>io.cellery.observability.orbit</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.google.protobuf.wso2</groupId>
-    <artifactId>protobuf-wso2</artifactId>
+    <artifactId>protobuf</artifactId>
     <packaging>bundle</packaging>
-    <name>WSO2 VICK - Protobuf  Orbit</name>
-    <version>3.6.1.wso2v1</version>
-    <description>
-        This bundle represents com.google.protobuf with gogo.proto.
-    </description>
-    <url>http://wso2.org</url>
+    <name>Cellery Observability Components - Orbit - Protobuf</name>
+    <version>3.6.1.celleryv1</version>
+    <description> This bundle represents com.google.protobuf with gogo.proto.</description>
 
     <dependencies>
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>3.6.1</version>
         </dependency>
         <dependency>
-            <groupId>org.wso2.vick</groupId>
+            <groupId>io.cellery.observability</groupId>
             <artifactId>gogoproto-java</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
@@ -57,7 +58,7 @@
                         <Private-Package>
                         </Private-Package>
                         <Export-Package>
-                            com.google.protobuf.*;version="${protobuf.wso2.version}";-split-package:=merge-first
+                            com.google.protobuf.*;version="${protobuf.cellery.version}";-split-package:=merge-first
                         </Export-Package>
                         <Import-Package>
                             *;resolution:=optional
@@ -70,34 +71,7 @@
         </plugins>
     </build>
     <properties>
-        <protobuf.wso2.version>3.6.1-wso2v1</protobuf.wso2.version>
+        <protobuf.cellery.version>3.6.1-celleryv1</protobuf.cellery.version>
     </properties>
-
-    <distributionManagement>
-        <repository>
-            <id>wso2.releases</id>
-            <name>WSO2 internal Repository</name>
-            <url>http://maven.wso2.org/nexus/content/repositories/releases/</url>
-        </repository>
-
-        <snapshotRepository>
-            <id>wso2.snapshots</id>
-            <name>Apache Snapshot Repository</name>
-            <url>http://maven.wso2.org/nexus/content/repositories/snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
-
-    <repositories>
-        <repository>
-            <id>wso2-nexus</id>
-            <name>WSO2 internal Repository</name>
-            <url>http://maven.wso2.org/nexus/content/groups/wso2-public/</url>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
-                <checksumPolicy>ignore</checksumPolicy>
-            </releases>
-        </repository>
-    </repositories>
 
 </project>

@@ -36,4 +36,46 @@
         <module>components</module>
         <module>docker</module>
     </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>${protobuf.java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
+                <version>${grpc.core}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty</artifactId>
+                <version>${grpc.netty}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.cellery.observability</groupId>
+                <artifactId>gogoproto-java</artifactId>
+                <version>${gogoproto.orbit.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <properties>
+
+        <!--Start of Orbit bundle dependency versions-->
+        <protobuf.java.version>3.6.1</protobuf.java.version>
+        <grpc.core>1.15.0</grpc.core>
+        <grpc.netty>1.15.0</grpc.netty>
+        <gogoproto.orbit.version>0.1.0-celleryv1</gogoproto.orbit.version>
+        <!-- End of Orbit bundle dependency versions-->
+
+    </properties>
 </project>

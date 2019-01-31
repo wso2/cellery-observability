@@ -20,27 +20,28 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
+    <parent>
+        <groupId>io.cellery.observability</groupId>
+        <artifactId>io.cellery.observability.orbit</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
     <modelVersion>4.0.0</modelVersion>
-    <groupId>io.grpc.wso2</groupId>
-    <artifactId>grpc-wso2</artifactId>
+    <artifactId>grpc</artifactId>
     <packaging>bundle</packaging>
-    <name>WSO2 VICK - GRPC Orbit</name>
-    <version>1.15.0.wso2v1</version>
-    <description>
-        This bundle represents io.grpc
-    </description>
-    <url>http://wso2.org</url>
+    <name>Cellery Observability Components - Orbit - GRPC</name>
+    <version>1.15.0.celleryv1</version>
+    <description>This bundle represents io.grpc cellery orbit bundle</description>
 
     <dependencies>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-core</artifactId>
-            <version>1.15.0</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty</artifactId>
-            <version>1.15.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -67,6 +68,9 @@
                         </configuration>
                     </execution>
                 </executions>
+                <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>
@@ -79,7 +83,7 @@
                         <Private-Package>
                         </Private-Package>
                         <Export-Package>
-                            io.grpc.*;version="${grpc.wso2.version}";-split-package:=merge-first
+                            io.grpc.*;version="${grpc.cellery.version}";-split-package:=merge-first
                         </Export-Package>
                         <Import-Package>
                             *;resolution:=optional
@@ -90,35 +94,10 @@
             </plugin>
         </plugins>
     </build>
+
     <properties>
-        <grpc.wso2.version>1.15.0-wso2v1</grpc.wso2.version>
+        <grpc.cellery.version>1.15.0-celleryv1</grpc.cellery.version>
     </properties>
 
-    <distributionManagement>
-        <repository>
-            <id>wso2.releases</id>
-            <name>WSO2 internal Repository</name>
-            <url>http://maven.wso2.org/nexus/content/repositories/releases/</url>
-        </repository>
-
-        <snapshotRepository>
-            <id>wso2.snapshots</id>
-            <name>Apache Snapshot Repository</name>
-            <url>http://maven.wso2.org/nexus/content/repositories/snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
-
-    <repositories>
-        <repository>
-            <id>wso2-nexus</id>
-            <name>WSO2 internal Repository</name>
-            <url>http://maven.wso2.org/nexus/content/groups/wso2-public/</url>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
-                <checksumPolicy>ignore</checksumPolicy>
-            </releases>
-        </repository>
-    </repositories>
 
 </project>

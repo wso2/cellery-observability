@@ -23,6 +23,7 @@
         <groupId>io.cellery.observability</groupId>
         <artifactId>io.cellery.observability.components</artifactId>
         <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -30,4 +31,10 @@
     <version>0.1.0-SNAPSHOT</version>
     <name>Cellery Observability Components - Orbit</name>
     <packaging>pom</packaging>
+
+    <modules>
+        <module>gogoproto-java</module>
+        <module>grpc</module>
+        <module>protobuf</module>
+    </modules>
 </project>
