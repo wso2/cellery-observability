@@ -17,8 +17,9 @@
  *
  */
 
-package org.wso2.vick.telemetry.receiver;
+package io.cellery.observability.telemetry.receiver;
 
+import io.cellery.observability.telemetry.receiver.internal.TelemetryServiceImpl;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import org.apache.log4j.Logger;
@@ -32,7 +33,6 @@ import org.wso2.siddhi.core.stream.input.source.Source;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
 import org.wso2.siddhi.core.util.config.ConfigReader;
 import org.wso2.siddhi.core.util.transport.OptionHolder;
-import org.wso2.vick.telemetry.receiver.internal.TelemetryServiceImpl;
 
 import java.io.IOException;
 import java.util.Map;
@@ -40,7 +40,7 @@ import java.util.Map;
 /**
  * This class implements the event source, where the received telemetry attributes can be injected to streams.
  */
-@Extension(name = "telemetry-receiver", namespace = "source", description = "Telemetry Receiver for VICK",
+@Extension(name = "telemetry-receiver", namespace = "source", description = "Telemetry Receiver for Cellery",
         parameters = {
                 @Parameter(name = "port",
                         description = "The port which the telemetry service should be started on. Default is 9091",

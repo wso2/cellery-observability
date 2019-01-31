@@ -17,10 +17,10 @@
  *
  */
 
-package org.wso2.vick.telemetry.receiver.internal;
+package io.cellery.observability.telemetry.receiver.internal;
 
-import org.wso2.vick.telemetry.receiver.generated.AttributesOuterClass;
-import org.wso2.vick.telemetry.receiver.generated.Report;
+import io.cellery.observability.telemetry.receiver.generated.AttributesOuterClass;
+import io.cellery.observability.telemetry.receiver.generated.Report;
 
 /**
  * This class uses the global, request, and attribute dictionary to decode the report request key/value.

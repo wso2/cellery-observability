@@ -17,7 +17,7 @@
  *
  */
 
-package org.wso2.vick.telemetry.receiver.internal;
+package io.cellery.observability.telemetry.receiver.internal;
 
 import org.apache.log4j.Logger;
 

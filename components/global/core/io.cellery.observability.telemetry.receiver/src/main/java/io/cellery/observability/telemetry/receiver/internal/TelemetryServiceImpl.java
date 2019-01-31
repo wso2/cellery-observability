@@ -17,15 +17,15 @@
  *
  */
 
-package org.wso2.vick.telemetry.receiver.internal;
+package io.cellery.observability.telemetry.receiver.internal;
 
+import io.cellery.observability.telemetry.receiver.AttributesBag;
+import io.cellery.observability.telemetry.receiver.Constants;
+import io.cellery.observability.telemetry.receiver.generated.AttributesOuterClass;
+import io.cellery.observability.telemetry.receiver.generated.MixerGrpc;
+import io.cellery.observability.telemetry.receiver.generated.Report;
 import io.grpc.stub.StreamObserver;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
-import org.wso2.vick.telemetry.receiver.AttributesBag;
-import org.wso2.vick.telemetry.receiver.Constants;
-import org.wso2.vick.telemetry.receiver.generated.AttributesOuterClass;
-import org.wso2.vick.telemetry.receiver.generated.MixerGrpc;
-import org.wso2.vick.telemetry.receiver.generated.Report;
 
 import java.util.HashMap;
 import java.util.List;

@@ -16,7 +16,7 @@
  *  under the License.
  *
  */
-package org.wso2.vick.telemetry.receiver;
+package io.cellery.observability.telemetry.receiver;
 
 import com.google.gson.Gson;
 import com.google.protobuf.ByteString;

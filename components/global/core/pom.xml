@@ -36,5 +36,6 @@
         <module>io.cellery.observability.k8s.api.server.client</module>
         <module>io.cellery.observability.model.generator</module>
         <module>io.cellery.observability.api</module>
+        <module>io.cellery.observability.telemetry.receiver</module>
     </modules>
 </project>

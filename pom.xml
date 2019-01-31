@@ -38,7 +38,12 @@
             <dependency>
                 <groupId>io.cellery.observability</groupId>
                 <artifactId>io.cellery.observability.model.generator</artifactId>
-                <version>${vick.version}</version>
+                <version>${cellery.observability.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.cellery.observability</groupId>
+                <artifactId>grpc</artifactId>
+                <version>${grpc.orbit.version}</version>
             </dependency>
             <!-- Internal dependencies end here -->
 
@@ -94,6 +99,34 @@
                 <version>${commons.io.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-protobuf</artifactId>
+                <version>${grpc.protobuf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.api.grpc</groupId>
+                <artifactId>proto-google-common-protos</artifactId>
+                <version>${proto.google.common.proto}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-stub</artifactId>
+                <version>${grpc.stub.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.zipkin.zipkin2</groupId>
+                <artifactId>zipkin</artifactId>
+                <version>${zipkin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.thrift</groupId>
+                <artifactId>libthrift</artifactId>
+                <version>${thrift.version}</version>
+            </dependency>
+            <!-- External dependencies end here -->
+
+            <!--Orbit dependencies start here-->
+            <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
                 <version>${protobuf.java.version}</version>
@@ -119,17 +152,7 @@
                 <artifactId>gogoproto-java</artifactId>
                 <version>${gogoproto.orbit.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.zipkin.zipkin2</groupId>
-                <artifactId>zipkin</artifactId>
-                <version>${zipkin.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.thrift</groupId>
-                <artifactId>libthrift</artifactId>
-                <version>${thrift.version}</version>
-            </dependency>
-            <!-- External dependencies end here -->
+            <!--Orbit dependencies end here-->
         </dependencies>
     </dependencyManagement>
 
@@ -139,7 +162,7 @@
     </modules>
 
     <properties>
-        <vick.version>${project.version}</vick.version>
+        <cellery.observability.version>${project.version}</cellery.observability.version>
 
         <siddhi.version>4.1.38</siddhi.version>
         <carbon.datasource.version>1.1.4</carbon.datasource.version>
@@ -150,10 +173,14 @@
         <commons.lang.version>3.7</commons.lang.version>
         <commons.io.version>2.6</commons.io.version>
         <protobuf.java.version>3.6.1</protobuf.java.version>
+        <proto.google.common.proto>1.12.0</proto.google.common.proto>
+        <grpc.protobuf.version>1.15.0</grpc.protobuf.version>
         <grpc.core>1.15.0</grpc.core>
         <grpc.netty>1.15.0</grpc.netty>
+        <grpc.stub.version>1.15.0</grpc.stub.version>
         <gogoproto.orbit.version>0.1.0-celleryv1</gogoproto.orbit.version>
         <zipkin.version>2.11.6</zipkin.version>
         <thrift.version>0.10.0</thrift.version>
+        <grpc.orbit.version>1.15.0.celleryv1</grpc.orbit.version>
     </properties>
 </project>

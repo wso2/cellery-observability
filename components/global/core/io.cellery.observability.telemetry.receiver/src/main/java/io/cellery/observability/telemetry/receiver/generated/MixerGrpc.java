@@ -1,4 +1,4 @@
-package org.wso2.vick.telemetry.receiver.generated;
+package io.cellery.observability.telemetry.receiver.generated;
 
 import static io.grpc.MethodDescriptor.generateFullMethodName;
 import static io.grpc.stub.ClientCalls.asyncUnaryCall;

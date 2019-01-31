@@ -17,7 +17,7 @@
  *
  */
 
-package org.wso2.vick.telemetry.receiver.internal;
+package io.cellery.observability.telemetry.receiver.internal;
 
 import io.grpc.Server;
 import org.apache.log4j.Logger;
@@ -31,7 +31,7 @@ import org.osgi.service.component.annotations.Deactivate;
  * This is the internal class that is used to activate the telemtry receiver component, and starts the GRPC server.
  */
 @Component(
-        name = "org.wso2.vick.telemetry.receiver.internal.ServiceComponent",
+        name = "io.cellery.observability.telemetry.receiver.internal.ServiceComponent",
         service = ServiceComponent.class,
         immediate = true
 )
