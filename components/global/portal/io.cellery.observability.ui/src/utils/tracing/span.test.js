@@ -498,7 +498,7 @@ describe("Span", () => {
                 traceId: "trace-a-id",
                 spanId: "span-x-id",
                 parentId: "span-a-id",
-                serviceName: "vick-service",
+                serviceName: "cellery-service",
                 operationName: "get-resource",
                 startTime: 10000,
                 duration: 100,
@@ -516,7 +516,7 @@ describe("Span", () => {
                 traceId: "trace-a-id",
                 spanId: "span-x-id",
                 parentId: "span-a-id",
-                serviceName: "vick-service",
+                serviceName: "cellery-service",
                 operationName: "get-resource",
                 kind: Constants.Span.Kind.PRODUCER,
                 startTime: 10000,
@@ -556,7 +556,7 @@ describe("Span", () => {
                 traceId: "trace-a-id",
                 spanId: "span-a-id",
                 parentId: "span-b-id",
-                serviceName: "vick-service",
+                serviceName: "cellery-service",
                 operationName: "get-resource",
                 kind: Constants.Span.Kind.SERVER,
                 startTime: 10000,
@@ -586,7 +586,7 @@ describe("Span", () => {
                 traceId: "trace-a-id",
                 spanId: "span-a-id",
                 parentId: "span-b-id",
-                serviceName: "vick-service",
+                serviceName: "cellery-service",
                 operationName: "get-resource",
                 kind: Constants.Span.Kind.CLIENT,
                 startTime: 10000,
@@ -616,7 +616,7 @@ describe("Span", () => {
                 traceId: "trace-a-id",
                 spanId: "span-b-id",
                 parentId: "span-y-id",
-                serviceName: "vick-service",
+                serviceName: "cellery-service",
                 operationName: "get-resource",
                 kind: Constants.Span.Kind.CLIENT,
                 startTime: 10000,
@@ -1073,21 +1073,21 @@ describe("Span", () => {
         });
     });
 
-    describe("isFromVICKSystemComponent()", () => {
+    describe("isFromCellerySystemComponent()", () => {
         it("should return true if the span is from Global Gateway", () => {
-            expect(globalGatewayServerSpan.isFromVICKSystemComponent()).toBe(true);
+            expect(globalGatewayServerSpan.isFromCellerySystemComponent()).toBe(true);
         });
 
         it("should return true if the span is from a Cell Gateway", () => {
-            expect(hrCellGatewayServerSpan.isFromVICKSystemComponent()).toBe(true);
+            expect(hrCellGatewayServerSpan.isFromCellerySystemComponent()).toBe(true);
         });
 
         it("should return true if the span is from Istio Mixer", () => {
-            expect(istioMixerServerSpan.isFromVICKSystemComponent()).toBe(false);
+            expect(istioMixerServerSpan.isFromCellerySystemComponent()).toBe(false);
         });
 
         it("should return false if the span is from a custom service", () => {
-            expect(employeeServiceServerSpan.isFromVICKSystemComponent()).toBe(false);
+            expect(employeeServiceServerSpan.isFromCellerySystemComponent()).toBe(false);
         });
     });
 

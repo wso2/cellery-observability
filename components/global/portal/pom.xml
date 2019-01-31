@@ -30,4 +30,8 @@
     <version>0.1.0-SNAPSHOT</version>
     <name>Cellery Observability Components - Global Plane - Portal</name>
     <packaging>pom</packaging>
+
+    <modules>
+        <module>io.cellery.observability.ui</module>
+    </modules>
 </project>

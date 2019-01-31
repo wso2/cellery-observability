@@ -22,15 +22,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
-        <groupId>org.wso2.vick</groupId>
-        <artifactId>org.wso2.vick.global.plane.observability</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <groupId>io.cellery.observability</groupId>
+        <artifactId>io.cellery.observability.portal</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>org.wso2.vick.observability.ui</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-    <name>WSO2 VICK - Observability UI</name>
+    <artifactId>io.cellery.observability.ui</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <name>Cellery - Observability UI</name>
     <packaging>pom</packaging>
 
     <build>

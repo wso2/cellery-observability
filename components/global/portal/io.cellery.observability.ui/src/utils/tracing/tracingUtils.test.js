@@ -328,7 +328,7 @@ describe("TracingUtils", () => {
                     spanId: globalGatewayServerSpan.traceId,
                     parentId: "undefined",
                     serviceName: "external-service",
-                    operationName: "call-vick",
+                    operationName: "call-cellery",
                     kind: Constants.Span.Kind.CLIENT,
                     startTime: globalGatewayServerSpan.startTime - 10,
                     duration: globalGatewayServerSpan.duration + 20,

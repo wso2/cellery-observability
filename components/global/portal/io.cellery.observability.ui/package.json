@@ -1,5 +1,5 @@
 {
-  "name": "org.wso2.vick.observability.ui",
+  "name": "io.cellery.observability.ui",
   "version": "0.1.0",
   "description": "Cellery Observability Portal",
   "author": "WSO2 Org",
@@ -10,7 +10,7 @@
     "start": "concurrently --kill-others --names \"config-server,webpack-dev-server\" \"APP_ENV=DEV PORTAL_PORT=4000 node node-server/serve.js\" \"react-scripts start\"",
     "lint": "eslint --color --fix src/",
     "build": "react-scripts build",
-    "test": "CI=true react-scripts test --colors --testURL=http://test.vick.com --coverage",
+    "test": "CI=true react-scripts test --colors --testURL=http://test.cellery.com --coverage",
     "eject": "react-scripts eject"
   },
   "dependencies": {
