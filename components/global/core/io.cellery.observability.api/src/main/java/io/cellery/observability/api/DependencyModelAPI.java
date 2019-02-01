@@ -17,9 +17,9 @@
  */
 package io.cellery.observability.api;
 
+import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.internal.ServiceHolder;
 import io.cellery.observability.model.generator.model.Model;
-import org.apache.log4j.Logger;
 
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -35,19 +35,18 @@ import javax.ws.rs.core.Response;
  */
 @Path("/api/dependency-model")
 public class DependencyModelAPI {
-    private static final Logger log = Logger.getLogger(DependencyModelAPI.class);
 
     @GET
     @Path("/cells")
     @Produces("application/json")
     public Response getCellOverview(@DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
-                                    @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime) {
+                                    @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
+            throws APIInvocationException {
         try {
             Model model = ServiceHolder.getModelManager().getGraph(queryStartTime, queryEndTime);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
-            log.error("Error occured while retrieving the dependency API", e);
-            return Response.serverError().entity(e).build();
+            throw new APIInvocationException("Unexpected error occurred while fetching the Cell dependency model", e);
         }
     }
 
@@ -56,13 +55,14 @@ public class DependencyModelAPI {
     @Produces("application/json")
     public Response getCellDependencyView(@PathParam("cellName") String cellName,
                                           @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
-                                          @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime) {
+                                          @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
+            throws APIInvocationException {
         try {
             Model model = ServiceHolder.getModelManager().getDependencyModel(queryStartTime, queryEndTime, cellName);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
-            log.error("Error occured while retrieving the dependency model for cell :" + cellName, e);
-            return Response.serverError().entity(e).build();
+            throw new APIInvocationException("API Invocation error occurred while fetching the dependency model for " +
+                    "cell :" + cellName, e);
         }
     }
 
@@ -72,15 +72,15 @@ public class DependencyModelAPI {
     public Response getComponentDependencyView(@PathParam("cellName") String cellName,
                                                @PathParam("componentName") String componentName,
                                                @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
-                                               @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime) {
+                                               @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
+            throws APIInvocationException {
         try {
             Model model = ServiceHolder.getModelManager().getDependencyModel(queryStartTime, queryEndTime, cellName,
                     componentName);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
-            log.error("Error occurred while retrieving the dependency model for component: " + componentName
-                    + " in cell: " + cellName, e);
-            return Response.serverError().entity(e).build();
+            throw new APIInvocationException("API Invocation error occurred while fetching the dependency model for " +
+                    "component: " + componentName + " in cell: " + cellName, e);
         }
     }
 

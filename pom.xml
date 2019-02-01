@@ -306,19 +306,16 @@
         <commons.lang.version>3.7</commons.lang.version>
         <commons.io.version>2.6</commons.io.version>
         <protobuf.java.version>3.6.1</protobuf.java.version>
-        <protobuf.orbit.version>3.6.1.celleryv1</protobuf.orbit.version>
         <proto.google.common.proto>1.12.0</proto.google.common.proto>
         <grpc.protobuf.version>1.15.0</grpc.protobuf.version>
         <grpc.core>1.15.0</grpc.core>
         <grpc.netty>1.15.0</grpc.netty>
         <grpc.stub.version>1.15.0</grpc.stub.version>
-        <gogoproto.orbit.version>0.1.0-celleryv1</gogoproto.orbit.version>
         <open.tracing.version>0.31.0</open.tracing.version>
         <brave.open.tracing.version>0.29.0</brave.open.tracing.version>
         <zipkin.version>2.11.6</zipkin.version>
         <zipkin.reporter.version>2.5.0</zipkin.reporter.version>
         <thrift.version>0.10.0</thrift.version>
-        <grpc.orbit.version>1.15.0.celleryv1</grpc.orbit.version>
         <kubernetes.client.version>3.0.0</kubernetes.client.version>
         <com.squareup.okhttp>2.7.5</com.squareup.okhttp>
         <adal4j.version>1.6.0</adal4j.version>
@@ -328,6 +325,10 @@
         <bouncy.castle.version>1.59</bouncy.castle.version>
         <opencensus.version>0.16.1</opencensus.version>
 
-        <docker.repo.name>wso2vick</docker.repo.name>
+        <protobuf.orbit.version>3.6.1.celleryv1</protobuf.orbit.version>
+        <gogoproto.orbit.version>0.1.0-celleryv1</gogoproto.orbit.version>
+        <grpc.orbit.version>1.15.0.celleryv1</grpc.orbit.version>
+
+        <docker.repo.name>celleryio</docker.repo.name>
     </properties>
 </project>

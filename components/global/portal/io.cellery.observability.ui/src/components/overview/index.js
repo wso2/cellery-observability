@@ -375,11 +375,23 @@ class Overview extends React.Component {
                 const successPercentage = 1 - (error / total);
 
                 if (successPercentage > config.percentageRangeMinValue.warningThreshold) {
-                    healthInfo.push({nodeId: component, status: Constants.Status.Success, percentage: successPercentage});
+                    healthInfo.push({
+                        nodeId: component,
+                        status: Constants.Status.Success,
+                        percentage: successPercentage
+                    });
                 } else if (successPercentage > config.percentageRangeMinValue.errorThreshold) {
-                    healthInfo.push({nodeId: component, status: Constants.Status.Warning, percentage: successPercentage});
+                    healthInfo.push({
+                        nodeId: component,
+                        status: Constants.Status.Warning,
+                        percentage: successPercentage
+                    });
                 } else {
-                    healthInfo.push({nodeId: component, status: Constants.Status.Error, percentage: successPercentage});
+                    healthInfo.push({
+                        nodeId: component,
+                        status: Constants.Status.Error,
+                        percentage: successPercentage
+                    });
                 }
             }
         });

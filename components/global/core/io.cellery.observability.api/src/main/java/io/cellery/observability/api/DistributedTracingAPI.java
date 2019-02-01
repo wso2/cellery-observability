@@ -22,6 +22,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.exception.InvalidParamException;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryTemplates;
 
@@ -49,13 +50,18 @@ public class DistributedTracingAPI {
     @Path("/metadata")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMetadata(@DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
-                                @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime) {
-        Object[][] results = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_METADATA.builder()
-                .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
-                .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
-                .build()
-                .execute();
-        return Response.ok().entity(results).build();
+                                @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
+            throws APIInvocationException {
+        try {
+            Object[][] results = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_METADATA.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
+                    .build()
+                    .execute();
+            return Response.ok().entity(results).build();
+        } catch (Throwable e) {
+            throw new APIInvocationException("API Invocation error occurred while fetching Tracing metadata", e);
+        }
     }
 
     @GET
@@ -68,129 +74,142 @@ public class DistributedTracingAPI {
                            @DefaultValue("-1") @QueryParam("maxDuration") long maxDuration,
                            @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                            @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime,
-                           @DefaultValue("{}") @QueryParam("tags") String jsonEncodedTags) {
-        Map<String, String> queryTags = new HashMap<>();
-        SiddhiStoreQueryTemplates siddhiStoreQueryTemplates;
-        if ("{}".equals(jsonEncodedTags)) {
-            siddhiStoreQueryTemplates = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_TRACE_IDS;
-        } else {
-            siddhiStoreQueryTemplates = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_TRACE_IDS_WITH_TAGS;
-
-            // Parsing the provided JSON encoded tags
-            try {
-                JsonElement jsonElement = new JsonParser().parse(jsonEncodedTags);
-                if (jsonElement.isJsonObject()) {
-                    JsonObject queryTagsJsonObject = jsonElement.getAsJsonObject();
-                    for (Map.Entry<String, JsonElement> queryTagsJsonObjectEntry : queryTagsJsonObject.entrySet()) {
-                        if (queryTagsJsonObjectEntry.getValue().isJsonPrimitive()) {
-                            queryTags.put(
-                                    queryTagsJsonObjectEntry.getKey(),
-                                    queryTagsJsonObjectEntry.getValue().getAsString()
-                            );
-                        } else {
-                            throw new InvalidParamException("tags", "JSON encoded object");
-                        }
-                    }
-                } else {
-                    throw new InvalidParamException("tags", "JSON encoded object");
-                }
-            } catch (JsonSyntaxException e) {
-                throw new InvalidParamException("tags", "JSON encoded object", e);
-            }
-        }
-
-        Object[][] traceIdResults = siddhiStoreQueryTemplates.builder()
-                .setArg(SiddhiStoreQueryTemplates.Params.CELL, cell)
-                .setArg(SiddhiStoreQueryTemplates.Params.SERVICE_NAME, serviceName)
-                .setArg(SiddhiStoreQueryTemplates.Params.OPERATION_NAME, operationName)
-                .setArg(SiddhiStoreQueryTemplates.Params.MIN_DURATION, minDuration)
-                .build()
-                .execute();
-
-        // Filtering based on tags
-        Set<String> traceIds = new HashSet<>();
-        for (Object[] traceIdResult : traceIdResults) {
-            String traceId = (String) traceIdResult[0];
-
+                           @DefaultValue("{}") @QueryParam("tags") String jsonEncodedTags)
+            throws APIInvocationException {
+        try {
+            Map<String, String> queryTags = new HashMap<>();
+            SiddhiStoreQueryTemplates siddhiStoreQueryTemplates;
             if ("{}".equals(jsonEncodedTags)) {
-                traceIds.add(traceId);
-            } else if (!traceIds.contains(traceId)) {   // To consider a traceId a single matching span is enough
-                boolean isMatch = false;
-                JsonElement parsedJsonElement = new JsonParser().parse((String) traceIdResult[1]);
-                if (parsedJsonElement.isJsonObject()) {
-                    JsonObject traceTags = parsedJsonElement.getAsJsonObject();
-                    for (Map.Entry<String, String> queryTagEntry : queryTags.entrySet()) {
-                        String tagKey = queryTagEntry.getKey();
-                        String tagValue = queryTagEntry.getValue();
+                siddhiStoreQueryTemplates = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_TRACE_IDS;
+            } else {
+                siddhiStoreQueryTemplates
+                        = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_TRACE_IDS_WITH_TAGS;
 
-                        JsonElement traceTagValueJsonElement = traceTags.get(tagKey);
-                        if (traceTagValueJsonElement != null && traceTagValueJsonElement.isJsonPrimitive()
-                                && tagValue.equals(traceTagValueJsonElement.getAsString())) {
-                            isMatch = true;
-                            break;
+                // Parsing the provided JSON encoded tags
+                try {
+                    JsonElement jsonElement = new JsonParser().parse(jsonEncodedTags);
+                    if (jsonElement.isJsonObject()) {
+                        JsonObject queryTagsJsonObject = jsonElement.getAsJsonObject();
+                        for (Map.Entry<String, JsonElement> queryTagsJsonObjectEntry : queryTagsJsonObject.entrySet()) {
+                            if (queryTagsJsonObjectEntry.getValue().isJsonPrimitive()) {
+                                queryTags.put(
+                                        queryTagsJsonObjectEntry.getKey(),
+                                        queryTagsJsonObjectEntry.getValue().getAsString()
+                                );
+                            } else {
+                                throw new InvalidParamException("tags", "JSON encoded object");
+                            }
                         }
+                    } else {
+                        throw new InvalidParamException("tags", "JSON encoded object");
                     }
-                }
-                if (isMatch) {
-                    traceIds.add(traceId);
+                } catch (JsonSyntaxException e) {
+                    throw new InvalidParamException("tags", "JSON encoded object", e);
                 }
             }
-        }
 
-        Object[][] spanCountResults = null;
-        Object[][] rootSpanResults = null;
-        if (traceIds.size() > 0) {
-            rootSpanResults = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_ROOT_SPAN_METADATA
-                    .builder()
-                    .setArg(
-                            SiddhiStoreQueryTemplates.Params.CONDITION,
-                            Utils.generateSiddhiMatchConditionForAnyValues(
-                                    "traceId", traceIds.toArray(new String [0]))
-                    )
-                    .setArg(SiddhiStoreQueryTemplates.Params.MAX_DURATION, maxDuration)
-                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
-                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
+            Object[][] traceIdResults = siddhiStoreQueryTemplates.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.CELL, cell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.SERVICE_NAME, serviceName)
+                    .setArg(SiddhiStoreQueryTemplates.Params.OPERATION_NAME, operationName)
+                    .setArg(SiddhiStoreQueryTemplates.Params.MIN_DURATION, minDuration)
                     .build()
                     .execute();
 
-            // Creating the array of trace IDs of the selected root spans
-            String[] rootSpanResultIds = new String[rootSpanResults.length];
-            for (int i = 0; i < rootSpanResults.length; i++) {
-                rootSpanResultIds[i] = (String) rootSpanResults[i][0];
+            // Filtering based on tags
+            Set<String> traceIds = new HashSet<>();
+            for (Object[] traceIdResult : traceIdResults) {
+                String traceId = (String) traceIdResult[0];
+
+                if ("{}".equals(jsonEncodedTags)) {
+                    traceIds.add(traceId);
+                } else if (!traceIds.contains(traceId)) {   // To consider a traceId a single matching span is enough
+                    boolean isMatch = false;
+                    JsonElement parsedJsonElement = new JsonParser().parse((String) traceIdResult[1]);
+                    if (parsedJsonElement.isJsonObject()) {
+                        JsonObject traceTags = parsedJsonElement.getAsJsonObject();
+                        for (Map.Entry<String, String> queryTagEntry : queryTags.entrySet()) {
+                            String tagKey = queryTagEntry.getKey();
+                            String tagValue = queryTagEntry.getValue();
+
+                            JsonElement traceTagValueJsonElement = traceTags.get(tagKey);
+                            if (traceTagValueJsonElement != null && traceTagValueJsonElement.isJsonPrimitive()
+                                    && tagValue.equals(traceTagValueJsonElement.getAsString())) {
+                                isMatch = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (isMatch) {
+                        traceIds.add(traceId);
+                    }
+                }
             }
 
-            if (rootSpanResultIds.length > 0) {
-                spanCountResults =
-                        SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_MULTIPLE_CELL_SERVICE_COUNTS.builder()
-                                .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
-                                        Utils.generateSiddhiMatchConditionForAnyValues("traceId", rootSpanResultIds))
-                                .build()
-                                .execute();
+            Object[][] spanCountResults = null;
+            Object[][] rootSpanResults = null;
+            if (traceIds.size() > 0) {
+                rootSpanResults = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_ROOT_SPAN_METADATA
+                        .builder()
+                        .setArg(
+                                SiddhiStoreQueryTemplates.Params.CONDITION,
+                                Utils.generateSiddhiMatchConditionForAnyValues(
+                                        "traceId", traceIds.toArray(new String[0]))
+                        )
+                        .setArg(SiddhiStoreQueryTemplates.Params.MAX_DURATION, maxDuration)
+                        .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
+                        .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
+                        .build()
+                        .execute();
+
+                // Creating the array of trace IDs of the selected root spans
+                String[] rootSpanResultIds = new String[rootSpanResults.length];
+                for (int i = 0; i < rootSpanResults.length; i++) {
+                    rootSpanResultIds[i] = (String) rootSpanResults[i][0];
+                }
+
+                if (rootSpanResultIds.length > 0) {
+                    spanCountResults =
+                            SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_MULTIPLE_CELL_SERVICE_COUNTS
+                                    .builder()
+                                    .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
+                                            Utils.generateSiddhiMatchConditionForAnyValues("traceId",
+                                                    rootSpanResultIds))
+                                    .build()
+                                    .execute();
+                }
             }
-        }
-        if (spanCountResults == null) {
-            spanCountResults = new Object[0][0];
-        }
-        if (rootSpanResults == null) {
-            rootSpanResults = new Object[0][0];
-        }
+            if (spanCountResults == null) {
+                spanCountResults = new Object[0][0];
+            }
+            if (rootSpanResults == null) {
+                rootSpanResults = new Object[0][0];
+            }
 
-        Map<String, Object[][]> resultsMap = new HashMap<>(2);
-        resultsMap.put("spanCounts", spanCountResults);
-        resultsMap.put("rootSpans", rootSpanResults);
+            Map<String, Object[][]> resultsMap = new HashMap<>(2);
+            resultsMap.put("spanCounts", spanCountResults);
+            resultsMap.put("rootSpans", rootSpanResults);
 
-        return Response.ok().entity(resultsMap).build();
+            return Response.ok().entity(resultsMap).build();
+        } catch (Throwable e) {
+            throw new APIInvocationException("API Invocation error occurred while searching for traces", e);
+        }
     }
 
     @GET
     @Path("/{traceId}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getTraceByTraceId(@PathParam("traceId") String traceId) {
-        Object[][] results = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_GET_TRACE.builder()
-                .setArg(SiddhiStoreQueryTemplates.Params.TRACE_ID, traceId)
-                .build()
-                .execute();
-        return Response.ok().entity(results).build();
+    public Response getTraceByTraceId(@PathParam("traceId") String traceId) throws APIInvocationException {
+        try {
+            Object[][] results = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_GET_TRACE.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.TRACE_ID, traceId)
+                    .build()
+                    .execute();
+            return Response.ok().entity(results).build();
+        } catch (Throwable e) {
+            throw new APIInvocationException("API Invocation error occurred while fetching Trace for ID: "
+                    + traceId, e);
+        }
     }
 
     @OPTIONS

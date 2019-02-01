@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import ComponentDependencyView from "./ComponentDependencyView";
 import HealthIndicator from "../../common/HealthIndicator";
 import HttpUtils from "../../../utils/api/httpUtils";
 import {Link} from "react-router-dom";
@@ -21,7 +22,6 @@ import NotFound from "../../common/error/NotFound";
 import NotificationUtils from "../../../utils/common/notificationUtils";
 import QueryUtils from "../../../utils/common/queryUtils";
 import React from "react";
-import ComponentDependencyView from "./ComponentDependencyView";
 import StateHolder from "../../common/state/stateHolder";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";

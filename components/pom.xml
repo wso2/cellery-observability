@@ -33,7 +33,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>global</module>
         <module>orbit</module>
+        <module>global</module>
     </modules>
 </project>

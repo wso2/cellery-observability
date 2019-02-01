@@ -18,8 +18,8 @@
 
 package io.cellery.observability.api;
 
+import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryTemplates;
-import org.apache.log4j.Logger;
 
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -35,7 +35,6 @@ import javax.ws.rs.core.Response;
  */
 @Path("/api/k8s")
 public class KubernetesAPI {
-    private static final Logger log = Logger.getLogger(KubernetesAPI.class);
 
     @GET
     @Path("/pods")
@@ -43,7 +42,8 @@ public class KubernetesAPI {
     public Response getK8sPods(@QueryParam("queryStartTime") long queryStartTime,
                                @QueryParam("queryEndTime") long queryEndTime,
                                @DefaultValue("") @QueryParam("cell") String cell,
-                               @DefaultValue("") @QueryParam("component") String component) {
+                               @DefaultValue("") @QueryParam("component") String component)
+            throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_PODS_FOR_COMPONENT.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
@@ -54,8 +54,8 @@ public class KubernetesAPI {
                     .execute();
             return Response.ok().entity(results).build();
         } catch (Throwable throwable) {
-            log.error("Unable to fetch K8s Pods", throwable);
-            return Response.serverError().entity(throwable).build();
+            throw new APIInvocationException("API Invocation error occurred while fetching Kubernetes pod information",
+                    throwable);
         }
     }
 

@@ -19,8 +19,8 @@
 package io.cellery.observability.api;
 
 import com.google.gson.JsonObject;
+import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryTemplates;
-import org.apache.log4j.Logger;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -39,7 +39,6 @@ import javax.ws.rs.core.Response;
  */
 @Path("/api/http-requests")
 public class AggregatedRequestsAPI {
-    private static final Logger log = Logger.getLogger(AggregatedRequestsAPI.class);
 
     @GET
     @Path("/cells")
@@ -47,7 +46,7 @@ public class AggregatedRequestsAPI {
     public Response getAggregatedRequestsForCells(@QueryParam("queryStartTime") long queryStartTime,
                                                   @QueryParam("queryEndTime") long queryEndTime,
                                                   @DefaultValue("seconds") @QueryParam("timeGranularity")
-                                                          String timeGranularity) {
+                                                          String timeGranularity) throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELLS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
@@ -57,8 +56,8 @@ public class AggregatedRequestsAPI {
                     .execute();
             return Response.ok().entity(results).build();
         } catch (Throwable throwable) {
-            log.error("Unable to get the aggregated results for cells. ", throwable);
-            return Response.serverError().entity(throwable).build();
+            throw new APIInvocationException("Unexpected error occurred while fetching the aggregated HTTP request " +
+                    "data for cells", throwable);
         }
     }
 
@@ -69,7 +68,8 @@ public class AggregatedRequestsAPI {
                                        @QueryParam("queryEndTime") long queryEndTime,
                                        @DefaultValue("") @QueryParam("sourceCell") String sourceCell,
                                        @DefaultValue("") @QueryParam("destinationCell") String destinationCell,
-                                       @DefaultValue("seconds") @QueryParam("timeGranularity") String timeGranularity) {
+                                       @DefaultValue("seconds") @QueryParam("timeGranularity") String timeGranularity)
+            throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELLS_METRICS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
@@ -81,8 +81,8 @@ public class AggregatedRequestsAPI {
                     .execute();
             return Response.ok().entity(results).build();
         } catch (Throwable throwable) {
-            log.error("Unable to get the metrics for cells. ", throwable);
-            return Response.serverError().entity(throwable).build();
+            throw new APIInvocationException("Unexpected error occurred while fetching aggregated HTTP Request metrics",
+                    throwable);
         }
     }
 
@@ -90,7 +90,7 @@ public class AggregatedRequestsAPI {
     @Path("/cells/metadata")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMetadataForCells(@QueryParam("queryStartTime") long queryStartTime,
-                                        @QueryParam("queryEndTime") long queryEndTime) {
+                                        @QueryParam("queryEndTime") long queryEndTime) throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELLS_METADATA.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
@@ -106,8 +106,7 @@ public class AggregatedRequestsAPI {
 
             return Response.ok().entity(cells).build();
         } catch (Throwable throwable) {
-            log.error("Unable to get the meta data for cells. ", throwable);
-            return Response.serverError().entity(throwable).build();
+            throw new APIInvocationException("API Invocation error occurred while fetching Cell metadata", throwable);
         }
     }
 
@@ -118,7 +117,8 @@ public class AggregatedRequestsAPI {
                                                        @QueryParam("queryStartTime") long queryStartTime,
                                                        @QueryParam("queryEndTime") long queryEndTime,
                                                        @DefaultValue("seconds")
-                                                       @QueryParam("timeGranularity") String timeGranularity) {
+                                                       @QueryParam("timeGranularity") String timeGranularity)
+            throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELL_COMPONENTS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
@@ -129,8 +129,8 @@ public class AggregatedRequestsAPI {
                     .execute();
             return Response.ok().entity(results).build();
         } catch (Throwable throwable) {
-            log.error("Unable to get the aggregated requests for components in cell " + cellName, throwable);
-            return Response.serverError().entity(throwable).build();
+            throw new APIInvocationException("API Invocation error occurred while fetching the aggregated HTTP " +
+                    "requests for components in cell " + cellName, throwable);
         }
     }
 
@@ -146,7 +146,8 @@ public class AggregatedRequestsAPI {
                                             @DefaultValue("")
                                             @QueryParam("destinationComponent") String destinationComponent,
                                             @DefaultValue("seconds")
-                                            @QueryParam("timeGranularity") String timeGranularity) {
+                                            @QueryParam("timeGranularity") String timeGranularity)
+            throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_COMPONENTS_METRICS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
@@ -160,8 +161,8 @@ public class AggregatedRequestsAPI {
                     .execute();
             return Response.ok().entity(results).build();
         } catch (Throwable throwable) {
-            log.error("Unable to get the metrics for components", throwable);
-            return Response.serverError().entity(throwable).build();
+            throw new APIInvocationException("API Invocation error occurred while fetching the aggregated Component " +
+                    "metrics", throwable);
         }
     }
 
@@ -169,7 +170,8 @@ public class AggregatedRequestsAPI {
     @Path("/cells/components/metadata")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMetadataForComponents(@QueryParam("queryStartTime") long queryStartTime,
-                                                @QueryParam("queryEndTime") long queryEndTime) {
+                                                @QueryParam("queryEndTime") long queryEndTime)
+            throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_COMPONENTS_METADATA.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
@@ -189,8 +191,8 @@ public class AggregatedRequestsAPI {
 
             return Response.ok().entity(components).build();
         } catch (Throwable throwable) {
-            log.error("Unable to get the meta data for components", throwable);
-            return Response.serverError().entity(throwable).build();
+            throw new APIInvocationException("API Invocation error occurred while fetching the Components metadata",
+                    throwable);
         }
     }
 
