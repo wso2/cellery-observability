@@ -82,7 +82,7 @@ public class TelemetryEventSource extends Source {
                     .start();
             log.info("Telemetry GRPC Server started, listening on " + port);
         } catch (IOException e) {
-            throw new ConnectionUnavailableException("Unable to strat the Telemtry GRPC service on port - " + port, e);
+            throw new ConnectionUnavailableException("Unable to start the Telemetry gRPC service on port: " + port, e);
         }
     }
 

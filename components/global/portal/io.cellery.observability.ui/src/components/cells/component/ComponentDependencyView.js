@@ -101,7 +101,7 @@ const graphConfig = {
     }
 };
 
-class ServiceDependencyView extends React.Component {
+class ComponentDependencyView extends React.Component {
 
     constructor(props) {
         super(props);
@@ -128,14 +128,14 @@ class ServiceDependencyView extends React.Component {
         const self = this;
 
         const search = {
-            fromTime: queryStartTime.valueOf(),
-            toTime: queryEndTime.valueOf()
+            queryStartTime: queryStartTime.valueOf(),
+            queryEndTime: queryEndTime.valueOf()
         };
 
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Component Dependency Graph", globalState);
         }
-        let url = `/dependency-model/cells/${cell}/microservices/${component}`;
+        let url = `/dependency-model/cells/${cell}/component/${component}`;
         url += `${HttpUtils.generateQueryParamString(search)}`;
         HttpUtils.callObservabilityAPI(
             {
@@ -264,7 +264,7 @@ class ServiceDependencyView extends React.Component {
 
 }
 
-ServiceDependencyView.propTypes = {
+ComponentDependencyView.propTypes = {
     classes: PropTypes.object.isRequired,
     cell: PropTypes.string.isRequired,
     component: PropTypes.string.isRequired,
@@ -272,4 +272,4 @@ ServiceDependencyView.propTypes = {
     colorGenerator: PropTypes.instanceOf(ColorGenerator).isRequired
 };
 
-export default withStyles(styles, {withTheme: true})(withColor(withGlobalState(ServiceDependencyView)));
+export default withStyles(styles, {withTheme: true})(withColor(withGlobalState(ComponentDependencyView)));

@@ -54,7 +54,7 @@ public enum SiddhiStoreQueryTemplates {
             "sum(totalResponseSizeBytes) as totalResponseSizeBytes, sum(requestCount) as requestCount\n" +
             "group by AGG_TIMESTAMP, httpResponseGroup"
     ),
-    REQUEST_AGGREGATION_CELL_MICROSERVICES("from RequestAggregation\n" +
+    REQUEST_AGGREGATION_CELL_COMPONENTS("from RequestAggregation\n" +
             "on sourceCell == \"${" + Params.CELL + "}\" or destinationCell == \"${" + Params.CELL + "}\"" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"${" + Params.TIME_GRANULARITY + "}\"\n" +
@@ -63,20 +63,20 @@ public enum SiddhiStoreQueryTemplates {
             "sum(requestCount) as requestCount\n" +
             "group by sourceCell, sourceComponent, destinationCell, destinationComponent, httpResponseGroup"
     ),
-    REQUEST_AGGREGATION_MICROSERVICES_METADATA("from RequestAggregation\n" +
+    REQUEST_AGGREGATION_COMPONENTS_METADATA("from RequestAggregation\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"seconds\"\n" +
             "select sourceCell, sourceComponent, destinationCell, destinationComponent\n" +
             "group by sourceCell, sourceComponent, destinationCell, destinationComponent"
     ),
-    REQUEST_AGGREGATION_MICROSERVICES_METRICS("from RequestAggregation\n" +
+    REQUEST_AGGREGATION_COMPONENTS_METRICS("from RequestAggregation\n" +
             "on (\"${" + Params.SOURCE_CELL + "}\" == \"\" or sourceCell == \"${" + Params.SOURCE_CELL + "}\") " +
-            "and (\"${" + Params.SOURCE_MICROSERVICE + "}\" == \"\" " +
-            "or sourceComponent == \"${" + Params.SOURCE_MICROSERVICE + "}\") " +
+            "and (\"${" + Params.SOURCE_COMPONENT + "}\" == \"\" " +
+            "or sourceComponent == \"${" + Params.SOURCE_COMPONENT + "}\") " +
             "and (\"${" + Params.DESTINATION_CELL + "}\" == \"\" " +
             "or destinationCell == \"${" + Params.DESTINATION_CELL + "}\")\n" +
-            "and (\"${" + Params.DESTINATION_MICROSERVICE + "}\" == \"\" " +
-            "or destinationComponent == \"${" + Params.DESTINATION_MICROSERVICE + "}\") " +
+            "and (\"${" + Params.DESTINATION_COMPONENT + "}\" == \"\" " +
+            "or destinationComponent == \"${" + Params.DESTINATION_COMPONENT + "}\") " +
             "and (sourceCell != destinationCell or sourceComponent != destinationComponent)\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"${" + Params.TIME_GRANULARITY + "}\"\n" +
@@ -161,15 +161,17 @@ public enum SiddhiStoreQueryTemplates {
         public static final String CELL = "cell";
         public static final String COMPONENT = "component";
         public static final String SOURCE_CELL = "sourceCell";
-        public static final String SOURCE_MICROSERVICE = "sourceMicroservice";
+        public static final String SOURCE_COMPONENT = "sourceComponent";
         public static final String DESTINATION_CELL = "destinationCell";
-        public static final String DESTINATION_MICROSERVICE = "destinationMicroservice";
+        public static final String DESTINATION_COMPONENT = "destinationComponent";
+        public static final String CONDITION = "condition";     // Should be used with caution considering SQL injection
+
+        // Tracing specific Params
         public static final String SERVICE_NAME = "serviceName";
         public static final String OPERATION_NAME = "operationName";
         public static final String MIN_DURATION = "minDuration";
         public static final String MAX_DURATION = "maxDuration";
         public static final String TRACE_ID = "traceId";
-        public static final String CONDITION = "condition";     // Should be used with caution considering SQL injection
     }
 
     /**

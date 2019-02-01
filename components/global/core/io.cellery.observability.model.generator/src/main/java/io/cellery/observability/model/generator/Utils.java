@@ -70,7 +70,7 @@ public class Utils {
     }
 
     public static String getQualifiedServiceName(String cellName, String serviceName) {
-        return cellName + Constants.CELL_SERVICE_NAME_SEPARATOR + serviceName;
+        return cellName + Constants.CELL_COMPONENT_NAME_SEPARATOR + serviceName;
     }
 
     public static String getEdgeServiceName(String edgeString) {

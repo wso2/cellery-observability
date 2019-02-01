@@ -40,10 +40,10 @@ public class DependencyModelAPI {
     @GET
     @Path("/cells")
     @Produces("application/json")
-    public Response getCellOverview(@DefaultValue("0") @QueryParam("fromTime") Long fromTime,
-                                    @DefaultValue("0") @QueryParam("toTime") Long toTime) {
+    public Response getCellOverview(@DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
+                                    @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime) {
         try {
-            Model model = ServiceHolder.getModelManager().getGraph(fromTime, toTime);
+            Model model = ServiceHolder.getModelManager().getGraph(queryStartTime, queryEndTime);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
             log.error("Error occured while retrieving the dependency API", e);
@@ -55,10 +55,10 @@ public class DependencyModelAPI {
     @Path("/cells/{cellName}")
     @Produces("application/json")
     public Response getCellDependencyView(@PathParam("cellName") String cellName,
-                                          @DefaultValue("0") @QueryParam("fromTime") Long fromTime,
-                                          @DefaultValue("0") @QueryParam("toTime") Long toTime) {
+                                          @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
+                                          @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime) {
         try {
-            Model model = ServiceHolder.getModelManager().getDependencyModel(fromTime, toTime, cellName);
+            Model model = ServiceHolder.getModelManager().getDependencyModel(queryStartTime, queryEndTime, cellName);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
             log.error("Error occured while retrieving the dependency model for cell :" + cellName, e);
@@ -67,17 +67,19 @@ public class DependencyModelAPI {
     }
 
     @GET
-    @Path("/cells/{cellName}/microservices/{serviceName}")
+    @Path("/cells/{cellName}/components/{componentName}")
     @Produces("application/json")
-    public Response getMicroServiceDependencyView(@PathParam("cellName") String cellName,
-                                                  @PathParam("serviceName") String serviceName,
-                                                  @DefaultValue("0") @QueryParam("fromTime") Long fromTime,
-                                                  @DefaultValue("0") @QueryParam("toTime") Long toTime) {
+    public Response getComponentDependencyView(@PathParam("cellName") String cellName,
+                                               @PathParam("componentName") String componentName,
+                                               @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
+                                               @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime) {
         try {
-            Model model = ServiceHolder.getModelManager().getDependencyModel(fromTime, toTime, cellName, serviceName);
+            Model model = ServiceHolder.getModelManager().getDependencyModel(queryStartTime, queryEndTime, cellName,
+                    componentName);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
-            log.error("Error occured while retrieving the dependency model for service :" + serviceName, e);
+            log.error("Error occurred while retrieving the dependency model for component: " + componentName
+                    + " in cell: " + cellName, e);
             return Response.serverError().entity(e).build();
         }
     }

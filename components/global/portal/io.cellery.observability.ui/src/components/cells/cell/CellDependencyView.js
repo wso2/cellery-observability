@@ -129,8 +129,8 @@ class CellDependencyView extends React.Component {
         const self = this;
 
         const search = {
-            fromTime: queryStartTime.valueOf(),
-            toTime: queryEndTime.valueOf()
+            queryStartTime: queryStartTime.valueOf(),
+            queryEndTime: queryEndTime.valueOf()
         };
 
         if (isUserAction) {

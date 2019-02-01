@@ -21,7 +21,7 @@ import NotFound from "../../common/error/NotFound";
 import NotificationUtils from "../../../utils/common/notificationUtils";
 import QueryUtils from "../../../utils/common/queryUtils";
 import React from "react";
-import ServiceDependencyView from "./ServiceDependencyView";
+import ComponentDependencyView from "./ComponentDependencyView";
 import StateHolder from "../../common/state/stateHolder";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
@@ -84,7 +84,7 @@ class Details extends React.Component {
         }
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/cells/microservices/metrics/${HttpUtils.generateQueryParamString(search)}`,
+                url: `/http-requests/cells/component/metrics/${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState
@@ -172,7 +172,7 @@ class Details extends React.Component {
                 {isLoading ? null : view}
                 {
                     isDataAvailable
-                        ? <ServiceDependencyView cell={cell} component={component}/>
+                        ? <ComponentDependencyView cell={cell} component={component}/>
                         : null
                 }
             </React.Fragment>
