@@ -193,7 +193,7 @@ public final class AttributesOuterClass {
       }
     }
     @Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    protected FieldAccessorTable
         internalGetFieldAccessorTable() {
       return AttributesOuterClass.internal_static_istio_mixer_v1_Attributes_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
@@ -471,7 +471,7 @@ public final class AttributesOuterClass {
       }
 
       @Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
         return AttributesOuterClass.internal_static_istio_mixer_v1_Attributes_AttributeValue_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -1037,7 +1037,7 @@ public final class AttributesOuterClass {
 
       @Override
       protected Builder newBuilderForType(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -1058,7 +1058,7 @@ public final class AttributesOuterClass {
         }
 
         @Override
-        protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+        protected FieldAccessorTable
             internalGetFieldAccessorTable() {
           return AttributesOuterClass.internal_static_istio_mixer_v1_Attributes_AttributeValue_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
@@ -1071,7 +1071,7 @@ public final class AttributesOuterClass {
         }
 
         private Builder(
-            com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+            BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
@@ -2269,7 +2269,7 @@ public final class AttributesOuterClass {
         }
       }
       @Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
         return AttributesOuterClass.internal_static_istio_mixer_v1_Attributes_StringMap_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -2531,7 +2531,7 @@ public final class AttributesOuterClass {
 
       @Override
       protected Builder newBuilderForType(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -2574,7 +2574,7 @@ public final class AttributesOuterClass {
           }
         }
         @Override
-        protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+        protected FieldAccessorTable
             internalGetFieldAccessorTable() {
           return AttributesOuterClass.internal_static_istio_mixer_v1_Attributes_StringMap_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
@@ -2587,7 +2587,7 @@ public final class AttributesOuterClass {
         }
 
         private Builder(
-            com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+            BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
@@ -3167,7 +3167,7 @@ public final class AttributesOuterClass {
 
     @Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3238,7 +3238,7 @@ public final class AttributesOuterClass {
         }
       }
       @Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
         return AttributesOuterClass.internal_static_istio_mixer_v1_Attributes_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -3251,7 +3251,7 @@ public final class AttributesOuterClass {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -4264,7 +4264,7 @@ public final class AttributesOuterClass {
       }
     }
     @Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    protected FieldAccessorTable
         internalGetFieldAccessorTable() {
       return AttributesOuterClass.internal_static_istio_mixer_v1_CompressedAttributes_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
@@ -5386,7 +5386,7 @@ public final class AttributesOuterClass {
 
     @Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -5463,7 +5463,7 @@ public final class AttributesOuterClass {
         }
       }
       @Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
         return AttributesOuterClass.internal_static_istio_mixer_v1_CompressedAttributes_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -5476,7 +5476,7 @@ public final class AttributesOuterClass {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -7192,7 +7192,7 @@ public final class AttributesOuterClass {
       }
     }
     @Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    protected FieldAccessorTable
         internalGetFieldAccessorTable() {
       return AttributesOuterClass.internal_static_istio_mixer_v1_StringMap_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
@@ -7454,7 +7454,7 @@ public final class AttributesOuterClass {
 
     @Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -7498,7 +7498,7 @@ public final class AttributesOuterClass {
         }
       }
       @Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
         return AttributesOuterClass.internal_static_istio_mixer_v1_StringMap_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -7511,7 +7511,7 @@ public final class AttributesOuterClass {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -7973,10 +7973,10 @@ public final class AttributesOuterClass {
       "\002 \001(\0132\031.istio.mixer.v1.StringMap:\0028\001\"t\n\t" +
       "StringMap\0227\n\007entries\030\001 \003(\0132&.istio.mixer" +
       ".v1.StringMap.EntriesEntry\032.\n\014EntriesEnt" +
-      "ry\022\013\n\003key\030\001 \001(\021\022\r\n\005value\030\002 \001(\021:\0028\001BM\n%" +
-      "io.cellery.observability.telemetry.receiver.coreZ\025ist" +
-      "io.io/api/mixer/v1\370\001\001\310\341\036\000\250\342\036\000\360\341\036\000b\006proto" +
-      "3"
+      "ry\022\013\n\003key\030\001 \001(\021\022\r\n\005value\030\002 \001(\021:\0028\001B]\n5io" +
+      ".cellery.observability.telemetry.receive" +
+      "r.generatedZ\025istio.io/api/mixer/v1\370\001\001\310\341\036" +
+      "\000\250\342\036\000\360\341\036\000b\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {

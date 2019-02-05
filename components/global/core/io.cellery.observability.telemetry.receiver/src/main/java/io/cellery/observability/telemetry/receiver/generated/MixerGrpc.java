@@ -1,16 +1,23 @@
 package io.cellery.observability.telemetry.receiver.generated;
 
 import static io.grpc.MethodDescriptor.generateFullMethodName;
+import static io.grpc.stub.ClientCalls.asyncBidiStreamingCall;
+import static io.grpc.stub.ClientCalls.asyncClientStreamingCall;
+import static io.grpc.stub.ClientCalls.asyncServerStreamingCall;
 import static io.grpc.stub.ClientCalls.asyncUnaryCall;
 import static io.grpc.stub.ClientCalls.blockingServerStreamingCall;
 import static io.grpc.stub.ClientCalls.blockingUnaryCall;
 import static io.grpc.stub.ClientCalls.futureUnaryCall;
+import static io.grpc.stub.ServerCalls.asyncBidiStreamingCall;
+import static io.grpc.stub.ServerCalls.asyncClientStreamingCall;
+import static io.grpc.stub.ServerCalls.asyncServerStreamingCall;
 import static io.grpc.stub.ServerCalls.asyncUnaryCall;
+import static io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall;
 import static io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall;
 
 /**
  * <pre>
- * Mixer provides three generated features:
+ * Mixer provides three core features:
  * 
  * - *Precondition Checking*. Enables callers to verify a number of preconditions
  * before responding to an incoming request from a service consumer.
@@ -124,7 +131,7 @@ public final class MixerGrpc {
 
   /**
    * <pre>
-   * Mixer provides three generated features:
+   * Mixer provides three core features:
    * 
    * - *Precondition Checking*. Enables callers to verify a number of preconditions
    * before responding to an incoming request from a service consumer.
@@ -149,7 +156,7 @@ public final class MixerGrpc {
      * </pre>
      */
     public void check(Check.CheckRequest request,
-                      io.grpc.stub.StreamObserver<Check.CheckResponse> responseObserver) {
+        io.grpc.stub.StreamObserver<Check.CheckResponse> responseObserver) {
       asyncUnimplementedUnaryCall(getCheckMethod(), responseObserver);
     }
 
@@ -161,7 +168,7 @@ public final class MixerGrpc {
      * </pre>
      */
     public void report(Report.ReportRequest request,
-                       io.grpc.stub.StreamObserver<Report.ReportResponse> responseObserver) {
+        io.grpc.stub.StreamObserver<Report.ReportResponse> responseObserver) {
       asyncUnimplementedUnaryCall(getReportMethod(), responseObserver);
     }
 
@@ -187,7 +194,7 @@ public final class MixerGrpc {
 
   /**
    * <pre>
-   * Mixer provides three generated features:
+   * Mixer provides three core features:
    * 
    * - *Precondition Checking*. Enables callers to verify a number of preconditions
    * before responding to an incoming request from a service consumer.
@@ -226,7 +233,7 @@ public final class MixerGrpc {
      * </pre>
      */
     public void check(Check.CheckRequest request,
-                      io.grpc.stub.StreamObserver<Check.CheckResponse> responseObserver) {
+        io.grpc.stub.StreamObserver<Check.CheckResponse> responseObserver) {
       asyncUnaryCall(
           getChannel().newCall(getCheckMethod(), getCallOptions()), request, responseObserver);
     }
@@ -239,7 +246,7 @@ public final class MixerGrpc {
      * </pre>
      */
     public void report(Report.ReportRequest request,
-                       io.grpc.stub.StreamObserver<Report.ReportResponse> responseObserver) {
+        io.grpc.stub.StreamObserver<Report.ReportResponse> responseObserver) {
       asyncUnaryCall(
           getChannel().newCall(getReportMethod(), getCallOptions()), request, responseObserver);
     }
@@ -247,7 +254,7 @@ public final class MixerGrpc {
 
   /**
    * <pre>
-   * Mixer provides three generated features:
+   * Mixer provides three core features:
    * 
    * - *Precondition Checking*. Enables callers to verify a number of preconditions
    * before responding to an incoming request from a service consumer.
@@ -305,7 +312,7 @@ public final class MixerGrpc {
 
   /**
    * <pre>
-   * Mixer provides three generated features:
+   * Mixer provides three core features:
    * 
    * - *Precondition Checking*. Enables callers to verify a number of preconditions
    * before responding to an incoming request from a service consumer.

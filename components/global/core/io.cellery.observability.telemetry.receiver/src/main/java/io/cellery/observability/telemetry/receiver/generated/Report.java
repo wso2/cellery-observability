@@ -283,7 +283,7 @@ public final class Report {
     }
 
     @Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    protected FieldAccessorTable
         internalGetFieldAccessorTable() {
       return Report.internal_static_istio_mixer_v1_ReportRequest_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
@@ -663,7 +663,7 @@ public final class Report {
 
     @Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -684,7 +684,7 @@ public final class Report {
       }
 
       @Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
         return Report.internal_static_istio_mixer_v1_ReportRequest_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -697,7 +697,7 @@ public final class Report {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -891,7 +891,7 @@ public final class Report {
       }
 
       private com.google.protobuf.RepeatedFieldBuilderV3<
-              AttributesOuterClass.CompressedAttributes, AttributesOuterClass.CompressedAttributes.Builder, AttributesOuterClass.CompressedAttributesOrBuilder> attributesBuilder_;
+          AttributesOuterClass.CompressedAttributes, AttributesOuterClass.CompressedAttributes.Builder, AttributesOuterClass.CompressedAttributesOrBuilder> attributesBuilder_;
 
       /**
        * <pre>
@@ -1395,11 +1395,11 @@ public final class Report {
         return getAttributesFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilderV3<
-              AttributesOuterClass.CompressedAttributes, AttributesOuterClass.CompressedAttributes.Builder, AttributesOuterClass.CompressedAttributesOrBuilder>
+          AttributesOuterClass.CompressedAttributes, AttributesOuterClass.CompressedAttributes.Builder, AttributesOuterClass.CompressedAttributesOrBuilder>
           getAttributesFieldBuilder() {
         if (attributesBuilder_ == null) {
           attributesBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
-                  AttributesOuterClass.CompressedAttributes, AttributesOuterClass.CompressedAttributes.Builder, AttributesOuterClass.CompressedAttributesOrBuilder>(
+              AttributesOuterClass.CompressedAttributes, AttributesOuterClass.CompressedAttributes.Builder, AttributesOuterClass.CompressedAttributesOrBuilder>(
                   attributes_,
                   ((bitField0_ & 0x00000001) == 0x00000001),
                   getParentForChildren(),
@@ -1739,7 +1739,7 @@ public final class Report {
     }
 
     @Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    protected FieldAccessorTable
         internalGetFieldAccessorTable() {
       return Report.internal_static_istio_mixer_v1_ReportResponse_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
@@ -1887,7 +1887,7 @@ public final class Report {
 
     @Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -1908,7 +1908,7 @@ public final class Report {
       }
 
       @Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
         return Report.internal_static_istio_mixer_v1_ReportResponse_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -1921,7 +1921,7 @@ public final class Report {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2112,10 +2112,10 @@ public final class Report {
       "es.proto\"\201\001\n\rReportRequest\022>\n\nattributes" +
       "\030\001 \003(\0132$.istio.mixer.v1.CompressedAttrib" +
       "utesB\004\310\336\037\000\022\025\n\rdefault_words\030\002 \003(\t\022\031\n\021glo" +
-      "bal_word_count\030\003 \001(\r\"\020\n\016ReportResponseBM" +
-      "\n%io.cellery.observability.telemetry.receiver.coreZ" +
-      "\025istio.io/api/mixer/v1\370\001\001\310\341\036\000\250\342\036\000\360\341\036\000b\006p" +
-      "roto3"
+      "bal_word_count\030\003 \001(\r\"\020\n\016ReportResponseB]" +
+      "\n5io.cellery.observability.telemetry.rec" +
+      "eiver.generatedZ\025istio.io/api/mixer/v1\370\001" +
+      "\001\310\341\036\000\250\342\036\000\360\341\036\000b\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {

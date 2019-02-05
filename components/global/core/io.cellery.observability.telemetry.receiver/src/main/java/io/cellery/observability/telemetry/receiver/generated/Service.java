@@ -29,8 +29,9 @@ public final class Service {
       "1.CheckRequest\032\035.istio.mixer.v1.CheckRes" +
       "ponse\"\000\022I\n\006Report\022\035.istio.mixer.v1.Repor" +
       "tRequest\032\036.istio.mixer.v1.ReportResponse" +
-      "\"\000BA\n%io.cellery.observability.telemetry.receiver.c" +
-      "oreZ\025istio.io/api/mixer/v1\200\001\001b\006proto3"
+      "\"\000BQ\n5io.cellery.observability.telemetry" +
+      ".receiver.generatedZ\025istio.io/api/mixer/" +
+      "v1\200\001\001b\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
