@@ -305,7 +305,7 @@ class Overview extends React.Component {
         }
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/cells/${nodeId}/component${HttpUtils.generateQueryParamString(search)}`,
+                url: `/http-requests/cells/${nodeId}/components${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             this.props.globalState

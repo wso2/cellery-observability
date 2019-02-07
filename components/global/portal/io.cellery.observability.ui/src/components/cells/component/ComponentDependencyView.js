@@ -135,7 +135,7 @@ class ComponentDependencyView extends React.Component {
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Component Dependency Graph", globalState);
         }
-        let url = `/dependency-model/cells/${cell}/component/${component}`;
+        let url = `/dependency-model/cells/${cell}/components/${component}`;
         url += `${HttpUtils.generateQueryParamString(search)}`;
         HttpUtils.callObservabilityAPI(
             {
