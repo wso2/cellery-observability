@@ -18,9 +18,13 @@
 package io.cellery.observability.model.generator;
 
 import io.cellery.observability.model.generator.model.Edge;
+import org.wso2.siddhi.core.event.ComplexEventChunk;
+import org.wso2.siddhi.core.event.stream.StreamEvent;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Stream;
 
 import static io.cellery.observability.model.generator.Constants.EDGE_NAME_CONNECTOR;
 
@@ -80,4 +84,17 @@ public class Utils {
     public static String[] getServices(String serviceName) {
         return serviceName.split(Constants.LINK_SEPARATOR);
     }
+
+//    public static SessionComplexEventChunk<StreamEvent> orderByTimestamp(SessionComplexEventChunk<StreamEvent> receivedStream) {
+//        TreeSet<SessionComplexEventChunk<StreamEvent>> orderedEvents = new TreeSet<>();
+//        SessionComplexEventChunk<StreamEvent> orderedEventChunk = new SessionComplexEventChunk<>();
+//        receivedStream.reset();
+//        while (receivedStream.hasNext()) {
+//            SessionComplexEventChunk<StreamEvent> sessionComplexEventChunk = (SessionComplexEventChunk) receivedStream.next();
+//            orderedEvents.add(sessionComplexEventChunk);
+//        }
+//        for (SessionComplexEventChunk<StreamEvent> orderedEvent : orderedEvents) {
+//            orderedEventChunk.add(orderedEvent);
+//        }
+//    }
 }
