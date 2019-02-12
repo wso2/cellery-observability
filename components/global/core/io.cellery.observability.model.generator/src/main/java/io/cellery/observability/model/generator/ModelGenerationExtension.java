@@ -24,6 +24,7 @@ import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.core.config.SiddhiAppContext;
+import org.wso2.siddhi.core.event.ComplexEvent;
 import org.wso2.siddhi.core.event.ComplexEventChunk;
 import org.wso2.siddhi.core.event.stream.StreamEvent;
 import org.wso2.siddhi.core.event.stream.StreamEventCloner;
@@ -78,7 +79,8 @@ public class ModelGenerationExtension extends StreamProcessor {
     @Override
     protected void process(ComplexEventChunk<StreamEvent> complexEventChunk, Processor processor,
                            StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater) {
-        if (complexEventChunk instanceof SessionComplexEventChunk) {
+        if (complexEventChunk.getFirst() != null && complexEventChunk.getFirst().getType().
+                equals(ComplexEvent.Type.EXPIRED)) {
             while (complexEventChunk.hasNext()) {
                 StreamEvent streamEvent = complexEventChunk.next();
                 String cellName = (String) cellNameExecutor.execute(streamEvent);

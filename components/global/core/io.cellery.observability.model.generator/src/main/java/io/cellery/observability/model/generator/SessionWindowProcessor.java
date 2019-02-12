@@ -27,13 +27,14 @@ import org.wso2.siddhi.core.event.ComplexEventChunk;
 import org.wso2.siddhi.core.event.state.StateEvent;
 import org.wso2.siddhi.core.event.stream.StreamEvent;
 import org.wso2.siddhi.core.event.stream.StreamEventCloner;
+import org.wso2.siddhi.core.event.stream.populater.ComplexEventPopulater;
 import org.wso2.siddhi.core.executor.ConstantExpressionExecutor;
 import org.wso2.siddhi.core.executor.ExpressionExecutor;
 import org.wso2.siddhi.core.executor.VariableExpressionExecutor;
 import org.wso2.siddhi.core.query.processor.Processor;
 import org.wso2.siddhi.core.query.processor.SchedulingProcessor;
+import org.wso2.siddhi.core.query.processor.stream.StreamProcessor;
 import org.wso2.siddhi.core.query.processor.stream.window.FindableProcessor;
-import org.wso2.siddhi.core.query.processor.stream.window.WindowProcessor;
 import org.wso2.siddhi.core.table.Table;
 import org.wso2.siddhi.core.util.Scheduler;
 import org.wso2.siddhi.core.util.collection.operator.CompiledCondition;
@@ -41,21 +42,21 @@ import org.wso2.siddhi.core.util.collection.operator.MatchingMetaInfoHolder;
 import org.wso2.siddhi.core.util.collection.operator.Operator;
 import org.wso2.siddhi.core.util.config.ConfigReader;
 import org.wso2.siddhi.core.util.parser.OperatorParser;
+import org.wso2.siddhi.query.api.definition.AbstractDefinition;
 import org.wso2.siddhi.query.api.definition.Attribute;
 import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
 import org.wso2.siddhi.query.api.expression.Expression;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static java.util.stream.Collectors.toMap;
-
 /**
- * Implementation of {@link WindowProcessor} which represent a Window operating based on a session.
+ * Implementation of Stream Processor which represent a Window operating based on a session.
  */
 @Extension(
         name = "traceGroupWindow",
@@ -102,17 +103,17 @@ import static java.util.stream.Collectors.toMap;
                 )
         }
 )
-public class SessionWindowProcessor extends WindowProcessor implements SchedulingProcessor, FindableProcessor {
+public class SessionWindowProcessor extends StreamProcessor implements SchedulingProcessor, FindableProcessor {
 
     private static final Logger log = Logger.getLogger(SessionWindowProcessor.class);
 
     private long sessionGap = 0;
     private VariableExpressionExecutor sessionKeyExecutor;
+    private VariableExpressionExecutor timestampExecutor;
     private Scheduler scheduler;
     private Map<String, SessionContainer> sessionMap;
-    private Map<String, Long> sessionKeyEndTimeMap;
     private SessionContainer sessionContainer;
-    private SessionComplexEventChunk<StreamEvent> expiredEventChunk;
+    private ComplexEventChunk<StreamEvent> expiredEventChunk;
 
     private static final String DEFAULT_KEY = "default-key";
 
@@ -127,15 +128,13 @@ public class SessionWindowProcessor extends WindowProcessor implements Schedulin
     }
 
     @Override
-    protected void init(ExpressionExecutor[] attributeExpressionExecutors,
-                        ConfigReader configReader, boolean outputExpectsExpiredEvents,
-                        SiddhiAppContext siddhiAppContext) {
+    protected List<Attribute> init(AbstractDefinition abstractDefinition, ExpressionExecutor[] expressionExecutors,
+                                   ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
         this.sessionMap = new ConcurrentHashMap<>();
-        this.sessionKeyEndTimeMap = new HashMap<>();
         this.sessionContainer = new SessionContainer();
-        this.expiredEventChunk = new SessionComplexEventChunk<>();
+        this.expiredEventChunk = new ComplexEventChunk<>(false);
 
-        if (attributeExpressionExecutors.length >= 1 && attributeExpressionExecutors.length <= 2) {
+        if (attributeExpressionExecutors.length >= 1 && attributeExpressionExecutors.length <= 3) {
 
             if (attributeExpressionExecutors[0] instanceof ConstantExpressionExecutor) {
                 if (attributeExpressionExecutors[0].getReturnType() == Attribute.Type.INT ||
@@ -151,7 +150,7 @@ public class SessionWindowProcessor extends WindowProcessor implements Schedulin
                         + "found a dynamic attribute " + attributeExpressionExecutors[0].getClass().getCanonicalName());
             }
 
-            if (attributeExpressionExecutors.length == 2) {
+            if (attributeExpressionExecutors.length >= 2) {
                 if (attributeExpressionExecutors[1] instanceof VariableExpressionExecutor) {
                     if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.STRING) {
                         sessionKeyExecutor = (VariableExpressionExecutor) attributeExpressionExecutors[1];
@@ -166,29 +165,44 @@ public class SessionWindowProcessor extends WindowProcessor implements Schedulin
                             + attributeExpressionExecutors[1].getClass().getCanonicalName());
                 }
             }
+
+            if (attributeExpressionExecutors.length >= 3) {
+                if (attributeExpressionExecutors[2] instanceof VariableExpressionExecutor) {
+                    if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.LONG) {
+                        timestampExecutor = (VariableExpressionExecutor) attributeExpressionExecutors[2];
+                    } else {
+                        throw new SiddhiAppValidationException("Session window's timestamp parameter type"
+                                + " should be string, but found " + attributeExpressionExecutors[2].getReturnType());
+                    }
+                } else {
+                    throw new SiddhiAppValidationException("Session window's 3rd parameter, timestamp"
+                            + " should be a dynamic parameter attribute but "
+                            + "found a constant attribute "
+                            + attributeExpressionExecutors[2].getClass().getCanonicalName());
+                }
+            }
         } else {
             throw new SiddhiAppValidationException("Session window should only have one to three parameters "
-                    + "(<int|long|time> sessionGap, <String> sessionKey, <int|long|time> allowedLatency, "
+                    + "(<int|long|time> sessionGap, <String> sessionKey, <long> timestamp, "
                     + "but found " + attributeExpressionExecutors.length + " input attributes");
 
         }
-
+        return new ArrayList<>();
     }
 
-    @Override
-    protected void process(ComplexEventChunk<StreamEvent> streamEventChunk,
-                           Processor nextProcessor, StreamEventCloner streamEventCloner) {
+    protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor processor, StreamEventCloner
+            streamEventCloner, ComplexEventPopulater complexEventPopulater) {
         String key = DEFAULT_KEY;
-        SessionComplexEventChunk<StreamEvent> currentSession;
-
         synchronized (this) {
             while (streamEventChunk.hasNext()) {
                 StreamEvent streamEvent = streamEventChunk.next();
                 long eventTimestamp = streamEvent.getTimestamp();
                 long maxTimestamp = eventTimestamp + sessionGap;
-
                 if (streamEvent.getType() == StreamEvent.Type.CURRENT) {
-
+                    long sessionEventTimestamp = eventTimestamp;
+                    if (timestampExecutor != null) {
+                        sessionEventTimestamp = (Long) timestampExecutor.execute(streamEvent);
+                    }
                     if (sessionKeyExecutor != null) {
                         key = (String) sessionKeyExecutor.execute(streamEvent);
                     }
@@ -197,31 +211,29 @@ public class SessionWindowProcessor extends WindowProcessor implements Schedulin
                     //if the map doesn't contain key, then a new sessionContainer
                     //object needs to be created.
                     if ((sessionContainer = sessionMap.get(key)) == null) {
-                        sessionContainer = new SessionContainer(key);
+                        sessionContainer = new SessionContainer(key, eventTimestamp);
                     }
                     sessionMap.put(key, sessionContainer);
 
                     StreamEvent clonedStreamEvent = streamEventCloner.copyStreamEvent(streamEvent);
                     clonedStreamEvent.setType(StreamEvent.Type.EXPIRED);
 
-                    currentSession = sessionContainer.getCurrentSession();
-
-                    //if current session is empty
-                    if (sessionContainer.getCurrentSession().getFirst() == null) {
-                        currentSession.add(clonedStreamEvent);
-                        currentSession.setTimestamps(eventTimestamp, maxTimestamp);
+                    //if current session contains events
+                    if (sessionContainer.isEmpty()) {
+                        sessionContainer.add(sessionEventTimestamp, clonedStreamEvent);
+                        sessionContainer.setEndTimestamp(maxTimestamp);
                         scheduler.notifyAt(maxTimestamp);
                     } else {
-                        if (eventTimestamp >= currentSession.getStartTimestamp()) {
+                        if (eventTimestamp >= sessionContainer.getStartTimestamp()) {
                             //check whether the event belongs to the same session
-                            if (eventTimestamp <= currentSession.getEndTimestamp()) {
-                                currentSession.setTimestamps(currentSession.getStartTimestamp(), maxTimestamp);
-                                currentSession.add(clonedStreamEvent);
+                            if (eventTimestamp <= sessionContainer.getEndTimestamp()) {
+                                sessionContainer.add(sessionEventTimestamp, clonedStreamEvent);
+                                sessionContainer.setEndTimestamp(maxTimestamp);
                                 scheduler.notifyAt(maxTimestamp);
                             }
                         } else {
                             //when a late event arrives
-                            addLateEvent(streamEventChunk, eventTimestamp, clonedStreamEvent);
+                            addLateEvent(streamEventChunk, eventTimestamp, clonedStreamEvent, sessionEventTimestamp);
                         }
                     }
                 } else {
@@ -229,9 +241,7 @@ public class SessionWindowProcessor extends WindowProcessor implements Schedulin
                 }
             }
         }
-
         nextProcessor.process(streamEventChunk);
-
         if (expiredEventChunk != null && expiredEventChunk.getFirst() != null) {
             nextProcessor.process(expiredEventChunk);
             expiredEventChunk.clear();
@@ -242,17 +252,11 @@ public class SessionWindowProcessor extends WindowProcessor implements Schedulin
      * Handles when the late event arrives to the system.
      */
     private void addLateEvent(ComplexEventChunk<StreamEvent> streamEventChunk,
-                              long eventTimestamp, StreamEvent streamEvent) {
-
-        SessionComplexEventChunk<StreamEvent> currentSession = sessionContainer.getCurrentSession();
-        //no allowedLatency time
+                              long eventTimestamp, StreamEvent streamEvent, long sessionEventTimestamp) {
         //check the late event belongs to the same session
-        if (eventTimestamp >= (currentSession.getStartTimestamp() - sessionGap)) {
-            if (currentSession.hasNext()) {
-                currentSession.next();
-            }
-            currentSession.insertBeforeCurrent(streamEvent);
-            currentSession.setStartTimestamp(eventTimestamp);
+        if (eventTimestamp >= (sessionContainer.getStartTimestamp() - sessionGap)) {
+            sessionContainer.add(sessionEventTimestamp, streamEvent);
+            sessionContainer.setStartTimestamp(eventTimestamp);
         } else {
             streamEventChunk.remove();
             log.info("The event, " + streamEvent + " is late and it's session window has been timeout");
@@ -263,55 +267,21 @@ public class SessionWindowProcessor extends WindowProcessor implements Schedulin
      * Checks all the sessions and get the expired session.
      */
     private void currentSessionTimeout(long eventTimestamp) {
-        Map<String, Long> currentEndTimestamps = findAllCurrentEndTimestamps(sessionMap);
-
-        //sort on endTimestamps
-        if (currentEndTimestamps.size() > 1) {
-            currentEndTimestamps = currentEndTimestamps.entrySet().stream().sorted(Map.Entry.comparingByValue())
-                    .collect(toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e1,
-                            LinkedHashMap::new));
-        }
-
-        for (Map.Entry<String, Long> entry : currentEndTimestamps.entrySet()) {
-            long sessionEndTime = entry.getValue();
-            SessionComplexEventChunk<StreamEvent> currentSession = sessionMap.get(entry.getKey())
-                    .getCurrentSession();
-            if (currentSession.getFirst() != null && eventTimestamp >= sessionEndTime) {
-                expiredEventChunk.setKey(currentSession.getKey());
-                expiredEventChunk.setTimestamps(currentSession.getStartTimestamp(),
-                        currentSession.getEndTimestamp());
-                //sort the events
-                expiredEventChunk.add(currentSession.getFirst());
-                currentSession.clear();
+        Collection<SessionContainer> sessionContainerList = sessionMap.values();
+        TreeSet<SessionContainer> currentEndTimestamps = new TreeSet<>(sessionContainerList);
+        for (SessionContainer aSessionContainer : currentEndTimestamps) {
+            long sessionEndTime = aSessionContainer.getEndTimestamp();
+            if (eventTimestamp >= sessionEndTime) {
+                SessionContainer currentSessionContainer = sessionMap.get(aSessionContainer.getKey());
+                ComplexEventChunk<StreamEvent> events = currentSessionContainer.generateEventChunk();
+                if (events.getFirst() != null) {
+                    expiredEventChunk.add(currentSessionContainer.generateEventChunk().getFirst());
+                    currentSessionContainer.clear();
+                }
             } else {
                 break;
             }
         }
-    }
-
-
-    /**
-     * Gets all end timestamps of current sessions.
-     *
-     * @param sessionMap holds all the sessions with the session key
-     * @return map with the values of each current session's end timestamp and with the key as the session key
-     */
-    private Map<String, Long> findAllCurrentEndTimestamps(Map<String, SessionContainer> sessionMap) {
-
-        Collection<SessionContainer> sessionContainerList = sessionMap.values();
-
-        if (!sessionKeyEndTimeMap.isEmpty()) {
-            sessionKeyEndTimeMap.clear();
-        }
-
-        for (SessionContainer sessionContainer : sessionContainerList) {
-            //not getting empty session details
-            if (sessionContainer.getCurrentSessionEndTimestamp() != -1) {
-                sessionKeyEndTimeMap.put(sessionContainer.getKey(), sessionContainer.getCurrentSessionEndTimestamp());
-            }
-        }
-
-        return sessionKeyEndTimeMap;
     }
 
     @Override
@@ -337,7 +307,7 @@ public class SessionWindowProcessor extends WindowProcessor implements Schedulin
     public synchronized void restoreState(Map<String, Object> state) {
         sessionMap = (ConcurrentHashMap<String, SessionContainer>) state.get("sessionMap");
         sessionContainer = (SessionContainer) state.get("sessionContainer");
-        expiredEventChunk = (SessionComplexEventChunk<StreamEvent>) state.get("expiredEventChunk");
+        expiredEventChunk = (ComplexEventChunk<StreamEvent>) state.get("expiredEventChunk");
     }
 
     @Override
