@@ -23,6 +23,7 @@ import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.annotation.Parameter;
 import org.wso2.siddhi.annotation.util.DataType;
 import org.wso2.siddhi.core.config.SiddhiAppContext;
+import org.wso2.siddhi.core.event.ComplexEvent;
 import org.wso2.siddhi.core.event.ComplexEventChunk;
 import org.wso2.siddhi.core.event.state.StateEvent;
 import org.wso2.siddhi.core.event.stream.StreamEvent;
@@ -193,6 +194,7 @@ public class SessionWindowProcessor extends StreamProcessor implements Schedulin
     protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor processor, StreamEventCloner
             streamEventCloner, ComplexEventPopulater complexEventPopulater) {
         String key = DEFAULT_KEY;
+        boolean isTimerEvent = false;
         synchronized (this) {
             while (streamEventChunk.hasNext()) {
                 StreamEvent streamEvent = streamEventChunk.next();
@@ -236,12 +238,15 @@ public class SessionWindowProcessor extends StreamProcessor implements Schedulin
                             addLateEvent(streamEventChunk, eventTimestamp, clonedStreamEvent, sessionEventTimestamp);
                         }
                     }
-                } else {
+                } else if (streamEvent.getType() == ComplexEvent.Type.TIMER) {
+                    isTimerEvent = true;
                     currentSessionTimeout(eventTimestamp);
                 }
             }
         }
-        nextProcessor.process(streamEventChunk);
+        if (!isTimerEvent) {
+            nextProcessor.process(streamEventChunk);
+        }
         if (expiredEventChunk != null && expiredEventChunk.getFirst() != null) {
             nextProcessor.process(expiredEventChunk);
             expiredEventChunk.clear();
@@ -275,7 +280,7 @@ public class SessionWindowProcessor extends StreamProcessor implements Schedulin
                 SessionContainer currentSessionContainer = sessionMap.get(aSessionContainer.getKey());
                 ComplexEventChunk<StreamEvent> events = currentSessionContainer.generateEventChunk();
                 if (events.getFirst() != null) {
-                    expiredEventChunk.add(currentSessionContainer.generateEventChunk().getFirst());
+                    expiredEventChunk.add(events.getFirst());
                     currentSessionContainer.clear();
                 }
             } else {
