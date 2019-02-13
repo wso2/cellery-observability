@@ -32,6 +32,10 @@ import Typography from "@material-ui/core/Typography";
 import withStyles from "@material-ui/core/styles/withStyles";
 import withGlobalState, {StateHolder} from "./common/state";
 import * as PropTypes from "prop-types";
+import axios from "axios";
+import CircularProgress from "@material-ui/core/CircularProgress/CircularProgress";
+import jwt_decode from "jwt-decode";
+
 
 const styles = (theme) => ({
     layout: {
@@ -62,6 +66,17 @@ const styles = (theme) => ({
     },
     submit: {
         marginTop: theme.spacing.unit * 3
+    },
+    centerDiv: {
+        position: "absolute",
+        margin: "auto",
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        width: "200px",
+        height: "100px"
+
     }
 });
 
@@ -83,44 +98,78 @@ class SignIn extends React.Component {
     render() {
         const {classes} = this.props;
         return (
-            <React.Fragment>
-                <CssBaseline/>
-                <main className={classes.layout}>
-                    <Paper className={classes.paper}>
-                        <Avatar className={classes.avatar}>
-                            <LockIcon/>
-                        </Avatar>
-                        <Typography component="h1" variant="h5">
-                            Sign in
-                        </Typography>
-                        <form className={classes.form}>
-                            <FormControl margin="normal" required fullWidth>
-                                <InputLabel htmlFor="email">Username</InputLabel>
-                                <Input
-                                    id="username"
-                                    name="username"
-                                    autoComplete="username"
-                                    onKeyPress={this.handleKeyPress}
-                                    autoFocus/>
-                            </FormControl>
-                            <FormControl margin="normal" required fullWidth>
-                                <InputLabel htmlFor="password">Password</InputLabel>
-                                <Input name="password" type="password" id="password" autoComplete="current-password"
-                                    onKeyPress={this.handleKeyPress}/>
-                            </FormControl>
-                            <FormControlLabel
-                                control={<Checkbox value="remember" color="primary"/>}
-                                label="Remember me"
-                            />
-                            <Button fullWidth variant="contained" color="primary" className={classes.submit}
-                                onClick={this.handleLogin}>
-                                Sign in
-                            </Button>
-                        </form>
-                    </Paper>
-                </main>
+            <React.Fragment className={classes.progress}>
+                <div className={classes.centerDiv}>
+                    <CircularProgress/>
+                    <div>
+                        Loading
+                    </div>
+                </div>
+
             </React.Fragment>
         );
+    }
+
+    componentDidMount() {
+        const url = window.location.search.substr(1);
+        const searchParams = new URLSearchParams(url);
+        const {globalState} = this.props;
+        if (localStorage.getItem("isAuthenticated") === null || localStorage.getItem(StateHolder.USER) === null) {
+
+            if (localStorage.getItem("isAuthenticated") !== "true"
+                && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
+                alert("hit null");
+                localStorage.setItem("isAuthenticated", "true");
+                window.location.href = "https://192.168.56.1:9443/oauth2/authorize?response_type=code"
+                    + "&client_id=tNK8tIR21bfVaP1occAZ5QmrJRAa&"
+                    + "redirect_uri=http://localhost:3000&nonce=abc&scope=openid";
+            }
+
+            else if (localStorage.getItem("isAuthenticated") === "true" && !searchParams.has("code")){
+                window.location.href = "https://192.168.56.1:9443/oauth2/authorize?response_type=code"
+                    + "&client_id=tNK8tIR21bfVaP1occAZ5QmrJRAa&"
+                    + "redirect_uri=http://localhost:3000&nonce=abc&scope=openid";
+            }
+            else if (searchParams.has("code") && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
+                const oneTimeToken = searchParams.get("code");
+                const data = {
+                    grant_type: "authorization_code",
+                    code: oneTimeToken,
+                    redirect_uri: "http://localhost:3000"
+
+                };
+                // const requestData = Object.keys(data).map((key) => `${encodeURIComponent(key)}=
+                // ${encodeURIComponent(data[key])}`).join("&");
+
+                axios.post("https://192.168.56.1:9443/oauth2/token?grant_type=authorization_code&code=" +
+                    oneTimeToken + "&redirect_uri=http://localhost:3000", null, {
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        Authorization: "Basic dE5LOHRJUjIxYmZWYVAxb2NjQVo1UW1ySlJBYTpqVHI1SDlZTWMyWjRlaDZORmpDZkpuU0dXdzhh"
+                    }
+                }).then((response) => {
+                    alert(response.data.id_token);
+                    localStorage.setItem("idToken",response.data.id_token);
+                });
+                localStorage.setItem("isAuthenticated", "codeAuthorized");
+                window.location.reload();
+            }
+            else if (localStorage.getItem("isAuthenticated") === "codeAuthorized") {
+                const decoded = jwt_decode(localStorage.getItem("idToken"));
+
+                const user1 = {
+                    username: decoded.sub
+                };
+                AuthUtils.signIn(user1.username,globalState);
+            }
+
+
+        }
+
+        else if (localStorage.getItem("isAuthenticated") === "loggedOut"){
+            localStorage.removeItem(StateHolder.USER)
+            window.location.href =  "https://192.168.56.1:9443/oidc/logout?id_token_hint="+localStorage.getItem("idToken")+"&post_logout_redirect_uri=http://localhost:3000";
+        }
     }
 
 }

@@ -50,8 +50,9 @@ class AuthUtils {
      */
     static signOut = (globalState) => {
         // TODO: Implement User Logout
-        localStorage.removeItem(StateHolder.USER);
         globalState.unset(StateHolder.USER);
+        localStorage.setItem("isAuthenticated", "loggedOut");
+        window.location.reload();
     };
 
     /**
