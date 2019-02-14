@@ -31,16 +31,16 @@ public class SessionContainer implements Serializable, Comparable {
     private String key;
     private long startTimestamp;
     private long endTimestamp;
-    private TreeSet<SessionEvent> currentSession;
+    private ComplexEventChunk<StreamEvent> currentSession;
 
     public SessionContainer(String key, long startTimestamp) {
-        currentSession = new TreeSet<>();
+        currentSession = new ComplexEventChunk<>(false);
         this.startTimestamp = startTimestamp;
         this.key = key;
     }
 
     public SessionContainer() {
-        currentSession = new TreeSet<>();
+        currentSession = new ComplexEventChunk<>(false);
     }
 
     public String getKey() {
@@ -63,21 +63,16 @@ public class SessionContainer implements Serializable, Comparable {
         return endTimestamp;
     }
 
-    public void add(long timestamp, StreamEvent event) {
-        this.currentSession.add(new SessionEvent(timestamp, event));
+    public void add(StreamEvent event) {
+        this.currentSession.add(event);
     }
 
     public boolean isEmpty() {
-        return this.currentSession.isEmpty();
+        return this.currentSession.getFirst() == null;
     }
 
-    public ComplexEventChunk<StreamEvent> generateEventChunk() {
-        ComplexEventChunk<StreamEvent> eventChunk = new ComplexEventChunk<>(false);
-        for (SessionEvent event : currentSession) {
-            eventChunk.add(event.streamEvent);
-        }
-        eventChunk.reset();
-        return eventChunk;
+    public ComplexEventChunk<StreamEvent> getCurrentSession() {
+        return currentSession;
     }
 
     public void clear() {
@@ -90,28 +85,6 @@ public class SessionContainer implements Serializable, Comparable {
             return new Long(endTimestamp - ((SessionContainer) o).endTimestamp).intValue();
         } else {
             return 1;
-        }
-    }
-
-    /**
-     * This class is wrapper class for stream event and the timestamp.
-     */
-    public class SessionEvent implements Comparable {
-        private long timestamp;
-        private StreamEvent streamEvent;
-
-        SessionEvent(long timestamp, StreamEvent streamEvent) {
-            this.timestamp = timestamp;
-            this.streamEvent = streamEvent;
-        }
-
-        @Override
-        public int compareTo(Object o) {
-            if (o instanceof SessionEvent) {
-                return new Long(timestamp - ((SessionEvent) o).timestamp).intValue();
-            } else {
-                return 1;
-            }
         }
     }
 }

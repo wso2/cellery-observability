@@ -222,14 +222,14 @@ public class SessionWindowProcessor extends StreamProcessor implements Schedulin
 
                     //if current session contains events
                     if (sessionContainer.isEmpty()) {
-                        sessionContainer.add(sessionEventTimestamp, clonedStreamEvent);
+                        sessionContainer.add(clonedStreamEvent);
                         sessionContainer.setEndTimestamp(maxTimestamp);
                         scheduler.notifyAt(maxTimestamp);
                     } else {
                         if (eventTimestamp >= sessionContainer.getStartTimestamp()) {
                             //check whether the event belongs to the same session
                             if (eventTimestamp <= sessionContainer.getEndTimestamp()) {
-                                sessionContainer.add(sessionEventTimestamp, clonedStreamEvent);
+                                sessionContainer.add(clonedStreamEvent);
                                 sessionContainer.setEndTimestamp(maxTimestamp);
                                 scheduler.notifyAt(maxTimestamp);
                             }
@@ -260,7 +260,7 @@ public class SessionWindowProcessor extends StreamProcessor implements Schedulin
                               long eventTimestamp, StreamEvent streamEvent, long sessionEventTimestamp) {
         //check the late event belongs to the same session
         if (eventTimestamp >= (sessionContainer.getStartTimestamp() - sessionGap)) {
-            sessionContainer.add(sessionEventTimestamp, streamEvent);
+            sessionContainer.add(streamEvent);
             sessionContainer.setStartTimestamp(eventTimestamp);
         } else {
             streamEventChunk.remove();
@@ -278,7 +278,7 @@ public class SessionWindowProcessor extends StreamProcessor implements Schedulin
             long sessionEndTime = aSessionContainer.getEndTimestamp();
             if (eventTimestamp >= sessionEndTime) {
                 SessionContainer currentSessionContainer = sessionMap.get(aSessionContainer.getKey());
-                ComplexEventChunk<StreamEvent> events = currentSessionContainer.generateEventChunk();
+                ComplexEventChunk<StreamEvent> events = currentSessionContainer.getCurrentSession();
                 if (events.getFirst() != null) {
                     expiredEventChunk.add(events.getFirst());
                     currentSessionContainer.clear();
