@@ -21,6 +21,7 @@ import io.cellery.observability.api.AggregatedRequestsAPI;
 import io.cellery.observability.api.DependencyModelAPI;
 import io.cellery.observability.api.DistributedTracingAPI;
 import io.cellery.observability.api.KubernetesAPI;
+import io.cellery.observability.api.UserAuthenticationAPI;
 import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
@@ -69,7 +70,7 @@ public class ObservabilityDS {
                     .addExceptionMapper(new APIExceptionMapper())
                     .deploy(
                             new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
-                            new KubernetesAPI()
+                            new KubernetesAPI(), new UserAuthenticationAPI()
                     )
             );
             ServiceHolder.getMicroservicesRunner().start();

@@ -80,6 +80,7 @@ const styles = (theme) => ({
     }
 });
 
+const idpAddress = "192.168.56.1:9443";
 class SignIn extends React.Component {
 
     handleLogin = () => {
@@ -115,22 +116,18 @@ class SignIn extends React.Component {
         const searchParams = new URLSearchParams(url);
         const {globalState} = this.props;
         if (localStorage.getItem("isAuthenticated") === null || localStorage.getItem(StateHolder.USER) === null) {
-
             if (localStorage.getItem("isAuthenticated") !== "true"
                 && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
-                alert("hit null");
                 localStorage.setItem("isAuthenticated", "true");
-                window.location.href = "https://192.168.56.1:9443/oauth2/authorize?response_type=code"
-                    + "&client_id=tNK8tIR21bfVaP1occAZ5QmrJRAa&"
+                window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
+                    + "&client_id=_XvNfXI_6WE715TTeyzzBzJmdWga&"
                     + "redirect_uri=http://localhost:3000&nonce=abc&scope=openid";
-            }
-
-            else if (localStorage.getItem("isAuthenticated") === "true" && !searchParams.has("code")){
-                window.location.href = "https://192.168.56.1:9443/oauth2/authorize?response_type=code"
-                    + "&client_id=tNK8tIR21bfVaP1occAZ5QmrJRAa&"
+            } else if (localStorage.getItem("isAuthenticated") === "true" && !searchParams.has("code")) {
+                window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
+                    + "&client_id=_XvNfXI_6WE715TTeyzzBzJmdWga&"
                     + "redirect_uri=http://localhost:3000&nonce=abc&scope=openid";
-            }
-            else if (searchParams.has("code") && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
+            } else if (searchParams.has("code") && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
+                alert("hit here");
                 const oneTimeToken = searchParams.get("code");
                 const data = {
                     grant_type: "authorization_code",
@@ -138,37 +135,33 @@ class SignIn extends React.Component {
                     redirect_uri: "http://localhost:3000"
 
                 };
-                // const requestData = Object.keys(data).map((key) => `${encodeURIComponent(key)}=
-                // ${encodeURIComponent(data[key])}`).join("&");
 
-                axios.post("https://192.168.56.1:9443/oauth2/token?grant_type=authorization_code&code=" +
-                    oneTimeToken + "&redirect_uri=http://localhost:3000", null, {
+                /*
+                 * Const requestData = Object.keys(data).map((key) => `${encodeURIComponent(key)}=
+                 * ${encodeURIComponent(data[key])}`).join("&");
+                 */
+                alert(oneTimeToken);
+                axios.post(`https://${idpAddress}/oauth2/token?grant_type=authorization_code&code=${
+                    oneTimeToken}&redirect_uri=http://localhost:3000`, null, {
                     headers: {
                         "Content-Type": "application/x-www-form-urlencoded",
-                        Authorization: "Basic dE5LOHRJUjIxYmZWYVAxb2NjQVo1UW1ySlJBYTpqVHI1SDlZTWMyWjRlaDZORmpDZkpuU0dXdzhh"
+                        Authorization:
+                            "Basic X1h2TmZYSV82V0U3MTVUVGV5enpCekptZFdnYTpFeFRFNmYwSEN5bEZtRnkxZ3hnV0s1SkZzM0Vh"
                     }
                 }).then((response) => {
-                    alert(response.data.id_token);
-                    localStorage.setItem("idToken",response.data.id_token);
+                    localStorage.setItem("idToken", response.data.id_token);
+                    const decoded = jwt_decode(response.data.id_token);
+                    const user1 = {
+                        username: decoded.sub
+                    };
+                    AuthUtils.signIn(user1.username, globalState);
+                }).catch((err) => {
+                    alert(err);
                 });
-                localStorage.setItem("isAuthenticated", "codeAuthorized");
-                window.location.reload();
             }
-            else if (localStorage.getItem("isAuthenticated") === "codeAuthorized") {
-                const decoded = jwt_decode(localStorage.getItem("idToken"));
-
-                const user1 = {
-                    username: decoded.sub
-                };
-                AuthUtils.signIn(user1.username,globalState);
-            }
-
-
-        }
-
-        else if (localStorage.getItem("isAuthenticated") === "loggedOut"){
-            localStorage.removeItem(StateHolder.USER)
-            window.location.href =  "https://192.168.56.1:9443/oidc/logout?id_token_hint="+localStorage.getItem("idToken")+"&post_logout_redirect_uri=http://localhost:3000";
+        } else if (localStorage.getItem("isAuthenticated") === "loggedOut") {
+            localStorage.removeItem(StateHolder.USER);
+            window.location.href = `https://${idpAddress}/oidc/logout?id_token_hint=${localStorage.getItem("idToken")}&post_logout_redirect_uri=http://localhost:3000`;
         }
     }
 
