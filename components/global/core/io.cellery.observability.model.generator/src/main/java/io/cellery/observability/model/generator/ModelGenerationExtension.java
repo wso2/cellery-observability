@@ -18,6 +18,7 @@
 package io.cellery.observability.model.generator;
 
 import io.cellery.observability.model.generator.internal.ServiceHolder;
+import io.cellery.observability.model.generator.model.SpanInfo;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
@@ -70,43 +71,100 @@ public class ModelGenerationExtension extends StreamProcessor {
     @Override
     protected void process(ComplexEventChunk<StreamEvent> complexEventChunk, Processor processor,
                            StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater) {
-        if (complexEventChunk.getFirst() != null && complexEventChunk.getFirst().getType().
-                equals(ComplexEvent.Type.EXPIRED)) {
-            HashMap<String, Node> nodeCache = new HashMap<>();
-            while (complexEventChunk.hasNext()) {
-                StreamEvent streamEvent = complexEventChunk.next();
-                String cellName = (String) cellNameExecutor.execute(streamEvent);
-                String serviceName = (String) serviceNameExecutor.execute(streamEvent);
-                String operationName = (String) operationNameExecutor.execute(streamEvent);
-                String spanId = (String) spanIdExecutor.execute(streamEvent);
-                String parentId = (String) parentIdExecutor.execute(streamEvent);
-                log.info("SpanId: " + spanId + ", parentId: " + parentId + " , serviceName: " + serviceName +
-                        " , opName: " + operationName);
-                if (cellName != null && !cellName.isEmpty()
-                        && !operationName.equalsIgnoreCase(Constants.IGNORE_OPERATION_NAME)) {
-                    Node node = new Node(cellName);
-                    Node cachedValue;
-                    if ((cachedValue = cellCache.putIfAbsent(cellName, node)) != null) {
-                        node = cachedValue;
+        try {
+            if (complexEventChunk.getFirst() != null && complexEventChunk.getFirst().getType().
+                    equals(ComplexEvent.Type.EXPIRED)) {
+                Map<String, List<SpanInfo>> spanCache = new HashMap<>();
+                String traceId = null;
+                SpanInfo rootSpan = null;
+                while (complexEventChunk.hasNext()) {
+                    StreamEvent streamEvent = complexEventChunk.next();
+                    String cellName = (String) cellNameExecutor.execute(streamEvent);
+                    String serviceName = (String) serviceNameExecutor.execute(streamEvent);
+                    String operationName = (String) operationNameExecutor.execute(streamEvent);
+                    String spanId = (String) spanIdExecutor.execute(streamEvent);
+                    String parentId = (String) parentIdExecutor.execute(streamEvent);
+                    if (traceId == null) {
+                        traceId = (String) traceIdExecutor.execute(streamEvent);
                     }
-                    node.addService(serviceName);
-                    ServiceHolder.getModelManager().addNode(node);
-                    nodeCache.put(spanId, node);
-                    if (parentId != null) {
-                        Node parentNode = nodeCache.get(parentId);
-                        ServiceHolder.getModelManager().addLink(parentNode, node, serviceName);
+                    SpanInfo spanInfo = new SpanInfo(cellName, serviceName, operationName, spanId, parentId);
+                    List<SpanInfo> childNodes = spanCache.computeIfAbsent(parentId, k -> new ArrayList<>());
+                    childNodes.add(spanInfo);
+                    spanCache.putIfAbsent(parentId, childNodes);
+                    if (spanId.equalsIgnoreCase(traceId)) {
+                        rootSpan = spanInfo;
+                    }
+                }
+                if (rootSpan != null) {
+                    List<SpanInfo> rootCellSpans = findRootCellSpan(rootSpan, spanCache);
+                    traceWalk(rootCellSpans, spanCache);
+                }
+            } else {
+                processor.process(complexEventChunk);
+            }
+        } catch (Throwable throwable) {
+            log.error("Unexpected error occured while processing the event in the model processor.", throwable);
+        }
+    }
+
+    private List<SpanInfo> findRootCellSpan(SpanInfo rootSpan, Map<String, List<SpanInfo>> spanInfoMap) {
+        List<SpanInfo> parents = new ArrayList<>();
+        if (rootSpan.getCellName() == null || rootSpan.getCellName().isEmpty()) {
+            List<SpanInfo> children = spanInfoMap.get(rootSpan.getSpanId());
+            if (children != null) {
+                for (SpanInfo child : children) {
+                    if (child.getCellName() != null && !child.getCellName().isEmpty()) {
+                        parents.add(child);
+                    } else {
+                        parents.addAll(findRootCellSpan(child, spanInfoMap));
                     }
                 }
             }
-        } else {
-            processor.process(complexEventChunk);
+        }
+        return parents;
+    }
+
+    private void traceWalk(List<SpanInfo> rootSpans, Map<String, List<SpanInfo>> spanInfoMap) {
+        for (SpanInfo rootSpan : rootSpans) {
+            Node parentNode = ServiceHolder.getModelManager().getOrGenerateNode(rootSpan.getCellName());
+            parentNode.addComponent(rootSpan.getComponentName());
+            ServiceHolder.getModelManager().addNode(parentNode);
+            if (spanInfoMap.get(rootSpan.getSpanId()) != null) {
+                List<SpanInfo> linkedChildren = goDepth(parentNode, rootSpan, spanInfoMap);
+                if (!linkedChildren.isEmpty()) {
+                    traceWalk(linkedChildren, spanInfoMap);
+                }
+            }
         }
     }
+
+    private List<SpanInfo> goDepth(Node cellParentNode, SpanInfo parentSpanInfo, Map<String,
+            List<SpanInfo>> spanInfoMap) {
+        List<SpanInfo> childSpanInfoList = spanInfoMap.get(parentSpanInfo.getSpanId());
+        List<SpanInfo> linkedChildren = new ArrayList<>();
+        if (childSpanInfoList != null) {
+            for (SpanInfo childSpanInfo : childSpanInfoList) {
+                if (childSpanInfo.getCellName() != null && !childSpanInfo.getCellName().isEmpty() &&
+                        !childSpanInfo.getOperationName().equalsIgnoreCase(Constants.IGNORE_OPERATION_NAME)) {
+                    Node childNode = ServiceHolder.getModelManager().getOrGenerateNode(childSpanInfo.getCellName());
+                    childNode.addComponent(childSpanInfo.getComponentName());
+                    ServiceHolder.getModelManager().addNode(childNode);
+                    ServiceHolder.getModelManager().addLink(cellParentNode, childNode, Utils.generateServiceName(
+                            parentSpanInfo.getComponentName(), childSpanInfo.getComponentName()));
+                    linkedChildren.add(childSpanInfo);
+                } else {
+                    goDepth(cellParentNode, childSpanInfo, spanInfoMap);
+                }
+            }
+        }
+        return linkedChildren;
+    }
+
 
     @Override
     protected List<Attribute> init(AbstractDefinition abstractDefinition, ExpressionExecutor[] expressionExecutors,
                                    ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
-        if (expressionExecutors.length != 6) {
+        if (expressionExecutors.length != 7) {
             throw new SiddhiAppCreationException("Minimum number of attributes is six");
         } else {
             if (expressionExecutors[0].getReturnType() == Attribute.Type.STRING) {

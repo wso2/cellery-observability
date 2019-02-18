@@ -17,7 +17,6 @@
  */
 package io.cellery.observability.model.generator;
 
-import com.google.common.graph.EndpointPair;
 import com.google.common.graph.MutableNetwork;
 import com.google.common.graph.NetworkBuilder;
 import io.cellery.observability.model.generator.exception.GraphStoreException;
@@ -27,8 +26,10 @@ import io.cellery.observability.model.generator.model.Edge;
 import io.cellery.observability.model.generator.model.Model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -36,6 +37,7 @@ import java.util.Set;
  */
 public class ModelManager {
     private MutableNetwork<Node, String> dependencyGraph;
+    private Map<String, Node> nodeCache = new HashMap<>();
 
     public ModelManager() throws ModelException {
         try {
@@ -59,6 +61,7 @@ public class ModelManager {
     private void addNodes(Set<Node> nodes) {
         for (Node node : nodes) {
             this.dependencyGraph.addNode(node);
+            this.nodeCache.putIfAbsent(node.getId(), node);
         }
     }
 
@@ -82,19 +85,41 @@ public class ModelManager {
         }
     }
 
-    private Node getNode(String nodeName) {
-        Set<Node> nodes = this.dependencyGraph.nodes();
-        for (Node node : nodes) {
-            if (node.getId().equalsIgnoreCase(nodeName)) {
-                return node;
+    public Node getNode(String nodeName) {
+        Node cachedNode = nodeCache.get(nodeName);
+        if (cachedNode == null) {
+            Set<Node> nodes = this.dependencyGraph.nodes();
+            for (Node node : nodes) {
+                if (node.getId().equalsIgnoreCase(nodeName)) {
+                    nodeCache.put(node.getId(), node);
+                    return node;
+                }
             }
+            return null;
         }
-        return null;
+        return cachedNode;
+    }
+
+    public Node getOrGenerateNode(String nodeName) {
+        Node cachedNode = nodeCache.get(nodeName);
+        if (cachedNode == null) {
+            Set<Node> nodes = this.dependencyGraph.nodes();
+            for (Node node : nodes) {
+                if (node.getId().equalsIgnoreCase(nodeName)) {
+                    nodeCache.put(node.getId(), node);
+                    return node;
+                }
+            }
+        } else {
+            return cachedNode;
+        }
+        return new Node(nodeName);
     }
 
 
     public void addNode(Node node) {
         this.dependencyGraph.addNode(node);
+        this.nodeCache.put(node.getId(), node);
     }
 
     public void addLink(Node parent, Node child, String serviceName) {
@@ -111,26 +136,6 @@ public class ModelManager {
 
     public MutableNetwork<Node, String> getDependencyGraph() {
         return dependencyGraph;
-    }
-
-    public void moveLinks(Node targetNode, String newEdgePrefix, List<String> edgesToRemove, boolean moveOnlyTarget) {
-        if (edgesToRemove != null) {
-            for (String edgeName : edgesToRemove) {
-                try {
-                    EndpointPair<Node> endpointPair = this.dependencyGraph.incidentNodes(edgeName);
-                    if (endpointPair != null) {
-                        Node outNode = endpointPair.target();
-                        if (!moveOnlyTarget || outNode.equals(targetNode)) {
-                            String newEdgeName = newEdgePrefix + Constants.LINK_SEPARATOR
-                                    + Utils.getEdgePostFix(edgeName);
-                            this.addLink(targetNode, outNode, newEdgeName);
-                            this.dependencyGraph.removeEdge(edgeName);
-                        }
-                    }
-                } catch (Exception ignored) {
-                }
-            }
-        }
     }
 
     public Model getGraph(long fromTime, long toTime) throws GraphStoreException {
@@ -172,7 +177,6 @@ public class ModelManager {
             }
         }
     }
-
 
     private Model getDependencyModel(Model model, String cell) {
         Set<Node> dependedNodes = new HashSet<>();
@@ -250,7 +254,7 @@ public class ModelManager {
                 if (nodeFromAllNodes == null) {
                     allNodes.add(node);
                 } else {
-                    nodeFromAllNodes.getServices().addAll(node.getServices());
+                    nodeFromAllNodes.getComponents().addAll(node.getComponents());
                 }
             }
             allEdges.addAll(model.getEdges());

@@ -81,8 +81,8 @@ public class ModelPeriodicProcessor implements Runnable {
             }
             // Check the services within the node is also same.
             if (lastNode != null) {
-                if (lastNode.getServices().size() == currentNode.getServices().size()) {
-                    if (!lastNode.getServices().containsAll(currentNode.getServices())) {
+                if (lastNode.getComponents().size() == currentNode.getComponents().size()) {
+                    if (!lastNode.getComponents().containsAll(currentNode.getComponents())) {
                         isSameModel = false;
                         break;
                     }

@@ -21,7 +21,6 @@ import org.wso2.siddhi.core.event.ComplexEventChunk;
 import org.wso2.siddhi.core.event.stream.StreamEvent;
 
 import java.io.Serializable;
-import java.util.TreeSet;
 
 /**
  * This keeps the information of a session key. i.e. current session and the previous session
