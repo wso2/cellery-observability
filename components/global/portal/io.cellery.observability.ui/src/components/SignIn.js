@@ -17,25 +17,13 @@
  */
 
 import AuthUtils from "../utils/api/authUtils";
-import Avatar from "@material-ui/core/Avatar";
-import Button from "@material-ui/core/Button";
-import Checkbox from "@material-ui/core/Checkbox";
-import CssBaseline from "@material-ui/core/CssBaseline";
-import FormControl from "@material-ui/core/FormControl";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import Input from "@material-ui/core/Input";
-import InputLabel from "@material-ui/core/InputLabel";
-import LockIcon from "@material-ui/icons/LockOutlined";
-import Paper from "@material-ui/core/Paper";
+import CircularProgress from "@material-ui/core/CircularProgress/CircularProgress";
+import HttpUtils from "../utils/api/httpUtils";
 import React from "react";
-import Typography from "@material-ui/core/Typography";
+import jwtDecode from "jwt-decode";
 import withStyles from "@material-ui/core/styles/withStyles";
 import withGlobalState, {StateHolder} from "./common/state";
 import * as PropTypes from "prop-types";
-import axios from "axios";
-import CircularProgress from "@material-ui/core/CircularProgress/CircularProgress";
-import jwt_decode from "jwt-decode";
-
 
 const styles = (theme) => ({
     layout: {
@@ -80,7 +68,8 @@ const styles = (theme) => ({
     }
 });
 
-const idpAddress = "192.168.56.1:9443";
+const idpAddress = "gateway.cellery-system:9443";
+
 class SignIn extends React.Component {
 
     handleLogin = () => {
@@ -120,48 +109,52 @@ class SignIn extends React.Component {
                 && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
                 localStorage.setItem("isAuthenticated", "true");
                 window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
-                    + "&client_id=_XvNfXI_6WE715TTeyzzBzJmdWga&"
+                    + "&client_id=IwjnlXzbrVpe0Ft0HHXiRImnS98a&"
                     + "redirect_uri=http://localhost:3000&nonce=abc&scope=openid";
             } else if (localStorage.getItem("isAuthenticated") === "true" && !searchParams.has("code")) {
                 window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
-                    + "&client_id=_XvNfXI_6WE715TTeyzzBzJmdWga&"
+                    + "&client_id=IwjnlXzbrVpe0Ft0HHXiRImnS98a&"
                     + "redirect_uri=http://localhost:3000&nonce=abc&scope=openid";
             } else if (searchParams.has("code") && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
-                alert("hit here");
                 const oneTimeToken = searchParams.get("code");
-                const data = {
-                    grant_type: "authorization_code",
-                    code: oneTimeToken,
-                    redirect_uri: "http://localhost:3000"
-
-                };
 
                 /*
                  * Const requestData = Object.keys(data).map((key) => `${encodeURIComponent(key)}=
                  * ${encodeURIComponent(data[key])}`).join("&");
                  */
-                alert(oneTimeToken);
-                axios.post(`https://${idpAddress}/oauth2/token?grant_type=authorization_code&code=${
-                    oneTimeToken}&redirect_uri=http://localhost:3000`, null, {
-                    headers: {
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        Authorization:
-                            "Basic X1h2TmZYSV82V0U3MTVUVGV5enpCekptZFdnYTpFeFRFNmYwSEN5bEZtRnkxZ3hnV0s1SkZzM0Vh"
-                    }
-                }).then((response) => {
-                    localStorage.setItem("idToken", response.data.id_token);
-                    const decoded = jwt_decode(response.data.id_token);
+                HttpUtils.callObservabilityAPI(
+                    {
+                        url: `/user-auth/requestToken/${oneTimeToken}`,
+                        method: "GET"
+                    },
+                    globalState).then((resp) => {
+                    localStorage.setItem("idToken", resp.data);
+                    const decoded = jwtDecode(resp.data);
                     const user1 = {
                         username: decoded.sub
                     };
                     AuthUtils.signIn(user1.username, globalState);
-                }).catch((err) => {
-                    alert(err);
                 });
+
+
+                /*
+                 * axios.get(`http://0.0.0.0:9090/user-auth/requestToken/${oneTimeToken}`).then((response) => {
+                 *     localStorage.setItem("idToken", response.data);
+                 *     alert("rsponse -" + response.data);
+                 *     const decoded = jwt_decode(response.data);
+                 *     const user1 = {
+                 *         username: decoded.sub
+                 *     };
+                 *     AuthUtils.signIn(user1.username, globalState);
+                 * }).catch((err) => {
+                 *     alert(err);
+                 * });
+                 */
             }
         } else if (localStorage.getItem("isAuthenticated") === "loggedOut") {
             localStorage.removeItem(StateHolder.USER);
-            window.location.href = `https://${idpAddress}/oidc/logout?id_token_hint=${localStorage.getItem("idToken")}&post_logout_redirect_uri=http://localhost:3000`;
+            window.location.href = `https://${idpAddress}/oidc/logout?id_token_hint=
+            ${localStorage.getItem("idToken")}&post_logout_redirect_uri=http://localhost:3000`;
         }
     }
 

@@ -17,66 +17,90 @@
  */
 package io.cellery.observability.api;
 
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.JsonNode;
-import com.mashape.unirest.http.Unirest;
-import io.cellery.observability.api.exception.APIInvocationException;
-import org.wso2.msf4j.MicroservicesRunner;
+import org.apache.log4j.Logger;
+import org.apache.oltu.oauth2.client.URLConnectionClient;
+import org.apache.oltu.oauth2.client.request.OAuthClientRequest;
+import org.apache.oltu.oauth2.client.response.OAuthAccessTokenResponse;
+import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
+import org.apache.oltu.oauth2.common.message.types.GrantType;
+import org.apache.oltu.oauth2.client.OAuthClient;
+import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
+import org.json.JSONObject;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+
 
 /**
  * MSF4J service for Authentication services.
  */
-@Path("/api/user-authentication")
+@Path("/user-auth")
 public class UserAuthenticationAPI {
 
+    private static final Logger log = Logger.getLogger(AggregatedRequestsAPI.class);
+
     @GET
-    @Path("/auth/{username}")
+    @Path("/requestToken/{authCode}")
     @Produces("application/json")
-    public Response getComponentDependencyView(@PathParam("username") String username)
-            throws APIInvocationException {
+    public Response getTokens(@PathParam("authCode") String authCode) {
         try {
-            HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.github.com/users/" + username)
-                    .header("accept", "application/json")
-                    .asJson();
-            return Response.ok().entity(jsonResponse.getBody().getObject()).build();
-        } catch (Throwable e) {
-            throw new APIInvocationException("API Invocation error occurred " +
-                    "while fetching the dependency model for ", e);
-        }
-    }
+           cancelCheck();
+            OAuthClientRequest request = OAuthClientRequest
+                    .tokenLocation("https://gateway.cellery-system:9443/oauth2/token")
+                    .setGrantType(GrantType.AUTHORIZATION_CODE)
+                    .setClientId("IwjnlXzbrVpe0Ft0HHXiRImnS98a")
+                    .setClientSecret("2xD9JNOSpI23wxS3ZGsTyOe7OVsa")
+                    .setRedirectURI("http://localhost:3000")
+                    .setCode(authCode).buildBodyMessage();
 
-    @GET
-    @Path("/auth/requestToken/{authCode}")
-    @Produces("application/json")
-    public Response getAuthTokens(@PathParam("authCode") String authCode)
-            throws APIInvocationException {
+            OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
+
+            OAuthAccessTokenResponse oAuthResponse = oAuthClient.accessToken(request);
+            JSONObject obj = new JSONObject(oAuthResponse.getBody());
+            System.out.println("Access Token: " + obj.get("id_token") + ", Expires in: " + oAuthResponse
+                    .getExpiresIn());
+
+            Response.ResponseBuilder builder = Response.ok().entity(obj.get("id_token"));
+            builder.header("Access-Control-Allow-Origin", "*");
+
+            return builder.header("Set-Cookie", "test=test;").build();
+
+        } catch (OAuthProblemException | OAuthSystemException e) {
+            log.error("Failed to fetch token from IDP", e);
+        }
+        return null;
+    }
+//
+//    public static void main(String[] args) {
+//        new MicroservicesRunner()
+//                .deploy(new UserAuthenticationAPI())
+//                .start();
+//    }
+
+    private static void cancelCheck() {
         try {
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, new TrustManager[]{new TrustAllX509TrustManager()}, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+                public boolean verify(String string, SSLSession ssls) {
+                    return true;
+                }
+            });
 
-            return Response.ok().entity(authCode + 1).build();
-        } catch (Throwable e) {
-            throw new APIInvocationException("API Invocation error occurred" +
-                    " while fetching the dependency model for ", e);
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+            log.error("Error", e);
         }
-    }
-
-    @GET
-    @Path("/hello")
-    public String get() {
-        // TODO: Implementation for HTTP GET request
-
-        return "Hello from WSO2 MSF4J";
-    }
-
-    public static void main(String[] args) {
-        new MicroservicesRunner()
-                .deploy(new UserAuthenticationAPI())
-                .start();
     }
 
 }
