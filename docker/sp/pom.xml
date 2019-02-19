@@ -208,7 +208,7 @@
                 </executions>
             </plugin>
 
-            <!--Create OSGI bundles from Non Osgi jars-->
+            <!-- Generate OSGI bundles from Non-OSGi jars and save in OSGi Jars directory -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -246,22 +246,46 @@
                 </dependencies>
             </plugin>
 
-            <!--Build Docker image-->
+            <!-- Build Docker Image -->
             <plugin>
                 <groupId>com.spotify</groupId>
                 <artifactId>dockerfile-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>default</id>
+                        <id>docker-build</id>
+                        <phase>package</phase>
                         <goals>
                             <goal>build</goal>
                         </goals>
                         <configuration>
                             <repository>${docker.repo.name}/sp-worker</repository>
+                            <tag>${docker.image.tag}</tag>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <!-- Push Docker Image -->
+                <plugin>
+                    <groupId>com.spotify</groupId>
+                    <artifactId>dockerfile-maven-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>docker-push</id>
+                            <goals>
+                                <goal>push</goal>
+                            </goals>
+                            <configuration>
+                                <repository>${docker.repo.name}/sp-worker</repository>
+                                <tag>${docker.image.tag}</tag>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 </project>

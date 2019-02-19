@@ -41,6 +41,22 @@
                 <version>${maven.exec.plugin.version}</version>
                 <executions>
                     <execution>
+                        <id>npm version</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <executable>${npm.executable}</executable>
+                            <arguments>
+                                <argument>version</argument>
+                                <argument>${project.version}</argument>
+                                <argument>--allow-same-version</argument>
+                                <argument>--no-git-tag-version</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>npm install rimraf</id> <!-- To ensure that clean doesn't fail on newly cloned projects -->
                         <goals>
                             <goal>exec</goal>
