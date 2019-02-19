@@ -311,10 +311,10 @@ class Overview extends React.Component {
             this.props.globalState
         ).then((response) => {
             const cell = this.state.data.nodes.find((element) => element.id === nodeId);
-            const componentHealth = this.getComponentHealth(cell.services, response);
+            const componentHealth = this.getComponentHealth(cell.components, response);
             const componentHealthCount = this.getHealthCount(componentHealth);
             const statusCodeContent = this.getStatusCodeContent(nodeId, this.defaultState.request.cellStats);
-            const componentInfo = this.loadComponentsInfo(cell.services, componentHealth);
+            const componentInfo = this.loadComponentsInfo(cell.components, componentHealth);
             this.setState((prevState) => ({
                 summary: {
                     ...prevState.summary,
@@ -354,7 +354,7 @@ class Overview extends React.Component {
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 NotificationUtils.showNotification(
-                    `Failed to load ${nodeId} Cell Dependencies`,
+                    `Failed to load ${nodeId} request statistics`,
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );

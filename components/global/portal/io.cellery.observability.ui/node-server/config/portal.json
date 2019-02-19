@@ -1,5 +1,5 @@
 {
-    "observabilityAPIURL": "http://wso2sp-observability-api/api",
+    "observabilityAPIURL": "http://wso2sp-observability-api:9123/api",
     "percentageRangeMinValue": {
         "errorThreshold": 0.5,
         "warningThreshold": 0.7

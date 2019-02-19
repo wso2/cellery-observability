@@ -139,9 +139,6 @@ public class ModelManager {
     }
 
     public Model getGraph(long fromTime, long toTime) throws GraphStoreException {
-        if (!ServiceHolder.getPeriodicProcessor().isStarted()) {
-            ServiceHolder.getPeriodicProcessor().run();
-        }
         if (fromTime == 0 && toTime == 0) {
             return new Model(this.dependencyGraph.nodes(), Utils.getEdges(this.dependencyGraph.edges()));
         } else {

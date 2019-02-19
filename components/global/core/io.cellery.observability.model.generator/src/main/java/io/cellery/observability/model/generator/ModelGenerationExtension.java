@@ -37,10 +37,10 @@ import org.wso2.siddhi.query.api.definition.AbstractDefinition;
 import org.wso2.siddhi.query.api.definition.Attribute;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This is the Siddhi extension which generates the dependency graph for the spans created.
@@ -66,7 +66,7 @@ public class ModelGenerationExtension extends StreamProcessor {
     private ExpressionExecutor spanIdExecutor;
     private ExpressionExecutor parentIdExecutor;
     private ExpressionExecutor spanKindExecutor;
-    private Map<String, Node> cellCache = new ConcurrentHashMap<>();
+    private ExpressionExecutor startTimeExecutor;
 
     @Override
     protected void process(ComplexEventChunk<StreamEvent> complexEventChunk, Processor processor,
@@ -84,10 +84,16 @@ public class ModelGenerationExtension extends StreamProcessor {
                     String operationName = (String) operationNameExecutor.execute(streamEvent);
                     String spanId = (String) spanIdExecutor.execute(streamEvent);
                     String parentId = (String) parentIdExecutor.execute(streamEvent);
+                    String kind = (String) spanKindExecutor.execute(streamEvent);
+                    Long startTime = (Long) startTimeExecutor.execute(streamEvent);
                     if (traceId == null) {
                         traceId = (String) traceIdExecutor.execute(streamEvent);
                     }
-                    SpanInfo spanInfo = new SpanInfo(cellName, serviceName, operationName, spanId, parentId);
+                    if (kind == null || kind.isEmpty()) {
+                        kind = SpanInfo.Kind.NONE.name();
+                    }
+                    SpanInfo spanInfo = new SpanInfo(cellName, serviceName, operationName, spanId, parentId,
+                            SpanInfo.Kind.valueOf(kind), startTime);
                     List<SpanInfo> childNodes = spanCache.computeIfAbsent(parentId, k -> new ArrayList<>());
                     childNodes.add(spanInfo);
                     spanCache.putIfAbsent(parentId, childNodes);
@@ -99,6 +105,7 @@ public class ModelGenerationExtension extends StreamProcessor {
                     List<SpanInfo> rootCellSpans = findRootCellSpan(rootSpan, spanCache);
                     traceWalk(rootCellSpans, spanCache);
                 }
+                ServiceHolder.getPeriodicProcessor().run();
             } else {
                 processor.process(complexEventChunk);
             }
@@ -112,7 +119,13 @@ public class ModelGenerationExtension extends StreamProcessor {
         if (rootSpan.getCellName() == null || rootSpan.getCellName().isEmpty()) {
             List<SpanInfo> children = spanInfoMap.get(rootSpan.getSpanId());
             if (children != null) {
-                for (SpanInfo child : children) {
+                Collections.sort(children);
+                for (int i = 0; i < children.size(); i++) {
+                    SpanInfo child = children.get(i);
+                    if (child.getKind().equals(SpanInfo.Kind.CLIENT) && i + 1 < children.size()
+                            && children.get(i + 1).getKind().equals(SpanInfo.Kind.SERVER)) {
+                        continue;
+                    }
                     if (child.getCellName() != null && !child.getCellName().isEmpty()) {
                         parents.add(child);
                     } else {
@@ -143,15 +156,24 @@ public class ModelGenerationExtension extends StreamProcessor {
         List<SpanInfo> childSpanInfoList = spanInfoMap.get(parentSpanInfo.getSpanId());
         List<SpanInfo> linkedChildren = new ArrayList<>();
         if (childSpanInfoList != null) {
-            for (SpanInfo childSpanInfo : childSpanInfoList) {
+            Collections.sort(childSpanInfoList);
+            for (int i = 0; i < childSpanInfoList.size(); i++) {
+                SpanInfo childSpanInfo = childSpanInfoList.get(i);
+                if (childSpanInfo.getKind().equals(SpanInfo.Kind.CLIENT) && i + 1 < childSpanInfoList.size()
+                        && childSpanInfoList.get(i + 1).getKind().equals(SpanInfo.Kind.SERVER)) {
+                    continue;
+                }
                 if (childSpanInfo.getCellName() != null && !childSpanInfo.getCellName().isEmpty() &&
                         !childSpanInfo.getOperationName().equalsIgnoreCase(Constants.IGNORE_OPERATION_NAME)) {
                     Node childNode = ServiceHolder.getModelManager().getOrGenerateNode(childSpanInfo.getCellName());
-                    childNode.addComponent(childSpanInfo.getComponentName());
-                    ServiceHolder.getModelManager().addNode(childNode);
-                    ServiceHolder.getModelManager().addLink(cellParentNode, childNode, Utils.generateServiceName(
-                            parentSpanInfo.getComponentName(), childSpanInfo.getComponentName()));
-                    linkedChildren.add(childSpanInfo);
+                    if (!childNode.equals(cellParentNode) || !parentSpanInfo.getComponentName().
+                            equalsIgnoreCase(childSpanInfo.getComponentName())) {
+                        childNode.addComponent(childSpanInfo.getComponentName());
+                        ServiceHolder.getModelManager().addNode(childNode);
+                        ServiceHolder.getModelManager().addLink(cellParentNode, childNode, Utils.generateServiceName(
+                                parentSpanInfo.getComponentName(), childSpanInfo.getComponentName()));
+                        linkedChildren.add(childSpanInfo);
+                    }
                 } else {
                     goDepth(cellParentNode, childSpanInfo, spanInfoMap);
                 }
@@ -164,7 +186,7 @@ public class ModelGenerationExtension extends StreamProcessor {
     @Override
     protected List<Attribute> init(AbstractDefinition abstractDefinition, ExpressionExecutor[] expressionExecutors,
                                    ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
-        if (expressionExecutors.length != 7) {
+        if (expressionExecutors.length != 8) {
             throw new SiddhiAppCreationException("Minimum number of attributes is six");
         } else {
             if (expressionExecutors[0].getReturnType() == Attribute.Type.STRING) {
@@ -215,7 +237,15 @@ public class ModelGenerationExtension extends StreamProcessor {
             } else {
                 throw new SiddhiAppCreationException("Expected a field with String return type for the " +
                         "traceId field, but found a field with return type - "
-                        + expressionExecutors[5].getReturnType());
+                        + expressionExecutors[6].getReturnType());
+            }
+
+            if (expressionExecutors[7].getReturnType() == Attribute.Type.LONG) {
+                startTimeExecutor = expressionExecutors[7];
+            } else {
+                throw new SiddhiAppCreationException("Expected a field with long return type for the " +
+                        "startTime field, but found a field with return type - "
+                        + expressionExecutors[7].getReturnType());
             }
         }
         return new ArrayList<>();

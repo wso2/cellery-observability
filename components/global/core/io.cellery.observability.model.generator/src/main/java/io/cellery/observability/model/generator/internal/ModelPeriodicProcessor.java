@@ -25,7 +25,6 @@ import io.cellery.observability.model.generator.model.Model;
 import org.apache.log4j.Logger;
 
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This is the Scheduled executor which periodically runs
@@ -33,12 +32,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ModelPeriodicProcessor implements Runnable {
     private static final Logger log = Logger.getLogger(ModelPeriodicProcessor.class);
     private Model lastModel;
-    private AtomicBoolean started = new AtomicBoolean(false);
 
     @Override
     public synchronized void run() {
         try {
-            started.set(true);
             MutableNetwork<Node, String> currentModel = ServiceHolder.getModelManager().getDependencyGraph();
             if (lastModel == null) {
                 this.lastModel = ServiceHolder.getModelStoreManager().loadLastModel();
@@ -62,10 +59,6 @@ public class ModelPeriodicProcessor implements Runnable {
         } catch (GraphStoreException e) {
             log.error("Error occurred while handling the dependency graph persistence. ", e);
         }
-    }
-
-    public boolean isStarted() {
-        return started.get();
     }
 
     private boolean isSameNodes(Set<Node> currentNodes, Set<Node> lastNodes) {

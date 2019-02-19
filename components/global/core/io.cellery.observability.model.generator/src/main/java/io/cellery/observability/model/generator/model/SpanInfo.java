@@ -20,19 +20,24 @@ package io.cellery.observability.model.generator.model;
 /**
  * This is the reference of the span instance in the request tree
  */
-public class SpanInfo {
+public class SpanInfo implements Comparable {
     private String cellName;
     private String componentName;
     private String operationName;
+    private Kind kind;
     private String spanId;
     private String parentId;
+    private long startTime;
 
-    public SpanInfo(String cellName, String componentName, String operationName, String spanId, String parentId) {
+    public SpanInfo(String cellName, String componentName, String operationName, String spanId, String parentId,
+                    Kind kind, long startTime) {
         this.cellName = cellName;
         this.componentName = componentName;
         this.operationName = operationName;
         this.spanId = spanId;
         this.parentId = parentId;
+        this.kind = kind;
+        this.startTime = startTime;
     }
 
     public String getCellName() {
@@ -53,5 +58,25 @@ public class SpanInfo {
 
     public String getParentId() {
         return parentId;
+    }
+
+    public Kind getKind() {
+        return kind;
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        return Long.compare(this.startTime, ((SpanInfo) (o)).startTime);
+    }
+
+    /**
+     * This enum represents the Kind of Spans
+     */
+    public enum Kind {
+        SERVER, CLIENT, NONE
     }
 }
