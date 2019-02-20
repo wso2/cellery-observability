@@ -27,9 +27,6 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.datasource.core.api.DataSourceService;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 /**
  * This class acts as a ServiceComponent which specifies the services that is required by the component.
  */
@@ -46,9 +43,8 @@ public class ModelServiceComponent {
             ServiceHolder.setModelStoreManager(new ModelStoreManager());
             ServiceHolder.setModelManager(new ModelManager());
             bundleContext.registerService(ModelManager.class.getName(), ServiceHolder.getModelManager(), null);
-            ServiceHolder.setPeriodicProcessor(new ModelPeriodicProcessor());
-            Executors.newScheduledThreadPool(1).scheduleAtFixedRate(ServiceHolder.getPeriodicProcessor(),
-                    1, 1, TimeUnit.MINUTES);
+//            Executors.newScheduledThreadPool(1).scheduleAtFixedRate(ServiceHolder.getPeriodicProcessor(),
+//                    1, 1, TimeUnit.MINUTES);
         } catch (Throwable throwable) {
             log.error("Error occured while activating the model generation bundle", throwable);
             throw throwable;

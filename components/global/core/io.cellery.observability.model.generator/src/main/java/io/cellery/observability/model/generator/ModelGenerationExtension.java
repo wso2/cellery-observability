@@ -48,12 +48,13 @@ import java.util.Map;
 @Extension(
         name = "modelGenerator",
         namespace = "observe",
-        description = "This generates the dependency model of the spans",
-        examples = @Example(description = "TBD"
-                , syntax = "from inputStream#tracing:dependencyTree(componentName, spanId, parentId, serviceName," +
-                " tags) \" +\n" +
-                "                \"select * \n" +
-                "                \"insert into outputStream;")
+        description = "This generates the dependency model based on request spans. This depends on the traceGroup " +
+                "window processor",
+        examples = @Example(description = "This travese through the grouped spans and generates the dependency model"
+                , syntax = "observe:modelGenerator(cell, serviceName, operationName, spanId, parentId, kind, traceId, "
+                + "startTime)\n"
+                + "select * \n"
+                + "insert into outputStream;")
 )
 public class ModelGenerationExtension extends StreamProcessor {
 
@@ -77,6 +78,7 @@ public class ModelGenerationExtension extends StreamProcessor {
                 Map<String, List<SpanInfo>> spanCache = new HashMap<>();
                 String traceId = null;
                 SpanInfo rootSpan = null;
+                int totalSpans = 0;
                 while (complexEventChunk.hasNext()) {
                     StreamEvent streamEvent = complexEventChunk.next();
                     String cellName = (String) cellNameExecutor.execute(streamEvent);
@@ -100,12 +102,16 @@ public class ModelGenerationExtension extends StreamProcessor {
                     if (spanId.equalsIgnoreCase(traceId)) {
                         rootSpan = spanInfo;
                     }
+                    totalSpans++;
                 }
                 if (rootSpan != null) {
                     List<SpanInfo> rootCellSpans = findRootCellSpan(rootSpan, spanCache);
                     traceWalk(rootCellSpans, spanCache);
+                    ServiceHolder.getModelStoreManager().storeCurrentModel();
+                } else {
+                    log.warn("Root span was not detected for the trace: " + traceId +
+                            ", total parents spans cache: " + spanCache.size() + " , totalSpans: " + totalSpans);
                 }
-                ServiceHolder.getPeriodicProcessor().run();
             } else {
                 processor.process(complexEventChunk);
             }

@@ -23,23 +23,22 @@ import org.wso2.siddhi.core.event.stream.StreamEvent;
 import java.io.Serializable;
 
 /**
- * This keeps the information of a session key. i.e. current session and the previous session
+ * This keeps the information of a trace key.
  */
-public class SessionContainer implements Serializable, Comparable {
-
+public class TraceGroup implements Serializable, Comparable {
     private String key;
     private long startTimestamp;
     private long endTimestamp;
-    private ComplexEventChunk<StreamEvent> currentSession;
+    private ComplexEventChunk<StreamEvent> currentTraceGroup;
 
-    public SessionContainer(String key, long startTimestamp) {
-        currentSession = new ComplexEventChunk<>(false);
+    public TraceGroup(String key, long startTimestamp) {
+        currentTraceGroup = new ComplexEventChunk<>(false);
         this.startTimestamp = startTimestamp;
         this.key = key;
     }
 
-    public SessionContainer() {
-        currentSession = new ComplexEventChunk<>(false);
+    public TraceGroup() {
+        currentTraceGroup = new ComplexEventChunk<>(false);
     }
 
     public String getKey() {
@@ -63,25 +62,25 @@ public class SessionContainer implements Serializable, Comparable {
     }
 
     public void add(StreamEvent event) {
-        this.currentSession.add(event);
+        this.currentTraceGroup.add(event);
     }
 
     public boolean isEmpty() {
-        return this.currentSession.getFirst() == null;
+        return this.currentTraceGroup.getFirst() == null;
     }
 
-    public ComplexEventChunk<StreamEvent> getCurrentSession() {
-        return currentSession;
+    public ComplexEventChunk<StreamEvent> getCurrentTraceGroup() {
+        return currentTraceGroup;
     }
 
     public void clear() {
-        this.currentSession.clear();
+        this.currentTraceGroup.clear();
     }
 
     @Override
     public int compareTo(Object o) {
-        if (o instanceof SessionContainer) {
-            return new Long(endTimestamp - ((SessionContainer) o).endTimestamp).intValue();
+        if (o instanceof TraceGroup) {
+            return new Long(endTimestamp - ((TraceGroup) o).endTimestamp).intValue();
         } else {
             return 1;
         }
