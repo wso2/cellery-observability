@@ -191,11 +191,12 @@ public class ModelManager {
     public Model getDependencyModel(long fromTime, long toTime, String cellName, String serviceName)
             throws GraphStoreException {
         Model graph = getGraph(fromTime, toTime);
+        List<String> traversedServices = new ArrayList<>();
         Node cell = Utils.getNode(graph.getNodes(), new Node(cellName));
         Model serviceModel = null;
         if (cell != null) {
             String qualifiedServiceName = Utils.getQualifiedServiceName(cellName, serviceName);
-            serviceModel = getDependencyModel(cell, serviceName);
+            serviceModel = getDependencyModel(cell, serviceName, traversedServices);
             for (Edge edge : graph.getEdges()) {
                 String edgeServiceName = Utils.getEdgeServiceName(edge.getEdgeString());
                 String[] services = Utils.getServices(edgeServiceName);
@@ -203,7 +204,7 @@ public class ModelManager {
                     Node dependedCell = Utils.getNode(graph.getNodes(),
                             new Node(edge.getTarget()));
                     if (dependedCell != null) {
-                        Model dependentCellModel = getDependencyModel(dependedCell, services[1]);
+                        Model dependentCellModel = getDependencyModel(dependedCell, services[1], traversedServices);
                         serviceModel.mergeModel(dependentCellModel,
                                 new Edge(Utils.generateEdgeName(qualifiedServiceName,
                                         Utils.getQualifiedServiceName(dependedCell.getId(), services[1]), "")));
@@ -217,24 +218,27 @@ public class ModelManager {
         return serviceModel;
     }
 
-    private Model getDependencyModel(Node cell, String serviceName) {
+    private Model getDependencyModel(Node cell, String serviceName, List<String> traversedServices) {
         Set<Node> nodes = new HashSet<>();
         Set<Edge> edges = new HashSet<>();
         String qualifiedServiceName = Utils.getQualifiedServiceName(cell.getId(), serviceName);
-        nodes.add(new Node(qualifiedServiceName));
-        for (String edge : cell.getEdges()) {
-            String[] sourceTarget = edge.split(Constants.LINK_SEPARATOR);
-            if (sourceTarget[0].trim().equalsIgnoreCase(serviceName) &&
-                    !sourceTarget[0].trim().equalsIgnoreCase(sourceTarget[1])) {
-                String qualifiedTargetServiceName = Utils.getQualifiedServiceName(cell.getId(),
-                        sourceTarget[1].trim());
-                nodes.add(new Node(qualifiedTargetServiceName));
-                edges.add(new Edge(Utils.generateEdgeName(qualifiedServiceName, qualifiedTargetServiceName,
-                        "")));
-                Model nextLevelModel = getDependencyModel(cell, sourceTarget[1]);
-                if (nextLevelModel.getNodes().size() > 1) {
-                    nodes.addAll(nextLevelModel.getNodes());
-                    edges.addAll(nextLevelModel.getEdges());
+        if (!traversedServices.contains(qualifiedServiceName)) {
+            nodes.add(new Node(qualifiedServiceName));
+            traversedServices.add(qualifiedServiceName);
+            for (String edge : cell.getEdges()) {
+                String[] sourceTarget = edge.split(Constants.LINK_SEPARATOR);
+                if (sourceTarget[0].trim().equalsIgnoreCase(serviceName) &&
+                        !sourceTarget[0].trim().equalsIgnoreCase(sourceTarget[1])) {
+                    String qualifiedTargetServiceName = Utils.getQualifiedServiceName(cell.getId(),
+                            sourceTarget[1].trim());
+                    nodes.add(new Node(qualifiedTargetServiceName));
+                    edges.add(new Edge(Utils.generateEdgeName(qualifiedServiceName, qualifiedTargetServiceName,
+                            "")));
+                    Model nextLevelModel = getDependencyModel(cell, sourceTarget[1], traversedServices);
+                    if (nextLevelModel.getNodes().size() > 1) {
+                        nodes.addAll(nextLevelModel.getNodes());
+                        edges.addAll(nextLevelModel.getEdges());
+                    }
                 }
             }
         }
