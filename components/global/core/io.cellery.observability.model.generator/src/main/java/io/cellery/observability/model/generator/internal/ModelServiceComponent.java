@@ -43,8 +43,6 @@ public class ModelServiceComponent {
             ServiceHolder.setModelStoreManager(new ModelStoreManager());
             ServiceHolder.setModelManager(new ModelManager());
             bundleContext.registerService(ModelManager.class.getName(), ServiceHolder.getModelManager(), null);
-//            Executors.newScheduledThreadPool(1).scheduleAtFixedRate(ServiceHolder.getPeriodicProcessor(),
-//                    1, 1, TimeUnit.MINUTES);
         } catch (Throwable throwable) {
             log.error("Error occured while activating the model generation bundle", throwable);
             throw throwable;
