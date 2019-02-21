@@ -196,9 +196,9 @@
                             <outputDirectory>${project.build.directory}/files/non-osgi/</outputDirectory>
                             <excludeArtifactIds>
                                 io.cellery.observability.telemetry.receiver, commons-io, gogoproto-java, grpc,
-                                io.cellery.observability.tracing.receiver, protobuf, io.cellery.observability.observability.api,
-                                io.cellery.observability.observability.model.generator, siddhi-io-http, siddhi-store-rdbms,
-                                io.cellery.observability.observability.k8s.api.server.client, joda-time, zipkin, client-java,
+                                io.cellery.observability.tracing.receiver, protobuf, io.cellery.observability.api,
+                                io.cellery.observability.model.generator, siddhi-io-http, siddhi-store-rdbms,
+                                io.cellery.observability.k8s.api.server.client, joda-time, zipkin, client-java,
                                 client-java-api, guava, commons-codec, commons-compress, commons-lang3,
                                 client-java-proto, bcpkix-jdk15on, bcprov-ext-jdk15on
                             </excludeArtifactIds>
