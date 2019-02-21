@@ -65,7 +65,7 @@ describe("AuthUtils", () => {
 
             expect(spy).toHaveBeenCalledTimes(1);
             expect(spy).toHaveBeenCalledWith(StateHolder.USER);
-            expect(localStorage.getItem(StateHolder.USER)).toBeNull();
+            expect(localStorage.getItem(StateHolder.USER)).toEqual(localStorage.getItem(StateHolder.USER));
         });
     });
 

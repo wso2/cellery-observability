@@ -17,34 +17,35 @@
  */
 package io.cellery.observability.api;
 
+import io.cellery.observability.api.exception.APIInvocationException;
 import org.apache.log4j.Logger;
+import org.apache.oltu.oauth2.client.OAuthClient;
 import org.apache.oltu.oauth2.client.URLConnectionClient;
 import org.apache.oltu.oauth2.client.request.OAuthClientRequest;
 import org.apache.oltu.oauth2.client.response.OAuthAccessTokenResponse;
-import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.types.GrantType;
-import org.apache.oltu.oauth2.client.OAuthClient;
-import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
 import org.json.JSONObject;
 
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.ws.rs.GET;
+import javax.ws.rs.OPTIONS;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
+
 
 
 /**
  * MSF4J service for Authentication services.
  */
-@Path("/user-auth")
+@Path("/api/user-auth")
 public class UserAuthenticationAPI {
 
     private static final Logger log = Logger.getLogger(AggregatedRequestsAPI.class);
@@ -52,40 +53,29 @@ public class UserAuthenticationAPI {
     @GET
     @Path("/requestToken/{authCode}")
     @Produces("application/json")
-    public Response getTokens(@PathParam("authCode") String authCode) {
+    public Response getTokens(@PathParam("authCode") String authCode) throws APIInvocationException {
         try {
            cancelCheck();
             OAuthClientRequest request = OAuthClientRequest
-                    .tokenLocation("https://gateway.cellery-system:9443/oauth2/token")
+                    .tokenLocation("https://gateway.cellery-system:9443/oauth2/token?")
                     .setGrantType(GrantType.AUTHORIZATION_CODE)
                     .setClientId("IwjnlXzbrVpe0Ft0HHXiRImnS98a")
                     .setClientSecret("2xD9JNOSpI23wxS3ZGsTyOe7OVsa")
-                    .setRedirectURI("http://localhost:3000")
+                    .setRedirectURI("http://cellery-dashboard")
                     .setCode(authCode).buildBodyMessage();
 
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
-
             OAuthAccessTokenResponse oAuthResponse = oAuthClient.accessToken(request);
             JSONObject obj = new JSONObject(oAuthResponse.getBody());
-            System.out.println("Access Token: " + obj.get("id_token") + ", Expires in: " + oAuthResponse
-                    .getExpiresIn());
 
-            Response.ResponseBuilder builder = Response.ok().entity(obj.get("id_token"));
-            builder.header("Access-Control-Allow-Origin", "*");
+            return Response.ok().entity(obj.get("id_token")).build();
 
-            return builder.header("Set-Cookie", "test=test;").build();
-
-        } catch (OAuthProblemException | OAuthSystemException e) {
-            log.error("Failed to fetch token from IDP", e);
+        } catch (Throwable throwable) {
+            throw new APIInvocationException("Unexpected error occurred while fetching the aggregated HTTP request " +
+                    "data for cells", throwable);
         }
-        return null;
+
     }
-//
-//    public static void main(String[] args) {
-//        new MicroservicesRunner()
-//                .deploy(new UserAuthenticationAPI())
-//                .start();
-//    }
 
     private static void cancelCheck() {
         try {
@@ -101,6 +91,17 @@ public class UserAuthenticationAPI {
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
             log.error("Error", e);
         }
+    }
+
+
+    @OPTIONS
+    @Path("/*")
+    public Response getOptions() {
+        return Response.ok().build();
+    }
+
+    public static void main (String[] args) {
+
     }
 
 }

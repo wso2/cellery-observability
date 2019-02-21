@@ -68,7 +68,7 @@ const styles = (theme) => ({
     }
 });
 
-const idpAddress = "gateway.cellery-system:9443";
+const idpAddress = "wso2-apim";
 
 class SignIn extends React.Component {
 
@@ -110,11 +110,11 @@ class SignIn extends React.Component {
                 localStorage.setItem("isAuthenticated", "true");
                 window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
                     + "&client_id=IwjnlXzbrVpe0Ft0HHXiRImnS98a&"
-                    + "redirect_uri=http://localhost:3000&nonce=abc&scope=openid";
+                    + "redirect_uri=http://cellery-dashboard&nonce=abc&scope=openid";
             } else if (localStorage.getItem("isAuthenticated") === "true" && !searchParams.has("code")) {
                 window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
                     + "&client_id=IwjnlXzbrVpe0Ft0HHXiRImnS98a&"
-                    + "redirect_uri=http://localhost:3000&nonce=abc&scope=openid";
+                    + "redirect_uri=http://cellery-dashboard&nonce=abc&scope=openid";
             } else if (searchParams.has("code") && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
                 const oneTimeToken = searchParams.get("code");
 
@@ -128,12 +128,15 @@ class SignIn extends React.Component {
                         method: "GET"
                     },
                     globalState).then((resp) => {
-                    localStorage.setItem("idToken", resp.data);
-                    const decoded = jwtDecode(resp.data);
+                    localStorage.setItem("idToken", resp);
+                    const decoded = jwtDecode(resp);
+                    localStorage.setItem("decoded", decoded.toString());
                     const user1 = {
                         username: decoded.sub
                     };
                     AuthUtils.signIn(user1.username, globalState);
+                }).catch((err) => {
+                    localStorage.setItem("error", err.toString());
                 });
 
 
@@ -154,7 +157,7 @@ class SignIn extends React.Component {
         } else if (localStorage.getItem("isAuthenticated") === "loggedOut") {
             localStorage.removeItem(StateHolder.USER);
             window.location.href = `https://${idpAddress}/oidc/logout?id_token_hint=
-            ${localStorage.getItem("idToken")}&post_logout_redirect_uri=http://localhost:3000`;
+            ${localStorage.getItem("idToken")}&post_logout_redirect_uri=http://cellery-dashboard`;
         }
     }
 
