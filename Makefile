@@ -38,5 +38,6 @@ docker: build
 
 
 .PHONY: docker-push
-docker-push: docker
-	mvn com.spotify:docker-maven-plugin:push -f docker/pom.xml
+docker-push:
+	docker push ${DOCKER_REPO}/sp-worker:${DOCKER_IMAGE_TAG}
+	docker push ${DOCKER_REPO}/observability-portal:${DOCKER_IMAGE_TAG}
