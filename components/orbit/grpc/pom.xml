@@ -31,7 +31,7 @@
     <artifactId>grpc</artifactId>
     <packaging>bundle</packaging>
     <name>Cellery Observability Components - Orbit - GRPC</name>
-    <version>1.15.0.celleryv1</version>
+    <version>0.1.0-SNAPSHOT</version>
     <description>This bundle represents io.grpc cellery orbit bundle</description>
 
     <dependencies>
@@ -96,7 +96,7 @@
     </build>
 
     <properties>
-        <grpc.cellery.version>1.15.0-celleryv1</grpc.cellery.version>
+        <grpc.cellery.version>0.1.0-SNAPSHOT</grpc.cellery.version>
     </properties>
 
 

@@ -371,9 +371,9 @@
         <bouncy.castle.version>1.59</bouncy.castle.version>
         <opencensus.version>0.16.1</opencensus.version>
 
-        <protobuf.orbit.version>3.6.1.celleryv1</protobuf.orbit.version>
-        <gogoproto.orbit.version>0.1.0-celleryv1</gogoproto.orbit.version>
-        <grpc.orbit.version>1.15.0.celleryv1</grpc.orbit.version>
+        <protobuf.orbit.version>0.1.0-SNAPSHOT</protobuf.orbit.version>
+        <gogoproto.orbit.version>0.1.0-SNAPSHOT</gogoproto.orbit.version>
+        <grpc.orbit.version>0.1.0-SNAPSHOT</grpc.orbit.version>
 
         <spotify.docker.plugin.version>1.4.10</spotify.docker.plugin.version>
 
