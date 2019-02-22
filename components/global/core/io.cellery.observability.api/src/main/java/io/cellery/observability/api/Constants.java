@@ -33,7 +33,8 @@ public class Constants {
     public static final String ALL_ORIGIN = "*";
     public static final String ORIGIN = "Origin";
 
-    public static final String CLIENT_REGISTERATION_ENDPOINT = "https://gateway.cellery-system:9443/client-registration/v0.14/register";
+    public static final String CLIENT_REGISTERATION_ENDPOINT = "https://gateway.cellery-system:9443" +
+            "/client-registration/v0.14/register";
     public static final String CALL_BACK_URL = "callbackUrl";
     public static final String OBSERVABILITY_DASHBOARD_URL = "http://cellery-dashboard";
     public static final String CLIENT_NAME = "clientName";
