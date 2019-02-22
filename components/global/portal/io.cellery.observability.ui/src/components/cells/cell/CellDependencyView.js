@@ -37,9 +37,9 @@ const styles = (theme) => ({
         display: "block"
     },
     dependencies: {
-        marginTop: theme.spacing.unit * 3,
+        marginTop: theme.spacing.unit * 3
     },
-    graphContainer : {
+    graphContainer: {
         display: "flex"
     },
     diagram: {
@@ -135,23 +135,23 @@ class CellDependencyView extends React.Component {
             const color = ColorGenerator.shadeColor(colorGenerator.getColor(nodeId), opacity);
             const outlineColor = ColorGenerator.shadeColor(color, -0.08);
 
-            const cellView = '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">' +
-                '<path fill="'+ color +'"  stroke="'+ ((cell === nodeId) ? "#444" : outlineColor) +'" stroke-opacity="'+(1-opacity)+'" ' +
-                ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>' +
-                '</svg>';
+            const cellView = '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">'
+                + `<path fill="${color}"  stroke="${(cell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
+                + "</svg>";
 
-            return "data:image/svg+xml;charset=utf-8,"+ encodeURIComponent(cellView);
+            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cellView)}`;
         };
 
-        let dataNodes = this.state.data.nodes;
-        let dataEdges = this.state.data.edges;
+        const dataNodes = this.state.data.nodes;
+        const dataEdges = this.state.data.edges;
 
         let view;
         if (dependedNodeCount > 1) {
             view = (
                 <ErrorBoundary title={"Unable to Render"} description={"Unable to Render due to Invalid Data"}>
                     <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges} selectedCell={cell}
-                         onClickNode={this.onClickCell} viewGenerator={viewGenerator} graphType="dependency" />
+                        onClickNode={this.onClickCell} viewGenerator={viewGenerator} graphType="dependency" />
                 </ErrorBoundary>
             );
         } else {

@@ -71,7 +71,7 @@ const styles = (theme) => ({
     diagram: {
         padding: theme.spacing.unit * 3,
         flexGrow: 1
-    },
+    }
 });
 
 class DependencyDiagram extends React.Component {
@@ -171,7 +171,7 @@ class DependencyDiagram extends React.Component {
             const color = ColorGenerator.shadeColor(colorGenerator.getColor(nodeId.split(":")[0]), opacity);
             const outlineColor = ColorGenerator.shadeColor(color, -0.08);
             const component = [];
-            nodes.forEach(function (node) {
+            nodes.forEach((node) => {
                 if (node.id === nodeId) {
                     component.push(node);
                 }
@@ -189,19 +189,19 @@ class DependencyDiagram extends React.Component {
                 const xTranslation = 150;
                 const yTranslation = 120 - iconTranslation - 30;
 
-                nodeView = '<svg xmlns="http://www.w3.org/2000/svg" x="0" y="0" width="100%" height="100%" viewBox="0 0 240 240">' +
-                    `<g><g><g><circle cx="120" cy="120" r="${radius}" fill="${color}" stroke="${outlineColor}" stroke-width="5"/></g></g>` +
-                    `<g transform="translate(${xTranslation},${yTranslation}) scale(0.35, 0.35)">` +
-                    `<path stroke="#fff" strokeWidth="10" fill="${errorColor}" d="M120.5,9.6C59.1,9.6,9,59.8,9,121.3S59.1,233,120.5, 233S232,182.8,232,121.3S181.9,9.6,120.5,9.6z"/>` +
-                    '<path fill="#ffffff" d="M105.4,164.5h29.9v29.9h-29.9V164.5z M105.4, 44.2h29.9v90.1h-29.9V44.2z"/></g></g>' +
-                    '</svg>';
+                nodeView = '<svg xmlns="http://www.w3.org/2000/svg" x="0" y="0" width="100%" height="100%" viewBox="0 0 240 240">'
+                    + `<g><g><g><circle cx="120" cy="120" r="${radius}" fill="${color}" stroke="${outlineColor}" stroke-width="5"/></g></g>`
+                    + `<g transform="translate(${xTranslation},${yTranslation}) scale(0.35, 0.35)">`
+                    + `<path stroke="#fff" strokeWidth="10" fill="${errorColor}" d="M120.5,9.6C59.1,9.6,9,59.8,9,121.3S59.1,233,120.5, 233S232,182.8,232,121.3S181.9,9.6,120.5,9.6z"/>`
+                    + '<path fill="#ffffff" d="M105.4,164.5h29.9v29.9h-29.9V164.5z M105.4, 44.2h29.9v90.1h-29.9V44.2z"/></g></g>'
+                    + "</svg>";
             } else {
-                nodeView = '<svg xmlns="http://www.w3.org/2000/svg" x="0" y="0" width="100%" height="100%" viewBox="0 0 240 240">' +
-                    `<circle cx="120" cy="120" r="${radius}" fill="${color}" stroke="${outlineColor}" stroke-width="5"/>` +
-                    '</svg>';
+                nodeView = '<svg xmlns="http://www.w3.org/2000/svg" x="0" y="0" width="100%" height="100%" viewBox="0 0 240 240">'
+                    + `<circle cx="120" cy="120" r="${radius}" fill="${color}" stroke="${outlineColor}" stroke-width="5"/>`
+                    + "</svg>";
             }
 
-            return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(nodeView);
+            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(nodeView)}`;
         };
 
         return (
@@ -223,28 +223,28 @@ class DependencyDiagram extends React.Component {
                             Legend
                         </Button>
                         <Popper id={id} open={legendOpen} anchorEl={legend}
-                                placement="top-end"
-                                disablePortal={false}
-                                transition>
+                            placement="top-end"
+                            disablePortal={false}
+                            transition>
                             {({TransitionProps}) => (
                                 <Fade {...TransitionProps} timeout={350}>
                                     <Paper>
                                         <div className={classes.legendContent}>
                                             <div>
                                                 <FiberManualRecord className={classes.legendFirstEl}
-                                                                   color="action"/>
+                                                    color="action"/>
                                                 <Typography color="inherit"
-                                                            className={classes.legendText}> Component/System
+                                                    className={classes.legendText}> Component/System
                                                     component </Typography>
                                                 <Typography color="textSecondary"
-                                                            className={classes.legendHelpText}> (Radius
+                                                    className={classes.legendHelpText}> (Radius
                                                     proportional to the request duration)</Typography>
                                             </div>
                                             <div>
                                                 <ArrowRightAltSharp className={classes.legendFirstEl}
-                                                                    color="action"/>
+                                                    color="action"/>
                                                 <Typography color="inherit"
-                                                            className={classes.legendText}> Dependency
+                                                    className={classes.legendText}> Dependency
                                                 </Typography>
                                                 <Error className={classes.legendIcon} color="error"/>
                                                 <Typography color="inherit" className={classes.legendText}>

@@ -40,9 +40,9 @@ const styles = (theme) => ({
         height: "100%"
     },
     dependencies: {
-        marginTop: theme.spacing.unit * 3,
+        marginTop: theme.spacing.unit * 3
     },
-    graphContainer : {
+    graphContainer: {
         display: "flex"
     },
     diagram: {
@@ -124,10 +124,10 @@ class ComponentDependencyView extends React.Component {
             });
 
             data.edges.forEach((edge) => {
-                if ((cell === edge.source.split(":")[0] && cell === edge.target.split(":")[0]) ||
-                    (cell === edge.source.split(":")[0] && edge.target.split(":")[1] === "gateway")) {
+                if ((cell === edge.source.split(":")[0] && cell === edge.target.split(":")[0])
+                    || (cell === edge.source.split(":")[0] && edge.target.split(":")[1] === "gateway")) {
                     edges.push({
-                        ...edge,
+                        ...edge
                     });
                 }
             });
@@ -160,7 +160,7 @@ class ComponentDependencyView extends React.Component {
     render = () => {
         const {classes, cell, component, colorGenerator} = this.props;
         const dependedNodeCount = this.state.data.nodes.length;
-        const selectedNode = cell + ":" + component;
+        const selectedNode = `${cell}:${component}`;
 
 
         const viewGenerator = (group, nodeId, opacity) => {
@@ -170,29 +170,26 @@ class ComponentDependencyView extends React.Component {
             let cellView;
 
             if (group === ComponentDependencyGraph.NodeType.COMPONENT) {
-                cellView = '<svg xmlns="http://www.w3.org/2000/svg"  x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">' +
-                    '<path fill="'+ color +'"  stroke="'+ ((selectedNode === nodeId) ? "#444" : outlineColor) + '" stroke-opacity="' + (1 - opacity) + '" ' +
-                    'stroke-width="0.5px" d="M13,7a6,6,0,0,1-6,6.06A6,6,0,0,1,1,7,6,6,0,0,1,7,.94,6,6,0,0,1,13,7Z" transform="translate(-0.79 -0.69)"/>' +
-                    '<path fill="#999" '  +
-                    ' d="M4.37,5c-.19.11-.19.28,0,.39L6.76,6.82a.76.76,0,0,0,.69,0L9.64,5.45a.23.23,0,0,0,0-.42L7.45,3.7a.76.76,0,0,0-.69,0Z" transform="translate(-0.79 -0.69)"/>' +
-                    '<path ' +
-                    ' fill="#999" d="M10,5.93c0-.22-.15-.31-.34-.19L7.45,7.1a.73.73,0,0,1-.69,0L4.37,5.73c-.19-.11-.35,0-.35.2V8a.88.88,0,0,0,.33.63l2.43,1.68a.61.61,0,0,0,.65,0L9.66,8.63A.9.9,0,0,0,10,8Z" transform="translate(-0.79 -0.69)"/>' +
-                    '<text fill="#fff" font-size="1.63px" font-family="ArialMT, Arial" transform="translate(5.76 5.1) scale(0.98 1)">μ</text>' +
-                    '</svg>';
-
+                cellView = '<svg xmlns="http://www.w3.org/2000/svg"  x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">'
+                    + `<path fill="${color}"  stroke="${(selectedNode === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                    + 'stroke-width="0.5px" d="M13,7a6,6,0,0,1-6,6.06A6,6,0,0,1,1,7,6,6,0,0,1,7,.94,6,6,0,0,1,13,7Z" transform="translate(-0.79 -0.69)"/>'
+                    + '<path fill="#999" d="M4.37,5c-.19.11-.19.28,0,.39L6.76,6.82a.76.76,0,0,0,.69,0L9.64,5.45a.23.23,0,0,0,0-.42L7.45,3.7a.76.76,0,0,0-.69,0Z" transform="translate(-0.79 -0.69)"/>'
+                    + '<path fill="#999" d="M10,5.93c0-.22-.15-.31-.34-.19L7.45,7.1a.73.73,0,0,1-.69,0L4.37,5.73c-.19-.11-.35,0-.35.2V8a.88.88,0,0,0,.33.63l2.43,1.68a.61.61,0,0,0,.65,0L9.66,8.63A.9.9,0,0,0,10,8Z" transform="translate(-0.79 -0.69)"/>'
+                    + '<text fill="#fff" font-size="1.63px" font-family="ArialMT, Arial" transform="translate(5.76 5.1) scale(0.98 1)">μ</text>'
+                    + "</svg>";
             } else {
-                cellView =
-                    '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">' +
-                    '<path fill="' + color + '"  stroke="' + outlineColor + '" stroke-opacity="' + (1 - opacity) + '" ' +
-                    ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>' +
-                    '</svg>';
+                cellView
+                    = '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">'
+                    + `<path fill="${color}"  stroke="${outlineColor}" stroke-opacity="${1 - opacity}" `
+                    + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
+                    + "</svg>";
             }
 
-            return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(cellView);
+            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cellView)}`;
         };
 
-        let dataNodes = this.state.data.nodes;
-        let dataEdges = this.state.data.edges;
+        const dataNodes = this.state.data.nodes;
+        const dataEdges = this.state.data.edges;
         let view;
 
         if (dependedNodeCount > 1) {

@@ -21,8 +21,8 @@ import ErrorBoundary from "../../common/error/ErrorBoundary";
 import React from "react";
 import UnknownError from "../../common/error/UnknownError";
 import vis from "vis";
-import * as PropTypes from "prop-types";
 import {withStyles} from "@material-ui/core/styles/index";
+import * as PropTypes from "prop-types";
 
 const styles = (theme) => ({
     graph: {
@@ -36,11 +36,6 @@ class ComponentDependencyGraph extends React.Component {
     static NodeType = {
         CELL: "cell",
         COMPONENT: "component"
-    };
-
-    static GraphType = {
-        OVERVIEW: "overview",
-        DEPENDENCY: "dependency"
     };
 
     static GRAPH_OPTIONS = {
@@ -108,7 +103,7 @@ class ComponentDependencyGraph extends React.Component {
             },
             maxVelocity: 50,
             minVelocity: 0.1,
-            solver: "barnesHut",
+            solver: "forceAtlas2Based",
             stabilization: {
                 enabled: true,
                 iterations: 1000,
@@ -158,8 +153,8 @@ class ComponentDependencyGraph extends React.Component {
         };
 
         const getDistance = (pts, centroid) => {
-            const cenX = centroid.x; const
-                cenY = centroid.y;
+            const cenX = centroid.x;
+            const cenY = centroid.y;
             const distance = [];
             let dist = 0;
             for (let i = 0; i < pts.length; i++) {
@@ -170,12 +165,15 @@ class ComponentDependencyGraph extends React.Component {
         };
 
         const getPolygonCentroid = (pts) => {
-            let maxX; let maxY; let minX; let minY;
+            let maxX;
+            let maxY;
+            let minX;
+            let minY;
             for (let i = 0; i < pts.length; i++) {
-                minX = (pts[i].x < minX || minX == null) ? pts[i].x : minX;
-                maxX = (pts[i].x > maxX || maxX == null) ? pts[i].x : maxX;
-                minY = (pts[i].y < minY || minY == null) ? pts[i].y : minY;
-                maxY = (pts[i].y > maxY || maxY == null) ? pts[i].y : maxY;
+                minX = (pts[i].x < minX || minX === undefined) ? pts[i].x : minX;
+                maxX = (pts[i].x > maxX || maxX === undefined) ? pts[i].x : maxX;
+                minY = (pts[i].y < minY || minY === undefined) ? pts[i].y : minY;
+                maxY = (pts[i].y > maxY || maxY === undefined) ? pts[i].y : maxY;
             }
             return {x: (minX + maxX) / 2, y: (minY + maxY) / 2};
         };
@@ -187,13 +185,15 @@ class ComponentDependencyGraph extends React.Component {
         };
 
         const drawPolygon = (ctx, pts, radius) => {
+            let points;
             if (radius > 0) {
-                pts = getRoundedPoints(pts, radius);
+                points = getRoundedPoints(pts, radius);
             }
-            let i; let pt; const
-                len = pts.length;
+            let i;
+            let pt;
+            const len = points.length;
             for (i = 0; i < len; i++) {
-                pt = pts[i];
+                pt = points[i];
                 if (i === 0) {
                     ctx.beginPath();
                     ctx.moveTo(pt[0], pt[1]);
@@ -208,11 +208,15 @@ class ComponentDependencyGraph extends React.Component {
         };
 
         const getRoundedPoints = (pts, radius) => {
-            let i1; let i2; let i3; let p1; let p2; let p3; let prevPt; let nextPt;
-
-
+            let i1;
+            let i2;
+            let i3;
+            let nextPt;
+            let p1;
+            let p2;
+            let p3;
+            let prevPt;
             const len = pts.length;
-
 
             const res = new Array(len);
             for (i2 = 0; i2 < len; i2++) {
@@ -367,16 +371,19 @@ class ComponentDependencyGraph extends React.Component {
 
                 // Gray out all nodes
                 for (const nodeId in allNodes) {
-                    allNodes[nodeId].image = viewGenerator(allNodes[nodeId].group, nodeId, 0.8);
-                    if (allNodes[nodeId].hiddenLabel === undefined) {
-                        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
-                        allNodes[nodeId].label = undefined;
+                    if (allNodes.hasOwnProperty(nodeId)) {
+                        allNodes[nodeId].image = viewGenerator(allNodes[nodeId].group, nodeId, 0.8);
+                        if (allNodes[nodeId].hiddenLabel === undefined) {
+                            allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+                            allNodes[nodeId].label = undefined;
+                        }
                     }
                 }
 
                 // Set first degree nodes their color and label
                 for (let i = 0; i < connectedNodes.length; i++) {
-                    allNodes[connectedNodes[i]].image = viewGenerator(allNodes[connectedNodes[i]].group, connectedNodes[i], 0);
+                    allNodes[connectedNodes[i]].image
+                        = viewGenerator(allNodes[connectedNodes[i]].group, connectedNodes[i], 0);
                     if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
                         allNodes[connectedNodes[i]].label = allNodes[connectedNodes[i]].hiddenLabel;
                         allNodes[connectedNodes[i]].hiddenLabel = undefined;
@@ -400,13 +407,14 @@ class ComponentDependencyGraph extends React.Component {
             nodes.update(updateArray);
         };
 
-
         const blur = () => {
             for (const nodeId in allNodes) {
-                allNodes[nodeId].image = viewGenerator(allNodes[nodeId].group, nodeId, 0);
-                if (allNodes[nodeId].hiddenLabel !== undefined) {
-                    allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
-                    allNodes[nodeId].hiddenLabel = undefined;
+                if (allNodes.hasOwnProperty(nodeId)) {
+                    allNodes[nodeId].image = viewGenerator(allNodes[nodeId].group, nodeId, 0);
+                    if (allNodes[nodeId].hiddenLabel !== undefined) {
+                        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+                        allNodes[nodeId].hiddenLabel = undefined;
+                    }
                 }
             }
             const updateArray = [];
@@ -456,3 +464,4 @@ ComponentDependencyGraph.propTypes = {
 };
 
 export default withStyles(styles)(ComponentDependencyGraph);
+

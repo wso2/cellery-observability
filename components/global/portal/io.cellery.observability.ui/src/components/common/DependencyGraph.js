@@ -21,8 +21,8 @@ import ErrorBoundary from "./error/ErrorBoundary";
 import React from "react";
 import UnknownError from "./error/UnknownError";
 import vis from "vis";
-import * as PropTypes from "prop-types";
 import {withStyles} from "@material-ui/core/styles/index";
+import * as PropTypes from "prop-types";
 
 const styles = (theme) => ({
     graph: {
@@ -201,10 +201,12 @@ class DependencyGraph extends React.Component {
 
                 // Gray out all nodes
                 for (const nodeId in allNodes) {
-                    allNodes[nodeId].image = viewGenerator(nodeId, 0.8);
-                    if (allNodes[nodeId].hiddenLabel === undefined) {
-                        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
-                        allNodes[nodeId].label = undefined;
+                    if (allNodes.hasOwnProperty(nodeId)) {
+                        allNodes[nodeId].image = viewGenerator(nodeId, 0.8);
+                        if (allNodes[nodeId].hiddenLabel === undefined) {
+                            allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+                            allNodes[nodeId].label = undefined;
+                        }
                     }
                 }
 
@@ -238,10 +240,12 @@ class DependencyGraph extends React.Component {
 
         const blur = () => {
             for (const nodeId in allNodes) {
-                allNodes[nodeId].image = viewGenerator(nodeId, 0);
-                if (allNodes[nodeId].hiddenLabel !== undefined) {
-                    allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
-                    allNodes[nodeId].hiddenLabel = undefined;
+                if (allNodes.hasOwnProperty(nodeId)) {
+                    allNodes[nodeId].image = viewGenerator(nodeId, 0);
+                    if (allNodes[nodeId].hiddenLabel !== undefined) {
+                        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+                        allNodes[nodeId].hiddenLabel = undefined;
+                    }
                 }
             }
             const updateArray = [];
