@@ -17,16 +17,11 @@
  */
 
 import AuthUtils from "../utils/api/authUtils";
-import Button from "@material-ui/core/Button";
-import Checkbox from "@material-ui/core/Checkbox";
-import CssBaseline from "@material-ui/core/CssBaseline";
-import FormControl from "@material-ui/core/FormControl";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import Input from "@material-ui/core/Input";
-import InputLabel from "@material-ui/core/InputLabel";
-import Paper from "@material-ui/core/Paper";
+import CircularProgress from "@material-ui/core/CircularProgress/CircularProgress";
+import Constants from "../utils/constants";
+import HttpUtils from "../utils/api/httpUtils";
 import React from "react";
-import Typography from "@material-ui/core/Typography";
+import jwtDecode from "jwt-decode";
 import withStyles from "@material-ui/core/styles/withStyles";
 import withGlobalState, {StateHolder} from "./common/state";
 import * as PropTypes from "prop-types";
@@ -60,8 +55,21 @@ const styles = (theme) => ({
     },
     submit: {
         marginTop: theme.spacing.unit * 3
+    },
+    centerDiv: {
+        position: "absolute",
+        margin: "auto",
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        width: "200px",
+        height: "100px"
+
     }
 });
+
+const idpAddress = Constants.Dashboard.APIM_HOSTNAME;
 
 class SignIn extends React.Component {
 
@@ -81,41 +89,72 @@ class SignIn extends React.Component {
     render() {
         const {classes} = this.props;
         return (
-            <React.Fragment>
-                <CssBaseline/>
-                <main className={classes.layout}>
-                    <Paper className={classes.paper}>
-                        <Typography component="h1" className={classes.heading} variant="h5">
-                            Cellery Observability
-                        </Typography>
-                        <form className={classes.form}>
-                            <FormControl margin="normal" required fullWidth>
-                                <InputLabel htmlFor="email">Username</InputLabel>
-                                <Input
-                                    id="username"
-                                    name="username"
-                                    autoComplete="username"
-                                    onKeyPress={this.handleKeyPress}
-                                    autoFocus/>
-                            </FormControl>
-                            <FormControl margin="normal" required fullWidth>
-                                <InputLabel htmlFor="password">Password</InputLabel>
-                                <Input name="password" type="password" id="password" autoComplete="current-password"
-                                    onKeyPress={this.handleKeyPress}/>
-                            </FormControl>
-                            <FormControlLabel
-                                control={<Checkbox value="remember" color="primary"/>}
-                                label="Remember me"
-                            />
-                            <Button fullWidth variant="contained" color="primary" className={classes.submit}
-                                onClick={this.handleLogin}>
-                                Sign in
-                            </Button>
-                        </form>
-                    </Paper>
-                </main>
+            <React.Fragment className={classes.progress}>
+                <div className={classes.centerDiv}>
+                    <CircularProgress/>
+                    <div>
+                        Loading
+                    </div>
+                </div>
             </React.Fragment>
         );
+    }
+
+    componentDidMount() {
+        const url = window.location.search.substr(1);
+        const searchParams = new URLSearchParams(url);
+        const {globalState} = this.props;
+        this.getCredentials();
+        if (localStorage.getItem("isAuthenticated") === null || localStorage.getItem(StateHolder.USER) === null) {
+            if (localStorage.getItem("isAuthenticated") !== "true"
+                && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
+                localStorage.setItem("isAuthenticated", "true");
+                window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
+                    + `&client_id=${localStorage.getItem("response")}&`
+                    + "redirect_uri=http://cellery-dashboard&nonce=abc&scope=openid";
+            } else if (localStorage.getItem("isAuthenticated") === "true" && !searchParams.has("code")) {
+                window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
+                    + `&client_id=${localStorage.getItem("response")}&`
+                    + "redirect_uri=http://cellery-dashboard&nonce=abc&scope=openid";
+            } else if (searchParams.has("code") && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
+                const oneTimeToken = searchParams.get("code");
+                HttpUtils.callObservabilityAPI(
+                    {
+                        url: `/user-auth/requestToken/${oneTimeToken}`,
+                        method: "GET"
+                    },
+                    globalState).then((resp) => {
+                    localStorage.setItem("idToken", resp);
+                    const decoded = jwtDecode(resp);
+                    localStorage.setItem("decoded", decoded.toString());
+                    const user1 = {
+                        username: decoded.sub
+                    };
+
+                    AuthUtils.signIn(user1.username, globalState);
+                }).catch((err) => {
+                    localStorage.setItem("error", err.toString());
+                });
+            }
+        } else if (localStorage.getItem("isAuthenticated") === "loggedOut") {
+            localStorage.removeItem(StateHolder.USER);
+            window.location.href = `https://${idpAddress}/oidc/logout?id_token_hint=
+            ${localStorage.getItem("idToken")}&post_logout_redirect_uri=http://cellery-dashboard`;
+        }
+    }
+
+    getCredentials() {
+        const {globalState} = this.props;
+        HttpUtils.callObservabilityAPI(
+            {
+                url: "/user-auth/getCredentials/client",
+                method: "GET"
+            },
+            globalState).then((resp) => {
+            localStorage.setItem("response", resp);
+        }).catch((err) => {
+            localStorage.setItem("error2", err.toString());
+        });
     }
 
 }

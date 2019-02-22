@@ -21,11 +21,13 @@ import io.cellery.observability.api.AggregatedRequestsAPI;
 import io.cellery.observability.api.DependencyModelAPI;
 import io.cellery.observability.api.DistributedTracingAPI;
 import io.cellery.observability.api.KubernetesAPI;
+import io.cellery.observability.api.UserAuthenticationAPI;
 import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
 import io.cellery.observability.model.generator.ModelManager;
 import org.apache.log4j.Logger;
+import org.json.JSONObject;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -61,6 +63,10 @@ public class ObservabilityDS {
      */
     @Activate
     protected void start(BundleContext bundleContext) throws Exception {
+
+        JSONObject clientJson = RegisterClient.getClientCredentials();
+        String clientId = clientJson.getString("clientId");
+        String clientSecret = clientJson.getString("clientSecret");
         try {
             // Deploying the microservices
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
@@ -69,7 +75,7 @@ public class ObservabilityDS {
                     .addExceptionMapper(new APIExceptionMapper())
                     .deploy(
                             new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
-                            new KubernetesAPI()
+                            new KubernetesAPI(), new UserAuthenticationAPI(clientId, clientSecret)
                     )
             );
             ServiceHolder.getMicroservicesRunner().start();
@@ -81,7 +87,6 @@ public class ObservabilityDS {
             throw throwable;
         }
     }
-
 
     /**
      * This is the deactivation method of ObservabilityDS. This will be called when this component

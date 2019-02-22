@@ -57,7 +57,8 @@ const Constants = {
         ALL_VALUE: "All",
         INBOUND: "Inbound",
         OUTBOUND: "Outbound",
-        SIDE_NAV_BAR_WIDTH: 240
+        SIDE_NAV_BAR_WIDTH: 240,
+        APIM_HOSTNAME: "wso2-apim" // TODO: Need to add this to portal.json
     }
 };
 

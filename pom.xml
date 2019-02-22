@@ -286,6 +286,41 @@
                 <artifactId>gogoproto-java</artifactId>
                 <version>${gogoproto.orbit.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.mashape.unirest</groupId>
+                <artifactId>unirest-java</artifactId>
+                <version>${unirest.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpasyncclient</artifactId>
+                <version>${httpasyncclient.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpmime</artifactId>
+                <version>${httpmime.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.json</groupId>
+                <artifactId>json</artifactId>
+                <version>${json.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.oltu.oauth2</groupId>
+                <artifactId>org.apache.oltu.oauth2.client</artifactId>
+                <version>${oltu.oauth2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${httpcore.version}</version>
+            </dependency>
             <!--Orbit dependencies end here-->
         </dependencies>
     </dependencyManagement>
@@ -410,11 +445,17 @@
 
     <properties>
         <siddhi.version>4.1.38</siddhi.version>
+        <httpclient.version>4.3.6</httpclient.version>
+        <unirest.version>1.4.9</unirest.version>
         <siddhi.io.http.version>1.0.41</siddhi.io.http.version>
         <siddhi.store.rdbms.version>4.0.49</siddhi.store.rdbms.version>
         <carbon.datasource.version>1.1.4</carbon.datasource.version>
         <msf4j.version>2.6.4</msf4j.version>
-
+        <httpasyncclient.version>4.0.2</httpasyncclient.version>
+        <httpmime.version>4.3.6</httpmime.version>
+        <httpcore.version>4.4.11</httpcore.version>
+        <json.version>20140107</json.version>
+        <oltu.oauth2.version>1.0.0</oltu.oauth2.version>
         <synapse.core.version>2.1.7-wso2v80</synapse.core.version>
         <k8s.client-java.version>3.0.0</k8s.client-java.version>
         <guava.version>25.1-jre</guava.version>
