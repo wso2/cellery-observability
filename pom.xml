@@ -447,6 +447,8 @@
 
         <spotify.docker.plugin.version>1.4.10</spotify.docker.plugin.version>
 
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
         <docker.repo.name>celleryio</docker.repo.name>
         <docker.image.tag>latest</docker.image.tag>
     </properties>
