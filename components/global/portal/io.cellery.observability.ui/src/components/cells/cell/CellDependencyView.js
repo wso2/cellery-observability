@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/* eslint max-len: ["off"] */
+
 import DependencyGraph from "../../common/DependencyGraph";
 import ErrorBoundary from "../../common/error/ErrorBoundary";
 import HttpUtils from "../../../utils/api/httpUtils";
@@ -31,13 +33,18 @@ import * as PropTypes from "prop-types";
 const styles = (theme) => ({
     subtitle: {
         fontWeight: 400,
-        fontSize: "1rem"
+        fontSize: "1rem",
+        display: "block"
     },
     dependencies: {
-        marginTop: theme.spacing.unit * 3
+        marginTop: theme.spacing.unit * 3,
+    },
+    graphContainer : {
+        display: "flex"
     },
     diagram: {
-        padding: theme.spacing.unit * 3
+        padding: theme.spacing.unit * 3,
+        flexGrow: 1
     },
     graph: {
         width: "100%",
@@ -54,53 +61,6 @@ const styles = (theme) => ({
     }
 });
 
-const graphConfig = {
-    directed: true,
-    automaticRearrangeAfterDropNode: false,
-    collapsible: false,
-    height: 500,
-    highlightDegree: 1,
-    highlightOpacity: 0.2,
-    linkHighlightBehavior: false,
-    maxZoom: 8,
-    minZoom: 1,
-    nodeHighlightBehavior: true,
-    panAndZoom: false,
-    staticGraph: false,
-    width: 1000,
-    d3: {
-        alphaTarget: 0.05,
-        gravity: -700,
-        linkLength: 150,
-        linkStrength: 1
-    },
-    node: {
-        color: "#d3d3d3",
-        fontColor: "#555",
-        fontSize: 16,
-        fontWeight: "normal",
-        highlightColor: "red",
-        highlightFontSize: 16,
-        highlightFontWeight: "bold",
-        highlightStrokeColor: "SAME",
-        highlightStrokeWidth: 1,
-        labelProperty: "name",
-        mouseCursor: "pointer",
-        opacity: 1,
-        renderLabel: true,
-        size: 600,
-        strokeColor: "green",
-        strokeWidth: 2
-    },
-    link: {
-        color: "#d3d3d3",
-        opacity: 1,
-        semanticStrokeWidth: false,
-        strokeWidth: 4,
-        highlightColor: "#777"
-    }
-};
-
 class CellDependencyView extends React.Component {
 
     constructor(props) {
@@ -108,10 +68,9 @@ class CellDependencyView extends React.Component {
         this.state = {
             data: {
                 nodes: [],
-                links: []
+                edges: []
             }
         };
-        graphConfig.node.viewGenerator = this.viewGenerator;
     }
 
     componentDidMount = () => {
@@ -146,7 +105,7 @@ class CellDependencyView extends React.Component {
             self.setState({
                 data: {
                     nodes: data.nodes,
-                    links: data.edges
+                    edges: data.edges
                 }
             });
             if (isUserAction) {
@@ -164,38 +123,35 @@ class CellDependencyView extends React.Component {
         });
     };
 
-    viewGenerator = (nodeProps) => {
-        const {cell} = this.props;
-        const nodeId = nodeProps.id;
-        const color = this.props.colorGenerator.getColor(nodeId);
-        const outlineColor = ColorGenerator.shadeColor(color, -0.08);
-        const style = {};
-        style.transform = "translate(1%, 10%) scale(2.2, 2.2)";
-        return <svg x="0px" y="0px" width="100%" height="100%" viewBox="0 0 240 240">
-            <polygon strokeWidth="4" fill={color} stroke={(cell === nodeId) ? "#444" : outlineColor}
-                points="34.2,87.4 12.3,65.5 12.3,34.5 34.2,12.6 65.2,12.6 87.1,34.5 87.1,65.5 65.2,87.4"
-                style={style} strokeLinejoin="round"/>
-        </svg>;
-    };
-
     onClickCell = (nodeId) => {
         // TODO: redirect to another cell view.
     };
 
     render = () => {
-        const {classes, cell} = this.props;
+        const {classes, cell, colorGenerator} = this.props;
         const dependedNodeCount = this.state.data.nodes.length;
+
+        const viewGenerator = (nodeId, opacity) => {
+            const color = ColorGenerator.shadeColor(colorGenerator.getColor(nodeId), opacity);
+            const outlineColor = ColorGenerator.shadeColor(color, -0.08);
+
+            const cellView = '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">' +
+                '<path fill="'+ color +'"  stroke="'+ ((cell === nodeId) ? "#444" : outlineColor) +'" stroke-opacity="'+(1-opacity)+'" ' +
+                ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>' +
+                '</svg>';
+
+            return "data:image/svg+xml;charset=utf-8,"+ encodeURIComponent(cellView);
+        };
+
+        let dataNodes = this.state.data.nodes;
+        let dataEdges = this.state.data.edges;
 
         let view;
         if (dependedNodeCount > 1) {
             view = (
                 <ErrorBoundary title={"Unable to Render"} description={"Unable to Render due to Invalid Data"}>
-                    <DependencyGraph
-                        id="cell-dependency-graph"
-                        data={this.state.data}
-                        config={graphConfig}
-                        onClickNode={this.onClickCell}
-                    />
+                    <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges} selectedCell={cell}
+                         onClickNode={this.onClickCell} viewGenerator={viewGenerator} graphType="dependency" />
                 </ErrorBoundary>
             );
         } else {
@@ -213,8 +169,10 @@ class CellDependencyView extends React.Component {
                 <Typography color="textSecondary" className={classes.subtitle}>
                     Dependencies
                 </Typography>
-                <div className={classes.diagram}>
-                    {view}
+                <div className={classes.graphContainer}>
+                    <div className={classes.diagram}>
+                        {view}
+                    </div>
                 </div>
             </div>
         );
