@@ -326,6 +326,11 @@
                 <artifactId>httpcore</artifactId>
                 <version>${httpcore.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.apache.oltu.oauth2</groupId>
+                <artifactId>org.apache.oltu.oauth2.common</artifactId>
+                <version>${oltu.oauth2.common.version}</version>
+            </dependency>
             <!--Orbit dependencies end here-->
         </dependencies>
     </dependencyManagement>
@@ -481,6 +486,7 @@
         <com.squareup.okhttp>2.7.5</com.squareup.okhttp>
         <adal4j.version>1.6.0</adal4j.version>
         <joda.time.version>2.9.3</joda.time.version>
+        <oltu.oauth2.common.version>1.0.2</oltu.oauth2.common.version>
         <commons.codec.version>1.11</commons.codec.version>
         <commons.compress.version>1.18</commons.compress.version>
         <bouncy.castle.version>1.59</bouncy.castle.version>
