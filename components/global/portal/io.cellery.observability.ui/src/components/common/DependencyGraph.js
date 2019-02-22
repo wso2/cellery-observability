@@ -36,7 +36,7 @@ class DependencyGraph extends React.Component {
     static GraphType = {
         OVERVIEW: "overview",
         DEPENDENCY: "dependency"
-    }
+    };
 
     static GRAPH_OPTIONS = {
         nodes: {
@@ -44,7 +44,7 @@ class DependencyGraph extends React.Component {
                 borderRadius: 10
             },
             borderWidth: 1,
-            size: 30,
+            size: 35,
             font: {
                 size: 15,
                 color: "#000000"
@@ -120,17 +120,17 @@ class DependencyGraph extends React.Component {
 
     constructor(props) {
         super(props);
-        this.timelineNode = React.createRef();
+        this.dependencyGraph = React.createRef();
     }
 
     componentDidMount = () => {
-        if (this.timelineNode.current) {
+        if (this.dependencyGraph.current) {
             this.draw();
         }
     };
 
     componentDidUpdate = () => {
-        if (this.timelineNode.current) {
+        if (this.dependencyGraph.current) {
             this.draw();
         }
     };
@@ -175,7 +175,7 @@ class DependencyGraph extends React.Component {
             edges: edges
         };
 
-        const network = new vis.Network(this.timelineNode.current, graphData, DependencyGraph.GRAPH_OPTIONS);
+        const network = new vis.Network(this.dependencyGraph.current, graphData, DependencyGraph.GRAPH_OPTIONS);
 
         if (graphType === DependencyGraph.GraphType.OVERVIEW) {
             network.on("selectNode", (event) => {
@@ -267,7 +267,7 @@ class DependencyGraph extends React.Component {
         if (nodeData && nodeData.length > 0) {
             view = (
                 <ErrorBoundary title={"Unable to Render"} description={"Unable to Render due to Invalid Data"}>
-                    <div className={classes.graph} ref={this.timelineNode}/>
+                    <div className={classes.graph} ref={this.dependencyGraph}/>
                 </ErrorBoundary>
             );
         } else {

@@ -28,7 +28,7 @@
     <groupId>io.cellery.observability</groupId>
     <artifactId>io.cellery.observability.parent</artifactId>
     <name>Cellery Observability</name>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -317,6 +317,11 @@
                 <version>${oltu.oauth2.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.oltu.oauth2</groupId>
+                <artifactId>org.apache.oltu.oauth2.common</artifactId>
+                <version>${oltu.oauth2.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
                 <version>${httpcore.version}</version>
@@ -487,9 +492,9 @@
         <bouncy.castle.version>1.59</bouncy.castle.version>
         <opencensus.version>0.16.1</opencensus.version>
 
-        <protobuf.orbit.version>0.1.0-SNAPSHOT</protobuf.orbit.version>
-        <gogoproto.orbit.version>0.1.0-SNAPSHOT</gogoproto.orbit.version>
-        <grpc.orbit.version>0.1.0-SNAPSHOT</grpc.orbit.version>
+        <protobuf.orbit.version>0.1.1-SNAPSHOT</protobuf.orbit.version>
+        <gogoproto.orbit.version>0.1.1-SNAPSHOT</gogoproto.orbit.version>
+        <grpc.orbit.version>0.1.1-SNAPSHOT</grpc.orbit.version>
 
         <spotify.docker.plugin.version>1.4.10</spotify.docker.plugin.version>
 

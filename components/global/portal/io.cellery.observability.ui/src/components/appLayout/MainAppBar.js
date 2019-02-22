@@ -39,7 +39,6 @@ import Toolbar from "@material-ui/core/Toolbar/Toolbar";
 import Tooltip from "@material-ui/core/Tooltip/Tooltip";
 import Typography from "@material-ui/core/Typography/Typography";
 import classNames from "classnames";
-import {deepPurple} from "@material-ui/core/colors";
 import withColor from "../common/color";
 import withGlobalState from "../common/state";
 import {withRouter} from "react-router-dom";
@@ -52,7 +51,8 @@ const styles = (theme) => ({
         transition: theme.transitions.create(["width", "margin"], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen
-        })
+        }),
+        backgroundColor: theme.palette.primary.dark
     },
     appBarShift: {
         marginLeft: Constants.Dashboard.SIDE_NAV_BAR_WIDTH,
@@ -95,7 +95,7 @@ const styles = (theme) => ({
     userAvatar: {
         marginRight: theme.spacing.unit * 1.5,
         color: "#fff",
-        backgroundColor: deepPurple[500]
+        backgroundColor: theme.palette.primary.main
     }
 });
 
