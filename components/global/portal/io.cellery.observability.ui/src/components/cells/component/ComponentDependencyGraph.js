@@ -44,7 +44,7 @@ class ComponentDependencyGraph extends React.Component {
                 borderRadius: 10
             },
             borderWidth: 1,
-            size: 30,
+            size: 40,
             font: {
                 size: 15,
                 color: "#000000"
@@ -307,13 +307,13 @@ class ComponentDependencyGraph extends React.Component {
             const polygonRadius = getDistance(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT),
                 centerPoint);
             const numberOfSides = 8;
-            const size = polygonRadius + 50;
+            const size = polygonRadius + 70;
             const Xcenter = centerPoint.x;
             const Ycenter = centerPoint.y;
             let curve = 0;
 
             if (polygonRadius === 0) {
-                curve = 5;
+                curve = 7;
             } else {
                 curve = 12;
             }
@@ -324,9 +324,9 @@ class ComponentDependencyGraph extends React.Component {
 
             const cornerPoints = [];
             ctx.beginPath();
-            ctx.moveTo(Xcenter + size, Ycenter);
+            ctx.moveTo(Xcenter + size, Ycenter + size);
             ctx.lineJoin = "round";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
 
             for (let i = 0; i <= numberOfSides; i += 1) {
                 ctx.lineTo(Xcenter + size * Math.cos(i * 2 * Math.PI / numberOfSides), Ycenter + size
@@ -351,7 +351,7 @@ class ComponentDependencyGraph extends React.Component {
 
             let polygonRadius = getDistance(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT),
                 centerPoint);
-            polygonRadius += 100;
+            polygonRadius += 200;
             const d = 2 * Math.PI / groupNodesCells.length;
             groupNodesCells.forEach((node, i) => {
                 nodes.add(node);
