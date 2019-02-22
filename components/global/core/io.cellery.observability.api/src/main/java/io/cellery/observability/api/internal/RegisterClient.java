@@ -58,9 +58,7 @@ public class RegisterClient {
         InputStreamReader inputStreamReader = null;
         JSONObject jsonObject = null;
         try {
-
             HttpClient client = getAllSSLClient();
-
             HttpPost request =
                     new HttpPost(Constants.CLIENT_REGISTERATION_ENDPOINT);
             JSONObject clientJson = new JSONObject();
@@ -74,16 +72,12 @@ public class RegisterClient {
             request.setEntity(new StringEntity(clientJson.toString()));
 
             HttpResponse response = client.execute(request);
-
-             inputStreamReader = new InputStreamReader(
+            inputStreamReader = new InputStreamReader(
                     response.getEntity().getContent(), StandardCharsets.UTF_8);
-
             bufReader = new BufferedReader(inputStreamReader);
-
             StringBuilder builder = new StringBuilder();
 
             String line;
-
             while ((line = bufReader.readLine()) != null) {
                 builder.append(line);
                 builder.append(System.lineSeparator());
@@ -91,18 +85,17 @@ public class RegisterClient {
 
             jsonObject = new JSONObject(builder.toString());
             return jsonObject;
-
         } catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException e) {
             log.error("Error while fetching the Client-Id for the dynamically created service provider ", e);
         } finally {
-            if (bufReader != null ) {
+            if (bufReader != null) {
                 try {
                     bufReader.close();
                 } catch (IOException e) {
                     log.error("Error in closing the BufferedReader", e);
                 }
             }
-            if (inputStreamReader != null ) {
+            if (inputStreamReader != null) {
                 try {
                     inputStreamReader.close();
                 } catch (IOException e) {
@@ -110,7 +103,6 @@ public class RegisterClient {
                 }
             }
         }
-
         return jsonObject;
     }
 
@@ -118,7 +110,6 @@ public class RegisterClient {
             throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
 
         TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
-
             @Override
             public java.security.cert.X509Certificate[] getAcceptedIssuers() {
                 java.security.cert.X509Certificate[] obj = new java.security.cert.X509Certificate[1];
@@ -148,12 +139,9 @@ public class RegisterClient {
                 .build();
 
         HttpClientConnectionManager ccm = new BasicHttpClientConnectionManager(registry);
-
         builder.setConnectionManager(ccm);
-
         return builder.build();
 
     }
-
 }
 
