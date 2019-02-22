@@ -200,7 +200,8 @@ public class ModelManager {
             for (Edge edge : graph.getEdges()) {
                 String edgeServiceName = Utils.getEdgeServiceName(edge.getEdgeString());
                 String[] services = Utils.getServices(edgeServiceName);
-                if (services[0].equalsIgnoreCase(serviceName) && !services[0].equalsIgnoreCase(services[1])) {
+                if (edge.getSource().equalsIgnoreCase(cellName) && services[0].equalsIgnoreCase(serviceName)
+                        && !services[1].equalsIgnoreCase(serviceName) && !edge.getTarget().equalsIgnoreCase(cellName)) {
                     Node dependedCell = Utils.getNode(graph.getNodes(),
                             new Node(edge.getTarget()));
                     if (dependedCell != null) {
