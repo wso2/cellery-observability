@@ -16,9 +16,7 @@
  ~ under the License.
  -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <parent>
         <groupId>io.cellery.observability</groupId>
@@ -31,7 +29,7 @@
     <artifactId>protobuf</artifactId>
     <packaging>bundle</packaging>
     <name>Cellery Observability Components - Orbit - Protobuf</name>
-    <version>3.6.1.celleryv1</version>
+    <version>0.1.0-SNAPSHOT</version>
     <description> This bundle represents com.google.protobuf with gogo.proto.</description>
 
     <dependencies>
@@ -71,7 +69,7 @@
         </plugins>
     </build>
     <properties>
-        <protobuf.cellery.version>3.6.1-celleryv1</protobuf.cellery.version>
+        <protobuf.cellery.version>0.1.0-SNAPSHOT</protobuf.cellery.version>
     </properties>
 
 </project>

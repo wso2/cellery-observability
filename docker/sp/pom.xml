@@ -14,8 +14,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>io.cellery.observability</groupId>
         <artifactId>io.cellery.observability.docker</artifactId>
@@ -196,9 +195,9 @@
                             <outputDirectory>${project.build.directory}/files/non-osgi/</outputDirectory>
                             <excludeArtifactIds>
                                 io.cellery.observability.telemetry.receiver, commons-io, gogoproto-java, grpc,
-                                io.cellery.observability.tracing.receiver, protobuf, io.cellery.observability.observability.api,
-                                io.cellery.observability.observability.model.generator, siddhi-io-http, siddhi-store-rdbms,
-                                io.cellery.observability.observability.k8s.api.server.client, joda-time, zipkin, client-java,
+                                io.cellery.observability.tracing.receiver, protobuf, io.cellery.observability.api,
+                                io.cellery.observability.model.generator, siddhi-io-http, siddhi-store-rdbms,
+                                io.cellery.observability.k8s.api.server.client, joda-time, zipkin, client-java,
                                 client-java-api, guava, commons-codec, commons-compress, commons-lang3,
                                 client-java-proto, bcpkix-jdk15on, bcprov-ext-jdk15on
                             </excludeArtifactIds>
@@ -208,7 +207,7 @@
                 </executions>
             </plugin>
 
-            <!--Create OSGI bundles from Non Osgi jars-->
+            <!-- Generate OSGI bundles from Non-OSGi jars and save in OSGi Jars directory -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -246,22 +245,25 @@
                 </dependencies>
             </plugin>
 
-            <!--Build Docker image-->
-            <plugin>
-                <groupId>com.spotify</groupId>
-                <artifactId>dockerfile-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default</id>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <repository>${docker.repo.name}/sp-worker</repository>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+            <!-- TODO: Temporarily comment out Docker build for Release 0.1.0 -->
+            <!-- Build Docker Image -->
+            <!--<plugin>-->
+                <!--<groupId>com.spotify</groupId>-->
+                <!--<artifactId>dockerfile-maven-plugin</artifactId>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<id>docker-build</id>-->
+                        <!--<phase>package</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>build</goal>-->
+                        <!--</goals>-->
+                        <!--<configuration>-->
+                            <!--<repository>${docker.repo.name}/sp-worker</repository>-->
+                            <!--<tag>${docker.image.tag}</tag>-->
+                        <!--</configuration>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
         </plugins>
     </build>
 </project>

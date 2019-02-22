@@ -15,8 +15,7 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>io.cellery.observability</groupId>
@@ -27,7 +26,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>gogoproto-java</artifactId>
-    <version>0.1.0-celleryv1</version>
+    <version>0.1.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <name>Cellery Observability Components - Orbit - GoGoProto</name>
 
@@ -107,5 +106,8 @@
         <exp.package.version>1.0.0</exp.package.version>
         <protobuf.version>3.6.1</protobuf.version>
         <grpc.version>1.15.0</grpc.version>
+
+        <maven.checkstyleplugin.excludes>**/com/google/protobuf/**</maven.checkstyleplugin.excludes>
+        <mavan.findbugsplugin.exclude.file>spotbugs-exclude.xml</mavan.findbugsplugin.exclude.file>
     </properties>
 </project>

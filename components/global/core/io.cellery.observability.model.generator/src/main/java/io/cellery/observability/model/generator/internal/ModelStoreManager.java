@@ -45,7 +45,7 @@ import javax.sql.DataSource;
  * This handles the communication between the Model datasource, and the rest of the other components.
  */
 public class ModelStoreManager {
-    private static final Logger log = Logger.getLogger(ModelPeriodicProcessor.class);
+    private static final Logger log = Logger.getLogger(ModelStoreManager.class);
 
     private static final String TABLE_NAME = "DependencyModelTable";
     private static final String DATASOURCE_NAME = "CELLERY_OBSERVABILITY_DB";
@@ -55,17 +55,17 @@ public class ModelStoreManager {
     }.getType();
     private DataSource dataSource;
     private Gson gson;
+    private Model lastModel;
+
 
     ModelStoreManager() {
         try {
             this.dataSource = (DataSource) ServiceHolder.getDataSourceService().getDataSource(DATASOURCE_NAME);
             createTable();
             this.gson = new Gson();
-        } catch (DataSourceException e) {
+            this.lastModel = loadLastModel();
+        } catch (DataSourceException | GraphStoreException | SQLException e) {
             log.error("Unable to load the datasource : " + DATASOURCE_NAME +
-                    " , and hence unable to schedule the periodic dependency persistence.", e);
-        } catch (SQLException e) {
-            log.error("Unable to create the table in " + DATASOURCE_NAME +
                     " , and hence unable to schedule the periodic dependency persistence.", e);
         }
     }
@@ -177,7 +177,8 @@ public class ModelStoreManager {
             statement.setString(3, edges);
             statement.executeUpdate();
             connection.commit();
-            Model model = new Model(graph.nodes(), Utils.getEdges(graph.edges()));
+            Model model = new Model(gson.fromJson(nodes, NODE_SET_TYPE),
+                    Utils.getEdges(gson.fromJson(edges, STRING_SET_TYPE)));
             cleanupConnection(null, statement, connection);
             return model;
         } catch (SQLException ex) {
@@ -185,4 +186,64 @@ public class ModelStoreManager {
         }
     }
 
+    public void storeCurrentModel() {
+        try {
+            MutableNetwork<Node, String> currentModel = ServiceHolder.getModelManager().getDependencyGraph();
+            if (lastModel == null) {
+                this.lastModel = loadLastModel();
+            }
+            if (this.lastModel == null) {
+                if (currentModel.nodes().size() != 0) {
+                    lastModel = ServiceHolder.getModelStoreManager().persistModel(currentModel);
+                }
+            } else {
+                Set<Node> currentNodes = currentModel.nodes();
+                Set<String> currentEdges = currentModel.edges();
+                Set<Node> lastNodes = this.lastModel.getNodes();
+                Set<String> lastEdges = Utils.getEdgesString(this.lastModel.getEdges());
+                if (currentEdges.size() == lastEdges.size() && currentNodes.size() == lastNodes.size()) {
+                    if (isSameNodes(currentNodes, lastNodes) && isSameEdges(currentEdges, lastEdges)) {
+                        return;
+                    }
+                }
+                lastModel = ServiceHolder.getModelStoreManager().persistModel(currentModel);
+            }
+        } catch (GraphStoreException e) {
+            log.error("Error occurred while handling the dependency graph persistence. ", e);
+        }
+    }
+
+    private boolean isSameNodes(Set<Node> currentNodes, Set<Node> lastNodes) {
+        boolean isSameModel = true;
+        for (Node currentNode : currentNodes) {
+            Node lastNode = null;
+            //Find the node from the last persisted graph
+            for (Node node : lastNodes) {
+                if (node.equals(currentNode)) {
+                    lastNode = node;
+                    break;
+                }
+            }
+            // Check the services within the node is also same.
+            if (lastNode != null) {
+                if (lastNode.getComponents().size() == currentNode.getComponents().size()) {
+                    if (!lastNode.getComponents().containsAll(currentNode.getComponents())) {
+                        isSameModel = false;
+                        break;
+                    }
+                } else {
+                    isSameModel = false;
+                    break;
+                }
+            } else {
+                isSameModel = false;
+                break;
+            }
+        }
+        return isSameModel;
+    }
+
+    private boolean isSameEdges(Set<String> currentEdges, Set<String> lastEdges) {
+        return currentEdges.containsAll(lastEdges);
+    }
 }

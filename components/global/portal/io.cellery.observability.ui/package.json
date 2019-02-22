@@ -1,8 +1,8 @@
 {
   "name": "io.cellery.observability.ui",
-  "version": "0.1.0",
+  "version": "0.1.0-SNAPSHOT",
   "description": "Cellery Observability Portal",
-  "author": "WSO2 Org",
+  "author": "WSO2 Cellery Maintainers",
   "license": "Apache-2.0",
   "scripts": {
     "install": "npm --prefix ./node-server install ./node-server",

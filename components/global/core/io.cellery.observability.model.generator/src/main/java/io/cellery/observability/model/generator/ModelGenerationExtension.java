@@ -17,13 +17,13 @@
  */
 package io.cellery.observability.model.generator;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import io.cellery.observability.model.generator.internal.ServiceHolder;
+import io.cellery.observability.model.generator.model.SpanInfo;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.core.config.SiddhiAppContext;
+import org.wso2.siddhi.core.event.ComplexEvent;
 import org.wso2.siddhi.core.event.ComplexEventChunk;
 import org.wso2.siddhi.core.event.stream.StreamEvent;
 import org.wso2.siddhi.core.event.stream.StreamEventCloner;
@@ -41,21 +41,20 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This is the Siddhi extension which generates the dependency graph for the spans created.
  */
 @Extension(
-        name = "dependencyTree",
-        namespace = "tracing",
-        description = "This generates the dependency model of the spans",
-        examples = @Example(description = "TBD"
-                , syntax = "from inputStream#tracing:dependencyTree(componentName, spanId, parentId, serviceName," +
-                " tags) \" +\n" +
-                "                \"select * \n" +
-                "                \"insert into outputStream;")
+        name = "modelGenerator",
+        namespace = "observe",
+        description = "This generates the dependency model based on request spans. This depends on the traceGroup " +
+                "window processor",
+        examples = @Example(description = "This travese through the grouped spans and generates the dependency model"
+                , syntax = "observe:modelGenerator(cell, serviceName, operationName, spanId, parentId, kind, traceId, "
+                + "startTime)\n"
+                + "select * \n"
+                + "insert into outputStream;")
 )
 public class ModelGenerationExtension extends StreamProcessor {
 
@@ -64,159 +63,136 @@ public class ModelGenerationExtension extends StreamProcessor {
     private ExpressionExecutor cellNameExecutor;
     private ExpressionExecutor serviceNameExecutor;
     private ExpressionExecutor operationNameExecutor;
+    private ExpressionExecutor traceIdExecutor;
     private ExpressionExecutor spanIdExecutor;
     private ExpressionExecutor parentIdExecutor;
     private ExpressionExecutor spanKindExecutor;
-    private ExpressionExecutor tagExecutor;
-    private final Map<String, List<SpanCacheInfo.NodeInfo>> pendingEdges = new ConcurrentHashMap<>();
-    private final Cache<String, SpanCacheInfo> spanIdNodeCache = CacheBuilder.newBuilder().
-            expireAfterAccess(60, TimeUnit.SECONDS).maximumSize(100000).build();
-    private final Cache<String, List<String>> spanIdEdgesCache = CacheBuilder.newBuilder().
-            expireAfterAccess(60, TimeUnit.SECONDS).maximumSize(100000).build();
-    private final Map<String, Node> nodeCache = new HashMap<>();
-
+    private ExpressionExecutor startTimeExecutor;
 
     @Override
     protected void process(ComplexEventChunk<StreamEvent> complexEventChunk, Processor processor,
                            StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater) {
-        while (complexEventChunk.hasNext()) {
-            StreamEvent streamEvent = complexEventChunk.next();
-            String cellName = (String) cellNameExecutor.execute(streamEvent);
-            String serviceName = (String) serviceNameExecutor.execute(streamEvent);
-            String operationName = (String) operationNameExecutor.execute(streamEvent);
-            String spanId = (String) spanIdExecutor.execute(streamEvent);
-            if (cellName != null && !cellName.isEmpty()
-                    && !operationName.equalsIgnoreCase(Constants.IGNORE_OPERATION_NAME)) {
-                String spanKind = (String) spanKindExecutor.execute(streamEvent);
-                String parentId = (String) parentIdExecutor.execute(streamEvent);
-                String tags = (String) tagExecutor.execute(streamEvent);
-                Node node = getNode(cellName, tags);
-                node.addService(serviceName);
-                SpanCacheInfo spanCacheInfo = setSpanInfo(spanId, node, serviceName, operationName, spanKind);
-                if (spanKind.equalsIgnoreCase(Constants.SERVER_SPAN_KIND) && spanCacheInfo.getClient() != null) {
-                    ServiceHolder.getModelManager().moveLinks(spanCacheInfo.getServer().getNode(), serviceName,
-                            spanIdEdgesCache.getIfPresent(spanCacheInfo.getSpanId()), false);
-                } else if (spanKind.equalsIgnoreCase(Constants.CLIENT_SPAN_KIND) && spanCacheInfo.getServer() != null) {
-                    ServiceHolder.getModelManager().moveLinks(spanCacheInfo.getClient().getNode(), serviceName,
-                            spanIdEdgesCache.getIfPresent(spanCacheInfo.getSpanId()), true);
-                }
-
-                ServiceHolder.getModelManager().addNode(node);
-                if (parentId != null) {
-                    SpanCacheInfo parentSpanCacheInfo = spanIdNodeCache.getIfPresent(parentId);
-                    if (parentSpanCacheInfo != null) {
-                        addLink(parentSpanCacheInfo, node, serviceName, operationName, spanId);
-                    } else {
-                        SpanCacheInfo.NodeInfo pendingNode;
-                        if (spanKind.equalsIgnoreCase(Constants.SERVER_SPAN_KIND)) {
-                            pendingNode = spanCacheInfo.getServer();
-                        } else {
-                            pendingNode = spanCacheInfo.getClient();
-                        }
-                        synchronized (parentId.intern()) {
-                            List<SpanCacheInfo.NodeInfo> waitingNodes = pendingEdges.putIfAbsent(parentId,
-                                    new ArrayList<>(Collections.singletonList(pendingNode)));
-                            if (waitingNodes != null) {
-                                waitingNodes.add(pendingNode);
-                            }
-                        }
+        try {
+            if (complexEventChunk.getFirst() != null && complexEventChunk.getFirst().getType().
+                    equals(ComplexEvent.Type.EXPIRED)) {
+                Map<String, List<SpanInfo>> spanCache = new HashMap<>();
+                String traceId = null;
+                SpanInfo rootSpan = null;
+                int totalSpans = 0;
+                while (complexEventChunk.hasNext()) {
+                    StreamEvent streamEvent = complexEventChunk.next();
+                    String cellName = (String) cellNameExecutor.execute(streamEvent);
+                    String serviceName = (String) serviceNameExecutor.execute(streamEvent);
+                    String operationName = (String) operationNameExecutor.execute(streamEvent);
+                    String spanId = (String) spanIdExecutor.execute(streamEvent);
+                    String parentId = (String) parentIdExecutor.execute(streamEvent);
+                    String kind = (String) spanKindExecutor.execute(streamEvent);
+                    Long startTime = (Long) startTimeExecutor.execute(streamEvent);
+                    if (traceId == null) {
+                        traceId = (String) traceIdExecutor.execute(streamEvent);
                     }
-                }
-
-                synchronized (spanId.intern()) {
-                    List<SpanCacheInfo.NodeInfo> pendingChildNodes = this.pendingEdges.get(spanId);
-                    if (pendingChildNodes != null) {
-                        for (SpanCacheInfo.NodeInfo child : pendingChildNodes) {
-                            if (child != null) {
-                                addLink(spanCacheInfo, child.getNode(), child.getService(), child.getOperationName(),
-                                        spanId);
-                            }
-                        }
+                    if (kind == null || kind.isEmpty()) {
+                        kind = SpanInfo.Kind.NONE.name();
                     }
-                    this.pendingEdges.remove(spanId);
+                    SpanInfo spanInfo = new SpanInfo(cellName, serviceName, operationName, spanId, parentId,
+                            SpanInfo.Kind.valueOf(kind), startTime);
+                    List<SpanInfo> childNodes = spanCache.computeIfAbsent(parentId, k -> new ArrayList<>());
+                    childNodes.add(spanInfo);
+                    spanCache.putIfAbsent(parentId, childNodes);
+                    if (spanId.equalsIgnoreCase(traceId)) {
+                        rootSpan = spanInfo;
+                    }
+                    totalSpans++;
                 }
-            }
-        }
-        processor.process(complexEventChunk);
-    }
-
-    private void addLink(SpanCacheInfo parentSpan, Node childNode, String serviceName, String operationName,
-                         String spanId) {
-        SpanCacheInfo.NodeInfo parentNode = getParentNode(parentSpan, childNode);
-        String linkName = parentNode.getService() + Constants.LINK_SEPARATOR + serviceName;
-        synchronized (spanId.intern()) {
-            List<String> edgesCacheIfPresent = spanIdEdgesCache.getIfPresent(spanId);
-            if (edgesCacheIfPresent == null) {
-                edgesCacheIfPresent = new ArrayList<>();
-                spanIdEdgesCache.put(spanId, edgesCacheIfPresent);
-            }
-            edgesCacheIfPresent.add(Utils.generateEdgeName(parentNode.getNode().getId(), childNode.getId(), linkName));
-        }
-        ServiceHolder.getModelManager().addLink(parentNode.getNode(), childNode, linkName);
-    }
-
-    private SpanCacheInfo.NodeInfo getParentNode(SpanCacheInfo parentCacheInfo, Node childNode) {
-        SpanCacheInfo.NodeInfo parentNode = null;
-        if (parentCacheInfo.getServer() != null) {
-            if (childNode.getId().equalsIgnoreCase(parentCacheInfo.getServer().getNode().getId())) {
-                parentNode = parentCacheInfo.getServer();
-                return parentNode;
+                if (rootSpan != null) {
+                    List<SpanInfo> rootCellSpans = findRootCellSpan(rootSpan, spanCache);
+                    traceWalk(rootCellSpans, spanCache);
+                    ServiceHolder.getModelStoreManager().storeCurrentModel();
+                } else {
+                    log.warn("Root span was not detected for the trace: " + traceId +
+                            ", total parents spans cache: " + spanCache.size() + " , totalSpans: " + totalSpans);
+                }
             } else {
-                parentNode = parentCacheInfo.getServer();
+                processor.process(complexEventChunk);
             }
+        } catch (Throwable throwable) {
+            log.error("Unexpected error occured while processing the event in the model processor.", throwable);
         }
-        if (parentCacheInfo.getClient() != null) {
-            if (childNode.getId().equalsIgnoreCase(parentCacheInfo.getClient().getNode().getId())) {
-                parentNode = parentCacheInfo.getClient();
-            } else if (parentNode == null) {
-                parentNode = parentCacheInfo.getClient();
-            }
-        }
-        return parentNode;
     }
 
-    private Node getNode(String componentName, String tags) {
-        Node node = nodeCache.get(componentName);
-        if (node == null) {
-            synchronized (nodeCache) {
-                node = nodeCache.get(componentName);
-                if (node == null) {
-                    node = new Node(componentName, tags);
-                    this.nodeCache.put(componentName, node);
+    private List<SpanInfo> findRootCellSpan(SpanInfo rootSpan, Map<String, List<SpanInfo>> spanInfoMap) {
+        List<SpanInfo> parents = new ArrayList<>();
+        if (rootSpan.getCellName() == null || rootSpan.getCellName().isEmpty()) {
+            List<SpanInfo> children = spanInfoMap.get(rootSpan.getSpanId());
+            if (children != null) {
+                Collections.sort(children);
+                for (int i = 0; i < children.size(); i++) {
+                    SpanInfo child = children.get(i);
+                    if (child.getKind().equals(SpanInfo.Kind.CLIENT) && i + 1 < children.size()
+                            && children.get(i + 1).getKind().equals(SpanInfo.Kind.SERVER)) {
+                        continue;
+                    }
+                    if (child.getCellName() != null && !child.getCellName().isEmpty()) {
+                        parents.add(child);
+                    } else {
+                        parents.addAll(findRootCellSpan(child, spanInfoMap));
+                    }
                 }
             }
         }
-        return node;
+        return parents;
     }
 
-    private SpanCacheInfo setSpanInfo(String spanId, Node node, String serviceName, String operationName,
-                                      String type) {
-        SpanCacheInfo.Type nodeType;
-        if (type.equalsIgnoreCase(Constants.SERVER_SPAN_KIND)) {
-            nodeType = SpanCacheInfo.Type.SERVER;
-        } else {
-            nodeType = SpanCacheInfo.Type.CLIENT;
-        }
-        SpanCacheInfo spanInfo = spanIdNodeCache.getIfPresent(spanId);
-        if (spanInfo == null) {
-            synchronized (spanIdNodeCache) {
-                spanInfo = spanIdNodeCache.getIfPresent(spanId);
-                if (spanInfo == null) {
-                    spanInfo = new SpanCacheInfo(spanId, new SpanCacheInfo.NodeInfo(node,
-                            serviceName, operationName), nodeType);
-                    spanIdNodeCache.put(spanId, spanInfo);
-                    return spanInfo;
+    private void traceWalk(List<SpanInfo> rootSpans, Map<String, List<SpanInfo>> spanInfoMap) {
+        for (SpanInfo rootSpan : rootSpans) {
+            Node parentNode = ServiceHolder.getModelManager().getOrGenerateNode(rootSpan.getCellName());
+            parentNode.addComponent(rootSpan.getComponentName());
+            ServiceHolder.getModelManager().addNode(parentNode);
+            if (spanInfoMap.get(rootSpan.getSpanId()) != null) {
+                List<SpanInfo> linkedChildren = goDepth(parentNode, rootSpan, spanInfoMap);
+                if (!linkedChildren.isEmpty()) {
+                    traceWalk(linkedChildren, spanInfoMap);
                 }
             }
         }
-        spanInfo.setNodeInfo(new SpanCacheInfo.NodeInfo(node, serviceName, operationName), nodeType);
-        return spanInfo;
     }
+
+    private List<SpanInfo> goDepth(Node cellParentNode, SpanInfo parentSpanInfo, Map<String,
+            List<SpanInfo>> spanInfoMap) {
+        List<SpanInfo> childSpanInfoList = spanInfoMap.get(parentSpanInfo.getSpanId());
+        List<SpanInfo> linkedChildren = new ArrayList<>();
+        if (childSpanInfoList != null) {
+            Collections.sort(childSpanInfoList);
+            for (int i = 0; i < childSpanInfoList.size(); i++) {
+                SpanInfo childSpanInfo = childSpanInfoList.get(i);
+                if (childSpanInfo.getKind().equals(SpanInfo.Kind.CLIENT) && i + 1 < childSpanInfoList.size()
+                        && childSpanInfoList.get(i + 1).getKind().equals(SpanInfo.Kind.SERVER)) {
+                    continue;
+                }
+                if (childSpanInfo.getCellName() != null && !childSpanInfo.getCellName().isEmpty() &&
+                        !childSpanInfo.getOperationName().equalsIgnoreCase(Constants.IGNORE_OPERATION_NAME)) {
+                    Node childNode = ServiceHolder.getModelManager().getOrGenerateNode(childSpanInfo.getCellName());
+                    if (!childNode.equals(cellParentNode) || !parentSpanInfo.getComponentName().
+                            equalsIgnoreCase(childSpanInfo.getComponentName())) {
+                        childNode.addComponent(childSpanInfo.getComponentName());
+                        ServiceHolder.getModelManager().addNode(childNode);
+                        ServiceHolder.getModelManager().addLink(cellParentNode, childNode, Utils.generateServiceName(
+                                parentSpanInfo.getComponentName(), childSpanInfo.getComponentName()));
+                        linkedChildren.add(childSpanInfo);
+                    }
+                } else {
+                    goDepth(cellParentNode, childSpanInfo, spanInfoMap);
+                }
+            }
+        }
+        return linkedChildren;
+    }
+
 
     @Override
     protected List<Attribute> init(AbstractDefinition abstractDefinition, ExpressionExecutor[] expressionExecutors,
                                    ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
-        if (expressionExecutors.length != 7) {
+        if (expressionExecutors.length != 8) {
             throw new SiddhiAppCreationException("Minimum number of attributes is six");
         } else {
             if (expressionExecutors[0].getReturnType() == Attribute.Type.STRING) {
@@ -263,11 +239,19 @@ public class ModelGenerationExtension extends StreamProcessor {
             }
 
             if (expressionExecutors[6].getReturnType() == Attribute.Type.STRING) {
-                tagExecutor = expressionExecutors[6];
+                traceIdExecutor = expressionExecutors[6];
             } else {
                 throw new SiddhiAppCreationException("Expected a field with String return type for the " +
-                        "spanKind field, but found a field with return type - "
-                        + expressionExecutors[5].getReturnType());
+                        "traceId field, but found a field with return type - "
+                        + expressionExecutors[6].getReturnType());
+            }
+
+            if (expressionExecutors[7].getReturnType() == Attribute.Type.LONG) {
+                startTimeExecutor = expressionExecutors[7];
+            } else {
+                throw new SiddhiAppCreationException("Expected a field with long return type for the " +
+                        "startTime field, but found a field with return type - "
+                        + expressionExecutors[7].getReturnType());
             }
         }
         return new ArrayList<>();

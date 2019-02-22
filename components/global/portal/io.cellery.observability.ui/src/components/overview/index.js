@@ -297,7 +297,7 @@ class Overview extends React.Component {
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 NotificationUtils.showNotification(
-                    `Failed to load ${nodeId} Cell Dependencies`,
+                    `Failed to load ${nodeId} request statistics`,
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );
