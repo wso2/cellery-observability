@@ -1,6 +1,25 @@
+/*
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package io.cellery.observability.api.internal;
 
 import io.cellery.observability.api.AggregatedRequestsAPI;
+import io.cellery.observability.api.Constants;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -36,27 +55,30 @@ public class RegisterClient {
 
     public static JSONObject getClientCredentials() throws IOException {
         BufferedReader bufReader = null;
-        JSONObject obj2 = null;
+        InputStreamReader inputStreamReader = null;
+        JSONObject jsonObject = null;
         try {
 
             HttpClient client = getAllSSLClient();
 
             HttpPost request =
-                    new HttpPost("https://gateway.cellery-system:9443/client-registration/v0.14/register");
-            JSONObject obj = new JSONObject();
-            obj.put("callbackUrl", "http://cellery-dashboard");
-            obj.put("clientName", "Cellery-Observability-Portal");
-            obj.put("owner", "admin");
-            obj.put("grantType", "authorization_code");
-            obj.put("saasApp", " true");
-            request.setHeader("Authorization", "Basic YWRtaW46YWRtaW4=");
-            request.setHeader("content-type", "application/json");
-            request.setEntity(new StringEntity(obj.toString()));
+                    new HttpPost(Constants.CLIENT_REGISTERATION_ENDPOINT);
+            JSONObject clientJson = new JSONObject();
+            clientJson.put(Constants.CALL_BACK_URL, Constants.OBSERVABILITY_DASHBOARD_URL);
+            clientJson.put(Constants.CLIENT_NAME, Constants.APPLICATION_NAME);
+            clientJson.put(Constants.OWNER, Constants.ADMIN);
+            clientJson.put(Constants.GRANT_TYPE, Constants.AUTHORIZATION_CODE);
+            clientJson.put(Constants.SAAS_APP, Constants.TRUE);
+            request.setHeader(Constants.AUTHORIZATION, Constants.BASIC_ADMIN_AUTH);
+            request.setHeader(Constants.CONTENT_TYPE, Constants.APPLICATION_JSON);
+            request.setEntity(new StringEntity(clientJson.toString()));
 
             HttpResponse response = client.execute(request);
 
-            bufReader = new BufferedReader(new InputStreamReader(
-                    response.getEntity().getContent(), StandardCharsets.UTF_8));
+             inputStreamReader = new InputStreamReader(
+                    response.getEntity().getContent(), StandardCharsets.UTF_8);
+
+            bufReader = new BufferedReader(inputStreamReader);
 
             StringBuilder builder = new StringBuilder();
 
@@ -67,22 +89,29 @@ public class RegisterClient {
                 builder.append(System.lineSeparator());
             }
 
-            obj2 = new JSONObject(builder.toString());
-            return obj2;
+            jsonObject = new JSONObject(builder.toString());
+            return jsonObject;
 
         } catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException e) {
-            log.error("Message", e);
+            log.error("Error while fetching the Client-Id for the dynamically created service provider ", e);
         } finally {
-            if (bufReader != null) {
+            if (bufReader != null ) {
                 try {
                     bufReader.close();
                 } catch (IOException e) {
-                    log.error("Message", e);
+                    log.error("Error in closing the BufferedReader", e);
+                }
+            }
+            if (inputStreamReader != null ) {
+                try {
+                    inputStreamReader.close();
+                } catch (IOException e) {
+                    log.error("Error in closing the InputStreamReader", e);
                 }
             }
         }
 
-        return obj2;
+        return jsonObject;
     }
 
     public static HttpClient getAllSSLClient()
