@@ -319,6 +319,10 @@ class ComponentDependencyGraph extends React.Component {
                 curve = 12;
             }
 
+            ctx.font = "16px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(selectedComponent.split(":")[0], Xcenter, Ycenter + size);
+
             ctx.translate(Xcenter, Ycenter); // Translate to center of shape
             ctx.rotate(22.5 * Math.PI / 180); // Rotate 22.5 degrees.
             ctx.translate(-Xcenter, -Ycenter);
@@ -328,6 +332,7 @@ class ComponentDependencyGraph extends React.Component {
             ctx.moveTo(Xcenter + size, Ycenter + size);
             ctx.lineJoin = "round";
             ctx.lineWidth = 3;
+
 
             for (let i = 0; i <= numberOfSides; i += 1) {
                 ctx.lineTo(Xcenter + size * Math.cos(i * 2 * Math.PI / numberOfSides), Ycenter + size

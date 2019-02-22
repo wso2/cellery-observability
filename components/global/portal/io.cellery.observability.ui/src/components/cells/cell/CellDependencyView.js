@@ -17,6 +17,7 @@
 /* eslint max-len: ["off"] */
 
 import DependencyGraph from "../../common/DependencyGraph";
+import Divider from "@material-ui/core/Divider";
 import ErrorBoundary from "../../common/error/ErrorBoundary";
 import HttpUtils from "../../../utils/api/httpUtils";
 import InfoOutlined from "@material-ui/icons/InfoOutlined";
@@ -58,6 +59,9 @@ const styles = (theme) => ({
         display: "inline-flex",
         fontSize: 18,
         marginRight: 4
+    },
+    divider: {
+        marginTop: theme.spacing.unit
     }
 });
 
@@ -169,6 +173,7 @@ class CellDependencyView extends React.Component {
                 <Typography color="textSecondary" className={classes.subtitle}>
                     Dependencies
                 </Typography>
+                <Divider className={classes.divider}/>
                 <div className={classes.graphContainer}>
                     <div className={classes.diagram}>
                         {view}
