@@ -170,6 +170,7 @@ class DependencyDiagram extends React.Component {
         const viewGenerator = (nodeId, opacity) => {
             const color = ColorGenerator.shadeColor(colorGenerator.getColor(nodeId.split(":")[0]), opacity);
             const outlineColor = ColorGenerator.shadeColor(color, -0.08);
+            const errorColor = ColorGenerator.shadeColor(colorGenerator.getColor(ColorGenerator.ERROR), opacity);
             const component = [];
             nodes.forEach((node) => {
                 if (node.id === nodeId) {
@@ -183,8 +184,6 @@ class DependencyDiagram extends React.Component {
             let nodeView;
 
             if (component[0].span.hasError()) {
-                const errorColor = colorGenerator.getColor(ColorGenerator.ERROR);
-
                 const iconTranslation = radius * (Math.PI / 4);
                 const xTranslation = 150;
                 const yTranslation = 120 - iconTranslation - 30;
