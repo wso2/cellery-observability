@@ -137,6 +137,13 @@ const styles = (theme) => ({
     },
     legendFirstEl: {
         verticalAlign: "middle"
+    },
+    graphContainer: {
+        display: "flex"
+    },
+    diagram: {
+        padding: theme.spacing.unit * 3,
+        flexGrow: 1
     }
 });
 
@@ -706,10 +713,14 @@ class Overview extends React.Component {
                                         isDataAvailable
                                             ? (
                                                 <React.Fragment>
-                                                    <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges}
-                                                        onClickNode={(nodeId) => this.onClickCell(nodeId, true)} viewGenerator={viewGenerator}
-                                                        onClickGraph={this.onClickGraph} selectedCell={selectedCell} graphType="overview"
-                                                    />
+                                                    <div className={classes.graphContainer}>
+                                                        <div className={classes.diagram}>
+                                                            <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges}
+                                                                onClickNode={(nodeId) => this.onClickCell(nodeId, true)} viewGenerator={viewGenerator}
+                                                                onClickGraph={this.onClickGraph} selectedCell={selectedCell} graphType="overview"
+                                                            />
+                                                        </div>
+                                                    </div>
                                                     <Button aria-describedby={id} variant="outlined"
                                                         className={classes.btnLegend} onClick={this.handleClick}>
                                                         Legend
