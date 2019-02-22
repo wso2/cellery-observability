@@ -485,7 +485,6 @@
         <commons.compress.version>1.18</commons.compress.version>
         <bouncy.castle.version>1.59</bouncy.castle.version>
         <opencensus.version>0.16.1</opencensus.version>
-
         <protobuf.orbit.version>0.1.1-SNAPSHOT</protobuf.orbit.version>
         <gogoproto.orbit.version>0.1.1-SNAPSHOT</gogoproto.orbit.version>
         <grpc.orbit.version>0.1.1-SNAPSHOT</grpc.orbit.version>
