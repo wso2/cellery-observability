@@ -36,7 +36,7 @@ class DependencyGraph extends React.Component {
     static GraphType = {
         OVERVIEW: "overview",
         DEPENDENCY: "dependency"
-    }
+    };
 
     static GRAPH_OPTIONS = {
         nodes: {
