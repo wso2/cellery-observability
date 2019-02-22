@@ -18,6 +18,7 @@
 
 import AuthUtils from "../utils/api/authUtils";
 import CircularProgress from "@material-ui/core/CircularProgress/CircularProgress";
+import Constants from "../utils/constants";
 import HttpUtils from "../utils/api/httpUtils";
 import React from "react";
 import jwtDecode from "jwt-decode";
@@ -68,7 +69,7 @@ const styles = (theme) => ({
     }
 });
 
-const idpAddress = "wso2-apim";
+const idpAddress = Constants.Dashboard.APIM_HOSTNAME;
 
 class SignIn extends React.Component {
 
@@ -134,7 +135,6 @@ class SignIn extends React.Component {
                 }).catch((err) => {
                     localStorage.setItem("error", err.toString());
                 });
-
             }
         } else if (localStorage.getItem("isAuthenticated") === "loggedOut") {
             localStorage.removeItem(StateHolder.USER);

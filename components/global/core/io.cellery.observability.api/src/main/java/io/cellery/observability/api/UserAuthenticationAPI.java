@@ -15,6 +15,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package io.cellery.observability.api;
 
 import io.cellery.observability.api.exception.APIInvocationException;
@@ -40,8 +41,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
-
-
 /**
  * MSF4J service for Authentication services.
  */
@@ -63,7 +62,7 @@ public class UserAuthenticationAPI {
     @Produces("application/json")
     public Response getTokens(@PathParam("authCode") String authCode) throws APIInvocationException {
         try {
-           cancelCheck();
+            cancelCheck();
             OAuthClientRequest request = OAuthClientRequest
                     .tokenLocation("https://gateway.cellery-system:9443/oauth2/token?")
                     .setGrantType(GrantType.AUTHORIZATION_CODE)
@@ -88,7 +87,7 @@ public class UserAuthenticationAPI {
     @GET
     @Path("/getCredentials/client")
     @Produces("application/json")
-    public Response getCredentials()  {
+    public Response getCredentials() {
         cancelCheck();
         return Response.ok().entity(clientId).build();
     }
