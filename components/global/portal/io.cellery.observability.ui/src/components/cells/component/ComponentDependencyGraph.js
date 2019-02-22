@@ -120,17 +120,17 @@ class ComponentDependencyGraph extends React.Component {
 
     constructor(props) {
         super(props);
-        this.timelineNode = React.createRef();
+        this.dependencyGraph = React.createRef();
     }
 
     componentDidMount = () => {
-        if (this.timelineNode.current) {
+        if (this.dependencyGraph.current) {
             this.draw();
         }
     };
 
     componentDidUpdate = () => {
-        if (this.timelineNode.current) {
+        if (this.dependencyGraph.current) {
             this.draw();
         }
     };
@@ -295,7 +295,8 @@ class ComponentDependencyGraph extends React.Component {
             edges: edges
         };
 
-        const network = new vis.Network(this.timelineNode.current, graphData, ComponentDependencyGraph.GRAPH_OPTIONS);
+        const network
+            = new vis.Network(this.dependencyGraph.current, graphData, ComponentDependencyGraph.GRAPH_OPTIONS);
         let allNodes;
 
         if (selectedComponent) {
@@ -436,7 +437,7 @@ class ComponentDependencyGraph extends React.Component {
         if (nodeData && nodeData.length > 0) {
             view = (
                 <ErrorBoundary title={"Unable to Render"} description={"Unable to Render due to Invalid Data"}>
-                    <div className={classes.graph} ref={this.timelineNode}/>
+                    <div className={classes.graph} ref={this.dependencyGraph}/>
                 </ErrorBoundary>
             );
         } else {
