@@ -44,9 +44,9 @@ const styles = (theme) => ({
         alignItems: "center",
         padding: `${theme.spacing.unit * 2}px ${theme.spacing.unit * 3}px ${theme.spacing.unit * 3}px`
     },
-    avatar: {
+    heading: {
         margin: theme.spacing.unit,
-        backgroundColor: theme.palette.secondary.main
+        paddingTop: theme.spacing.unit * 2
     },
     form: {
         width: "100%", // Fix IE 11 issue.
@@ -95,7 +95,6 @@ class SignIn extends React.Component {
                         Loading
                     </div>
                 </div>
-
             </React.Fragment>
         );
     }

@@ -79,6 +79,17 @@ const ProtectedPortal = withGlobalState(StatelessProtectedPortal);
 const theme = createMuiTheme({
     typography: {
         useNextVariants: true
+    },
+    palette: {
+        primary: {
+            light: "#E5EAEA",
+            main: "#29ABE0",
+            contrastText: "#FFF",
+            dark: "#1F88b3"
+        },
+        secondary: {
+            main: "#424245"
+        }
     }
 });
 
