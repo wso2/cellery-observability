@@ -48,7 +48,15 @@ import javax.ws.rs.core.Response;
 @Path("/api/user-auth")
 public class UserAuthenticationAPI {
 
+    private String clientId;
+    private String clientSecret;
+
     private static final Logger log = Logger.getLogger(AggregatedRequestsAPI.class);
+
+    public UserAuthenticationAPI(String id, String secret) {
+        this.clientId = id;
+        this.clientSecret = secret;
+    }
 
     @GET
     @Path("/requestToken/{authCode}")
@@ -59,8 +67,8 @@ public class UserAuthenticationAPI {
             OAuthClientRequest request = OAuthClientRequest
                     .tokenLocation("https://gateway.cellery-system:9443/oauth2/token?")
                     .setGrantType(GrantType.AUTHORIZATION_CODE)
-                    .setClientId("IwjnlXzbrVpe0Ft0HHXiRImnS98a")
-                    .setClientSecret("2xD9JNOSpI23wxS3ZGsTyOe7OVsa")
+                    .setClientId(clientId)
+                    .setClientSecret(clientSecret)
                     .setRedirectURI("http://cellery-dashboard")
                     .setCode(authCode).buildBodyMessage();
 
@@ -75,6 +83,14 @@ public class UserAuthenticationAPI {
                     "data for cells", throwable);
         }
 
+    }
+
+    @GET
+    @Path("/getCredentials/client")
+    @Produces("application/json")
+    public Response getCredentials()  {
+        cancelCheck();
+        return Response.ok().entity(clientId).build();
     }
 
     private static void cancelCheck() {
@@ -93,15 +109,10 @@ public class UserAuthenticationAPI {
         }
     }
 
-
     @OPTIONS
     @Path("/*")
     public Response getOptions() {
         return Response.ok().build();
-    }
-
-    public static void main (String[] args) {
-
     }
 
 }
