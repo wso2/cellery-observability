@@ -44,7 +44,7 @@ class DependencyGraph extends React.Component {
                 borderRadius: 10
             },
             borderWidth: 1,
-            size: 30,
+            size: 35,
             font: {
                 size: 15,
                 color: "#000000"
