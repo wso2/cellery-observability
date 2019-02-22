@@ -34,6 +34,9 @@ import {withStyles} from "@material-ui/core/styles";
 import * as PropTypes from "prop-types";
 
 const styles = () => ({
+    root: {
+        display: "flex"
+    },
     table: {
         width: "20%",
         marginTop: 25
@@ -161,7 +164,7 @@ class Details extends React.Component {
                 {isLoading ? null : view}
                 {
                     isDataAvailable
-                        ? <CellDependencyView cell={cell}/>
+                        ? <CellDependencyView cell={cell} className={classes.root} />
                         : null
                 }
             </React.Fragment>
