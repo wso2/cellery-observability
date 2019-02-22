@@ -46,7 +46,6 @@ import javax.ws.rs.core.Response;
  */
 @Path("/api/user-auth")
 public class UserAuthenticationAPI {
-
     private String clientId;
     private String clientSecret;
 
@@ -64,24 +63,23 @@ public class UserAuthenticationAPI {
         try {
             cancelCheck();
             OAuthClientRequest request = OAuthClientRequest
-                    .tokenLocation("https://gateway.cellery-system:9443/oauth2/token?")
+                    .tokenLocation(Constants.INTERNAL_TOKEN_LOCATION)
                     .setGrantType(GrantType.AUTHORIZATION_CODE)
                     .setClientId(clientId)
                     .setClientSecret(clientSecret)
-                    .setRedirectURI("http://cellery-dashboard")
+                    .setRedirectURI(Constants.OBSERVABILITY_DASHBOARD_URL)
                     .setCode(authCode).buildBodyMessage();
 
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
             OAuthAccessTokenResponse oAuthResponse = oAuthClient.accessToken(request);
             JSONObject obj = new JSONObject(oAuthResponse.getBody());
 
-            return Response.ok().entity(obj.get("id_token")).build();
+            return Response.ok().entity(obj.get(Constants.ID_TOKEN)).build();
 
         } catch (Throwable throwable) {
             throw new APIInvocationException("Unexpected error occurred while fetching the aggregated HTTP request " +
                     "data for cells", throwable);
         }
-
     }
 
     @GET
@@ -102,7 +100,6 @@ public class UserAuthenticationAPI {
                     return true;
                 }
             });
-
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
             log.error("Error", e);
         }

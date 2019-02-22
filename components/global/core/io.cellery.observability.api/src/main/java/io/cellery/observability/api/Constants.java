@@ -48,5 +48,7 @@ public class Constants {
     public static final String BASIC_ADMIN_AUTH = "Basic YWRtaW46YWRtaW4=";
     public static final String CONTENT_TYPE = "content-type";
     public static final String APPLICATION_JSON = "application/json";
+    public static final String INTERNAL_TOKEN_LOCATION = "https://gateway.cellery-system:9443/oauth2/token?";
+    public static final String ID_TOKEN = "id_token";
 
 }

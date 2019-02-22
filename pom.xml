@@ -316,6 +316,11 @@
                 <artifactId>org.apache.oltu.oauth2.client</artifactId>
                 <version>${oltu.oauth2.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${httpcore.version}</version>
+            </dependency>
             <!--Orbit dependencies end here-->
         </dependencies>
     </dependencyManagement>
@@ -448,6 +453,7 @@
         <msf4j.version>2.6.4</msf4j.version>
         <httpasyncclient.version>4.0.2</httpasyncclient.version>
         <httpmime.version>4.3.6</httpmime.version>
+        <httpcore.version>4.4.11</httpcore.version>
         <json.version>20140107</json.version>
         <oltu.oauth2.version>1.0.0</oltu.oauth2.version>
         <synapse.core.version>2.1.7-wso2v80</synapse.core.version>
