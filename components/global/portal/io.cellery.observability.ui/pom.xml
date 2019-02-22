@@ -17,9 +17,7 @@
   ~ under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>io.cellery.observability</groupId>
@@ -40,6 +38,22 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>${maven.exec.plugin.version}</version>
                 <executions>
+                    <execution>
+                        <id>npm version</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <executable>${npm.executable}</executable>
+                            <arguments>
+                                <argument>version</argument>
+                                <argument>${project.version}</argument>
+                                <argument>--allow-same-version</argument>
+                                <argument>--no-git-tag-version</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>npm install rimraf</id> <!-- To ensure that clean doesn't fail on newly cloned projects -->
                         <goals>

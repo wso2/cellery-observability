@@ -15,6 +15,7 @@
  */
 
 /* eslint max-lines: ["off"] */
+/* eslint max-len: ["off"] */
 
 import ArrowRightAltSharp from "@material-ui/icons/ArrowRightAltSharp";
 import Button from "@material-ui/core/Button";
@@ -199,7 +200,7 @@ class Overview extends React.Component {
             selectedCell: null,
             data: {
                 nodes: null,
-                links: null
+                edges: null
             },
             error: null,
             open: true,
@@ -217,64 +218,6 @@ class Overview extends React.Component {
             isLoading: true
         };
     }
-
-    viewGenerator = (nodeProps) => {
-        const {colorGenerator} = this.props;
-        const {selectedCell} = this.state;
-        const nodeId = nodeProps.id;
-        const color = colorGenerator.getColor(nodeId);
-        const outlineColor = ColorGenerator.shadeColor(color, -0.08);
-        const state = this.getCellState(nodeId);
-
-        const style = {};
-        style.transform = "translate(2%, 15%) scale(2, 2)";
-        const cellIcon
-            = <polygon strokeWidth="4" fill={color} stroke={(selectedCell === nodeId) ? "#444" : outlineColor}
-                points="34.2,87.4 12.3,65.5 12.3,34.5 34.2,12.6 65.2,12.6 87.1,34.5 87.1,65.5 65.2,87.4"
-                style={style} strokeLinejoin="round"/>;
-
-        let cellView;
-        if (state === Constants.Status.Success) {
-            cellView = (
-                <svg x="0px" y="0px" width="100%" height="100%" viewBox="0 0 240 240">
-                    {cellIcon}
-                </svg>
-            );
-        } else if (state === Constants.Status.Warning) {
-            cellView = (
-                <svg x="0px" y="0px" width="100%" height="100%" viewBox="0 0 240 240">
-                    <g>
-                        <g>
-                            {cellIcon}
-                        </g>
-                    </g>
-                    <g>
-                        <path stroke="#fff" strokeWidth="3" fill={colorGenerator.getColor(ColorGenerator.WARNING)}
-                            d="M146.5,6.1c-23.6,0-42.9,19.3-42.9,42.9s19.3,42.9,42.9,42.9s42.9-19.3,42.9-42.9S170.1,
-                               6.1,146.5,6.1z" />
-                        <path fill="#ffffff" d="M144.6,56.9h7.9v7.9h-7.9V56.9z M144.6,25.2h7.9V49h-7.9V25.2z"/>
-                    </g>
-                </svg>
-            );
-        } else {
-            cellView = (
-                <svg x="0px" y="0px" width="100%" height="100%" viewBox="0 0 240 240">
-                    <g>
-                        <g>
-                            {cellIcon}
-                        </g>
-                    </g>
-                    <g>
-                        <path stroke="#fff" strokeWidth="3" fill={colorGenerator.getColor(ColorGenerator.ERROR)}
-                            d="M146.5,6.1c-23.6,0-42.9,19.3-42.9,42.9s19.3,42.9,42.9,42.9s42.9-19.3,42.9-42.9S170.1,
-                               6.1, 146.5,6.1z"/>
-                        <path fill="#ffffff" d="M144.6,56.9h7.9v7.9h-7.9V56.9z M144.6,25.2h7.9V49h-7.9V25.2z"/>
-                    </g>
-                </svg>
-            );
-        }
-        return cellView;
-    };
 
     getCellState = (nodeId) => {
         const healthInfo = this.defaultState.healthInfo.find((element) => element.nodeId === nodeId);
@@ -311,10 +254,10 @@ class Overview extends React.Component {
             this.props.globalState
         ).then((response) => {
             const cell = this.state.data.nodes.find((element) => element.id === nodeId);
-            const componentHealth = this.getComponentHealth(cell.services, response);
+            const componentHealth = this.getComponentHealth(cell.components, response);
             const componentHealthCount = this.getHealthCount(componentHealth);
             const statusCodeContent = this.getStatusCodeContent(nodeId, this.defaultState.request.cellStats);
-            const componentInfo = this.loadComponentsInfo(cell.services, componentHealth);
+            const componentInfo = this.loadComponentsInfo(cell.components, componentHealth);
             this.setState((prevState) => ({
                 summary: {
                     ...prevState.summary,
@@ -354,7 +297,7 @@ class Overview extends React.Component {
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 NotificationUtils.showNotification(
-                    `Failed to load ${nodeId} Cell Dependencies`,
+                    `Failed to load ${nodeId} request statistics`,
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );
@@ -490,13 +433,15 @@ class Overview extends React.Component {
             ];
             self.defaultState.summary.content = summaryContent;
             self.defaultState.data.nodes = nodes;
-            self.defaultState.data.links = edges;
+            self.defaultState.data.edges = edges;
             colorGenerator.addKeys(nodes);
             const cellList = self.loadCellInfo(nodes);
+
+
             self.setState((prevState) => ({
                 data: {
                     nodes: nodes,
-                    links: edges
+                    edges: edges
                 },
                 summary: {
                     ...prevState.summary,
@@ -699,10 +644,52 @@ class Overview extends React.Component {
     render = () => {
         const {classes, theme, colorGenerator} = this.props;
         const {open, selectedCell, legend, legendOpen, isLoading} = this.state;
-
         const id = legendOpen ? "legend-popper" : null;
         const percentageVal = this.props.globalState.get(StateHolder.CONFIG).percentageRangeMinValue;
         const isDataAvailable = this.state.data.nodes && this.state.data.nodes.length > 0;
+
+        const viewGenerator = (nodeId, opacity) => {
+            const color = ColorGenerator.shadeColor(colorGenerator.getColor(nodeId), opacity);
+            const outlineColor = ColorGenerator.shadeColor(color, -0.08);
+            const errorColor = ColorGenerator.shadeColor(colorGenerator.getColor(ColorGenerator.ERROR), opacity);
+            const warningColor = ColorGenerator.shadeColor(colorGenerator.getColor(ColorGenerator.WARNING), opacity);
+            const state = this.getCellState(nodeId);
+
+            const successCell = '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">'
+                + `<path fill="${color}"  stroke="${(selectedCell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
+                + "</svg>";
+
+            const errorCell = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><g>'
+                + `<path fill="${color}" stroke="${(selectedCell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/></g>'
+                + `<path fill="${errorColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
+                + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
+                + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
+                + "</svg>";
+
+            const warningCell = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><g>'
+                + `<path fill="${color}" stroke="${(selectedCell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                + 'stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/></g>'
+                + `<path fill="${warningColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
+                + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
+                + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
+                + "</svg>";
+
+            let cellView;
+            if (state === Constants.Status.Success) {
+                cellView = successCell;
+            } else if (state === Constants.Status.Warning) {
+                cellView = warningCell;
+            } else {
+                cellView = errorCell;
+            }
+
+            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cellView)}`;
+        };
+
+        const dataNodes = this.state.data.nodes;
+        const dataEdges = this.state.data.edges;
 
         return (
             <React.Fragment>
@@ -719,14 +706,10 @@ class Overview extends React.Component {
                                         isDataAvailable
                                             ? (
                                                 <React.Fragment>
-                                                    <DependencyGraph id="graph-id" data={this.state.data}
-                                                        onClickNode={(nodeId) => this.onClickCell(nodeId, true)}
-                                                        onClickGraph={this.onClickGraph}
-                                                        config={{
-                                                            node: {
-                                                                viewGenerator: this.viewGenerator
-                                                            }
-                                                        }}/>
+                                                    <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges}
+                                                        onClickNode={(nodeId) => this.onClickCell(nodeId, true)} viewGenerator={viewGenerator}
+                                                        onClickGraph={this.onClickGraph} selectedCell={selectedCell} graphType="overview"
+                                                    />
                                                     <Button aria-describedby={id} variant="outlined"
                                                         className={classes.btnLegend} onClick={this.handleClick}>
                                                         Legend

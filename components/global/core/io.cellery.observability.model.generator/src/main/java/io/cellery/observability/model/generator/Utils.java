@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static io.cellery.observability.model.generator.Constants.EDGE_NAME_CONNECTOR;
+import static io.cellery.observability.model.generator.Constants.LINK_SEPARATOR;
 
 /**
  * This is the Utils class that is used by other common components
@@ -39,10 +40,10 @@ public class Utils {
         return parentNodeId + EDGE_NAME_CONNECTOR + childNodeId + EDGE_NAME_CONNECTOR + serviceName;
     }
 
-    public static String getEdgePostFix(String edgeName) {
-        int index = edgeName.lastIndexOf(Constants.LINK_SEPARATOR) + Constants.LINK_SEPARATOR.length();
-        return edgeName.substring(index);
+    public static String generateServiceName(String parentService, String childService) {
+        return parentService + LINK_SEPARATOR + childService;
     }
+
 
     public static Set<Edge> getEdges(Set<String> edgeString) {
         Set<Edge> edges = new HashSet<>();

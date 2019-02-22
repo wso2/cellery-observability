@@ -17,7 +17,6 @@
  */
 package io.cellery.observability.model.generator;
 
-import com.google.common.graph.EndpointPair;
 import com.google.common.graph.MutableNetwork;
 import com.google.common.graph.NetworkBuilder;
 import io.cellery.observability.model.generator.exception.GraphStoreException;
@@ -27,8 +26,10 @@ import io.cellery.observability.model.generator.model.Edge;
 import io.cellery.observability.model.generator.model.Model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -36,6 +37,7 @@ import java.util.Set;
  */
 public class ModelManager {
     private MutableNetwork<Node, String> dependencyGraph;
+    private Map<String, Node> nodeCache = new HashMap<>();
 
     public ModelManager() throws ModelException {
         try {
@@ -59,6 +61,7 @@ public class ModelManager {
     private void addNodes(Set<Node> nodes) {
         for (Node node : nodes) {
             this.dependencyGraph.addNode(node);
+            this.nodeCache.putIfAbsent(node.getId(), node);
         }
     }
 
@@ -82,19 +85,41 @@ public class ModelManager {
         }
     }
 
-    private Node getNode(String nodeName) {
-        Set<Node> nodes = this.dependencyGraph.nodes();
-        for (Node node : nodes) {
-            if (node.getId().equalsIgnoreCase(nodeName)) {
-                return node;
+    public Node getNode(String nodeName) {
+        Node cachedNode = nodeCache.get(nodeName);
+        if (cachedNode == null) {
+            Set<Node> nodes = this.dependencyGraph.nodes();
+            for (Node node : nodes) {
+                if (node.getId().equalsIgnoreCase(nodeName)) {
+                    nodeCache.put(node.getId(), node);
+                    return node;
+                }
             }
+            return null;
         }
-        return null;
+        return cachedNode;
+    }
+
+    public Node getOrGenerateNode(String nodeName) {
+        Node cachedNode = nodeCache.get(nodeName);
+        if (cachedNode == null) {
+            Set<Node> nodes = this.dependencyGraph.nodes();
+            for (Node node : nodes) {
+                if (node.getId().equalsIgnoreCase(nodeName)) {
+                    nodeCache.put(node.getId(), node);
+                    return node;
+                }
+            }
+        } else {
+            return cachedNode;
+        }
+        return new Node(nodeName);
     }
 
 
     public void addNode(Node node) {
         this.dependencyGraph.addNode(node);
+        this.nodeCache.put(node.getId(), node);
     }
 
     public void addLink(Node parent, Node child, String serviceName) {
@@ -113,30 +138,7 @@ public class ModelManager {
         return dependencyGraph;
     }
 
-    public void moveLinks(Node targetNode, String newEdgePrefix, List<String> edgesToRemove, boolean moveOnlyTarget) {
-        if (edgesToRemove != null) {
-            for (String edgeName : edgesToRemove) {
-                try {
-                    EndpointPair<Node> endpointPair = this.dependencyGraph.incidentNodes(edgeName);
-                    if (endpointPair != null) {
-                        Node outNode = endpointPair.target();
-                        if (!moveOnlyTarget || outNode.equals(targetNode)) {
-                            String newEdgeName = newEdgePrefix + Constants.LINK_SEPARATOR
-                                    + Utils.getEdgePostFix(edgeName);
-                            this.addLink(targetNode, outNode, newEdgeName);
-                            this.dependencyGraph.removeEdge(edgeName);
-                        }
-                    }
-                } catch (Exception ignored) {
-                }
-            }
-        }
-    }
-
     public Model getGraph(long fromTime, long toTime) throws GraphStoreException {
-        if (!ServiceHolder.getPeriodicProcessor().isStarted()) {
-            ServiceHolder.getPeriodicProcessor().run();
-        }
         if (fromTime == 0 && toTime == 0) {
             return new Model(this.dependencyGraph.nodes(), Utils.getEdges(this.dependencyGraph.edges()));
         } else {
@@ -173,7 +175,6 @@ public class ModelManager {
         }
     }
 
-
     private Model getDependencyModel(Model model, String cell) {
         Set<Node> dependedNodes = new HashSet<>();
         Set<Edge> dependedEdges = new HashSet<>();
@@ -190,19 +191,21 @@ public class ModelManager {
     public Model getDependencyModel(long fromTime, long toTime, String cellName, String serviceName)
             throws GraphStoreException {
         Model graph = getGraph(fromTime, toTime);
+        List<String> traversedServices = new ArrayList<>();
         Node cell = Utils.getNode(graph.getNodes(), new Node(cellName));
         Model serviceModel = null;
         if (cell != null) {
             String qualifiedServiceName = Utils.getQualifiedServiceName(cellName, serviceName);
-            serviceModel = getDependencyModel(cell, serviceName);
+            serviceModel = getDependencyModel(cell, serviceName, traversedServices);
             for (Edge edge : graph.getEdges()) {
                 String edgeServiceName = Utils.getEdgeServiceName(edge.getEdgeString());
                 String[] services = Utils.getServices(edgeServiceName);
-                if (services[0].equalsIgnoreCase(serviceName) && !services[0].equalsIgnoreCase(services[1])) {
+                if (edge.getSource().equalsIgnoreCase(cellName) && services[0].equalsIgnoreCase(serviceName)
+                        && !services[1].equalsIgnoreCase(serviceName) && !edge.getTarget().equalsIgnoreCase(cellName)) {
                     Node dependedCell = Utils.getNode(graph.getNodes(),
                             new Node(edge.getTarget()));
                     if (dependedCell != null) {
-                        Model dependentCellModel = getDependencyModel(dependedCell, services[1]);
+                        Model dependentCellModel = getDependencyModel(dependedCell, services[1], traversedServices);
                         serviceModel.mergeModel(dependentCellModel,
                                 new Edge(Utils.generateEdgeName(qualifiedServiceName,
                                         Utils.getQualifiedServiceName(dependedCell.getId(), services[1]), "")));
@@ -216,24 +219,27 @@ public class ModelManager {
         return serviceModel;
     }
 
-    private Model getDependencyModel(Node cell, String serviceName) {
+    private Model getDependencyModel(Node cell, String serviceName, List<String> traversedServices) {
         Set<Node> nodes = new HashSet<>();
         Set<Edge> edges = new HashSet<>();
         String qualifiedServiceName = Utils.getQualifiedServiceName(cell.getId(), serviceName);
-        nodes.add(new Node(qualifiedServiceName));
-        for (String edge : cell.getEdges()) {
-            String[] sourceTarget = edge.split(Constants.LINK_SEPARATOR);
-            if (sourceTarget[0].trim().equalsIgnoreCase(serviceName) &&
-                    !sourceTarget[0].trim().equalsIgnoreCase(sourceTarget[1])) {
-                String qualifiedTargetServiceName = Utils.getQualifiedServiceName(cell.getId(),
-                        sourceTarget[1].trim());
-                nodes.add(new Node(qualifiedTargetServiceName));
-                edges.add(new Edge(Utils.generateEdgeName(qualifiedServiceName, qualifiedTargetServiceName,
-                        "")));
-                Model nextLevelModel = getDependencyModel(cell, sourceTarget[1]);
-                if (nextLevelModel.getNodes().size() > 1) {
-                    nodes.addAll(nextLevelModel.getNodes());
-                    edges.addAll(nextLevelModel.getEdges());
+        if (!traversedServices.contains(qualifiedServiceName)) {
+            nodes.add(new Node(qualifiedServiceName));
+            traversedServices.add(qualifiedServiceName);
+            for (String edge : cell.getEdges()) {
+                String[] sourceTarget = edge.split(Constants.LINK_SEPARATOR);
+                if (sourceTarget[0].trim().equalsIgnoreCase(serviceName) &&
+                        !sourceTarget[0].trim().equalsIgnoreCase(sourceTarget[1])) {
+                    String qualifiedTargetServiceName = Utils.getQualifiedServiceName(cell.getId(),
+                            sourceTarget[1].trim());
+                    nodes.add(new Node(qualifiedTargetServiceName));
+                    edges.add(new Edge(Utils.generateEdgeName(qualifiedServiceName, qualifiedTargetServiceName,
+                            "")));
+                    Model nextLevelModel = getDependencyModel(cell, sourceTarget[1], traversedServices);
+                    if (nextLevelModel.getNodes().size() > 1) {
+                        nodes.addAll(nextLevelModel.getNodes());
+                        edges.addAll(nextLevelModel.getEdges());
+                    }
                 }
             }
         }
@@ -250,7 +256,7 @@ public class ModelManager {
                 if (nodeFromAllNodes == null) {
                     allNodes.add(node);
                 } else {
-                    nodeFromAllNodes.getServices().addAll(node.getServices());
+                    nodeFromAllNodes.getComponents().addAll(node.getComponents());
                 }
             }
             allEdges.addAll(model.getEdges());

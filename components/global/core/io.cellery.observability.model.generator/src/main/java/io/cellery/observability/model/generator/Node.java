@@ -25,9 +25,8 @@ import java.util.Set;
  */
 public class Node implements Comparable {
     private String id;
-    private Set<String> services;
+    private Set<String> components;
     private Set<String> edges;
-    private String tags;
 
     Node(String name) {
         this(name, null);
@@ -35,8 +34,7 @@ public class Node implements Comparable {
 
     Node(String name, String tags) {
         this.id = name;
-        this.tags = tags;
-        this.services = new HashSet<>();
+        this.components = new HashSet<>();
         this.edges = new HashSet<>();
     }
 
@@ -44,12 +42,8 @@ public class Node implements Comparable {
         return id;
     }
 
-    public String getTags() {
-        return tags;
-    }
-
-    public void addService(String service) {
-        this.services.add(service);
+    public void addComponent(String component) {
+        this.components.add(component);
     }
 
     public void addEdge(String serviceEdge) {
@@ -72,8 +66,8 @@ public class Node implements Comparable {
     }
 
 
-    public Set<String> getServices() {
-        return services;
+    public Set<String> getComponents() {
+        return components;
     }
 
     public Set<String> getEdges() {

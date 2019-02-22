@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-import DependencyGraph from "../../common/DependencyGraph";
+/* eslint max-len: ["off"] */
+
+import ComponentDependencyGraph from "./ComponentDependencyGraph";
 import ErrorBoundary from "../../common/error/ErrorBoundary";
 import HttpUtils from "../../../utils/api/httpUtils";
 import InfoOutlined from "@material-ui/icons/InfoOutlined";
@@ -37,11 +39,15 @@ const styles = (theme) => ({
         width: "100%",
         height: "100%"
     },
-    diagram: {
-        padding: theme.spacing.unit * 3
-    },
     dependencies: {
         marginTop: theme.spacing.unit * 3
+    },
+    graphContainer: {
+        display: "flex"
+    },
+    diagram: {
+        padding: theme.spacing.unit * 3,
+        flexGrow: 1
     },
     info: {
         display: "inline-flex"
@@ -54,53 +60,6 @@ const styles = (theme) => ({
     }
 });
 
-const graphConfig = {
-    directed: true,
-    automaticRearrangeAfterDropNode: false,
-    collapsible: false,
-    height: 500,
-    highlightDegree: 1,
-    highlightOpacity: 0.2,
-    linkHighlightBehavior: false,
-    maxZoom: 8,
-    minZoom: 1,
-    nodeHighlightBehavior: true,
-    panAndZoom: false,
-    staticGraph: false,
-    width: 1000,
-    d3: {
-        alphaTarget: 0.05,
-        gravity: -700,
-        linkLength: 150,
-        linkStrength: 1
-    },
-    node: {
-        color: "#d3d3d3",
-        fontColor: "#555",
-        fontSize: 16,
-        fontWeight: "normal",
-        highlightFontSize: 16,
-        highlightColor: "SAME",
-        highlightFontWeight: "bold",
-        highlightStrokeColor: "SAME",
-        highlightStrokeWidth: 1,
-        labelProperty: "name",
-        mouseCursor: "pointer",
-        opacity: 1,
-        renderLabel: true,
-        size: 600,
-        strokeColor: "#777",
-        strokeWidth: 0
-    },
-    link: {
-        color: "#d3d3d3",
-        opacity: 1,
-        semanticStrokeWidth: false,
-        strokeWidth: 4,
-        highlightColor: "#777"
-    }
-};
-
 class ComponentDependencyView extends React.Component {
 
     constructor(props) {
@@ -108,7 +67,7 @@ class ComponentDependencyView extends React.Component {
         this.state = {
             data: {
                 nodes: [],
-                links: []
+                edges: []
             }
         };
     }
@@ -150,22 +109,25 @@ class ComponentDependencyView extends React.Component {
 
             data.nodes.forEach((node) => {
                 if (cell === node.id.split(":")[0]) {
-                    nodes.push(node);
+                    nodes.push({
+                        ...node,
+                        label: node.id,
+                        group: "component"
+                    });
                 } else if (node.id.split(":")[1] === "gateway") {
                     nodes.push({
                         ...node,
-                        id: node.id.split(":")[0]
+                        label: node.id.split(":")[0],
+                        group: "cell"
                     });
                 }
             });
 
             data.edges.forEach((edge) => {
-                if (cell === edge.source.split(":")[0] && cell === edge.target.split(":")[0]) {
-                    edges.push(edge);
-                } else if (cell === edge.source.split(":")[0] && edge.target.split(":")[1] === "gateway") {
+                if ((cell === edge.source.split(":")[0] && cell === edge.target.split(":")[0])
+                    || (cell === edge.source.split(":")[0] && edge.target.split(":")[1] === "gateway")) {
                     edges.push({
-                        ...edge,
-                        target: edge.target.split(":")[0]
+                        ...edge
                     });
                 }
             });
@@ -173,7 +135,7 @@ class ComponentDependencyView extends React.Component {
             self.setState({
                 data: {
                     nodes: nodes,
-                    links: edges
+                    edges: edges
                 }
             });
             if (isUserAction) {
@@ -191,53 +153,53 @@ class ComponentDependencyView extends React.Component {
         });
     };
 
-    viewGenerator = (nodeProps) => {
-        const color = this.props.colorGenerator.getColor(nodeProps.id.split(":")[0]);
-        const outlineColor = ColorGenerator.shadeColor(color, -0.08);
-        const {cell, component} = this.props;
-        const style = {};
-        style.transform = "translate(1%, 10%) scale(2.2, 2.2)";
-        if (cell === nodeProps.id.split(":")[0]) {
-            return (
-                <svg x="0px" y="0px" width="100%" height="100%" viewBox="0 0 240 240">
-                    <circle cx="100" cy="100" r={80} fill={color}
-                        strokeWidth="10" stroke={(component === nodeProps.id.split(":")[1]) ? "#444" : outlineColor}/>
-                </svg>
-            );
-        }
-        return (
-            <svg x="0px" y="0px" width="100%" height="100%" viewBox="0 0 240 240">
-                <polygon strokeWidth="4" fill={color} stroke={outlineColor} style={style} strokeLinejoin="round"
-                    points="34.2,87.4 12.3,65.5 12.3,34.5 34.2,12.6 65.2,12.6 87.1,34.5 87.1,65.5 65.2,87.4"
-                />
-            </svg>
-        );
-    };
-
-    onClickCell = (nodeId) => {
+    onClickNode = (nodeId) => {
         // TODO: redirect to another cell view.
     };
 
     render = () => {
-        const {classes, cell, component} = this.props;
+        const {classes, cell, component, colorGenerator} = this.props;
         const dependedNodeCount = this.state.data.nodes.length;
+        const selectedNode = `${cell}:${component}`;
 
+
+        const viewGenerator = (group, nodeId, opacity) => {
+            const color = ColorGenerator.shadeColor(colorGenerator.getColor(nodeId.split(":")[0]), opacity);
+            const outlineColor = ColorGenerator.shadeColor(color, -0.08);
+
+            let cellView;
+
+            if (group === ComponentDependencyGraph.NodeType.COMPONENT) {
+                cellView = '<svg xmlns="http://www.w3.org/2000/svg"  x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">'
+                    + `<path fill="${color}"  stroke="${(selectedNode === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                    + 'stroke-width="0.5px" d="M13,7a6,6,0,0,1-6,6.06A6,6,0,0,1,1,7,6,6,0,0,1,7,.94,6,6,0,0,1,13,7Z" transform="translate(-0.79 -0.69)"/>'
+                    + '<path fill="#999" d="M4.37,5c-.19.11-.19.28,0,.39L6.76,6.82a.76.76,0,0,0,.69,0L9.64,5.45a.23.23,0,0,0,0-.42L7.45,3.7a.76.76,0,0,0-.69,0Z" transform="translate(-0.79 -0.69)"/>'
+                    + '<path fill="#999" d="M10,5.93c0-.22-.15-.31-.34-.19L7.45,7.1a.73.73,0,0,1-.69,0L4.37,5.73c-.19-.11-.35,0-.35.2V8a.88.88,0,0,0,.33.63l2.43,1.68a.61.61,0,0,0,.65,0L9.66,8.63A.9.9,0,0,0,10,8Z" transform="translate(-0.79 -0.69)"/>'
+                    + '<text fill="#fff" font-size="1.63px" font-family="ArialMT, Arial" transform="translate(5.76 5.1) scale(0.98 1)">μ</text>'
+                    + "</svg>";
+            } else {
+                cellView
+                    = '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">'
+                    + `<path fill="${color}"  stroke="${outlineColor}" stroke-opacity="${1 - opacity}" `
+                    + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
+                    + "</svg>";
+            }
+
+            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cellView)}`;
+        };
+
+        const dataNodes = this.state.data.nodes;
+        const dataEdges = this.state.data.edges;
         let view;
+
         if (dependedNodeCount > 1) {
             view = (
                 <ErrorBoundary title={"Unable to Render"} description={"Unable to Render due to Invalid Data"}>
-                    <DependencyGraph
+                    <ComponentDependencyGraph
                         id="component-dependency-graph"
-                        data={this.state.data}
-                        config={{
-                            ...graphConfig,
-                            node: {
-                                ...graphConfig.node,
-                                viewGenerator: this.viewGenerator
-                            }
-                        }}
-                        onClickNode={this.onClickCell}
-                    />
+                        nodeData={dataNodes} edgeData={dataEdges} selectedComponent={selectedNode}
+                        onClickNode={this.onClickNode} viewGenerator={viewGenerator}
+                        graphType="dependency" cellColor={colorGenerator.getColor(cell)}/>
                 </ErrorBoundary>
             );
         } else {
@@ -255,8 +217,10 @@ class ComponentDependencyView extends React.Component {
                 <Typography color="textSecondary" className={classes.subtitle}>
                     Dependencies
                 </Typography>
-                <div className={classes.diagram}>
-                    {view}
+                <div className={classes.graphContainer}>
+                    <div className={classes.diagram}>
+                        {view}
+                    </div>
                 </div>
             </div>
         );

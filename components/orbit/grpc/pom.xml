@@ -16,9 +16,7 @@
  ~ under the License.
  -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <parent>
         <groupId>io.cellery.observability</groupId>
@@ -31,7 +29,7 @@
     <artifactId>grpc</artifactId>
     <packaging>bundle</packaging>
     <name>Cellery Observability Components - Orbit - GRPC</name>
-    <version>1.15.0.celleryv1</version>
+    <version>0.1.0-SNAPSHOT</version>
     <description>This bundle represents io.grpc cellery orbit bundle</description>
 
     <dependencies>
@@ -83,7 +81,7 @@
                         <Private-Package>
                         </Private-Package>
                         <Export-Package>
-                            io.grpc.*;version="${grpc.cellery.version}";-split-package:=merge-first
+                            io.grpc.*;version="${exp.grpc.version}";-split-package:=merge-first
                         </Export-Package>
                         <Import-Package>
                             *;resolution:=optional
@@ -96,7 +94,8 @@
     </build>
 
     <properties>
-        <grpc.cellery.version>1.15.0-celleryv1</grpc.cellery.version>
+        <exp.grpc.version>1.15.0</exp.grpc.version>
+        <grpc.cellery.version>0.1.0-SNAPSHOT</grpc.cellery.version>
     </properties>
 
 

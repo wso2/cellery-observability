@@ -67,7 +67,7 @@ select
     tags
 insert into ProcessedZipkinStream;
 
-from ProcessedZipkinStream#tracing:dependencyTree(cell, serviceName, operationName, spanId, parentId, kind, tags)
+from ProcessedZipkinStream#observe:traceGroupWindow(60 sec,traceId)#observe:modelGenerator(cell, serviceName, operationName, spanId, parentId, kind, traceId, startTime)
 select *
 update or insert into DistributedTracingTable
     set DistributedTracingTable.parentId = parentId, DistributedTracingTable.operationName = operationName,

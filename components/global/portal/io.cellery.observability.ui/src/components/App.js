@@ -25,7 +25,6 @@ import NotFound from "./common/error/NotFound";
 import Overview from "./overview";
 import React from "react";
 import SignIn from "./SignIn";
-import SystemMetrics from "./systemMetrics";
 import Tracing from "./tracing";
 import {BrowserRouter, Route, Switch} from "react-router-dom";
 import {MuiThemeProvider, createMuiTheme} from "@material-ui/core/styles";
@@ -60,7 +59,6 @@ class StatelessProtectedPortal extends React.Component {
                             <Route exact path="/" component={Overview}/>
                             <Route path="/cells" component={Cells}/>
                             <Route path="/tracing" component={Tracing}/>
-                            <Route path="/system-metrics" component={SystemMetrics}/>
                             <Route path="/*" render={(props) => <NotFound {...props} showNavigationButtons={true}/>}/>
                         </Switch>
                     </ErrorBoundary>
