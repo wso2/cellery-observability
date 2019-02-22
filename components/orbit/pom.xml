@@ -21,13 +21,13 @@
     <parent>
         <groupId>io.cellery.observability</groupId>
         <artifactId>io.cellery.observability.components</artifactId>
-        <version>0.1.0</version>
+        <version>0.1.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>io.cellery.observability.orbit</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1-SNAPSHOT</version>
     <name>Cellery Observability Components - Orbit</name>
     <packaging>pom</packaging>
 
