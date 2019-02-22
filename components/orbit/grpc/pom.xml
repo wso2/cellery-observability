@@ -81,7 +81,7 @@
                         <Private-Package>
                         </Private-Package>
                         <Export-Package>
-                            io.grpc.*;version="${grpc.cellery.version}";-split-package:=merge-first
+                            io.grpc.*;version="${exp.grpc.version}";-split-package:=merge-first
                         </Export-Package>
                         <Import-Package>
                             *;resolution:=optional
@@ -94,6 +94,7 @@
     </build>
 
     <properties>
+        <exp.grpc.version>1.15.0</exp.grpc.version>
         <grpc.cellery.version>0.1.0-SNAPSHOT</grpc.cellery.version>
     </properties>
 
