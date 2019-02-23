@@ -29,6 +29,8 @@ import org.json.JSONObject;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -73,8 +75,12 @@ public class UserAuthenticationAPI {
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
             OAuthAccessTokenResponse oAuthResponse = oAuthClient.accessToken(request);
             JSONObject obj = new JSONObject(oAuthResponse.getBody());
+            Map responseMap = new HashMap(2);
+            responseMap.put("access_token", oAuthResponse.getAccessToken());
+            responseMap.put("id_token", obj.get(Constants.ID_TOKEN));
 
-            return Response.ok().entity(obj.get(Constants.ID_TOKEN)).build();
+
+            return Response.ok().entity(responseMap).build();
 
         } catch (Throwable throwable) {
             throw new APIInvocationException("Unexpected error occurred while fetching the aggregated HTTP request " +

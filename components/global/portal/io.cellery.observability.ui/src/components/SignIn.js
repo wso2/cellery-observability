@@ -109,31 +109,9 @@ class SignIn extends React.Component {
             if (localStorage.getItem("isAuthenticated") !== "true"
                 && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
                 localStorage.setItem("isAuthenticated", "true");
-                HttpUtils.callObservabilityAPI(
-                    {
-                        url: "/user-auth/getCredentials/client",
-                        method: "GET"
-                    },
-                    globalState).then((resp) => {
-                    window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
-                        + `&client_id=${resp}&`
-                        + "redirect_uri=http://cellery-dashboard&nonce=abc&scope=openid";
-                }).catch((err) => {
-                    localStorage.setItem("error2", err.toString());
-                });
+                SignIn.getClientCredentials(globalState);
             } else if (localStorage.getItem("isAuthenticated") === "true" && !searchParams.has("code")) {
-                HttpUtils.callObservabilityAPI(
-                    {
-                        url: "/user-auth/getCredentials/client",
-                        method: "GET"
-                    },
-                    globalState).then((resp) => {
-                    window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
-                        + `&client_id=${resp}&`
-                        + "redirect_uri=http://cellery-dashboard&nonce=abc&scope=openid";
-                }).catch((err) => {
-                    localStorage.setItem("error2", err.toString());
-                });
+                SignIn.getClientCredentials(globalState);
             } else if (searchParams.has("code") && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
                 const oneTimeToken = searchParams.get("code");
                 HttpUtils.callObservabilityAPI(
@@ -142,9 +120,9 @@ class SignIn extends React.Component {
                         method: "GET"
                     },
                     globalState).then((resp) => {
-                    localStorage.setItem("idToken", resp);
-                    const decoded = jwtDecode(resp);
-                    localStorage.setItem("decoded", decoded.toString());
+                    localStorage.setItem("idToken", resp.id_token);
+                    const decoded = jwtDecode(resp.id_token);
+                    localStorage.setItem("access_token", resp.access_token);
                     const user1 = {
                         username: decoded.sub
                     };
@@ -161,7 +139,20 @@ class SignIn extends React.Component {
         }
     }
 
-
+    static getClientCredentials(globalState) {
+        HttpUtils.callObservabilityAPI(
+            {
+                url: "/user-auth/getCredentials/client",
+                method: "GET"
+            },
+            globalState).then((resp) => {
+            window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
+                + `&client_id=${resp}&`
+                + "redirect_uri=http://cellery-dashboard&nonce=abc&scope=openid";
+        }).catch((err) => {
+            localStorage.setItem("error2", err.toString());
+        });
+    }
 
 }
 
