@@ -60,9 +60,9 @@ import javax.net.ssl.TrustManager;
         name = "org.wso2.carbon.governance.dependency.model.internal.ObservabilityDS",
         immediate = true
 )
-public class ObservabilityDS {
+public class ApiServiceComponent {
 
-    private static final Logger log = Logger.getLogger(ObservabilityDS.class);
+    private static final Logger log = Logger.getLogger(ApiServiceComponent.class);
 
     private static final int DEFAULT_OBSERVABILITY_API_PORT = 9123;
 

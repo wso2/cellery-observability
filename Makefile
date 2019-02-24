@@ -33,7 +33,7 @@ build:
 
 
 .PHONY: docker
-docker: 
+docker:
 	[ -d "docker/portal/target" ] || mvn initialize -f docker/pom.xml
 	cd docker/portal; \
 	docker build -t $(DOCKER_REPO)/observability-portal:$(DOCKER_IMAGE_TAG) .
