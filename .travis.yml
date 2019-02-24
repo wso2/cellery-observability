@@ -9,4 +9,4 @@ cache:
     - $HOME/.m2
 before_install:
   - npm i -g npm
-script: make
+script: make clean build test docker

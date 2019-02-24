@@ -31,6 +31,7 @@ import org.apache.thrift.transport.TTransport;
 import zipkin2.SpanBytesDecoderDetector;
 import zipkin2.codec.BytesDecoder;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,7 +65,7 @@ public class Codec {
             span.setId(zipkin2Span.id());
             span.setParentId(zipkin2Span.parentId());
             span.setName(zipkin2Span.name());
-            span.setServiceName(zipkin2Span.localServiceName());
+            span.setServiceName(zipkin2Span.localServiceName() != null ? zipkin2Span.localServiceName() : "");
             span.setKind(zipkin2Span.kind() != null ? zipkin2Span.kind().toString() : "");
             span.setTimestamp(zipkin2Span.timestampAsLong());
             span.setDuration(zipkin2Span.durationAsLong());
@@ -100,8 +101,17 @@ public class Codec {
                     .build();
 
             // Getting the span kind from the local annotation
-            Annotation localAnnotation = tSpan.getAnnotations().get(0); // The first annotation is the local annotations
-            String localAnnotationValue = localAnnotation.getValue();
+            String serviceName;
+            String localAnnotationValue;
+            if (tSpan.getAnnotations().size() > 0) {
+                // The first annotation is the local annotations
+                Annotation localAnnotation = tSpan.getAnnotations().get(0);
+                localAnnotationValue = localAnnotation.getValue();
+                serviceName = localAnnotation.getHost().getService_name();
+            } else {
+                localAnnotationValue = "";
+                serviceName = "";
+            }
             String kind;
             switch (localAnnotationValue) {
                 case Constants.THRIFT_SPAN_ANNOTATION_VALUE_CLIENT_SEND:
@@ -125,10 +135,32 @@ public class Codec {
             // Converting the binary annotations list to a tags map
             Map<String, String> tags = new HashMap<>();
             for (BinaryAnnotation binaryAnnotation : tSpan.getBinary_annotations()) {
-                tags.put(
-                        binaryAnnotation.getKey(),
-                        new String(binaryAnnotation.getValue(), StandardCharsets.UTF_8)
-                );
+                String tagValue;
+                switch (binaryAnnotation.getAnnotation_type()) {
+                    case STRING:
+                        tagValue = new String(binaryAnnotation.getValue(), StandardCharsets.UTF_8);
+                        break;
+                    case BOOL:
+                        tagValue = Boolean.toString(binaryAnnotation.getValue()[0] == 1);
+                        break;
+                    case DOUBLE:
+                        tagValue = Double.toString(ByteBuffer.wrap(binaryAnnotation.getValue()).getDouble());
+                        break;
+                    case I64:
+                        tagValue = Long.toString(ByteBuffer.wrap(binaryAnnotation.getValue()).getLong());
+                        break;
+                    case I32:
+                        tagValue = Integer.toString(ByteBuffer.wrap(binaryAnnotation.getValue()).getInt());
+                        break;
+                    case I16:
+                        tagValue = Short.toString(ByteBuffer.wrap(binaryAnnotation.getValue()).getShort());
+                        break;
+                    default:
+                        tagValue = null;
+                }
+                if (tagValue != null) {
+                    tags.put(binaryAnnotation.getKey(), tagValue);
+                }
             }
 
             ZipkinSpan span = new ZipkinSpan();
@@ -136,7 +168,7 @@ public class Codec {
             span.setId(zipkin2Span.id());
             span.setParentId(zipkin2Span.parentId());
             span.setName(tSpan.getName());
-            span.setServiceName(localAnnotation.getHost().getService_name());
+            span.setServiceName(serviceName);
             span.setKind(kind);
             span.setTimestamp(tSpan.getTimestamp());
             span.setDuration(tSpan.getDuration());
@@ -144,5 +176,8 @@ public class Codec {
             spans.add(span);
         }
         return spans;
+    }
+
+    private Codec() {   // Prevent initialization
     }
 }

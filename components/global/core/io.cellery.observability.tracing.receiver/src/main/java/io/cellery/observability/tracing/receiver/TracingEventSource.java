@@ -186,6 +186,8 @@ public class TracingEventSource extends Source {
             String contentType = httpExchange.getRequestHeaders().getFirst(Constants.HTTP_CONTENT_TYPE_HEADER);
 
             handleEventReceive(byteArray, contentType);
+            httpExchange.sendResponseHeaders(200, 0);
+            httpExchange.close();
         }
 
         /**

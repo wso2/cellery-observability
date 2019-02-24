@@ -58,5 +58,8 @@ public class Constants {
     public static final String THRIFT_SPAN_ANNOTATION_VALUE_SERVER_SEND = "ss";
     public static final String THRIFT_SPAN_ANNOTATION_VALUE_SERVER_RECEIVE = "sr";
     public static final String THRIFT_SPAN_ANNOTATION_VALUE_PRODUCER_SEND = "ms";
-    public static final String THRIFT_SPAN_ANNOTATION_VALUE_CONSUMER_RECEIVER = "mr";
+    public static final String THRIFT_SPAN_ANNOTATION_VALUE_CONSUMER_RECEIVER = "wr";
+
+    private Constants() {   // Prevent initialization
+    }
 }

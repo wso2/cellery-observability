@@ -29,7 +29,12 @@ clean:
 
 .PHONY: build
 build:
-	mvn install -f components/pom.xml
+	mvn install -f components/pom.xml -Dmaven.test.skip=true
+
+
+.PHONY: test
+test:
+	mvn test -f components/pom.xml
 
 
 .PHONY: docker
