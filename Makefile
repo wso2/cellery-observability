@@ -15,8 +15,8 @@
 #  under the License.
 
 PROJECT_ROOT := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
-DOCKER_REPO := celleryio
-DOCKER_IMAGE_TAG := latest
+DOCKER_REPO ?= celleryio
+DOCKER_IMAGE_TAG ?= latest
 
 
 all: clean build docker
