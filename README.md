@@ -7,9 +7,10 @@ Mesh Observability
   [![GitHub last commit](https://img.shields.io/github/last-commit/wso2-cellery/mesh-observability.svg)](https://github.com/wso2-cellery/mesh-observability/commits/master)
   [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+**Note**: If you just wish to get started with trying out Cellery, you can start your journey at [wso2-cellery/sdk](https://github.com/wso2-cellery/sdk) repository.
+
 Cellery Observability brings along the capability to observe the Cells deployed on Cellery Mesh. This combines the [Siddhi](https://siddhi-io.github.io/siddhi) Stream Processing Capabilities of [WSO2 Stream Processor](https://wso2.com/analytics-and-stream-processing/) and observability agents deployed along with the Cells to collect and process metrics and tracing data from the Cells.
 
-**Note**: If you just wish to get started with trying out Cellery, you can start your journey at [wso2-cellery/sdk](https://github.com/wso2-cellery/sdk) repository.
 
 ## High Level Architecture
 
