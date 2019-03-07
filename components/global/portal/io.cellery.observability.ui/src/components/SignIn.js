@@ -109,24 +109,6 @@ class SignIn extends React.Component {
             }
         }
     }
-
-    /*
-     * Static getClientCredentials(globalState) {
-     *     HttpUtils.callObservabilityAPI(
-     *         {
-     *             url: "/user-auth/getCredentials/client",
-     *             method: "GET"
-     *         },
-     *         globalState).then((resp) => {
-     *         window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
-     *             + `&client_id=${resp}&`
-     *             + "redirect_uri=http://cellery-dashboard&nonce=abc&scope=openid";
-     *     }).catch((err) => {
-     *         localStorage.setItem("error2", err.toString());
-     *     });
-     * }
-     */
-
 }
 
 SignIn.propTypes = {
