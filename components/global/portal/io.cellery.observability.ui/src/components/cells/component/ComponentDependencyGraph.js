@@ -137,7 +137,7 @@ class ComponentDependencyGraph extends React.Component {
     };
 
     draw = () => {
-        const {nodeData, edgeData, selectedComponent, viewGenerator, cellColor} = this.props;
+        const {nodeData, edgeData, selectedComponent, viewGenerator, cellColor, onClickNode} = this.props;
         const dataNodes = [];
         const dataEdges = [];
 
@@ -350,17 +350,17 @@ class ComponentDependencyGraph extends React.Component {
                 }
             }
 
+            ctx.closePath();
+            drawPolygon(ctx, cornerPoints, curve);
+            ctx.strokeStyle = cellColor;
+            ctx.stroke();
+
             // Placing gateway node
             if (groupNodesGateway[0]) {
                 const x = centerPoint.x;
                 const y = centerPoint.y - size;
                 network.moveNode(groupNodesGateway[0].id, x, y);
             }
-
-            ctx.closePath();
-            drawPolygon(ctx, cornerPoints, curve);
-            ctx.strokeStyle = cellColor;
-            ctx.stroke();
         });
 
         network.on("stabilizationIterationsDone", () => {
@@ -446,6 +446,9 @@ class ComponentDependencyGraph extends React.Component {
         };
         network.on("hoverNode", neighbourhoodHighlight);
         network.on("blurNode", blur);
+        network.on("selectNode", (event) => {
+            onClickNode(event.nodes[0], allNodes[event.nodes[0]].group);
+        });
     };
 
     render = () => {

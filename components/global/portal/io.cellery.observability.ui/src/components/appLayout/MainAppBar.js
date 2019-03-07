@@ -53,7 +53,7 @@ const styles = (theme) => ({
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen
         }),
-        backgroundColor: theme.palette.primary.dark
+        backgroundColor: theme.palette.secondary.main
     },
     appBarShift: {
         marginLeft: Constants.Dashboard.SIDE_NAV_BAR_WIDTH,

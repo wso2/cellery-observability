@@ -27,6 +27,7 @@ import React from "react";
 import StateHolder from "../../common/state/stateHolder";
 import Typography from "@material-ui/core/Typography/Typography";
 import withGlobalState from "../../common/state";
+import {withRouter} from "react-router-dom";
 import {withStyles} from "@material-ui/core";
 import withColor, {ColorGenerator} from "../../common/color";
 import * as PropTypes from "prop-types";
@@ -73,6 +74,10 @@ class CellDependencyView extends React.Component {
             data: {
                 nodes: [],
                 edges: []
+            },
+            currentTimeRange: {
+                startTime: props.globalState.get(StateHolder.GLOBAL_FILTER).startTime,
+                endTime: props.globalState.get(StateHolder.GLOBAL_FILTER).endTime
             }
         };
     }
@@ -85,6 +90,78 @@ class CellDependencyView extends React.Component {
             QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).startTime).valueOf(),
             QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).endTime).valueOf()
         );
+    };
+
+    componentDidUpdate = () => {
+        const {globalState} = this.props;
+
+        this.update(
+            true,
+            QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).startTime).valueOf(),
+            QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).endTime).valueOf()
+        );
+    };
+
+    /**
+     * React lifecycle method to change the next state based on the props and state.
+     *
+     * @param {Object} props The current props
+     * @param {Object} state The current state
+     * @returns {Object} The next state to be used
+     */
+    static getDerivedStateFromProps = (props, state) => ({
+        ...state,
+        currentTimeRange: {
+            startTime: props.globalState.get(StateHolder.GLOBAL_FILTER).startTime,
+            endTime: props.globalState.get(StateHolder.GLOBAL_FILTER).endTime
+        }
+    });
+
+    /**
+     * React lifecycle method to indicate whether the update should be done or not.
+     * This checks for the props and state changes and decides whether the update should happen.
+     *
+     * @param {Object} nextProps The next props that will be used
+     * @param {Object} nextState The next state that will be used
+     * @returns {boolean} True if component should update
+     */
+    shouldComponentUpdate = (nextProps, nextState) => {
+        const {data, currentTimeRange} = this.state;
+        const startTime = currentTimeRange.startTime;
+        const endTime = currentTimeRange.endTime;
+        const newStartTime = nextProps.globalState.get(StateHolder.GLOBAL_FILTER).startTime;
+        const newEndTime = nextProps.globalState.get(StateHolder.GLOBAL_FILTER).endTime;
+
+        // Check if user inputs (cell, component, time range) hand changed
+        let shouldComponentUpdate = startTime !== newStartTime || endTime !== newEndTime
+            || this.props.cell !== nextProps.cell;
+
+        if (!shouldComponentUpdate) {
+            // Check if the number of items in the data had changed
+            shouldComponentUpdate = data.nodes.length !== nextState.data.nodes.length
+                || data.edges.length !== nextState.data.edges.length;
+
+            // Check if the actual data items had changed
+            if (!shouldComponentUpdate) {
+                for (let i = 0; i < data.nodes.length; i++) {
+                    shouldComponentUpdate
+                        = nextState.data.nodes.filter((nextNode) => nextNode.id === data.nodes[i].id).length === 0;
+                    if (shouldComponentUpdate) {
+                        break;
+                    }
+                }
+            }
+            if (!shouldComponentUpdate) {
+                for (let i = 0; i < data.edges.length; i++) {
+                    shouldComponentUpdate = nextState.data.edges.filter(
+                        (nextEdges) => nextEdges.id === data.edges[i].id).length === 0;
+                    if (shouldComponentUpdate) {
+                        break;
+                    }
+                }
+            }
+        }
+        return shouldComponentUpdate;
     };
 
     update = (isUserAction, queryStartTime, queryEndTime) => {
@@ -128,7 +205,9 @@ class CellDependencyView extends React.Component {
     };
 
     onClickCell = (nodeId) => {
-        // TODO: redirect to another cell view.
+        const {history} = this.props;
+        const cell = nodeId.split(":")[0];
+        history.push(`/cells/${cell}`);
     };
 
     render = () => {
@@ -189,7 +268,10 @@ CellDependencyView.propTypes = {
     classes: PropTypes.object.isRequired,
     cell: PropTypes.string.isRequired,
     globalState: PropTypes.instanceOf(StateHolder).isRequired,
-    colorGenerator: PropTypes.instanceOf(ColorGenerator).isRequired
+    colorGenerator: PropTypes.instanceOf(ColorGenerator).isRequired,
+    history: PropTypes.shape({
+        push: PropTypes.func.isRequired
+    }).isRequired
 };
 
-export default withStyles(styles, {withTheme: true})(withColor(withGlobalState(CellDependencyView)));
+export default withStyles(styles, {withTheme: true})(withColor(withGlobalState(withRouter(CellDependencyView))));
