@@ -22,7 +22,9 @@ import {StateHolder} from "../../components/common/state";
 describe("AuthUtils", () => {
     const username = "User1";
     const loggedInUser = {
-        username: username
+        username: username,
+        accessToken: "12345",
+        idToken: "54321"
     };
     afterEach(() => {
         localStorage.removeItem(StateHolder.USER);
@@ -32,7 +34,7 @@ describe("AuthUtils", () => {
         it("should set the username provided", () => {
             const stateHolder = new StateHolder();
             const spy = jest.spyOn(stateHolder, "set");
-            AuthUtils.signIn(username, stateHolder);
+            AuthUtils.signIn(loggedInUser, stateHolder);
 
             expect(spy).toHaveBeenCalledTimes(1);
             expect(spy).toHaveBeenCalledWith(StateHolder.USER, loggedInUser);
@@ -62,10 +64,10 @@ describe("AuthUtils", () => {
             };
             const spy = jest.spyOn(stateHolder, "unset");
             AuthUtils.signOut(stateHolder);
-
             expect(spy).toHaveBeenCalledTimes(1);
             expect(spy).toHaveBeenCalledWith(StateHolder.USER);
-            expect(localStorage.getItem(StateHolder.USER)).toEqual(localStorage.getItem(StateHolder.USER));
+            expect(localStorage.getItem(StateHolder.USER)).toBeNull();
+            // Expect(localStorage.getItem(StateHolder.USER)).toEqual(localStorage.getItem(StateHolder.USER));
         });
     });
 
