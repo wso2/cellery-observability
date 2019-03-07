@@ -35,7 +35,8 @@ class ComponentDependencyGraph extends React.Component {
 
     static NodeType = {
         CELL: "cell",
-        COMPONENT: "component"
+        COMPONENT: "component",
+        GATEWAY: "gateway"
     };
 
     static GRAPH_OPTIONS = {
@@ -286,8 +287,10 @@ class ComponentDependencyGraph extends React.Component {
 
         const groupNodesComponents = getGroupNodes(dataNodes, ComponentDependencyGraph.NodeType.COMPONENT);
         const groupNodesCells = getGroupNodes(dataNodes, ComponentDependencyGraph.NodeType.CELL);
+        const groupNodesGateway = getGroupNodes(dataNodes, ComponentDependencyGraph.NodeType.GATEWAY);
 
         let nodes = new vis.DataSet(groupNodesComponents);
+        nodes.add(groupNodesGateway);
         const edges = new vis.DataSet(dataEdges);
 
         const graphData = {
@@ -297,6 +300,7 @@ class ComponentDependencyGraph extends React.Component {
 
         const network
             = new vis.Network(this.dependencyGraph.current, graphData, ComponentDependencyGraph.GRAPH_OPTIONS);
+        const spacing = 100;
         let allNodes;
 
         if (selectedComponent) {
@@ -308,7 +312,7 @@ class ComponentDependencyGraph extends React.Component {
             const polygonRadius = getDistance(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT),
                 centerPoint);
             const numberOfSides = 8;
-            const size = polygonRadius + 70;
+            const size = polygonRadius + spacing;
             const Xcenter = centerPoint.x;
             const Ycenter = centerPoint.y;
             let curve = 0;
@@ -345,6 +349,14 @@ class ComponentDependencyGraph extends React.Component {
                     ]);
                 }
             }
+
+            // Placing gateway node
+            if (groupNodesGateway[0]) {
+                const x = centerPoint.x;
+                const y = centerPoint.y - size;
+                network.moveNode(groupNodesGateway[0].id, x, y);
+            }
+
             ctx.closePath();
             drawPolygon(ctx, cornerPoints, curve);
             ctx.strokeStyle = cellColor;
@@ -357,7 +369,8 @@ class ComponentDependencyGraph extends React.Component {
 
             let polygonRadius = getDistance(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT),
                 centerPoint);
-            polygonRadius += 200;
+
+            polygonRadius += spacing * 2;
             const d = 2 * Math.PI / groupNodesCells.length;
             groupNodesCells.forEach((node, i) => {
                 nodes.add(node);
