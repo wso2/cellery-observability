@@ -18,6 +18,7 @@ import AccountCircle from "@material-ui/icons/AccountCircle";
 import AppBar from "@material-ui/core/AppBar/AppBar";
 import AuthUtils from "../../utils/api/authUtils";
 import Avatar from "@material-ui/core/Avatar/Avatar";
+import CelleryLogo from "../../icons/CelleryLogo";
 import ColorGenerator from "../common/color/colorGenerator";
 import Constants from "../../utils/constants";
 import Divider from "@material-ui/core/Divider/Divider";
@@ -96,6 +97,10 @@ const styles = (theme) => ({
         marginRight: theme.spacing.unit * 1.5,
         color: "#fff",
         backgroundColor: theme.palette.primary.main
+    },
+    celleryLogo: {
+        width: 100,
+        marginRight: theme.spacing.unit
     }
 });
 
@@ -198,8 +203,9 @@ class MainAppBar extends React.Component {
                         })}>
                         <MenuIcon/>
                     </IconButton>
+                    <CelleryLogo className={classes.celleryLogo} fontSize="large"/>
                     <Typography variant="h6" color="inherit" className={classes.grow}>
-                        Cellery Observability
+                        Observability
                     </Typography>
                     {
                         loggedInUser
