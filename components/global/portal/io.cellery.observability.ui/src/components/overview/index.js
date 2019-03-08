@@ -324,13 +324,13 @@ class Overview extends React.Component {
                 const error = this.getTotalComponentRequests(component, responseCodeStats, "5xx");
                 const successPercentage = 1 - (error / total);
 
-                if (successPercentage > config.percentageRangeMinValue.warningThreshold) {
+                if (successPercentage >= config.percentageRangeMinValue.warningThreshold) {
                     healthInfo.push({
                         nodeId: component,
                         status: Constants.Status.Success,
                         percentage: successPercentage
                     });
-                } else if (successPercentage > config.percentageRangeMinValue.errorThreshold) {
+                } else if (successPercentage >= config.percentageRangeMinValue.errorThreshold) {
                     healthInfo.push({
                         nodeId: component,
                         status: Constants.Status.Warning,
@@ -503,9 +503,9 @@ class Overview extends React.Component {
             } else {
                 const error = this.getTotalRequests(node.id, this.defaultState.request.cellStats, "5xx");
                 const successPercentage = 1 - (error / total);
-                if (successPercentage > config.percentageRangeMinValue.warningThreshold) {
+                if (successPercentage >= config.percentageRangeMinValue.warningThreshold) {
                     healthInfo.push({nodeId: node.id, status: Constants.Status.Success, percentage: successPercentage});
-                } else if (successPercentage > config.percentageRangeMinValue.errorThreshold) {
+                } else if (successPercentage >= config.percentageRangeMinValue.errorThreshold) {
                     healthInfo.push({nodeId: node.id, status: Constants.Status.Warning, percentage: successPercentage});
                 } else {
                     healthInfo.push({nodeId: node.id, status: Constants.Status.Error, percentage: successPercentage});
