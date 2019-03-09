@@ -174,10 +174,15 @@ describe("HttpUtils", () => {
     describe("callAPI()", () => {
         const backendURL = "http://www.example.com/test";
         let stateHolder;
+        const loggedInUser = {
+            username: "test-user",
+            accessToken: "12345",
+            idToken: "54321"
+        };
 
         beforeEach(() => {
             stateHolder = new StateHolder();
-            stateHolder.set(StateHolder.USER, "user1");
+            stateHolder.set(StateHolder.USER, loggedInUser);
         });
 
         it("should add application/json header", async () => {
@@ -380,7 +385,8 @@ describe("HttpUtils", () => {
                 method: "GET",
                 url: backendURL,
                 headers: {
-                    Accept: "application/xml"
+                    Accept: "application/xml",
+                    Authorization: "12345"
                 }
             }, (noStateHolder ? undefined : stateHolder));
         };

@@ -96,7 +96,7 @@ public class UserAuthenticationAPI {
         return Response.ok().entity(clientId).build();
     }
 
-    private static void cancelCheck() {
+    public static void cancelCheck() {
         try {
             SSLContext sc = SSLContext.getInstance("TLS");
             sc.init(null, new TrustManager[]{new TrustAllX509TrustManager()}, new java.security.SecureRandom());
@@ -112,7 +112,7 @@ public class UserAuthenticationAPI {
     }
 
     @OPTIONS
-    @Path("/*")
+    @Path(".*")
     public Response getOptions() {
         return Response.ok().build();
     }

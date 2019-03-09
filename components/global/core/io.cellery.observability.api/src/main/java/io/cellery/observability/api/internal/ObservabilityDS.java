@@ -23,6 +23,7 @@ import io.cellery.observability.api.DistributedTracingAPI;
 import io.cellery.observability.api.KubernetesAPI;
 import io.cellery.observability.api.UserAuthenticationAPI;
 import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
+import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
 import io.cellery.observability.model.generator.ModelManager;
@@ -71,7 +72,7 @@ public class ObservabilityDS {
             // Deploying the microservices
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
             ServiceHolder.setMicroservicesRunner(new MicroservicesRunner(DEFAULT_OBSERVABILITY_API_PORT + offset)
-                    .addGlobalRequestInterceptor(new CORSInterceptor())
+                    .addGlobalRequestInterceptor(new CORSInterceptor(), new AuthInterceptor())
                     .addExceptionMapper(new APIExceptionMapper())
                     .deploy(
                             new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
@@ -86,6 +87,19 @@ public class ObservabilityDS {
             log.error("Error occured while activating the Observability API bundle", throwable);
             throw throwable;
         }
+    }
+
+    public static void main(String[] args) {
+        ServiceHolder.setMicroservicesRunner(new MicroservicesRunner(DEFAULT_OBSERVABILITY_API_PORT)
+                .addGlobalRequestInterceptor(new CORSInterceptor(), new AuthInterceptor())
+                .addExceptionMapper(new APIExceptionMapper())
+                .deploy(
+                        new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
+                        new KubernetesAPI()
+                )
+        );
+        ServiceHolder.getMicroservicesRunner().start();
+
     }
 
     /**
@@ -106,6 +120,7 @@ public class ObservabilityDS {
             log.debug("Successfully stopped Siddhi Query manager");
         }
     }
+
 
     @Reference(
             name = "carbon.runtime.service",

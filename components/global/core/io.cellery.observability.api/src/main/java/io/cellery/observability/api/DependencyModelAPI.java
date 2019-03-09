@@ -84,8 +84,14 @@ public class DependencyModelAPI {
         }
     }
 
+    @GET
+    @Path("/hello")
+    public Response getHello() {
+        return Response.ok("Hello World").build();
+    }
+
     @OPTIONS
-    @Path("/*")
+    @Path(".*")
     public Response getOptions() {
         return Response.ok().build();
     }

@@ -20,6 +20,7 @@ import AuthUtils from "../utils/api/authUtils";
 import CircularProgress from "@material-ui/core/CircularProgress/CircularProgress";
 import React from "react";
 import withStyles from "@material-ui/core/styles/withStyles";
+import HttpUtils from "../utils/api/httpUtils";
 import withGlobalState, {StateHolder} from "./common/state";
 import * as PropTypes from "prop-types";
 
@@ -102,7 +103,19 @@ class SignIn extends React.Component {
 
         if (localStorage.getItem(StateHolder.USER) === null) {
             if (!searchParams.has("code")) {
-                AuthUtils.redirectToIDP(globalState);
+                //AuthUtils.redirectToIDP(globalState);
+
+                HttpUtils.callObservabilityAPI(
+                    {
+                        url: "http://0.0.0.0:9123/api/dependency-model/hello",
+                        method: "GET"
+                    },
+                    globalState).then((resp) => {
+                    console.log(resp.data);
+                }).catch((err) => {
+                    localStorage.setItem("error2", err.toString());
+                });
+
             } else if (searchParams.has("code")) {
                 const oneTimeToken = searchParams.get("code");
                 AuthUtils.getTokens(oneTimeToken, globalState);

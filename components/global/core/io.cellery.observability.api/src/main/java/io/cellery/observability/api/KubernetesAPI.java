@@ -60,7 +60,7 @@ public class KubernetesAPI {
     }
 
     @OPTIONS
-    @Path("/*")
+    @Path(".*")
     public Response getOptions() {
         return Response.ok().build();
     }

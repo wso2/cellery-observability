@@ -196,7 +196,7 @@ public class AggregatedRequestsAPI {
         }
     }
 
-    @Path("/*")
+    @Path(".*")
     @OPTIONS
     public Response getOptions() {
         return Response.ok().build();

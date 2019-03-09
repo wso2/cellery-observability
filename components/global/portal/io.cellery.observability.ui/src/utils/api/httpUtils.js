@@ -88,7 +88,12 @@ class HttpUtils {
      * @returns {Promise} A promise for the API call
      */
     static callObservabilityAPI = (config, globalState) => {
-        config.url = `${globalState.get(StateHolder.CONFIG).observabilityAPIURL}${config.url}`;
+        config.url = `${config.url}`;
+
+        config.headers = {
+            Authorization: "Bearer e3684c64-36e3-35fe-ad87-3976f4ddb012"
+        };
+
         return HttpUtils.callAPI(config, globalState);
     };
 
