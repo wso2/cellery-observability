@@ -35,7 +35,8 @@ class DependencyGraph extends React.Component {
 
     static GraphType = {
         OVERVIEW: "overview",
-        DEPENDENCY: "dependency"
+        DEPENDENCY: "dependency",
+        TRACE_DEPENDENCY: "trace-dependency"
     };
 
     static GRAPH_OPTIONS = {
@@ -184,6 +185,12 @@ class DependencyGraph extends React.Component {
 
             network.on("deselectNode", (event) => {
                 onClickGraph();
+            });
+        }
+
+        if (graphType === DependencyGraph.GraphType.DEPENDENCY) {
+            network.on("selectNode", (event) => {
+                onClickNode(event.nodes[0]);
             });
         }
 

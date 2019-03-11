@@ -447,6 +447,16 @@ class SidePanelContent extends React.Component {
                                         </Typography>
                                     )
                             }
+                            {
+                                summary.content[3].value === 0
+                                    ? null
+                                    : (
+                                        <Typography className={classes.secondaryHeading}>
+                                            <ErrorIcon className={classes.cellIcon} style={{color: warningColor}}/>
+                                            &nbsp;{summary.content[3].value}
+                                        </Typography>
+                                    )
+                            }
                         </ExpansionPanelSummary>
                         <ExpansionPanelDetails className={classes.panelDetails}>
                             <div className="overviewSidebarListTable">

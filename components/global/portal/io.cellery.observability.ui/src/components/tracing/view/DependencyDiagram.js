@@ -215,7 +215,7 @@ class DependencyDiagram extends React.Component {
                     <React.Fragment>
                         <div className={classes.graphContainer}>
                             <div className={classes.diagram}>
-                                <DependencyGraph id="graph-id" nodeData={nodes} edgeData={links} graphType="dependency"
+                                <DependencyGraph id="graph-id" nodeData={nodes} edgeData={links} graphType="trace-dependency"
                                     onClickNode={this.onClickCell} viewGenerator={viewGenerator}/>
                             </div>
                         </div>

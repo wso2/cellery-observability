@@ -35,7 +35,8 @@ class ComponentDependencyGraph extends React.Component {
 
     static NodeType = {
         CELL: "cell",
-        COMPONENT: "component"
+        COMPONENT: "component",
+        GATEWAY: "gateway"
     };
 
     static GRAPH_OPTIONS = {
@@ -136,7 +137,7 @@ class ComponentDependencyGraph extends React.Component {
     };
 
     draw = () => {
-        const {nodeData, edgeData, selectedComponent, viewGenerator, cellColor} = this.props;
+        const {nodeData, edgeData, selectedComponent, viewGenerator, cellColor, onClickNode} = this.props;
         const dataNodes = [];
         const dataEdges = [];
 
@@ -286,8 +287,10 @@ class ComponentDependencyGraph extends React.Component {
 
         const groupNodesComponents = getGroupNodes(dataNodes, ComponentDependencyGraph.NodeType.COMPONENT);
         const groupNodesCells = getGroupNodes(dataNodes, ComponentDependencyGraph.NodeType.CELL);
+        const groupNodesGateway = getGroupNodes(dataNodes, ComponentDependencyGraph.NodeType.GATEWAY);
 
         let nodes = new vis.DataSet(groupNodesComponents);
+        nodes.add(groupNodesGateway);
         const edges = new vis.DataSet(dataEdges);
 
         const graphData = {
@@ -297,6 +300,7 @@ class ComponentDependencyGraph extends React.Component {
 
         const network
             = new vis.Network(this.dependencyGraph.current, graphData, ComponentDependencyGraph.GRAPH_OPTIONS);
+        const spacing = 100;
         let allNodes;
 
         if (selectedComponent) {
@@ -308,7 +312,7 @@ class ComponentDependencyGraph extends React.Component {
             const polygonRadius = getDistance(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT),
                 centerPoint);
             const numberOfSides = 8;
-            const size = polygonRadius + 70;
+            const size = polygonRadius + spacing;
             const Xcenter = centerPoint.x;
             const Ycenter = centerPoint.y;
             let curve = 0;
@@ -319,6 +323,10 @@ class ComponentDependencyGraph extends React.Component {
                 curve = 12;
             }
 
+            ctx.font = "16px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(selectedComponent.split(":")[0], Xcenter, Ycenter + size);
+
             ctx.translate(Xcenter, Ycenter); // Translate to center of shape
             ctx.rotate(22.5 * Math.PI / 180); // Rotate 22.5 degrees.
             ctx.translate(-Xcenter, -Ycenter);
@@ -328,6 +336,7 @@ class ComponentDependencyGraph extends React.Component {
             ctx.moveTo(Xcenter + size, Ycenter + size);
             ctx.lineJoin = "round";
             ctx.lineWidth = 3;
+
 
             for (let i = 0; i <= numberOfSides; i += 1) {
                 ctx.lineTo(Xcenter + size * Math.cos(i * 2 * Math.PI / numberOfSides), Ycenter + size
@@ -340,10 +349,18 @@ class ComponentDependencyGraph extends React.Component {
                     ]);
                 }
             }
+
             ctx.closePath();
             drawPolygon(ctx, cornerPoints, curve);
             ctx.strokeStyle = cellColor;
             ctx.stroke();
+
+            // Placing gateway node
+            if (groupNodesGateway[0]) {
+                const x = centerPoint.x;
+                const y = centerPoint.y - size;
+                network.moveNode(groupNodesGateway[0].id, x, y);
+            }
         });
 
         network.on("stabilizationIterationsDone", () => {
@@ -352,7 +369,8 @@ class ComponentDependencyGraph extends React.Component {
 
             let polygonRadius = getDistance(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT),
                 centerPoint);
-            polygonRadius += 200;
+
+            polygonRadius += spacing * 2;
             const d = 2 * Math.PI / groupNodesCells.length;
             groupNodesCells.forEach((node, i) => {
                 nodes.add(node);
@@ -428,6 +446,9 @@ class ComponentDependencyGraph extends React.Component {
         };
         network.on("hoverNode", neighbourhoodHighlight);
         network.on("blurNode", blur);
+        network.on("selectNode", (event) => {
+            onClickNode(event.nodes[0], allNodes[event.nodes[0]].group);
+        });
     };
 
     render = () => {
