@@ -59,25 +59,24 @@
                 </configuration>
             </plugin>
 
-            <!-- TODO: Temporarily comment out Docker build for Release 0.1.0 -->
             <!-- Build Docker Image -->
-            <!--<plugin>-->
-                <!--<groupId>com.spotify</groupId>-->
-                <!--<artifactId>dockerfile-maven-plugin</artifactId>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<id>docker-build</id>-->
-                        <!--<phase>package</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>build</goal>-->
-                        <!--</goals>-->
-                        <!--<configuration>-->
-                            <!--<repository>${docker.repo.name}/observability-portal</repository>-->
-                            <!--<tag>${docker.image.tag}</tag>-->
-                        <!--</configuration>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-            <!--</plugin>-->
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>dockerfile-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>docker-build</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <repository>${docker.repo.name}/observability-portal</repository>
+                            <tag>${docker.image.tag}</tag>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
