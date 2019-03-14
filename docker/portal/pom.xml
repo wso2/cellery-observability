@@ -39,7 +39,7 @@
                 <executions>
                     <execution>
                         <id>copy-observability-portal-app</id>
-                        <phase>package</phase>
+                        <phase>initialize</phase>
                         <goals>
                             <goal>unpack</goal>
                         </goals>
