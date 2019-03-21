@@ -493,7 +493,7 @@
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <docker.repo.name>celleryio</docker.repo.name>
+        <docker.repo.name>wso2cellery</docker.repo.name>
         <docker.image.tag>latest</docker.image.tag>
     </properties>
 </project>

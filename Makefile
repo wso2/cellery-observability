@@ -15,7 +15,7 @@
 #  under the License.
 
 PROJECT_ROOT := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
-DOCKER_REPO ?= celleryio
+DOCKER_REPO ?= wso2cellery
 DOCKER_IMAGE_TAG ?= latest
 
 
