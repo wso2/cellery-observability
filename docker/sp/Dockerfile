@@ -16,7 +16,7 @@
 #
 # ------------------------------------------------------------------------
 
-FROM docker.wso2.com/wso2sp-worker:4.3.0
+FROM celleryio/sp-worker-base:4.3.0
 MAINTAINER WSO2 Cellery Maintainers "dev@wso2.org"
 
 ARG CELLERY_TARGET_FILES=./target/files
