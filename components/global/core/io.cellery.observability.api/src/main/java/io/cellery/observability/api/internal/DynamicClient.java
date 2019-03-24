@@ -19,7 +19,9 @@
 package io.cellery.observability.api.internal;
 
 import io.cellery.observability.api.AggregatedRequestsAPI;
+import io.cellery.observability.api.CelleryConfigs;
 import io.cellery.observability.api.Constants;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -34,10 +36,12 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
+import org.wso2.carbon.config.ConfigurationException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -49,7 +53,7 @@ import javax.net.ssl.X509TrustManager;
 /**
  * This class is used to create a DCR request for Service Provider registeration.
  */
-public class RegisterClient {
+public class DynamicClient {
 
     private static final Logger log = Logger.getLogger(AggregatedRequestsAPI.class);
 
@@ -60,14 +64,14 @@ public class RegisterClient {
         try {
             HttpClient client = getAllSSLClient();
             HttpPost request =
-                    new HttpPost(Constants.CLIENT_REGISTERATION_ENDPOINT);
+                    new HttpPost(CelleryConfigs.getInstance().getDcrEnpoint());
             JSONObject clientJson = new JSONObject();
-            clientJson.put(Constants.CALL_BACK_URL, Constants.OBSERVABILITY_DASHBOARD_URL);
+            clientJson.put(Constants.CALL_BACK_URL, CelleryConfigs.getInstance().getDashboardURL());
             clientJson.put(Constants.CLIENT_NAME, Constants.APPLICATION_NAME);
             clientJson.put(Constants.OWNER, Constants.ADMIN);
             clientJson.put(Constants.GRANT_TYPE, Constants.AUTHORIZATION_CODE);
             clientJson.put(Constants.SAAS_APP, Constants.TRUE);
-            request.setHeader(Constants.AUTHORIZATION, Constants.BASIC_ADMIN_AUTH);
+            request.setHeader(Constants.AUTHORIZATION, basicAuthentication());
             request.setHeader(Constants.CONTENT_TYPE, Constants.APPLICATION_JSON);
             request.setEntity(new StringEntity(clientJson.toString()));
 
@@ -85,8 +89,9 @@ public class RegisterClient {
 
             jsonObject = new JSONObject(builder.toString());
             return jsonObject;
-        } catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException e) {
-            log.error("Error while fetching the Client-Id for the dynamically created service provider ", e);
+        } catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException | ConfigurationException e) {
+            log.error("Error while fetching the Client-Id for the dynamically client ", e);
+            return jsonObject;
         } finally {
             if (bufReader != null) {
                 try {
@@ -103,10 +108,17 @@ public class RegisterClient {
                 }
             }
         }
-        return jsonObject;
     }
 
-    public static HttpClient getAllSSLClient()
+    private static String basicAuthentication() throws ConfigurationException {
+        String authString = CelleryConfigs.getInstance().getUsername() + ":"
+                + CelleryConfigs.getInstance().getPassword();
+        byte[] authEncBytes = Base64.encodeBase64(authString.getBytes(Charset.forName("UTF-8")));
+        String authStringEnc = new String(authEncBytes, Charset.forName("UTF-8"));
+        return "Basic " + authStringEnc;
+    }
+
+    private static HttpClient getAllSSLClient()
             throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
 
         TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {

@@ -85,14 +85,15 @@ class HttpUtils {
      *
      * @param {Object} config Axios configuration object
      * @param {StateHolder} globalState The global state provided to the current component
-     * @returns {Promise} A promise for the API call
+     * @returns {Promise} A promise for the API calla
      */
     static callObservabilityAPI = (config, globalState) => {
-        config.url = `${config.url}`;
-
-        config.headers = {
-            Authorization: "Bearer e3684c64-36e3-35fe-ad87-3976f4ddb012"
-        };
+        config.url = `${globalState.get(StateHolder.CONFIG).observabilityAPIURL}${config.url}`;
+        if (globalState.get(StateHolder.USER) !== null) {
+            config.headers = {
+                Authorization: `Bearer ${globalState.get(StateHolder.USER).accessToken}`
+            };
+        }
 
         return HttpUtils.callAPI(config, globalState);
     };
@@ -117,14 +118,9 @@ class HttpUtils {
         if (!config.data && (config.method === "POST" || config.method === "PUT" || config.method === "PATCH")) {
             config.data = {};
         }
-
         axios(config)
             .then((response) => {
-                if (response.status >= 200 && response.status < 400) {
-                    resolve(response.data);
-                } else {
-                    reject(response.data);
-                }
+                resolve(response.data);
             })
             .catch((error) => {
                 if (error.response) {

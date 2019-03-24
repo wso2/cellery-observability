@@ -58,7 +58,8 @@ const Constants = {
         INBOUND: "Inbound",
         OUTBOUND: "Outbound",
         SIDE_NAV_BAR_WIDTH: 240,
-        APIM_HOSTNAME: "wso2-apim" // TODO: Need to add this to portal.json
+        APIM_HOSTNAME: "wso2-apim", // TODO: Need to add this to portal.json
+        CALL_BACK_URL: "http://cellery-dashboard"
     }
 };
 

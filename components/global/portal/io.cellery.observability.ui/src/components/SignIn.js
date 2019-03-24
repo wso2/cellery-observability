@@ -19,8 +19,8 @@
 import AuthUtils from "../utils/api/authUtils";
 import CircularProgress from "@material-ui/core/CircularProgress/CircularProgress";
 import React from "react";
+import {withRouter} from "react-router";
 import withStyles from "@material-ui/core/styles/withStyles";
-import HttpUtils from "../utils/api/httpUtils";
 import withGlobalState, {StateHolder} from "./common/state";
 import * as PropTypes from "prop-types";
 
@@ -67,6 +67,8 @@ const styles = (theme) => ({
     }
 });
 
+const CODE = "code";
+
 class SignIn extends React.Component {
 
     handleLogin = () => {
@@ -97,36 +99,25 @@ class SignIn extends React.Component {
     }
 
     componentDidMount() {
-        const url = window.location.search.substr(1);
-        const searchParams = new URLSearchParams(url);
+        const params = this.props.location.search;
+        const searchParams = new URLSearchParams(params);
         const {globalState} = this.props;
-
         if (localStorage.getItem(StateHolder.USER) === null) {
-            if (!searchParams.has("code")) {
-                //AuthUtils.redirectToIDP(globalState);
-
-                HttpUtils.callObservabilityAPI(
-                    {
-                        url: "http://0.0.0.0:9123/api/dependency-model/hello",
-                        method: "GET"
-                    },
-                    globalState).then((resp) => {
-                    console.log(resp.data);
-                }).catch((err) => {
-                    localStorage.setItem("error2", err.toString());
-                });
-
-            } else if (searchParams.has("code")) {
-                const oneTimeToken = searchParams.get("code");
+            if (!searchParams.has(CODE)) {
+                AuthUtils.redirectToIDP(globalState);
+            } else if (searchParams.has(CODE)) {
+                const oneTimeToken = searchParams.get(CODE);
                 AuthUtils.getTokens(oneTimeToken, globalState);
             }
         }
     }
+
 }
 
 SignIn.propTypes = {
     classes: PropTypes.object.isRequired,
-    globalState: PropTypes.instanceOf(StateHolder).isRequired
+    globalState: PropTypes.instanceOf(StateHolder).isRequired,
+    location: PropTypes.object.isRequired
 };
 
-export default withStyles(styles)(withGlobalState(SignIn));
+export default withRouter(withStyles(styles)(withGlobalState(SignIn)));
