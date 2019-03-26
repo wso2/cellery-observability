@@ -33,15 +33,16 @@ public class Constants {
     public static final String ALL_ORIGIN = "*";
     public static final String ORIGIN = "Origin";
 
-    public static final String CLIENT_REGISTERATION_ENDPOINT = "https://gateway.cellery-system:9443" +
-            "/client-registration/v0.14/register";
-    public static final String CALL_BACK_URL = "callbackUrl";
+    public static final String APIM_REGISTERATION_ENDPOINT = "/client-registration/v0.14/register";
+    public static final String IDP_REGISTERATION_ENDPOINT = "/api/identity/oauth2/dcr/v1.1/register";
+    public static final String TOKEN_ENDPOINT = "/oauth2/token?";
+    public static final String CALL_BACK_URL = "redirect_uris";
     public static final String OBSERVABILITY_DASHBOARD_URL = "http://cellery-dashboard";
-    public static final String CLIENT_NAME = "clientName";
-    public static final String APPLICATION_NAME = "Cellery-Observability-Portal";
+    public static final String CLIENT_NAME = "client_name";
+    public static final String APPLICATION_NAME = "Cellery-Observability-Portal-2";
     public static final String OWNER = "owner";
     public static final String ADMIN = "admin";
-    public static final String GRANT_TYPE = "grantType";
+    public static final String GRANT_TYPE = "grant_types";
     public static final String AUTHORIZATION_CODE = "authorization_code";
     public static final String SAAS_APP = "saasApp";
     public static final String TRUE = "true";
@@ -49,8 +50,9 @@ public class Constants {
     public static final String BASIC_ADMIN_AUTH = "Basic YWRtaW46YWRtaW4=";
     public static final String CONTENT_TYPE = "content-type";
     public static final String APPLICATION_JSON = "application/json";
-    public static final String INTERNAL_TOKEN_LOCATION = "https://gateway.cellery-system:9443/oauth2/token?";
-    public static final String INTERNAL_INTROSPECT_ENDPOINT = "https://172.17.0.1:9443/oauth2/introspect";
+    public static final String INTERNAL_INTROSPECT_ENDPOINT = "https://gateway.cellery-system:9443/oauth2/introspect";
     public static final String ID_TOKEN = "id_token";
+    public static final String EXT_PARAM_CLIENT_ID = "ext_param_client_i";
+    public static final String STANDARD_ID = "celleryobs_0001";
 
 }

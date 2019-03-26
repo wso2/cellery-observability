@@ -1,29 +1,13 @@
-/*
- * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
- *
- * WSO2 Inc. licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-
-package io.cellery.observability.api.internal;
+package io.cellery.observability.api.registeration;
 
 import io.cellery.observability.api.AggregatedRequestsAPI;
-import io.cellery.observability.api.CelleryConfigs;
+import io.cellery.observability.api.configs.CelleryConfig;
 import io.cellery.observability.api.Constants;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -31,9 +15,11 @@ import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.wso2.carbon.config.ConfigurationException;
@@ -44,8 +30,9 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -53,7 +40,7 @@ import javax.net.ssl.X509TrustManager;
 /**
  * This class is used to create a DCR request for Service Provider registeration.
  */
-public class DynamicClient {
+public class IdpRegisteration {
 
     private static final Logger log = Logger.getLogger(AggregatedRequestsAPI.class);
 
@@ -61,19 +48,12 @@ public class DynamicClient {
         BufferedReader bufReader = null;
         InputStreamReader inputStreamReader = null;
         JSONObject jsonObject = null;
+        ArrayList<String> uris = new ArrayList<>(Arrays.asList("https://localhost:4000"));
+        ArrayList<String> grants = new ArrayList<>(Arrays.asList("implicit", "authorization_code"));
         try {
             HttpClient client = getAllSSLClient();
-            HttpPost request =
-                    new HttpPost(CelleryConfigs.getInstance().getDcrEnpoint());
-            JSONObject clientJson = new JSONObject();
-            clientJson.put(Constants.CALL_BACK_URL, CelleryConfigs.getInstance().getDashboardURL());
-            clientJson.put(Constants.CLIENT_NAME, Constants.APPLICATION_NAME);
-            clientJson.put(Constants.OWNER, Constants.ADMIN);
-            clientJson.put(Constants.GRANT_TYPE, Constants.AUTHORIZATION_CODE);
-            clientJson.put(Constants.SAAS_APP, Constants.TRUE);
-            request.setHeader(Constants.AUTHORIZATION, basicAuthentication());
-            request.setHeader(Constants.CONTENT_TYPE, Constants.APPLICATION_JSON);
-            request.setEntity(new StringEntity(clientJson.toString()));
+            HttpPost request = constructRequestBody("https://localhost:9443" +
+                    Constants.IDP_REGISTERATION_ENDPOINT, uris, grants);
 
             HttpResponse response = client.execute(request);
             inputStreamReader = new InputStreamReader(
@@ -88,8 +68,15 @@ public class DynamicClient {
             }
 
             jsonObject = new JSONObject(builder.toString());
+
+            if (jsonObject.has("error")) {
+                jsonObject = checkRegisteration("https://localhost:9443" +
+                        Constants.IDP_REGISTERATION_ENDPOINT, client);
+            } else {
+                jsonObject = new JSONObject(builder.toString());
+            }
             return jsonObject;
-        } catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException | ConfigurationException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
             log.error("Error while fetching the Client-Id for the dynamically client ", e);
             return jsonObject;
         } finally {
@@ -110,16 +97,33 @@ public class DynamicClient {
         }
     }
 
+    private static HttpPost constructRequestBody(String dcrEp, ArrayList<String> callbackUris,
+                                                 ArrayList<String> grants) {
+        HttpPost request =
+                new HttpPost(dcrEp);
+        JSONObject clientJson = new JSONObject();
+        clientJson.put(Constants.CALL_BACK_URL, callbackUris);
+        clientJson.put(Constants.CLIENT_NAME, Constants.APPLICATION_NAME);
+        clientJson.put(Constants.GRANT_TYPE, grants);
+        clientJson.put("ext_param_client_id", Constants.STANDARD_ID);
+        StringEntity requestEntity = new StringEntity(clientJson.toString(), ContentType.APPLICATION_JSON);
+        request.setHeader(Constants.AUTHORIZATION, Constants.BASIC_ADMIN_AUTH);
+        request.setHeader(Constants.CONTENT_TYPE, Constants.APPLICATION_JSON);
+        request.setEntity(requestEntity);
+
+        return request;
+    }
+
     private static String basicAuthentication() throws ConfigurationException {
-        String authString = CelleryConfigs.getInstance().getUsername() + ":"
-                + CelleryConfigs.getInstance().getPassword();
+        String authString = CelleryConfig.getInstance().getUsername() + ":"
+                + CelleryConfig.getInstance().getPassword();
         byte[] authEncBytes = Base64.encodeBase64(authString.getBytes(Charset.forName("UTF-8")));
         String authStringEnc = new String(authEncBytes, Charset.forName("UTF-8"));
         return "Basic " + authStringEnc;
     }
 
     private static HttpClient getAllSSLClient()
-            throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
+            throws NoSuchAlgorithmException, KeyManagementException {
 
         TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
             @Override
@@ -155,5 +159,18 @@ public class DynamicClient {
         return builder.build();
 
     }
-}
 
+//    public static void main(String[] args) throws IOException {
+//        System.out.println(getClientCredentials());
+//    }
+
+    private static JSONObject checkRegisteration(String dcrEp, HttpClient client) throws IOException {
+        HttpGet getRequest = new HttpGet(dcrEp + "?client_name=" + Constants.APPLICATION_NAME);
+        getRequest.setHeader(Constants.AUTHORIZATION, Constants.BASIC_ADMIN_AUTH);
+
+        HttpResponse resp = client.execute(getRequest);
+        HttpEntity entity = resp.getEntity();
+        String result = EntityUtils.toString(entity, Charset.forName("utf-8"));
+        return new JSONObject(result);
+    }
+}

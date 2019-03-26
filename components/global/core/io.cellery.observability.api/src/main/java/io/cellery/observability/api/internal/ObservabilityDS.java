@@ -18,6 +18,7 @@
 package io.cellery.observability.api.internal;
 
 import io.cellery.observability.api.AggregatedRequestsAPI;
+import io.cellery.observability.api.configs.CelleryConfig;
 import io.cellery.observability.api.DependencyModelAPI;
 import io.cellery.observability.api.DistributedTracingAPI;
 import io.cellery.observability.api.KubernetesAPI;
@@ -25,6 +26,7 @@ import io.cellery.observability.api.UserAuthenticationAPI;
 import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
+import io.cellery.observability.api.registeration.ApimRegisteration;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
 import io.cellery.observability.model.generator.ModelManager;
 import org.apache.log4j.Logger;
@@ -36,6 +38,7 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+import org.wso2.carbon.config.provider.ConfigProvider;
 import org.wso2.carbon.datasource.core.api.DataSourceService;
 import org.wso2.carbon.kernel.CarbonRuntime;
 import org.wso2.msf4j.MicroservicesRunner;
@@ -60,23 +63,32 @@ public class ObservabilityDS {
      * satisfied.
      *
      * @param bundleContext the bundle context instance of this bundle.
-     * @throws Exception this will be thrown if an issue occurs while executing the activate method
+     * @throws Exception this will be thrown if an issue occurDataSourceServices while executing the activate method
      */
     @Activate
     protected void start(BundleContext bundleContext) throws Exception {
 
-        JSONObject clientJson = RegisterClient.getClientCredentials();
-        String clientId = clientJson.getString("clientId");
-        String clientSecret = clientJson.getString("clientSecret");
+        String name = CelleryConfig.getInstance().getDashboardURL();
+        log.info(name);
+        log.info(CelleryConfig.getInstance().getTokenEndpoint());
+        log.info(CelleryConfig.getInstance().getDcrEnpoint());
+        log.info(CelleryConfig.getInstance().getUsername());
+        log.info(CelleryConfig.getInstance().getPassword());
+
+        JSONObject clientJson = ApimRegisteration.getClientCredentials();
+        final char[] clientId = clientJson.getString("clientId").toCharArray();
+        final char[] clientSecret = clientJson.getString("clientSecret").toCharArray();
+        UserAuthenticationAPI.setClientId(String.valueOf(clientId));
+        UserAuthenticationAPI.setClientSecret(String.valueOf(clientSecret));
         try {
             // Deploying the microservices
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
             ServiceHolder.setMicroservicesRunner(new MicroservicesRunner(DEFAULT_OBSERVABILITY_API_PORT + offset)
-                    .addGlobalRequestInterceptor(new CORSInterceptor(), new AuthInterceptor())
+                    .addGlobalRequestInterceptor(new CORSInterceptor())
                     .addExceptionMapper(new APIExceptionMapper())
                     .deploy(
                             new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
-                            new KubernetesAPI(), new UserAuthenticationAPI(clientId, clientSecret)
+                            new KubernetesAPI(), new UserAuthenticationAPI()
                     )
             );
             ServiceHolder.getMicroservicesRunner().start();
@@ -120,7 +132,6 @@ public class ObservabilityDS {
             log.debug("Successfully stopped Siddhi Query manager");
         }
     }
-
 
     @Reference(
             name = "carbon.runtime.service",
@@ -168,4 +179,20 @@ public class ObservabilityDS {
     protected void unsetModelManager(ModelManager modelManager) {
         ServiceHolder.setCarbonRuntime(null);
     }
+
+    @Reference(
+            name = "carbon.config.provider",
+            service = ConfigProvider.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unregisterConfigProvider"
+    )
+    protected void registerConfigProvider(ConfigProvider configProvider) {
+        CelleryConfig.setConfigProvider(configProvider);
+    }
+
+    protected void unregisterConfigProvider(ConfigProvider configProvider) {
+        CelleryConfig.setConfigProvider(null);
+    }
+
 }

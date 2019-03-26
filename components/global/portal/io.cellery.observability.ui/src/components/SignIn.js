@@ -102,6 +102,7 @@ class SignIn extends React.Component {
         const params = this.props.location.search;
         const searchParams = new URLSearchParams(params);
         const {globalState} = this.props;
+
         if (localStorage.getItem(StateHolder.USER) === null) {
             if (!searchParams.has(CODE)) {
                 AuthUtils.redirectToIDP(globalState);

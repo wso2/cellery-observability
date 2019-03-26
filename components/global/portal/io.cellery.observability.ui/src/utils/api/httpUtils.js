@@ -85,7 +85,7 @@ class HttpUtils {
      *
      * @param {Object} config Axios configuration object
      * @param {StateHolder} globalState The global state provided to the current component
-     * @returns {Promise} A promise for the API calla
+     * @returns {Promise} A promise for the API calls
      */
     static callObservabilityAPI = (config, globalState) => {
         config.url = `${globalState.get(StateHolder.CONFIG).observabilityAPIURL}${config.url}`;

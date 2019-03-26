@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import Constants from "../constants";
 import HttpUtils from "./httpUtils";
 import {StateHolder} from "../../components/common/state";
 import jwtDecode from "jwt-decode";
@@ -60,6 +59,12 @@ class AuthUtils {
         }).catch((err) => {
             throw Error(`Failed to redirect to Identity Provider for Authentication. ${err}`);
         });
+
+        /*
+         * Window.location.href = `https://10.100.4.121:9443/oauth2/authorize?response_type=code`
+         *     + `&client_id=H87NsL_4MG_FVsx8hzRmfEeCxFQa&`
+         *     + `redirect_uri=http://localhost:3000&nonce=auth&scope=openid`;
+         */
     }
 
     /**
@@ -84,6 +89,28 @@ class AuthUtils {
             };
             AuthUtils.signIn(user1, globalState);
         });
+
+        /*
+         * axios.post(`https://10.100.4.121:9443/oauth2/token?grant_type=authorization_code&code=${
+         *     oneTimeCode}&redirect_uri=http://localhost:3000`, null, {
+         *     headers: {
+         *         "Content-Type": "application/x-www-form-urlencoded",
+         *         Authorization:
+         *             "Basic SDg3TnNMXzRNR19GVnN4OGh6Um1mRWVDeEZRYTpzSm5oVUNLSGdmV2o2SXFmbTRyY1F3eWtEa2dh"
+         *     }
+         * }).then((response) => {
+         *     localStorage.setItem("idToken", response.data.id_token);
+         *     const decoded = jwtDecode(response.data.id_token);
+         *     const user1 = {
+         *         username: decoded.sub,
+         *         accessToken: response.data.access_token,
+         *         idToken: response.data.id_token
+         *     };
+         *     AuthUtils.signIn(user1, globalState);
+         * }).catch((err) => {
+         *     alert(err);
+         * });
+         */
     }
 
     /**
@@ -104,12 +131,10 @@ class AuthUtils {
      * @param {StateHolder} globalState The global state provided to the current component
      */
     static signOut = (globalState) => {
-        const idToken = globalState.get(StateHolder.USER).idToken;
-        globalState.unset(StateHolder.USER);
-        localStorage.removeItem(StateHolder.USER);
-
-        window.location.href = `https://${Constants.Dashboard.APIM_HOSTNAME}/oidc/logout?id_token_hint=
-            ${idToken}&post_logout_redirect_uri=http://cellery-dashboard`;
+        // Const idToken = globalState.get(StateHolder.USER).idToken;
+        localStorage.setItem("isLoggedout", "true");
+        window.location.href = `https://10.100.4.121:9443/oidc/logout?id_token_hint=
+            ${localStorage.getItem("idToken")}&post_logout_redirect_uri=http://localhost:3000`;
     };
 
     /**

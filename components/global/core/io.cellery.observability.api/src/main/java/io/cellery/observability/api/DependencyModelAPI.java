@@ -28,6 +28,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 /**
@@ -87,7 +88,9 @@ public class DependencyModelAPI {
     @GET
     @Path("/hello")
     public Response getHello() {
-        return Response.ok("Hello World").build();
+        NewCookie cookie = new NewCookie("cookie-test", "cookie-testval", "/",
+                "", "cookie description", 1000000, false, false);
+        return Response.ok().cookie(cookie).entity("Hello World").build();
     }
 
     @OPTIONS

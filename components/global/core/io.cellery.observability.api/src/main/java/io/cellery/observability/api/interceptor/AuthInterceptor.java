@@ -1,15 +1,36 @@
+/*
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package io.cellery.observability.api.interceptor;
 
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import io.cellery.observability.api.configs.CelleryConfig;
 import io.cellery.observability.api.Constants;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
+import org.wso2.carbon.config.ConfigurationException;
 import org.wso2.msf4j.Request;
 import org.wso2.msf4j.Response;
 import org.wso2.msf4j.interceptor.RequestInterceptor;
@@ -24,26 +45,45 @@ import javax.ws.rs.core.HttpHeaders;
 /**
  * Used for securing backend APIs.
  */
+
 public class AuthInterceptor implements RequestInterceptor {
+
+    private static final String ACTIVE_STATUS = "active";
+    private static String halfToken;
+
+    public static void setHalfToken(String halfToken) {
+        AuthInterceptor.halfToken = halfToken;
+    }
+
+    private static String getHalfToken() {
+        return halfToken;
+    }
+
+    private static final Logger log = Logger.getLogger(AuthInterceptor.class);
 
     @Override
     public boolean interceptRequest(Request request, Response response) {
-        String token;
-        if (!request.getHttpMethod().equalsIgnoreCase(HttpMethod.OPTIONS)) {
+
+        log.info(request.getHeader("Cookie"));
+        String accessToken;
+        if (!request.getHttpMethod().equalsIgnoreCase(HttpMethod.OPTIONS) &&
+                request.getHeader(HttpHeaders.AUTHORIZATION) != null) {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-            token = header.substring(7, header.length());
 
-            System.out.println(request.getHeader(HttpHeaders.AUTHORIZATION));
+            // Concatenate two parts of access token (part from backend + part from frontend).
+            accessToken = AuthInterceptor.getHalfToken() + header.split(" ")[1];
+            log.info(accessToken);
 
-            if (!validateToken(token)) {
+            if (!validateToken(accessToken)) {
                 response.setStatus(401);
                 return false;
             } else {
                 return true;
             }
-        } else {
-            return true;
+
         }
+
+        return true;
     }
 
     private static boolean validateToken(String token) {
@@ -62,19 +102,21 @@ public class AuthInterceptor implements RequestInterceptor {
             HttpResponse<String> stringResponse
                     = Unirest.post(Constants.INTERNAL_INTROSPECT_ENDPOINT)
                     .header("Content-Type", "application/x-www-form-urlencoded")
-                    .basicAuth("admin", "admin").body("token=" + token).asString();
+                    .basicAuth(CelleryConfig.getInstance().getUsername()
+                            , CelleryConfig.getInstance().getPassword()).body("token=" + token).asString();
 
             JSONObject jsonResponse = new JSONObject(stringResponse.getBody());
-            System.out.println(stringResponse.getBody());
-            if (!((Boolean) jsonResponse.get("active"))) {
+            if (!((Boolean) jsonResponse.get(ACTIVE_STATUS))) {
                 return false;
             }
 
-        } catch (UnirestException | KeyStoreException | NoSuchAlgorithmException | KeyManagementException e) {
+        } catch (UnirestException | KeyStoreException | NoSuchAlgorithmException |
+                KeyManagementException | ConfigurationException e) {
             return false;
         }
 
         return true;
     }
+
 }
 
