@@ -139,7 +139,9 @@ const styles = (theme) => ({
         verticalAlign: "middle"
     },
     graphContainer: {
-        display: "flex"
+        display: "flex",
+        height: "75vh",
+        width: "100%"
     },
     diagram: {
         padding: theme.spacing.unit * 3,
@@ -662,12 +664,12 @@ class Overview extends React.Component {
             const warningColor = ColorGenerator.shadeColor(colorGenerator.getColor(ColorGenerator.WARNING), opacity);
             const state = this.getCellState(nodeId);
 
-            const successCell = '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">'
+            const successCell = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
                 + `<path fill="${color}"  stroke="${(selectedCell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
                 + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
                 + "</svg>";
 
-            const errorCell = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><g>'
+            const errorCell = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
                 + `<path fill="${color}" stroke="${(selectedCell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
                 + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/></g>'
                 + `<path fill="${errorColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
@@ -675,7 +677,7 @@ class Overview extends React.Component {
                 + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
                 + "</svg>";
 
-            const warningCell = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><g>'
+            const warningCell = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
                 + `<path fill="${color}" stroke="${(selectedCell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
                 + 'stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/></g>'
                 + `<path fill="${warningColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`

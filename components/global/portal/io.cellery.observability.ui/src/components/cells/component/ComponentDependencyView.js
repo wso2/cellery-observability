@@ -47,6 +47,10 @@ const styles = (theme) => ({
     graphContainer: {
         display: "flex"
     },
+    dependencyGraph: {
+        height: "75vh",
+        width: "100%"
+    },
     diagram: {
         padding: theme.spacing.unit * 3,
         flexGrow: 1
@@ -267,7 +271,7 @@ class ComponentDependencyView extends React.Component {
             let cellView;
 
             if (group === ComponentDependencyGraph.NodeType.COMPONENT) {
-                cellView = '<svg xmlns="http://www.w3.org/2000/svg"  x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">'
+                cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
                     + `<path fill="${color}"  stroke="${(selectedNode === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
                     + 'stroke-width="0.5px" d="M13,7a6,6,0,0,1-6,6.06A6,6,0,0,1,1,7,6,6,0,0,1,7,.94,6,6,0,0,1,13,7Z" transform="translate(-0.79 -0.69)"/>'
                     + `<path fill="${componentColor}" stroke="#fff" stroke-width="0.1px" d="M4.37,5c-.19.11-.19.28,0,.39L6.76,6.82a.76.76,0,0,0,.69,0L9.64,5.45a.23.23,0,0,0,0-.42L7.45,3.7a.76.76,0,0,0-.69,0Z" transform="translate(-0.79 -0.69)"/>`
@@ -275,14 +279,13 @@ class ComponentDependencyView extends React.Component {
                     + '<text fill="#fff" font-size="1.63px" font-family="ArialMT, Arial" transform="translate(5.76 5.1) scale(0.98 1)">μ</text>'
                     + "</svg>";
             } else if (group === ComponentDependencyGraph.NodeType.GATEWAY) {
-                cellView = '<svg xmlns="http://www.w3.org/2000/svg"  x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">'
+                cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
                     + `<path fill="${color}"  stroke="${(selectedNode === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
                     + 'stroke-width="0.5px" d="M13,7a6,6,0,0,1-6,6.06A6,6,0,0,1,1,7,6,6,0,0,1,7,.94,6,6,0,0,1,13,7Z" transform="translate(-0.79 -0.69)"/>'
                     + `<path fill="${componentColor}" stroke="#fff" stroke-width="0.1px" d="M6.39,6.29v1L4.6,5.47a.14.14,0,0,1,0-.21L6.39,3.47v1a.15.15,0,0,0,.15.14H9.3a.15.15,0,0,1,.14.15V6a.15.15,0,0,1-.14.15H6.54A.15.15,0,0,0,6.39,6.29ZM7.46,7.85H4.7A.15.15,0,0,0,4.56,8V9.27a.15.15,0,0,0,.14.15H7.46a.15.15,0,0,1,.15.14v1L9.4,8.74a.14.14,0,0,0,0-.21L7.61,6.74v1A.15.15,0,0,1,7.46,7.85Z" transform="translate(-0.79 -0.69)"/>`
                     + "</svg>";
             } else {
-                cellView
-                    = '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100%" height="100%" viewBox="0 0 14 14">'
+                cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
                     + `<path fill="${color}"  stroke="${outlineColor}" stroke-opacity="${1 - opacity}" `
                     + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
                     + "</svg>";
@@ -298,11 +301,13 @@ class ComponentDependencyView extends React.Component {
         if (dependedNodeCount > 1) {
             view = (
                 <ErrorBoundary title={"Unable to Render"} description={"Unable to Render due to Invalid Data"}>
-                    <ComponentDependencyGraph
-                        id="component-dependency-graph"
-                        nodeData={dataNodes} edgeData={dataEdges} selectedComponent={selectedNode}
-                        onClickNode={this.onClickNode} viewGenerator={viewGenerator}
-                        graphType="dependency" cellColor={colorGenerator.getColor(cell)}/>
+                    <div className={classes.dependencyGraph}>
+                        <ComponentDependencyGraph
+                            id="component-dependency-graph"
+                            nodeData={dataNodes} edgeData={dataEdges} selectedComponent={selectedNode}
+                            onClickNode={this.onClickNode} viewGenerator={viewGenerator}
+                            graphType="dependency" cellColor={colorGenerator.getColor(cell)}/>
+                    </div>
                 </ErrorBoundary>
             );
         } else {
