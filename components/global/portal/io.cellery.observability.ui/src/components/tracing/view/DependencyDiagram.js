@@ -186,11 +186,16 @@ class DependencyDiagram extends React.Component {
                 }
             });
 
-            const radius = (((component[0].span.duration - minDuration)
-                * (DependencyDiagram.MAX_RADIUS - DependencyDiagram.MIN_RADIUS))
-                / (maxDuration - minDuration)) + DependencyDiagram.MIN_RADIUS;
-            let nodeView;
+            let radius;
+            if (maxDuration === minDuration) {
+                radius = DependencyDiagram.MAX_RADIUS;
+            } else {
+                radius = (((component[0].span.duration - minDuration)
+                    * (DependencyDiagram.MAX_RADIUS - DependencyDiagram.MIN_RADIUS))
+                    / (maxDuration - minDuration)) + DependencyDiagram.MIN_RADIUS;
+            }
 
+            let nodeView;
             if (component[0].span.hasError()) {
                 const iconTranslation = radius * (Math.PI / 4);
                 const xTranslation = 150;
@@ -212,7 +217,7 @@ class DependencyDiagram extends React.Component {
         };
 
         return (
-            nodes.length > 0 && links.length > 0
+            nodes.length > 0
                 ? (
                     <React.Fragment>
                         <div className={classes.graphContainer}>
