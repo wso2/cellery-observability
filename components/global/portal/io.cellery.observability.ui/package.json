@@ -1,14 +1,15 @@
 {
-  "name": "io.cellery.observability.ui",
+  "name": "@cellery-io/observability-portal",
   "version": "0.1.1-SNAPSHOT",
   "description": "Cellery Observability Portal",
   "author": "WSO2 Cellery Maintainers",
   "license": "Apache-2.0",
   "scripts": {
-    "install": "npm --prefix ./node-server install ./node-server",
+    "install": "npm --prefix ./node-server ci ./node-server",
     "clean": "rimraf ./build/ && rimraf ./node-server/public/ && rimraf ./coverage/",
     "start": "concurrently --kill-others --names \"config-server,webpack-dev-server\" \"APP_ENV=DEV PORTAL_PORT=4000 node node-server/serve.js\" \"react-scripts start\"",
-    "lint": "eslint --color --fix src/",
+    "lint": "eslint --color src/",
+    "lint:fix": "eslint --color --fix src/",
     "build": "react-scripts build",
     "test": "CI=true react-scripts test --colors --testURL=http://test.cellery.com --coverage",
     "eject": "react-scripts eject"

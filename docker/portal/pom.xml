@@ -39,7 +39,7 @@
                 <executions>
                     <execution>
                         <id>copy-observability-portal-app</id>
-                        <phase>package</phase>
+                        <phase>initialize</phase>
                         <goals>
                             <goal>unpack</goal>
                         </goals>
@@ -59,8 +59,7 @@
                 </configuration>
             </plugin>
 
-             <!--TODO: Temporarily comment out Docker build for Release 0.1.0-->
-             <!--Build Docker Image-->
+            <!-- Build Docker Image -->
             <plugin>
                 <groupId>com.spotify</groupId>
                 <artifactId>dockerfile-maven-plugin</artifactId>

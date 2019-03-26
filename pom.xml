@@ -469,7 +469,7 @@
         <httpclient.version>4.3.6</httpclient.version>
         <unirest.version>1.4.9</unirest.version>
         <siddhi.io.http.version>1.0.41</siddhi.io.http.version>
-        <siddhi.store.rdbms.version>4.0.49</siddhi.store.rdbms.version>
+        <siddhi.store.rdbms.version>4.0.52</siddhi.store.rdbms.version>
         <carbon.datasource.version>1.1.4</carbon.datasource.version>
         <msf4j.version>2.6.4</msf4j.version>
         <httpasyncclient.version>4.0.2</httpasyncclient.version>
@@ -509,7 +509,7 @@
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <docker.repo.name>celleryio</docker.repo.name>
+        <docker.repo.name>wso2cellery</docker.repo.name>
         <docker.image.tag>latest</docker.image.tag>
     </properties>
 </project>
