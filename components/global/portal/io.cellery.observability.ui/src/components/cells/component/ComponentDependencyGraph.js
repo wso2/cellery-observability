@@ -307,7 +307,7 @@ class ComponentDependencyGraph extends React.Component {
             network.selectNodes([selectedComponent], false);
         }
 
-        network.on("afterDrawing", (ctx) => {
+        network.on("beforeDrawing", (ctx) => {
             const centerPoint = getPolygonCentroid(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT));
             const polygonRadius = getDistance(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT),
                 centerPoint);
@@ -325,8 +325,9 @@ class ComponentDependencyGraph extends React.Component {
 
             ctx.font = "16px Arial";
             ctx.textAlign = "center";
-            ctx.fillText(selectedComponent.split(":")[0], Xcenter, Ycenter + size);
+            ctx.fillText(selectedComponent.split(":")[0], Xcenter, Ycenter + size + 10);
 
+            ctx.save();
             ctx.translate(Xcenter, Ycenter); // Translate to center of shape
             ctx.rotate(22.5 * Math.PI / 180); // Rotate 22.5 degrees.
             ctx.translate(-Xcenter, -Ycenter);
@@ -354,6 +355,7 @@ class ComponentDependencyGraph extends React.Component {
             drawPolygon(ctx, cornerPoints, curve);
             ctx.strokeStyle = cellColor;
             ctx.stroke();
+            ctx.restore();
 
             // Placing gateway node
             if (groupNodesGateway[0]) {
