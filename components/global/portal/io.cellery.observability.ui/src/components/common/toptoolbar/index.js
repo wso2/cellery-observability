@@ -168,7 +168,7 @@ class TopToolbar extends React.Component {
                                                         <Typography className={classes.dateRangeNicknameSelectedTime}>
                                                             {startTime}
                                                         </Typography>
-                                                        <Typography color={"textSecondary"}>To</Typography>
+                                                        <Typography color={"textSecondary"}>to</Typography>
                                                         <Typography className={classes.dateRangeNicknameSelectedTime}>
                                                             {endTime}
                                                         </Typography>

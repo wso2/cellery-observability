@@ -38,7 +38,7 @@ const styles = () => ({
         display: "flex"
     },
     table: {
-        width: "20%",
+        width: "30%",
         marginTop: 25
     },
     tableCell: {

@@ -34,7 +34,7 @@ import * as PropTypes from "prop-types";
 
 const styles = () => ({
     table: {
-        width: "20%",
+        width: "30%",
         marginTop: 25
     },
     tableCell: {

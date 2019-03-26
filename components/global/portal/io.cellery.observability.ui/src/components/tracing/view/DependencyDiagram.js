@@ -66,7 +66,9 @@ const styles = (theme) => ({
         verticalAlign: "middle"
     },
     graphContainer: {
-        display: "flex"
+        display: "flex",
+        height: "75vh",
+        width: "100%"
     },
     diagram: {
         padding: theme.spacing.unit * 3,
@@ -184,24 +186,29 @@ class DependencyDiagram extends React.Component {
                 }
             });
 
-            const radius = (((component[0].span.duration - minDuration)
-                * (DependencyDiagram.MAX_RADIUS - DependencyDiagram.MIN_RADIUS))
-                / (maxDuration - minDuration)) + DependencyDiagram.MIN_RADIUS;
-            let nodeView;
+            let radius;
+            if (maxDuration === minDuration) {
+                radius = DependencyDiagram.MAX_RADIUS;
+            } else {
+                radius = (((component[0].span.duration - minDuration)
+                    * (DependencyDiagram.MAX_RADIUS - DependencyDiagram.MIN_RADIUS))
+                    / (maxDuration - minDuration)) + DependencyDiagram.MIN_RADIUS;
+            }
 
+            let nodeView;
             if (component[0].span.hasError()) {
                 const iconTranslation = radius * (Math.PI / 4);
                 const xTranslation = 150;
                 const yTranslation = 120 - iconTranslation - 30;
 
-                nodeView = '<svg xmlns="http://www.w3.org/2000/svg" x="0" y="0" width="100%" height="100%" viewBox="0 0 240 240">'
+                nodeView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="240px" height="240px" viewBox="0 0 240 240" style="enable-background:new 0 0 240 240" xmlSpace="preserve">'
                     + `<g><g><g><circle cx="120" cy="120" r="${radius - 3}" fill="${color}" stroke="${outlineColor}" stroke-width="5"/></g></g>`
                     + `<g transform="translate(${xTranslation},${yTranslation}) scale(0.35, 0.35)">`
                     + `<path stroke="#fff" strokeWidth="10" fill="${errorColor}" d="M120.5,9.6C59.1,9.6,9,59.8,9,121.3S59.1,233,120.5, 233S232,182.8,232,121.3S181.9,9.6,120.5,9.6z"/>`
                     + '<path fill="#ffffff" d="M105.4,164.5h29.9v29.9h-29.9V164.5z M105.4, 44.2h29.9v90.1h-29.9V44.2z"/></g></g>'
                     + "</svg>";
             } else {
-                nodeView = '<svg xmlns="http://www.w3.org/2000/svg" x="0" y="0" width="100%" height="100%" viewBox="0 0 240 240">'
+                nodeView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="240px" height="240px" viewBox="0 0 240 240" style="enable-background:new 0 0 240 240" xmlSpace="preserve">'
                     + `<circle cx="120" cy="120" r="${radius - 3}" fill="${color}" stroke="${outlineColor}" stroke-width="5"/>`
                     + "</svg>";
             }
@@ -210,7 +217,7 @@ class DependencyDiagram extends React.Component {
         };
 
         return (
-            nodes.length > 0 && links.length > 0
+            nodes.length > 0
                 ? (
                     <React.Fragment>
                         <div className={classes.graphContainer}>
