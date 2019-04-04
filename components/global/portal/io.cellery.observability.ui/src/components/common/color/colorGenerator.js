@@ -53,8 +53,8 @@ class ColorGenerator {
             this.colorMap = {};
         }
 
-        this.colorMap[ColorGenerator.SYSTEM] = "#ababab";
-        this.colorMap[ColorGenerator.UNKNOWN] = "#71736f";
+        this.colorMap[ColorGenerator.SYSTEM] = "#c1c1c1";
+        this.colorMap[ColorGenerator.UNKNOWN] = "#949597";
         this.colorMap[ColorGenerator.SUCCESS] = Green[500];
         this.colorMap[ColorGenerator.WARNING] = Yellow[800];
         this.colorMap[ColorGenerator.ERROR] = Red[500];
