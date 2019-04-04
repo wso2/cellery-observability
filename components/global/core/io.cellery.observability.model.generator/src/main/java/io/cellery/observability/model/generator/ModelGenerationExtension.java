@@ -139,6 +139,8 @@ public class ModelGenerationExtension extends StreamProcessor {
                     }
                 }
             }
+        } else {
+            parents.add(rootSpan);
         }
         return parents;
     }

@@ -235,6 +235,15 @@ public class ModelStoreManager {
                     isSameModel = false;
                     break;
                 }
+                if (lastNode.getEdges().size() == currentNode.getEdges().size()) {
+                    if (!lastNode.getEdges().containsAll(currentNode.getEdges())) {
+                        isSameModel = false;
+                        break;
+                    }
+                } else {
+                    isSameModel = false;
+                    break;
+                }
             } else {
                 isSameModel = false;
                 break;

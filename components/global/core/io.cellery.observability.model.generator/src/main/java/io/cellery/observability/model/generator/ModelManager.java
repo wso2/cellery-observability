@@ -257,6 +257,7 @@ public class ModelManager {
                     allNodes.add(node);
                 } else {
                     nodeFromAllNodes.getComponents().addAll(node.getComponents());
+                    nodeFromAllNodes.getEdges().addAll(node.getEdges());
                 }
             }
             allEdges.addAll(model.getEdges());
