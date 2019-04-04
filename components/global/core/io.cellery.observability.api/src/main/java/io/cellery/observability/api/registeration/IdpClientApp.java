@@ -1,8 +1,25 @@
+/*
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package io.cellery.observability.api.registeration;
 
-import io.cellery.observability.api.AggregatedRequestsAPI;
-import io.cellery.observability.api.configs.CelleryConfig;
 import io.cellery.observability.api.Constants;
+import io.cellery.observability.api.bean.CelleryConfig;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -40,20 +57,20 @@ import javax.net.ssl.X509TrustManager;
 /**
  * This class is used to create a DCR request for Service Provider registeration.
  */
-public class IdpRegisteration {
+public class IdpClientApp {
 
-    private static final Logger log = Logger.getLogger(AggregatedRequestsAPI.class);
+    private static final Logger log = Logger.getLogger(IdpClientApp.class);
 
     public static JSONObject getClientCredentials() throws IOException {
         BufferedReader bufReader = null;
         InputStreamReader inputStreamReader = null;
         JSONObject jsonObject = null;
-        ArrayList<String> uris = new ArrayList<>(Arrays.asList("https://localhost:4000"));
+        ArrayList<String> uris = new ArrayList<>(Arrays.asList(Constants.OBSERVABILITY_DASHBOARD_URL));
         ArrayList<String> grants = new ArrayList<>(Arrays.asList("implicit", "authorization_code"));
         try {
             HttpClient client = getAllSSLClient();
-            HttpPost request = constructRequestBody("https://localhost:9443" +
-                    Constants.IDP_REGISTERATION_ENDPOINT, uris, grants);
+            String dcrEP = CelleryConfig.getInstance().getDcrEnpoint() + Constants.IDP_REGISTERATION_ENDPOINT;
+            HttpPost request = constructRequestBody(dcrEP, uris, grants);
 
             HttpResponse response = client.execute(request);
             inputStreamReader = new InputStreamReader(
@@ -70,13 +87,12 @@ public class IdpRegisteration {
             jsonObject = new JSONObject(builder.toString());
 
             if (jsonObject.has("error")) {
-                jsonObject = checkRegisteration("https://localhost:9443" +
-                        Constants.IDP_REGISTERATION_ENDPOINT, client);
+                jsonObject = checkRegisteration(dcrEP, client);
             } else {
                 jsonObject = new JSONObject(builder.toString());
             }
             return jsonObject;
-        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException | ConfigurationException e) {
             log.error("Error while fetching the Client-Id for the dynamically client ", e);
             return jsonObject;
         } finally {
@@ -98,16 +114,16 @@ public class IdpRegisteration {
     }
 
     private static HttpPost constructRequestBody(String dcrEp, ArrayList<String> callbackUris,
-                                                 ArrayList<String> grants) {
+                                                 ArrayList<String> grants) throws ConfigurationException {
         HttpPost request =
                 new HttpPost(dcrEp);
         JSONObject clientJson = new JSONObject();
         clientJson.put(Constants.CALL_BACK_URL, callbackUris);
         clientJson.put(Constants.CLIENT_NAME, Constants.APPLICATION_NAME);
         clientJson.put(Constants.GRANT_TYPE, grants);
-        clientJson.put("ext_param_client_id", Constants.STANDARD_ID);
+        clientJson.put(Constants.EXT_PARAM_CLIENT_ID, Constants.STANDARD_ID);
         StringEntity requestEntity = new StringEntity(clientJson.toString(), ContentType.APPLICATION_JSON);
-        request.setHeader(Constants.AUTHORIZATION, Constants.BASIC_ADMIN_AUTH);
+        request.setHeader(Constants.AUTHORIZATION, basicAuthentication());
         request.setHeader(Constants.CONTENT_TYPE, Constants.APPLICATION_JSON);
         request.setEntity(requestEntity);
 
@@ -160,17 +176,19 @@ public class IdpRegisteration {
 
     }
 
-//    public static void main(String[] args) throws IOException {
-//        System.out.println(getClientCredentials());
-//    }
+    private static JSONObject checkRegisteration(String dcrEp, HttpClient client) {
+        try {
+            HttpGet getRequest = new HttpGet(dcrEp + Constants.CLIENT_NAME_PARAM + Constants.APPLICATION_NAME);
+            getRequest.setHeader(Constants.AUTHORIZATION, basicAuthentication());
 
-    private static JSONObject checkRegisteration(String dcrEp, HttpClient client) throws IOException {
-        HttpGet getRequest = new HttpGet(dcrEp + "?client_name=" + Constants.APPLICATION_NAME);
-        getRequest.setHeader(Constants.AUTHORIZATION, Constants.BASIC_ADMIN_AUTH);
-
-        HttpResponse resp = client.execute(getRequest);
-        HttpEntity entity = resp.getEntity();
-        String result = EntityUtils.toString(entity, Charset.forName("utf-8"));
-        return new JSONObject(result);
+            HttpResponse resp = client.execute(getRequest);
+            HttpEntity entity = resp.getEntity();
+            String result = EntityUtils.toString(entity, Charset.forName("utf-8"));
+            return new JSONObject(result);
+        } catch (IOException | ConfigurationException e) {
+            log.error("Error occured while registering new Client in IDP" + e);
+            return null;
+        }
     }
+
 }

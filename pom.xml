@@ -329,18 +329,24 @@
             <dependency>
                 <groupId>commons-logging</groupId>
                 <artifactId>commons-logging</artifactId>
-                <version>1.2</version>
+                <version>${logging.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore-nio</artifactId>
-                <version>4.3-beta2</version>
+                <version>${nio.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.wso2.carbon.config</groupId>
                 <artifactId>org.wso2.carbon.config</artifactId>
-                <version>2.1.8</version>
+                <version>${carbon.config.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>${gson.version}</version>
+            </dependency>
+
 
             <!--Orbit dependencies end here-->
         </dependencies>
@@ -482,6 +488,9 @@
         <guava.version>25.1-jre</guava.version>
         <commons.lang.version>3.7</commons.lang.version>
         <commons.io.version>2.6</commons.io.version>
+        <carbon.config.version>2.1.5</carbon.config.version>
+        <logging.version>1.2</logging.version>
+        <nio.version>4.4.3</nio.version>
         <protobuf.java.version>3.6.1</protobuf.java.version>
         <proto.google.common.proto>1.12.0</proto.google.common.proto>
         <grpc.protobuf.version>1.15.0</grpc.protobuf.version>
@@ -504,6 +513,7 @@
         <protobuf.orbit.version>0.1.1-SNAPSHOT</protobuf.orbit.version>
         <gogoproto.orbit.version>0.1.1-SNAPSHOT</gogoproto.orbit.version>
         <grpc.orbit.version>0.1.1-SNAPSHOT</grpc.orbit.version>
+        <gson.version>2.8.5</gson.version>
 
         <spotify.docker.plugin.version>1.4.10</spotify.docker.plugin.version>
 

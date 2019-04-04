@@ -120,7 +120,11 @@ class HttpUtils {
         }
         axios(config)
             .then((response) => {
-                resolve(response.data);
+                if (response.status >= 200 && response.status < 400) {
+                    resolve(response.data);
+                } else {
+                    reject(response.data);
+                }
             })
             .catch((error) => {
                 if (error.response) {
@@ -128,7 +132,7 @@ class HttpUtils {
                     if (errorResponse.status === 401) {
                         // Redirect to home page since the user is not authorised
                         if (globalState) {
-                            AuthUtils.signOut(globalState);
+                            AuthUtils.tokenRefreshRedirect(globalState);
                         }
                     }
                     reject(new Error(errorResponse.data));
@@ -137,7 +141,6 @@ class HttpUtils {
                 }
             });
     });
-
 }
 
 export default HttpUtils;

@@ -1,6 +1,6 @@
 {
     "observabilityAPIURL": "http://wso2sp-observability-api/api",
-    "idpAuthURL": "https://wso2-apim/oauth2/authorize?response_type=code",
+    "idp": "https://idp.cellery-system",
     "callBackURL": "http://cellery-dashboard",
     "percentageRangeMinValue": {
         "errorThreshold": 0.5,

@@ -35,11 +35,9 @@ class StatelessProtectedPortal extends React.Component {
 
     constructor(props) {
         super(props);
-
         this.state = {
             isAuthenticated: Boolean(props.globalState.get(StateHolder.USER))
         };
-
         props.globalState.addListener(StateHolder.USER, this.handleUserChange);
     }
 
@@ -50,11 +48,6 @@ class StatelessProtectedPortal extends React.Component {
     };
 
     render = () => {
-        if (localStorage.getItem("isLoggedout") !== null) {
-            localStorage.removeItem(StateHolder.USER);
-            this.props.globalState.unset(StateHolder.USER);
-            localStorage.removeItem("isLoggedout");
-        }
         const {isAuthenticated} = this.state;
         return isAuthenticated
             ? (

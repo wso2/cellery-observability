@@ -18,15 +18,16 @@
 package io.cellery.observability.api.internal;
 
 import io.cellery.observability.api.AggregatedRequestsAPI;
-import io.cellery.observability.api.configs.CelleryConfig;
 import io.cellery.observability.api.DependencyModelAPI;
 import io.cellery.observability.api.DistributedTracingAPI;
 import io.cellery.observability.api.KubernetesAPI;
+import io.cellery.observability.api.TrustAllX509TrustManager;
 import io.cellery.observability.api.UserAuthenticationAPI;
+import io.cellery.observability.api.bean.CelleryConfig;
 import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
-import io.cellery.observability.api.registeration.ApimRegisteration;
+import io.cellery.observability.api.registeration.IdpClientApp;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
 import io.cellery.observability.model.generator.ModelManager;
 import org.apache.log4j.Logger;
@@ -42,6 +43,14 @@ import org.wso2.carbon.config.provider.ConfigProvider;
 import org.wso2.carbon.datasource.core.api.DataSourceService;
 import org.wso2.carbon.kernel.CarbonRuntime;
 import org.wso2.msf4j.MicroservicesRunner;
+
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
 
 /**
  * This is the declarative service component of the observability API component,
@@ -68,23 +77,18 @@ public class ObservabilityDS {
     @Activate
     protected void start(BundleContext bundleContext) throws Exception {
 
-        String name = CelleryConfig.getInstance().getDashboardURL();
-        log.info(name);
-        log.info(CelleryConfig.getInstance().getTokenEndpoint());
-        log.info(CelleryConfig.getInstance().getDcrEnpoint());
-        log.info(CelleryConfig.getInstance().getUsername());
-        log.info(CelleryConfig.getInstance().getPassword());
-
-        JSONObject clientJson = ApimRegisteration.getClientCredentials();
-        final char[] clientId = clientJson.getString("clientId").toCharArray();
-        final char[] clientSecret = clientJson.getString("clientSecret").toCharArray();
-        UserAuthenticationAPI.setClientId(String.valueOf(clientId));
-        UserAuthenticationAPI.setClientSecret(String.valueOf(clientSecret));
+        JSONObject clientJson = IdpClientApp.getClientCredentials();
+        log.info(clientJson.getString("client_id"));
+        disableSSLVerification();
+        final char[] clientId = clientJson.getString("client_id").toCharArray();
+        final char[] clientSecret = clientJson.getString("client_secret").toCharArray();
+        UserAuthenticationAPI.setClientId(clientId);
+        UserAuthenticationAPI.setClientSecret(clientSecret);
         try {
             // Deploying the microservices
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
             ServiceHolder.setMicroservicesRunner(new MicroservicesRunner(DEFAULT_OBSERVABILITY_API_PORT + offset)
-                    .addGlobalRequestInterceptor(new CORSInterceptor())
+                    .addGlobalRequestInterceptor(new CORSInterceptor(), new AuthInterceptor())
                     .addExceptionMapper(new APIExceptionMapper())
                     .deploy(
                             new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
@@ -99,19 +103,6 @@ public class ObservabilityDS {
             log.error("Error occured while activating the Observability API bundle", throwable);
             throw throwable;
         }
-    }
-
-    public static void main(String[] args) {
-        ServiceHolder.setMicroservicesRunner(new MicroservicesRunner(DEFAULT_OBSERVABILITY_API_PORT)
-                .addGlobalRequestInterceptor(new CORSInterceptor(), new AuthInterceptor())
-                .addExceptionMapper(new APIExceptionMapper())
-                .deploy(
-                        new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
-                        new KubernetesAPI()
-                )
-        );
-        ServiceHolder.getMicroservicesRunner().start();
-
     }
 
     /**
@@ -188,11 +179,27 @@ public class ObservabilityDS {
             unbind = "unregisterConfigProvider"
     )
     protected void registerConfigProvider(ConfigProvider configProvider) {
+
         CelleryConfig.setConfigProvider(configProvider);
     }
 
     protected void unregisterConfigProvider(ConfigProvider configProvider) {
         CelleryConfig.setConfigProvider(null);
+    }
+
+    private static void disableSSLVerification() {
+        try {
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, new TrustManager[]{new TrustAllX509TrustManager()}, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+                public boolean verify(String string, SSLSession ssls) {
+                    return true;
+                }
+            });
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+            log.error("Error occured while disabling SSL verification", e);
+        }
     }
 
 }

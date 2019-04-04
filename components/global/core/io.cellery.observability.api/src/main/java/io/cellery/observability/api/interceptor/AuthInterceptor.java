@@ -21,8 +21,8 @@ package io.cellery.observability.api.interceptor;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import io.cellery.observability.api.configs.CelleryConfig;
 import io.cellery.observability.api.Constants;
+import io.cellery.observability.api.bean.CelleryConfig;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
@@ -49,16 +49,6 @@ import javax.ws.rs.core.HttpHeaders;
 public class AuthInterceptor implements RequestInterceptor {
 
     private static final String ACTIVE_STATUS = "active";
-    private static String halfToken;
-
-    public static void setHalfToken(String halfToken) {
-        AuthInterceptor.halfToken = halfToken;
-    }
-
-    private static String getHalfToken() {
-        return halfToken;
-    }
-
     private static final Logger log = Logger.getLogger(AuthInterceptor.class);
 
     @Override
@@ -70,8 +60,7 @@ public class AuthInterceptor implements RequestInterceptor {
                 request.getHeader(HttpHeaders.AUTHORIZATION) != null) {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-            // Concatenate two parts of access token (part from backend + part from frontend).
-            accessToken = AuthInterceptor.getHalfToken() + header.split(" ")[1];
+            accessToken = header.split(" ")[1];
             log.info(accessToken);
 
             if (!validateToken(accessToken)) {
@@ -100,7 +89,7 @@ public class AuthInterceptor implements RequestInterceptor {
                     .build();
             Unirest.setHttpClient(httpclient);
             HttpResponse<String> stringResponse
-                    = Unirest.post(Constants.INTERNAL_INTROSPECT_ENDPOINT)
+                    = Unirest.post(CelleryConfig.getInstance().getDcrEnpoint() + Constants.INTROSPECT_ENDPOINT)
                     .header("Content-Type", "application/x-www-form-urlencoded")
                     .basicAuth(CelleryConfig.getInstance().getUsername()
                             , CelleryConfig.getInstance().getPassword()).body("token=" + token).asString();
