@@ -17,9 +17,6 @@ public class CelleryConfig {
     @Element(description = "dashboardURL")
     private String dashboardURL = "";
 
-    @Element(description = "tokenEndpoint")
-    private String tokenEndpoint = "";
-
     @Element(description = "idp")
     private String idp = "";
 
@@ -33,10 +30,8 @@ public class CelleryConfig {
 
     }
 
-    public CelleryConfig(String dashboardURL, String tokenEndpoint,
-                         String idp, String username, String password) {
+    public CelleryConfig(String dashboardURL, String idp, String username, String password) {
         this.dashboardURL = dashboardURL;
-        this.tokenEndpoint = tokenEndpoint;
         this.idp = idp;
         this.username = username;
         this.password = password;

@@ -141,6 +141,7 @@ class HttpUtils {
                 }
             });
     });
+
 }
 
 export default HttpUtils;
