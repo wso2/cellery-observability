@@ -415,12 +415,12 @@ describe("HttpUtils", () => {
 
         it(`should sign out and reject with response when axios rejects with a
             ${unauthorizedStatusCode} status code`,
-            async () => {
-                const spy = jest.spyOn(AuthUtils, "tokenRefreshRedirect");
+        async () => {
+            const spy = jest.spyOn(AuthUtils, "tokenRefreshRedirect");
 
-                await expect(mockReject(unauthorizedStatusCode)).rejects.toEqual(new Error(ERROR_DATA));
-                expect(spy).toHaveBeenCalledTimes(1);
-            });
+            await expect(mockReject(unauthorizedStatusCode)).rejects.toEqual(new Error(ERROR_DATA));
+            expect(spy).toHaveBeenCalledTimes(1);
+        });
 
 
         it(`should only reject with response when axios rejects with a ${unauthorizedStatusCode} status code`,
