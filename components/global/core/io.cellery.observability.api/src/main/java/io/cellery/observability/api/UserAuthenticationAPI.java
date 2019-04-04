@@ -63,7 +63,7 @@ public class UserAuthenticationAPI {
     public Response getTokens(@PathParam("authCode") String authCode) throws APIInvocationException {
         try {
             OAuthClientRequest request = OAuthClientRequest
-                    .tokenLocation(CelleryConfig.getInstance().getDcrEnpoint() + Constants.TOKEN_ENDPOINT)
+                    .tokenLocation(CelleryConfig.getInstance().getIdp() + Constants.TOKEN_ENDPOINT)
                     .setGrantType(GrantType.AUTHORIZATION_CODE)
                     .setClientId(clientId)
                     .setClientSecret(clientSecret)

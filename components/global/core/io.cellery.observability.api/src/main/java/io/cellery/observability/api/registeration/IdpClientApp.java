@@ -69,7 +69,7 @@ public class IdpClientApp {
         ArrayList<String> grants = new ArrayList<>(Arrays.asList("implicit", "authorization_code"));
         try {
             HttpClient client = getAllSSLClient();
-            String dcrEP = CelleryConfig.getInstance().getDcrEnpoint() + Constants.IDP_REGISTERATION_ENDPOINT;
+            String dcrEP = CelleryConfig.getInstance().getIdp() + Constants.IDP_REGISTERATION_ENDPOINT;
             HttpPost request = constructRequestBody(dcrEP, uris, grants);
 
             HttpResponse response = client.execute(request);

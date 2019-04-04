@@ -89,7 +89,7 @@ public class AuthInterceptor implements RequestInterceptor {
                     .build();
             Unirest.setHttpClient(httpclient);
             HttpResponse<String> stringResponse
-                    = Unirest.post(CelleryConfig.getInstance().getDcrEnpoint() + Constants.INTROSPECT_ENDPOINT)
+                    = Unirest.post(CelleryConfig.getInstance().getIdp() + Constants.INTROSPECT_ENDPOINT)
                     .header("Content-Type", "application/x-www-form-urlencoded")
                     .basicAuth(CelleryConfig.getInstance().getUsername()
                             , CelleryConfig.getInstance().getPassword()).body("token=" + token).asString();
