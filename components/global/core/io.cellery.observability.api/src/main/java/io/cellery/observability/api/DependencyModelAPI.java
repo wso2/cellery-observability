@@ -28,7 +28,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 /**
@@ -83,14 +82,6 @@ public class DependencyModelAPI {
             throw new APIInvocationException("API Invocation error occurred while fetching the dependency model for " +
                     "component: " + componentName + " in cell: " + cellName, e);
         }
-    }
-
-    @GET
-    @Path("/hello")
-    public Response getHello() {
-        NewCookie cookie = new NewCookie("cookie-test", "cookie-testval", "/",
-                "", "cookie description", 1000000, false, false);
-        return Response.ok().cookie(cookie).entity("Hello World").build();
     }
 
     @OPTIONS
