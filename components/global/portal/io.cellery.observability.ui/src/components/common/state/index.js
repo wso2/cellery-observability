@@ -110,7 +110,7 @@ class UnStyledStateProvider extends React.Component {
 
 UnStyledStateProvider.propTypes = {
     children: PropTypes.any.isRequired,
-    classes: PropTypes.any.isRequired,
+    classes: PropTypes.object.isRequired,
     location: PropTypes.shape({
         search: PropTypes.string.isRequired
     }).isRequired

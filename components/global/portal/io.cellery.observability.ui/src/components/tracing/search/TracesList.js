@@ -405,7 +405,7 @@ class TracesList extends React.PureComponent {
 }
 
 TracesList.propTypes = {
-    classes: PropTypes.any.isRequired,
+    classes: PropTypes.object.isRequired,
     colorGenerator: PropTypes.instanceOf(ColorGenerator),
     globalState: PropTypes.instanceOf(StateHolder),
     hideTitle: PropTypes.bool,
