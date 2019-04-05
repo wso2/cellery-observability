@@ -180,7 +180,7 @@ class Span {
             children[i].walk(nodeCallBack, newData, postTraverseCallBack, shouldTerminate);
         }
         if (postTraverseCallBack) {
-            postTraverseCallBack(this);
+            postTraverseCallBack(this, data);
         }
     }
 

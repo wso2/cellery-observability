@@ -598,7 +598,7 @@ class TimelineView extends React.Component {
 }
 
 TimelineView.propTypes = {
-    classes: PropTypes.any.isRequired,
+    classes: PropTypes.object.isRequired,
     spans: PropTypes.arrayOf(
         PropTypes.instanceOf(Span).isRequired
     ).isRequired,

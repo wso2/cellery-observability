@@ -365,7 +365,7 @@ TopToolbar.propTypes = {
     onUpdate: PropTypes.func,
     title: PropTypes.string.isRequired,
     subTitle: PropTypes.string,
-    classes: PropTypes.any.isRequired,
+    classes: PropTypes.object.isRequired,
     globalState: PropTypes.instanceOf(StateHolder).isRequired,
     history: PropTypes.shape({
         goBack: PropTypes.func.isRequired

@@ -416,7 +416,7 @@ class DateRangePicker extends React.Component {
 }
 
 DateRangePicker.propTypes = {
-    classes: PropTypes.any.isRequired,
+    classes: PropTypes.object.isRequired,
     history: PropTypes.shape({
         replace: PropTypes.func.isRequired,
         push: PropTypes.func.isRequired
