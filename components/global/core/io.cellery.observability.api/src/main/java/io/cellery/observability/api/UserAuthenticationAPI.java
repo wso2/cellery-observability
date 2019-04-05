@@ -25,8 +25,11 @@ import org.apache.oltu.oauth2.client.OAuthClient;
 import org.apache.oltu.oauth2.client.URLConnectionClient;
 import org.apache.oltu.oauth2.client.request.OAuthClientRequest;
 import org.apache.oltu.oauth2.client.response.OAuthAccessTokenResponse;
+import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
+import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.types.GrantType;
 import org.json.JSONObject;
+import org.wso2.carbon.config.ConfigurationException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +38,6 @@ import javax.ws.rs.OPTIONS;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 /**
@@ -44,18 +46,17 @@ import javax.ws.rs.core.Response;
 @Path("/api/auth")
 public class UserAuthenticationAPI {
 
-    private static String clientId;
-    private static String clientSecret;
-
-    public static void setClientId(char[] clientId) {
-        UserAuthenticationAPI.clientId = String.valueOf(clientId);
-    }
-
-    public static void setClientSecret(char[] clientSecret) {
-        UserAuthenticationAPI.clientSecret = String.valueOf(clientSecret);
-    }
-
+    private static String dcrClientId;
+    private static String dcrClientSecret;
     private static final Logger log = Logger.getLogger(UserAuthenticationAPI.class);
+
+    public static void setDcrClientId(String dcrClientId) {
+        UserAuthenticationAPI.dcrClientId = dcrClientId;
+    }
+
+    public static void setDcrClientSecret(char[] dcrClientSecret) {
+        UserAuthenticationAPI.dcrClientSecret = String.valueOf(dcrClientSecret);
+    }
 
     @GET
     @Path("/tokens/{authCode}")
@@ -63,10 +64,10 @@ public class UserAuthenticationAPI {
     public Response getTokens(@PathParam("authCode") String authCode) throws APIInvocationException {
         try {
             OAuthClientRequest request = OAuthClientRequest
-                    .tokenLocation(CelleryConfig.getInstance().getIdp() + Constants.TOKEN_ENDPOINT)
+                    .tokenLocation(CelleryConfig.getInstance().getIdpURL() + Constants.TOKEN_ENDPOINT)
                     .setGrantType(GrantType.AUTHORIZATION_CODE)
-                    .setClientId(clientId)
-                    .setClientSecret(clientSecret)
+                    .setClientId(dcrClientId)
+                    .setClientSecret(dcrClientSecret)
                     .setRedirectURI(CelleryConfig.getInstance().getDashboardURL())
                     .setCode(authCode).buildBodyMessage();
 
@@ -78,13 +79,11 @@ public class UserAuthenticationAPI {
             responseMap.put(Constants.ACCESS_TOKEN, oAuthResponse.getAccessToken());
             responseMap.put(Constants.ID_TOKEN, jsonObj.get(Constants.ID_TOKEN));
 
-            NewCookie cookie = new NewCookie("cookie-test", "cookie-testval", "/",
-                    "", "cookie description", 1000000, false, false);
-            return Response.ok().cookie(cookie).entity(responseMap).build();
+            return Response.ok().entity(responseMap).build();
 
-        } catch (Throwable throwable) {
-            throw new APIInvocationException("Unexpected error occurred while fetching the authentication tokens."
-                    , throwable);
+        } catch (ConfigurationException | OAuthProblemException | OAuthSystemException e) {
+            log.error("Error occured when fetching tokens from IDP for Authorization Code grant" + e);
+            return Response.serverError().build();
         }
     }
 
@@ -92,7 +91,7 @@ public class UserAuthenticationAPI {
     @Path("/client-id")
     @Produces("application/json")
     public Response getCredentials() {
-        return Response.ok().entity(clientId).build();
+        return Response.ok().entity(dcrClientId).build();
     }
 
     @OPTIONS
@@ -100,5 +99,4 @@ public class UserAuthenticationAPI {
     public Response getOptions() {
         return Response.ok().build();
     }
-
 }

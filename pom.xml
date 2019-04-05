@@ -257,35 +257,6 @@
                 <artifactId>bcprov-ext-jdk15on</artifactId>
                 <version>${bouncy.castle.version}</version>
             </dependency>
-            <!-- External dependencies end here -->
-
-            <!--Orbit dependencies start here-->
-            <dependency>
-                <groupId>com.google.protobuf</groupId>
-                <artifactId>protobuf-java</artifactId>
-                <version>${protobuf.java.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-core</artifactId>
-                <version>${grpc.core}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-netty</artifactId>
-                <version>${grpc.netty}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.cellery.observability</groupId>
-                <artifactId>gogoproto-java</artifactId>
-                <version>${gogoproto.orbit.version}</version>
-            </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
@@ -342,12 +313,44 @@
                 <version>${carbon.config.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.google.code.gson</groupId>
                 <artifactId>gson</artifactId>
                 <version>${gson.version}</version>
             </dependency>
+            <!-- External dependencies end here -->
 
-
+            <!--Orbit dependencies start here-->
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>${protobuf.java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
+                <version>${grpc.core}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty</artifactId>
+                <version>${grpc.netty}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.cellery.observability</groupId>
+                <artifactId>gogoproto-java</artifactId>
+                <version>${gogoproto.orbit.version}</version>
+            </dependency>
             <!--Orbit dependencies end here-->
         </dependencies>
     </dependencyManagement>
@@ -496,6 +499,7 @@
         <grpc.protobuf.version>1.15.0</grpc.protobuf.version>
         <grpc.core>1.15.0</grpc.core>
         <grpc.netty>1.15.0</grpc.netty>
+        <jackson.version>2.9.8</jackson.version>
         <grpc.stub.version>1.15.0</grpc.stub.version>
         <open.tracing.version>0.31.0</open.tracing.version>
         <brave.open.tracing.version>0.29.0</brave.open.tracing.version>

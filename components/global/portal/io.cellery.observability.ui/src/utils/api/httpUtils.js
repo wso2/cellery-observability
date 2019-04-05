@@ -85,7 +85,7 @@ class HttpUtils {
      *
      * @param {Object} config Axios configuration object
      * @param {StateHolder} globalState The global state provided to the current component
-     * @returns {Promise} A promise for the API calls
+     * @returns {Promise} A promise for the API call
      */
     static callObservabilityAPI = (config, globalState) => {
         config.url = `${globalState.get(StateHolder.CONFIG).observabilityAPIURL}${config.url}`;
@@ -132,7 +132,7 @@ class HttpUtils {
                     if (errorResponse.status === 401) {
                         // Redirect to home page since the user is not authorised
                         if (globalState) {
-                            AuthUtils.tokenRefreshRedirect(globalState);
+                            AuthUtils.redirectForTokenRefresh(globalState);
                         }
                     }
                     reject(new Error(errorResponse.data));
@@ -141,7 +141,6 @@ class HttpUtils {
                 }
             });
     });
-
 }
 
 export default HttpUtils;

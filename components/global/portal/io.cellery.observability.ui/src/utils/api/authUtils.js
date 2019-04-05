@@ -47,16 +47,17 @@ class AuthUtils {
      *
      * @param {StateHolder} globalState The global state provided to the current component
      */
-    static redirectToIDP(globalState) {
+    static initiateLoginFlow(globalState) {
         HttpUtils.callObservabilityAPI(
             {
                 url: "/auth/client-id",
                 method: "GET"
             },
             globalState).then((resp) => {
-            window.location.href = `${globalState.get(StateHolder.CONFIG).idp}${Constants.Dashboard.AUTHORIZATION_EP}`
+            window.location.href
+                = `${globalState.get(StateHolder.CONFIG).idp.idpURL}${Constants.Dashboard.AUTHORIZATION_EP}`
                 + `&client_id=${resp}&`
-                + `redirect_uri=${globalState.get(StateHolder.CONFIG).callBackURL}&nonce=auth&scope=openid`;
+                + `redirect_uri=${globalState.get(StateHolder.CONFIG).idp.callBackURL}&nonce=auth&scope=openid`;
         }).catch((err) => {
             throw Error(`Failed to redirect to Identity Provider for Authentication. ${err}`);
         });
@@ -67,10 +68,10 @@ class AuthUtils {
      *
      * @param {StateHolder} globalState The global state provided to the current component
      */
-    static tokenRefreshRedirect(globalState) {
+    static redirectForTokenRefresh(globalState) {
         localStorage.removeItem(StateHolder.USER);
         globalState.unset(StateHolder.USER);
-        this.redirectToIDP(globalState);
+        this.initiateLoginFlow(globalState);
     }
 
     /**
@@ -88,12 +89,12 @@ class AuthUtils {
             globalState
         ).then((resp) => {
             const decoded = jwtDecode(resp.id_token);
-            const user1 = {
+            const user = {
                 username: decoded.sub,
                 accessToken: resp.access_token,
                 idToken: resp.id_token
             };
-            AuthUtils.signIn(user1, globalState);
+            AuthUtils.signIn(user, globalState);
         });
     }
 
@@ -117,8 +118,8 @@ class AuthUtils {
     static signOut = (globalState) => {
         const idToken = globalState.get(StateHolder.USER).idToken;
         localStorage.removeItem(StateHolder.USER);
-        window.location.href = `${globalState.get(StateHolder.CONFIG).idp}/oidc/logout?id_token_hint=`
-            + `${idToken}&post_logout_redirect_uri=${globalState.get(StateHolder.CONFIG).callBackURL}`;
+        window.location.href = `${globalState.get(StateHolder.CONFIG).idp.idpURL}/oidc/logout?id_token_hint=`
+            + `${idToken}&post_logout_redirect_uri=${globalState.get(StateHolder.CONFIG).idp.callBackURL}`;
     };
 
     /**

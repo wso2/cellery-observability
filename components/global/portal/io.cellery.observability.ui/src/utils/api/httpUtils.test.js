@@ -397,14 +397,12 @@ describe("HttpUtils", () => {
             });
         });
 
-
         rejectStatusCodes.forEach((statusCode) => {
             it(`should reject with response data when axios resolves with a ${statusCode} status code`, () => {
                 expect.assertions(1);
                 return expect(mockResolve(statusCode)).rejects.toEqual(SUCCESS_OUTPUT_DATA);
             });
         });
-
 
         rejectStatusCodes.filter((statusCode) => statusCode !== unauthorizedStatusCode).forEach((statusCode) => {
             it(`should reject with response data when axios rejects with a ${statusCode} status code`, () => {
@@ -416,12 +414,11 @@ describe("HttpUtils", () => {
         it(`should sign out and reject with response when axios rejects with a
             ${unauthorizedStatusCode} status code`,
         async () => {
-            const spy = jest.spyOn(AuthUtils, "tokenRefreshRedirect");
+            const spy = jest.spyOn(AuthUtils, "redirectForTokenRefresh");
 
             await expect(mockReject(unauthorizedStatusCode)).rejects.toEqual(new Error(ERROR_DATA));
             expect(spy).toHaveBeenCalledTimes(1);
         });
-
 
         it(`should only reject with response when axios rejects with a ${unauthorizedStatusCode} status code`,
             async () => {

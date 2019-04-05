@@ -66,25 +66,26 @@ public class ObservabilityDS {
     private static final Logger log = Logger.getLogger(ObservabilityDS.class);
 
     private static final int DEFAULT_OBSERVABILITY_API_PORT = 9123;
+    private static IdpClientApp idpClient = new IdpClientApp();
 
     /**
      * This is the activation method of ObservabilityDS. This will be called when its references are
      * satisfied.
      *
      * @param bundleContext the bundle context instance of this bundle.
-     * @throws Exception this will be thrown if an issue occurDataSourceServices while executing the activate method
+     * @throws Exception this will be thrown if an issue occur while executing the activate method
      */
     @Activate
     protected void start(BundleContext bundleContext) throws Exception {
 
-        JSONObject clientJson = IdpClientApp.getClientCredentials();
-        log.info(clientJson.getString("client_id"));
-        disableSSLVerification();
-        final char[] clientId = clientJson.getString("client_id").toCharArray();
-        final char[] clientSecret = clientJson.getString("client_secret").toCharArray();
-        UserAuthenticationAPI.setClientId(clientId);
-        UserAuthenticationAPI.setClientSecret(clientSecret);
         try {
+            JSONObject clientJson = idpClient.getClientCredentials();
+            log.info(clientJson.getString("client_id"));
+            disableSSLVerification();
+            final String clientId = clientJson.getString("client_id");
+            final char[] clientSecret = clientJson.getString("client_secret").toCharArray();
+            UserAuthenticationAPI.setDcrClientId(clientId);
+            UserAuthenticationAPI.setDcrClientSecret(clientSecret);
             // Deploying the microservices
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
             ServiceHolder.setMicroservicesRunner(new MicroservicesRunner(DEFAULT_OBSERVABILITY_API_PORT + offset)
@@ -179,7 +180,6 @@ public class ObservabilityDS {
             unbind = "unregisterConfigProvider"
     )
     protected void registerConfigProvider(ConfigProvider configProvider) {
-
         CelleryConfig.setConfigProvider(configProvider);
     }
 

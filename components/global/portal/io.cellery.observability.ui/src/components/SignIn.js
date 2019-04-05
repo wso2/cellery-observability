@@ -18,6 +18,7 @@
 
 import AuthUtils from "../utils/api/authUtils";
 import CircularProgress from "@material-ui/core/CircularProgress/CircularProgress";
+import HttpUtils from "../utils/api/httpUtils";
 import React from "react";
 import {withRouter} from "react-router";
 import withStyles from "@material-ui/core/styles/withStyles";
@@ -67,8 +68,6 @@ const styles = (theme) => ({
     }
 });
 
-const CODE = "code";
-
 class SignIn extends React.Component {
 
     handleLogin = () => {
@@ -100,19 +99,17 @@ class SignIn extends React.Component {
 
     componentDidMount() {
         const params = this.props.location.search;
-        const searchParams = new URLSearchParams(params);
+        const searchParams = HttpUtils.parseQueryParams(params);
         const {globalState} = this.props;
-
         if (localStorage.getItem(StateHolder.USER) === null) {
-            if (!searchParams.has(CODE)) {
-                AuthUtils.redirectToIDP(globalState);
-            } else if (searchParams.has(CODE)) {
-                const oneTimeToken = searchParams.get(CODE);
+            if (!searchParams.code) {
+                AuthUtils.initiateLoginFlow(globalState);
+            } else if (searchParams.code !== null) {
+                const oneTimeToken = searchParams.code;
                 AuthUtils.getTokens(oneTimeToken, globalState);
             }
         }
     }
-
 }
 
 SignIn.propTypes = {

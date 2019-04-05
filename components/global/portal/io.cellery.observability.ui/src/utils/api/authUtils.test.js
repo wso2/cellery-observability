@@ -62,6 +62,15 @@ describe("AuthUtils", () => {
                 value: {...loggedInUser},
                 listeners: []
             };
+            stateHolder.state[StateHolder.CONFIG] = {
+                value: {
+                    idp: {
+                        idpURL: "http://test-url",
+                        callBackURL: "http://test-callbak-url"
+                    }
+                },
+                listener: []
+            };
             AuthUtils.signOut(stateHolder);
             expect(localStorage.getItem(StateHolder.USER)).toBeNull();
         });

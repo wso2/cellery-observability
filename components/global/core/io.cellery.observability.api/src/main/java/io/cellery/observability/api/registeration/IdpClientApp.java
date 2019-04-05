@@ -60,16 +60,17 @@ import javax.net.ssl.X509TrustManager;
 public class IdpClientApp {
 
     private static final Logger log = Logger.getLogger(IdpClientApp.class);
+    private static final String ERROR = "error";
 
-    public static JSONObject getClientCredentials() throws IOException {
+    public JSONObject getClientCredentials() throws IOException, ConfigurationException {
         BufferedReader bufReader = null;
         InputStreamReader inputStreamReader = null;
         JSONObject jsonObject = null;
-        ArrayList<String> uris = new ArrayList<>(Arrays.asList(Constants.OBSERVABILITY_DASHBOARD_URL));
-        ArrayList<String> grants = new ArrayList<>(Arrays.asList("implicit", "authorization_code"));
+        ArrayList<String> uris = new ArrayList<>(Arrays.asList(CelleryConfig.getInstance().getDashboardURL()));
+        ArrayList<String> grants = new ArrayList<>(Arrays.asList(Constants.AUTHORIZATION_CODE));
         try {
             HttpClient client = getAllSSLClient();
-            String dcrEP = CelleryConfig.getInstance().getIdp() + Constants.IDP_REGISTERATION_ENDPOINT;
+            String dcrEP = CelleryConfig.getInstance().getIdpURL() + Constants.IDP_REGISTERATION_ENDPOINT;
             HttpPost request = constructRequestBody(dcrEP, uris, grants);
 
             HttpResponse response = client.execute(request);
@@ -83,10 +84,8 @@ public class IdpClientApp {
                 builder.append(line);
                 builder.append(System.lineSeparator());
             }
-
             jsonObject = new JSONObject(builder.toString());
-
-            if (jsonObject.has("error")) {
+            if (jsonObject.has(ERROR)) {
                 jsonObject = checkRegisteration(dcrEP, client);
             } else {
                 jsonObject = new JSONObject(builder.toString());
@@ -113,26 +112,25 @@ public class IdpClientApp {
         }
     }
 
-    private static HttpPost constructRequestBody(String dcrEp, ArrayList<String> callbackUris,
-                                                 ArrayList<String> grants) throws ConfigurationException {
+    private HttpPost constructRequestBody(String dcrEp, ArrayList<String> callbackUris,
+                                          ArrayList<String> grants) throws ConfigurationException {
         HttpPost request =
                 new HttpPost(dcrEp);
         JSONObject clientJson = new JSONObject();
         clientJson.put(Constants.CALL_BACK_URL, callbackUris);
         clientJson.put(Constants.CLIENT_NAME, Constants.APPLICATION_NAME);
         clientJson.put(Constants.GRANT_TYPE, grants);
-        clientJson.put(Constants.EXT_PARAM_CLIENT_ID, Constants.STANDARD_ID);
+        clientJson.put(Constants.EXT_PARAM_CLIENT_ID, Constants.STANDARD_CLIENT_ID);
         StringEntity requestEntity = new StringEntity(clientJson.toString(), ContentType.APPLICATION_JSON);
-        request.setHeader(Constants.AUTHORIZATION, basicAuthentication());
+        request.setHeader(Constants.AUTHORIZATION, encodeAuthCredentials());
         request.setHeader(Constants.CONTENT_TYPE, Constants.APPLICATION_JSON);
         request.setEntity(requestEntity);
-
         return request;
     }
 
-    private static String basicAuthentication() throws ConfigurationException {
-        String authString = CelleryConfig.getInstance().getUsername() + ":"
-                + CelleryConfig.getInstance().getPassword();
+    private String encodeAuthCredentials() throws ConfigurationException {
+        String authString = CelleryConfig.getInstance().getIdpAdminUsername() + ":"
+                + CelleryConfig.getInstance().getIdpAdminPassword();
         byte[] authEncBytes = Base64.encodeBase64(authString.getBytes(Charset.forName("UTF-8")));
         String authStringEnc = new String(authEncBytes, Charset.forName("UTF-8"));
         return "Basic " + authStringEnc;
@@ -173,22 +171,21 @@ public class IdpClientApp {
         HttpClientConnectionManager ccm = new BasicHttpClientConnectionManager(registry);
         builder.setConnectionManager(ccm);
         return builder.build();
-
     }
 
-    private static JSONObject checkRegisteration(String dcrEp, HttpClient client) {
+    private JSONObject checkRegisteration(String dcrEp, HttpClient client) throws ConfigurationException, IOException {
         try {
-            HttpGet getRequest = new HttpGet(dcrEp + Constants.CLIENT_NAME_PARAM + Constants.APPLICATION_NAME);
-            getRequest.setHeader(Constants.AUTHORIZATION, basicAuthentication());
+            HttpGet getRequest = new HttpGet(dcrEp + "?"
+                    + Constants.CLIENT_NAME_PARAM + "=" + Constants.APPLICATION_NAME);
+            getRequest.setHeader(Constants.AUTHORIZATION, encodeAuthCredentials());
 
             HttpResponse resp = client.execute(getRequest);
             HttpEntity entity = resp.getEntity();
             String result = EntityUtils.toString(entity, Charset.forName("utf-8"));
             return new JSONObject(result);
         } catch (IOException | ConfigurationException e) {
-            log.error("Error occured while registering new Client in IDP" + e);
-            return null;
+            log.error("Error occured while verifying existing clients in IDP", e);
+            throw e;
         }
     }
-
 }

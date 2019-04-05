@@ -28,7 +28,6 @@ import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.wso2.carbon.config.ConfigurationException;
 import org.wso2.msf4j.Request;
@@ -43,33 +42,27 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 
 /**
- * Used for securing backend APIs.
+ * This class is used for securing backend APIs with Access Token.
  */
-
 public class AuthInterceptor implements RequestInterceptor {
 
     private static final String ACTIVE_STATUS = "active";
-    private static final Logger log = Logger.getLogger(AuthInterceptor.class);
 
     @Override
     public boolean interceptRequest(Request request, Response response) {
 
-        log.info(request.getHeader("Cookie"));
         String accessToken;
         if (!request.getHttpMethod().equalsIgnoreCase(HttpMethod.OPTIONS) &&
                 request.getHeader(HttpHeaders.AUTHORIZATION) != null) {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
             accessToken = header.split(" ")[1];
-            log.info(accessToken);
-
             if (!validateToken(accessToken)) {
                 response.setStatus(401);
                 return false;
             } else {
                 return true;
             }
-
         }
 
         return true;
@@ -89,10 +82,10 @@ public class AuthInterceptor implements RequestInterceptor {
                     .build();
             Unirest.setHttpClient(httpclient);
             HttpResponse<String> stringResponse
-                    = Unirest.post(CelleryConfig.getInstance().getIdp() + Constants.INTROSPECT_ENDPOINT)
+                    = Unirest.post(CelleryConfig.getInstance().getIdpURL() + Constants.INTROSPECT_ENDPOINT)
                     .header("Content-Type", "application/x-www-form-urlencoded")
-                    .basicAuth(CelleryConfig.getInstance().getUsername()
-                            , CelleryConfig.getInstance().getPassword()).body("token=" + token).asString();
+                    .basicAuth(CelleryConfig.getInstance().getIdpAdminUsername()
+                            , CelleryConfig.getInstance().getIdpAdminPassword()).body("token=" + token).asString();
 
             JSONObject jsonResponse = new JSONObject(stringResponse.getBody());
             if (!((Boolean) jsonResponse.get(ACTIVE_STATUS))) {
@@ -103,9 +96,7 @@ public class AuthInterceptor implements RequestInterceptor {
                 KeyManagementException | ConfigurationException e) {
             return false;
         }
-
         return true;
     }
-
 }
 
