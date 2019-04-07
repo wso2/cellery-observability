@@ -29,7 +29,7 @@ import org.wso2.carbon.config.provider.ConfigProvider;
 public class CelleryConfig {
 
     private static ConfigProvider configProvider;
-    private static CelleryConfig celleryConfig;
+    private static volatile CelleryConfig celleryConfig;
 
     @Element(description = "dashboardURL")
     private String dashboardURL = "";
@@ -67,7 +67,7 @@ public class CelleryConfig {
         CelleryConfig.configProvider = configProvider;
     }
 
-    public static synchronized CelleryConfig getInstance() throws ConfigurationException {
+    public static CelleryConfig getInstance() throws ConfigurationException {
         if (celleryConfig == null) {
             celleryConfig = CelleryConfig.getConfigProvider().getConfigurationObject(CelleryConfig.class);
         }

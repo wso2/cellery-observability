@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.api.registeration;
+package io.cellery.observability.api.idp;
 
 import io.cellery.observability.api.Constants;
 import io.cellery.observability.api.bean.CelleryConfig;
@@ -57,9 +57,9 @@ import javax.net.ssl.X509TrustManager;
 /**
  * This class is used to create a DCR request for Service Provider registeration.
  */
-public class IdpClientApp {
+public class IdpClientManager {
 
-    private static final Logger log = Logger.getLogger(IdpClientApp.class);
+    private static final Logger log = Logger.getLogger(IdpClientManager.class);
     private static final String ERROR = "error";
 
     public JSONObject getClientCredentials() throws IOException, ConfigurationException {
@@ -92,7 +92,7 @@ public class IdpClientApp {
             }
             return jsonObject;
         } catch (NoSuchAlgorithmException | KeyManagementException | ConfigurationException e) {
-            log.error("Error while fetching the Client-Id for the dynamically client ", e);
+            log.error("Error while fetching the Client-Id for the dynamically created client ", e);
             return jsonObject;
         } finally {
             if (bufReader != null) {

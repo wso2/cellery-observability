@@ -20,6 +20,7 @@ package io.cellery.observability.api;
 
 import io.cellery.observability.api.bean.CelleryConfig;
 import io.cellery.observability.api.exception.APIInvocationException;
+import io.cellery.observability.api.internal.ServiceHolder;
 import org.apache.log4j.Logger;
 import org.apache.oltu.oauth2.client.OAuthClient;
 import org.apache.oltu.oauth2.client.URLConnectionClient;
@@ -46,17 +47,7 @@ import javax.ws.rs.core.Response;
 @Path("/api/auth")
 public class UserAuthenticationAPI {
 
-    private static String dcrClientId;
-    private static String dcrClientSecret;
     private static final Logger log = Logger.getLogger(UserAuthenticationAPI.class);
-
-    public static void setDcrClientId(String dcrClientId) {
-        UserAuthenticationAPI.dcrClientId = dcrClientId;
-    }
-
-    public static void setDcrClientSecret(char[] dcrClientSecret) {
-        UserAuthenticationAPI.dcrClientSecret = String.valueOf(dcrClientSecret);
-    }
 
     @GET
     @Path("/tokens/{authCode}")
@@ -66,8 +57,8 @@ public class UserAuthenticationAPI {
             OAuthClientRequest request = OAuthClientRequest
                     .tokenLocation(CelleryConfig.getInstance().getIdpURL() + Constants.TOKEN_ENDPOINT)
                     .setGrantType(GrantType.AUTHORIZATION_CODE)
-                    .setClientId(dcrClientId)
-                    .setClientSecret(dcrClientSecret)
+                    .setClientId(ServiceHolder.getClientId())
+                    .setClientSecret(ServiceHolder.getClientSecret())
                     .setRedirectURI(CelleryConfig.getInstance().getDashboardURL())
                     .setCode(authCode).buildBodyMessage();
 
@@ -91,7 +82,7 @@ public class UserAuthenticationAPI {
     @Path("/client-id")
     @Produces("application/json")
     public Response getCredentials() {
-        return Response.ok().entity(dcrClientId).build();
+        return Response.ok().entity(ServiceHolder.getClientId()).build();
     }
 
     @OPTIONS

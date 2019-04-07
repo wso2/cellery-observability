@@ -25,9 +25,9 @@ import io.cellery.observability.api.TrustAllX509TrustManager;
 import io.cellery.observability.api.UserAuthenticationAPI;
 import io.cellery.observability.api.bean.CelleryConfig;
 import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
+import io.cellery.observability.api.idp.IdpClientManager;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
-import io.cellery.observability.api.registeration.IdpClientApp;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
 import io.cellery.observability.model.generator.ModelManager;
 import org.apache.log4j.Logger;
@@ -66,7 +66,7 @@ public class ObservabilityDS {
     private static final Logger log = Logger.getLogger(ObservabilityDS.class);
 
     private static final int DEFAULT_OBSERVABILITY_API_PORT = 9123;
-    private static IdpClientApp idpClient = new IdpClientApp();
+    private static IdpClientManager idpClient = new IdpClientManager();
 
     /**
      * This is the activation method of ObservabilityDS. This will be called when its references are
@@ -80,12 +80,10 @@ public class ObservabilityDS {
 
         try {
             JSONObject clientJson = idpClient.getClientCredentials();
-            log.info(clientJson.getString("client_id"));
             disableSSLVerification();
-            final String clientId = clientJson.getString("client_id");
-            final char[] clientSecret = clientJson.getString("client_secret").toCharArray();
-            UserAuthenticationAPI.setDcrClientId(clientId);
-            UserAuthenticationAPI.setDcrClientSecret(clientSecret);
+            ServiceHolder.setClientId(clientJson.getString("client_id"));
+            ServiceHolder.setClientSecret(clientJson.getString("client_secret"));
+
             // Deploying the microservices
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
             ServiceHolder.setMicroservicesRunner(new MicroservicesRunner(DEFAULT_OBSERVABILITY_API_PORT + offset)

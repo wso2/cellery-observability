@@ -28,6 +28,7 @@ import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.wso2.carbon.config.ConfigurationException;
 import org.wso2.msf4j.Request;
@@ -47,6 +48,7 @@ import javax.ws.rs.core.HttpHeaders;
 public class AuthInterceptor implements RequestInterceptor {
 
     private static final String ACTIVE_STATUS = "active";
+    private static final Logger log = Logger.getLogger(AuthInterceptor.class);
 
     @Override
     public boolean interceptRequest(Request request, Response response) {
@@ -60,27 +62,15 @@ public class AuthInterceptor implements RequestInterceptor {
             if (!validateToken(accessToken)) {
                 response.setStatus(401);
                 return false;
-            } else {
-                return true;
             }
         }
-
         return true;
     }
 
     private static boolean validateToken(String token) {
 
         try {
-            SSLContext sslcontext = SSLContexts.custom()
-                    .loadTrustMaterial(null, new TrustSelfSignedStrategy())
-                    .build();
-
-            SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslcontext,
-                    SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-            CloseableHttpClient httpclient = HttpClients.custom()
-                    .setSSLSocketFactory(sslsf)
-                    .build();
-            Unirest.setHttpClient(httpclient);
+            Unirest.setHttpClient(allowAllHostNames());
             HttpResponse<String> stringResponse
                     = Unirest.post(CelleryConfig.getInstance().getIdpURL() + Constants.INTROSPECT_ENDPOINT)
                     .header("Content-Type", "application/x-www-form-urlencoded")
@@ -88,15 +78,31 @@ public class AuthInterceptor implements RequestInterceptor {
                             , CelleryConfig.getInstance().getIdpAdminPassword()).body("token=" + token).asString();
 
             JSONObject jsonResponse = new JSONObject(stringResponse.getBody());
-            if (!((Boolean) jsonResponse.get(ACTIVE_STATUS))) {
+            if (stringResponse.getStatus() != 200) {
+                log.error("Failed to connect to Introspect endpoint in Identity Provider server");
+                return false;
+            } else if (!((Boolean) jsonResponse.get(ACTIVE_STATUS))) {
                 return false;
             }
 
         } catch (UnirestException | KeyStoreException | NoSuchAlgorithmException |
                 KeyManagementException | ConfigurationException e) {
+            log.error("Unexpected error occured while validating", e);
             return false;
         }
         return true;
+    }
+
+    private static CloseableHttpClient allowAllHostNames()
+            throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
+        SSLContext sslcontext = SSLContexts.custom()
+                .loadTrustMaterial(null, new TrustSelfSignedStrategy())
+                .build();
+        SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslcontext,
+                SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+        return HttpClients.custom()
+                .setSSLSocketFactory(sslsf)
+                .build();
     }
 }
 

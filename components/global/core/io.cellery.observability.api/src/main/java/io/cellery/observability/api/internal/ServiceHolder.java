@@ -30,6 +30,24 @@ public class ServiceHolder {
     private static MicroservicesRunner microservicesRunner;
     private static ModelManager modelManager;
     private static SiddhiStoreQueryManager siddhiStoreQueryManager;
+    private static String clientId;
+    private static char[] clientSecret;
+
+    public static String getClientId() {
+        return clientId;
+    }
+
+    public static void setClientId(String clientId) {
+        ServiceHolder.clientId = clientId;
+    }
+
+    public static String getClientSecret() {
+        return String.valueOf(clientSecret);
+    }
+
+    public static void setClientSecret(String clientSecret) {
+        ServiceHolder.clientSecret = clientSecret.toCharArray();
+    }
 
     private ServiceHolder() {
     }
