@@ -22,6 +22,7 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import io.cellery.observability.api.Constants;
 import io.cellery.observability.api.bean.CelleryConfig;
+import io.cellery.observability.api.exception.oidc.OIDCProviderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -64,11 +65,12 @@ import javax.net.ssl.X509TrustManager;
 /**
  * This class is used to create a DCR request for Service Provider registeration.
  */
-public class OidcOauthManager {
+public class OIDCoauthManager {
 
-    private static final Logger log = Logger.getLogger(OidcOauthManager.class);
+    private static final Logger log = Logger.getLogger(OIDCoauthManager.class);
     private static final String ERROR = "error";
     private static final String ACTIVE_STATUS = "active";
+    private static final String BASIC_AUTH = "Basic ";
     private String clientId;
     private char[] clientSecret;
 
@@ -80,19 +82,20 @@ public class OidcOauthManager {
         return String.valueOf(this.clientSecret);
     }
 
-    public OidcOauthManager() throws ConfigurationException, IOException {
-        JSONObject clientJson = getClientCredentials();
-        this.clientId = clientJson.getString("client_id");
-        this.clientSecret = clientJson.getString("client_secret").toCharArray();
+    public OIDCoauthManager() throws OIDCProviderException {
+            JSONObject clientJson = getClientCredentials();
+            this.clientId = clientJson.getString("client_id");
+            this.clientSecret = clientJson.getString("client_secret").toCharArray();
     }
 
-    private JSONObject getClientCredentials() throws IOException, ConfigurationException {
+    private JSONObject getClientCredentials() throws OIDCProviderException {
         BufferedReader bufReader = null;
         InputStreamReader inputStreamReader = null;
-        JSONObject jsonObject = null;
-        ArrayList<String> uris = new ArrayList<>(Arrays.asList(CelleryConfig.getInstance().getDashboardURL()));
-        ArrayList<String> grants = new ArrayList<>(Arrays.asList(Constants.AUTHORIZATION_CODE));
+        JSONObject jsonObject;
+
         try {
+            ArrayList<String> uris = new ArrayList<>(Arrays.asList(CelleryConfig.getInstance().getDashboardURL()));
+            ArrayList<String> grants = new ArrayList<>(Arrays.asList(Constants.AUTHORIZATION_CODE));
             HttpClient client = getAllSSLClient();
             String dcrEP = CelleryConfig.getInstance().getIdpURL() + Constants.IDP_REGISTERATION_ENDPOINT;
             HttpPost request = constructRequestBody(dcrEP, uris, grants);
@@ -110,27 +113,27 @@ public class OidcOauthManager {
             }
             jsonObject = new JSONObject(builder.toString());
             if (jsonObject.has(ERROR)) {
+                log.info("Client with name " + Constants.APPLICATION_NAME + " already exists.");
                 jsonObject = checkRegisteration(dcrEP, client);
             } else {
                 jsonObject = new JSONObject(builder.toString());
             }
             return jsonObject;
-        } catch (NoSuchAlgorithmException | KeyManagementException | ConfigurationException e) {
-            log.error("Error while fetching the Client-Id for the dynamically created client ", e);
-            return jsonObject;
+        } catch (NoSuchAlgorithmException | KeyManagementException | ConfigurationException | IOException e) {
+            throw new OIDCProviderException("Error occured while registering client", e);
         } finally {
             if (bufReader != null) {
                 try {
                     bufReader.close();
                 } catch (IOException e) {
-                    log.error("Error in closing the BufferedReader", e);
+                    log.debug("Error occured while closing buffered reader ", e);
                 }
             }
             if (inputStreamReader != null) {
                 try {
                     inputStreamReader.close();
                 } catch (IOException e) {
-                    log.error("Error in closing the InputStreamReader", e);
+                    log.debug("Error occured while closing input stream reader ", e);
                 }
             }
         }
@@ -138,8 +141,7 @@ public class OidcOauthManager {
 
     private HttpPost constructRequestBody(String dcrEp, ArrayList<String> callbackUris,
                                           ArrayList<String> grants) throws ConfigurationException {
-        HttpPost request =
-                new HttpPost(dcrEp);
+        HttpPost request = new HttpPost(dcrEp);
         JSONObject clientJson = new JSONObject();
         clientJson.put(Constants.CALL_BACK_URL, callbackUris);
         clientJson.put(Constants.CLIENT_NAME, Constants.APPLICATION_NAME);
@@ -155,9 +157,9 @@ public class OidcOauthManager {
     private String encodeAuthCredentials() throws ConfigurationException {
         String authString = CelleryConfig.getInstance().getIdpAdminUsername() + ":"
                 + CelleryConfig.getInstance().getIdpAdminPassword();
-        byte[] authEncBytes = Base64.encodeBase64(authString.getBytes(Charset.forName("UTF-8")));
-        String authStringEnc = new String(authEncBytes, Charset.forName("UTF-8"));
-        return "Basic " + authStringEnc;
+        byte[] authEncBytes = Base64.encodeBase64(authString.getBytes(Charset.forName(StandardCharsets.UTF_8.name())));
+        String authStringEnc = new String(authEncBytes, Charset.forName(StandardCharsets.UTF_8.name()));
+        return BASIC_AUTH + authStringEnc;
     }
 
     private static HttpClient getAllSSLClient()
@@ -197,7 +199,7 @@ public class OidcOauthManager {
         return builder.build();
     }
 
-    private JSONObject checkRegisteration(String dcrEp, HttpClient client) throws ConfigurationException, IOException {
+    private JSONObject checkRegisteration(String dcrEp, HttpClient client) throws OIDCProviderException {
         try {
             HttpGet getRequest = new HttpGet(dcrEp + "?"
                     + Constants.CLIENT_NAME_PARAM + "=" + Constants.APPLICATION_NAME);
@@ -208,12 +210,12 @@ public class OidcOauthManager {
             String result = EntityUtils.toString(entity, Charset.forName("utf-8"));
             return new JSONObject(result);
         } catch (IOException | ConfigurationException e) {
-            log.error("Error occured while verifying existing clients in IDP", e);
-            throw e;
+            throw new OIDCProviderException("Error occured while checking for client with name " +
+                    Constants.APPLICATION_NAME, e);
         }
     }
 
-    public boolean validateToken(String token) {
+    public boolean validateToken(String token) throws OIDCProviderException {
         try {
             Unirest.setHttpClient(allowAllHostNames());
             com.mashape.unirest.http.HttpResponse<String> stringResponse
@@ -232,8 +234,7 @@ public class OidcOauthManager {
 
         } catch (UnirestException | KeyStoreException | NoSuchAlgorithmException |
                 KeyManagementException | ConfigurationException e) {
-            log.error("Unexpected error occured while validating", e);
-            return false;
+            throw new OIDCProviderException("Error occured while validating access token ", e);
         }
         return true;
     }

@@ -23,7 +23,7 @@ import io.cellery.observability.api.DistributedTracingAPI;
 import io.cellery.observability.api.KubernetesAPI;
 import io.cellery.observability.api.TrustAllX509TrustManager;
 import io.cellery.observability.api.UserAuthenticationAPI;
-import io.cellery.observability.api.auth.OidcOauthManager;
+import io.cellery.observability.api.auth.OIDCoauthManager;
 import io.cellery.observability.api.bean.CelleryConfig;
 import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
@@ -77,9 +77,8 @@ public class ObservabilityDS {
     protected void start(BundleContext bundleContext) throws Exception {
 
         try {
-
             disableSSLVerification();
-           ServiceHolder.setOidcOauthManager(new OidcOauthManager());
+           ServiceHolder.setOidcOauthManager(new OIDCoauthManager());
 
             // Deploying the microservices
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
