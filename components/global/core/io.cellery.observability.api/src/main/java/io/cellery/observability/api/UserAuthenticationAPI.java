@@ -57,8 +57,8 @@ public class UserAuthenticationAPI {
             OAuthClientRequest request = OAuthClientRequest
                     .tokenLocation(CelleryConfig.getInstance().getIdpURL() + Constants.TOKEN_ENDPOINT)
                     .setGrantType(GrantType.AUTHORIZATION_CODE)
-                    .setClientId(ServiceHolder.getClientId())
-                    .setClientSecret(ServiceHolder.getClientSecret())
+                    .setClientId(ServiceHolder.getOidcOauthManager().getClientId())
+                    .setClientSecret(ServiceHolder.getOidcOauthManager().getClientSecret())
                     .setRedirectURI(CelleryConfig.getInstance().getDashboardURL())
                     .setCode(authCode).buildBodyMessage();
 
@@ -82,7 +82,7 @@ public class UserAuthenticationAPI {
     @Path("/client-id")
     @Produces("application/json")
     public Response getCredentials() {
-        return Response.ok().entity(ServiceHolder.getClientId()).build();
+        return Response.ok().entity(ServiceHolder.getOidcOauthManager().getClientId()).build();
     }
 
     @OPTIONS

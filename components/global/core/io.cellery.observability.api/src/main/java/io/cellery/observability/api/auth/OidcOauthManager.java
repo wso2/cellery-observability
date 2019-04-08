@@ -16,8 +16,10 @@
  * under the License.
  */
 
-package io.cellery.observability.api.idp;
+package io.cellery.observability.api.auth;
 
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import io.cellery.observability.api.Constants;
 import io.cellery.observability.api.bean.CelleryConfig;
 import org.apache.commons.codec.binary.Base64;
@@ -32,9 +34,13 @@ import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContexts;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
@@ -47,6 +53,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,12 +64,29 @@ import javax.net.ssl.X509TrustManager;
 /**
  * This class is used to create a DCR request for Service Provider registeration.
  */
-public class IdpClientManager {
+public class OidcOauthManager {
 
-    private static final Logger log = Logger.getLogger(IdpClientManager.class);
+    private static final Logger log = Logger.getLogger(OidcOauthManager.class);
     private static final String ERROR = "error";
+    private static final String ACTIVE_STATUS = "active";
+    private String clientId;
+    private char[] clientSecret;
 
-    public JSONObject getClientCredentials() throws IOException, ConfigurationException {
+    public String getClientId() {
+        return clientId;
+    }
+
+    public String getClientSecret() {
+        return String.valueOf(this.clientSecret);
+    }
+
+    public OidcOauthManager() throws ConfigurationException, IOException {
+        JSONObject clientJson = getClientCredentials();
+        this.clientId = clientJson.getString("client_id");
+        this.clientSecret = clientJson.getString("client_secret").toCharArray();
+    }
+
+    private JSONObject getClientCredentials() throws IOException, ConfigurationException {
         BufferedReader bufReader = null;
         InputStreamReader inputStreamReader = null;
         JSONObject jsonObject = null;
@@ -187,5 +211,42 @@ public class IdpClientManager {
             log.error("Error occured while verifying existing clients in IDP", e);
             throw e;
         }
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Unirest.setHttpClient(allowAllHostNames());
+            com.mashape.unirest.http.HttpResponse<String> stringResponse
+                    = Unirest.post(CelleryConfig.getInstance().getIdpURL() + Constants.INTROSPECT_ENDPOINT)
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .basicAuth(CelleryConfig.getInstance().getIdpAdminUsername()
+                            , CelleryConfig.getInstance().getIdpAdminPassword()).body("token=" + token).asString();
+
+            JSONObject jsonResponse = new JSONObject(stringResponse.getBody());
+            if (stringResponse.getStatus() != 200) {
+                log.error("Failed to connect to Introspect endpoint in Identity Provider server");
+                return false;
+            } else if (!((Boolean) jsonResponse.get(ACTIVE_STATUS))) {
+                return false;
+            }
+
+        } catch (UnirestException | KeyStoreException | NoSuchAlgorithmException |
+                KeyManagementException | ConfigurationException e) {
+            log.error("Unexpected error occured while validating", e);
+            return false;
+        }
+        return true;
+    }
+
+    private CloseableHttpClient allowAllHostNames()
+            throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
+        SSLContext sslcontext = SSLContexts.custom()
+                .loadTrustMaterial(null, new TrustSelfSignedStrategy())
+                .build();
+        SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslcontext,
+                SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+        return HttpClients.custom()
+                .setSSLSocketFactory(sslsf)
+                .build();
     }
 }

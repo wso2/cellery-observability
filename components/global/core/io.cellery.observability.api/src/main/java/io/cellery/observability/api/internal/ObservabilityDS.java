@@ -23,15 +23,14 @@ import io.cellery.observability.api.DistributedTracingAPI;
 import io.cellery.observability.api.KubernetesAPI;
 import io.cellery.observability.api.TrustAllX509TrustManager;
 import io.cellery.observability.api.UserAuthenticationAPI;
+import io.cellery.observability.api.auth.OidcOauthManager;
 import io.cellery.observability.api.bean.CelleryConfig;
 import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
-import io.cellery.observability.api.idp.IdpClientManager;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
 import io.cellery.observability.model.generator.ModelManager;
 import org.apache.log4j.Logger;
-import org.json.JSONObject;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -66,7 +65,6 @@ public class ObservabilityDS {
     private static final Logger log = Logger.getLogger(ObservabilityDS.class);
 
     private static final int DEFAULT_OBSERVABILITY_API_PORT = 9123;
-    private static IdpClientManager idpClient = new IdpClientManager();
 
     /**
      * This is the activation method of ObservabilityDS. This will be called when its references are
@@ -79,10 +77,9 @@ public class ObservabilityDS {
     protected void start(BundleContext bundleContext) throws Exception {
 
         try {
-            JSONObject clientJson = idpClient.getClientCredentials();
+
             disableSSLVerification();
-            ServiceHolder.setClientId(clientJson.getString("client_id"));
-            ServiceHolder.setClientSecret(clientJson.getString("client_secret"));
+           ServiceHolder.setOidcOauthManager(new OidcOauthManager());
 
             // Deploying the microservices
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
@@ -175,13 +172,13 @@ public class ObservabilityDS {
             service = ConfigProvider.class,
             cardinality = ReferenceCardinality.MANDATORY,
             policy = ReferencePolicy.DYNAMIC,
-            unbind = "unregisterConfigProvider"
+            unbind = "unsetConfigProvider"
     )
-    protected void registerConfigProvider(ConfigProvider configProvider) {
+    protected void setConfigProvider(ConfigProvider configProvider) {
         CelleryConfig.setConfigProvider(configProvider);
     }
 
-    protected void unregisterConfigProvider(ConfigProvider configProvider) {
+    protected void unsetConfigProvider(ConfigProvider configProvider) {
         CelleryConfig.setConfigProvider(null);
     }
 

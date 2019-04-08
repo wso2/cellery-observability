@@ -18,27 +18,12 @@
 
 package io.cellery.observability.api.interceptor;
 
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
-import io.cellery.observability.api.Constants;
-import io.cellery.observability.api.bean.CelleryConfig;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLContexts;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import io.cellery.observability.api.internal.ServiceHolder;
 import org.apache.log4j.Logger;
-import org.json.JSONObject;
-import org.wso2.carbon.config.ConfigurationException;
 import org.wso2.msf4j.Request;
 import org.wso2.msf4j.Response;
 import org.wso2.msf4j.interceptor.RequestInterceptor;
 
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import javax.net.ssl.SSLContext;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 
@@ -47,7 +32,6 @@ import javax.ws.rs.core.HttpHeaders;
  */
 public class AuthInterceptor implements RequestInterceptor {
 
-    private static final String ACTIVE_STATUS = "active";
     private static final Logger log = Logger.getLogger(AuthInterceptor.class);
 
     @Override
@@ -59,50 +43,12 @@ public class AuthInterceptor implements RequestInterceptor {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
             accessToken = header.split(" ")[1];
-            if (!validateToken(accessToken)) {
+            if (!ServiceHolder.getOidcOauthManager().validateToken(accessToken)) {
                 response.setStatus(401);
                 return false;
             }
         }
         return true;
-    }
-
-    private static boolean validateToken(String token) {
-
-        try {
-            Unirest.setHttpClient(allowAllHostNames());
-            HttpResponse<String> stringResponse
-                    = Unirest.post(CelleryConfig.getInstance().getIdpURL() + Constants.INTROSPECT_ENDPOINT)
-                    .header("Content-Type", "application/x-www-form-urlencoded")
-                    .basicAuth(CelleryConfig.getInstance().getIdpAdminUsername()
-                            , CelleryConfig.getInstance().getIdpAdminPassword()).body("token=" + token).asString();
-
-            JSONObject jsonResponse = new JSONObject(stringResponse.getBody());
-            if (stringResponse.getStatus() != 200) {
-                log.error("Failed to connect to Introspect endpoint in Identity Provider server");
-                return false;
-            } else if (!((Boolean) jsonResponse.get(ACTIVE_STATUS))) {
-                return false;
-            }
-
-        } catch (UnirestException | KeyStoreException | NoSuchAlgorithmException |
-                KeyManagementException | ConfigurationException e) {
-            log.error("Unexpected error occured while validating", e);
-            return false;
-        }
-        return true;
-    }
-
-    private static CloseableHttpClient allowAllHostNames()
-            throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
-        SSLContext sslcontext = SSLContexts.custom()
-                .loadTrustMaterial(null, new TrustSelfSignedStrategy())
-                .build();
-        SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslcontext,
-                SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-        return HttpClients.custom()
-                .setSSLSocketFactory(sslsf)
-                .build();
     }
 }
 
