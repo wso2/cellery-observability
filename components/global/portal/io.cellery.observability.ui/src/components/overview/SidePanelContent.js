@@ -195,6 +195,7 @@ class SidePanelContent extends React.Component {
         const successColor = colorGenerator.getColor(ColorGenerator.SUCCESS);
         const warningColor = colorGenerator.getColor(ColorGenerator.WARNING);
         const errorColor = colorGenerator.getColor(ColorGenerator.ERROR);
+        const redirectionColor = colorGenerator.getColor(ColorGenerator.REDIRECTION);
         const unknownColor = colorGenerator.getColor(ColorGenerator.UNKNOWN);
         return (
             <div className={classes.drawerContent}>
@@ -240,7 +241,7 @@ class SidePanelContent extends React.Component {
                                         : (
                                             <TableCell className={classes.sidebarTableCell}>
                                                 <Avatar className={classes.avatar}
-                                                    style={{backgroundColor: successColor}}>
+                                                    style={{backgroundColor: redirectionColor}}>
                                                     3xx
                                                 </Avatar>
                                             </TableCell>
@@ -360,7 +361,7 @@ class SidePanelContent extends React.Component {
                                 onValueMouseOver={(v) => this.setState({trafficTooltip: v})}
                                 onSeriesMouseOut={() => this.setState({trafficTooltip: false})}
                             />
-                            <HorizontalBarSeries color={errorColor}
+                            <HorizontalBarSeries color={redirectionColor}
                                 data={[
                                     {
                                         y: "Total", x: request.statusCodes[2].value, title: request.statusCodes[2].key,

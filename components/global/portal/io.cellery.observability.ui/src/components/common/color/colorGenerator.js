@@ -34,7 +34,7 @@ class ColorGenerator {
     static SUCCESS = "SUCCESS";
     static WARNING = "WARNING";
     static ERROR = "ERROR";
-    static CLIENT_ERROR = "CLIENT_ERROR";
+    static REDIRECTION = "REDIRECTION";
 
     /** @private **/
     static LOCAL_STORAGE_ITEM = "colorMap";
@@ -58,7 +58,7 @@ class ColorGenerator {
         this.colorMap[ColorGenerator.SUCCESS] = Green[500];
         this.colorMap[ColorGenerator.WARNING] = Yellow[800];
         this.colorMap[ColorGenerator.ERROR] = Red[500];
-        this.colorMap[ColorGenerator.CLIENT_ERROR] = Blue[500];
+        this.colorMap[ColorGenerator.REDIRECTION] = Blue[500];
     };
 
     /**
