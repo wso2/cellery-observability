@@ -108,8 +108,6 @@ public class OIDCOauthManager {
                     throw new OIDCProviderException("Error while checking for existing client application in IDP." +
                             " Unable to retrieve existing client", e);
                 }
-            } else {
-                jsonObject = new JSONObject(builder.toString());
             }
             return jsonObject;
         } catch (NoSuchAlgorithmException | KeyManagementException | ConfigurationException | IOException e) {
@@ -165,7 +163,7 @@ public class OIDCOauthManager {
             HttpEntity entity = response.getEntity();
             String result = EntityUtils.toString(entity, Charset.forName(StandardCharsets.UTF_8.name()));
 
-            if (response.getStatusLine().getStatusCode() == 200 || result.contains(Constants.CLIENT_ID_TXT)) {
+            if (response.getStatusLine().getStatusCode() == 200 && result.contains(Constants.CLIENT_ID_TXT)) {
                 return new JSONObject(result);
             } else {
                 throw new OIDCProviderException("Error while retrieving client credentials." +

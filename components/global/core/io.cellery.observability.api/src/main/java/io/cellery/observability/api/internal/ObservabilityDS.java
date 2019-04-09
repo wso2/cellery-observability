@@ -25,6 +25,7 @@ import io.cellery.observability.api.TrustAllX509TrustManager;
 import io.cellery.observability.api.UserAuthenticationAPI;
 import io.cellery.observability.api.auth.OIDCOauthManager;
 import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
+import io.cellery.observability.api.exception.oidc.OIDCProviderException;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
@@ -180,7 +181,7 @@ public class ObservabilityDS {
         ServiceHolder.setConfigProvider(null);
     }
 
-    private static void disableSSLVerification() {
+    private static void disableSSLVerification() throws OIDCProviderException {
         try {
             SSLContext sc = SSLContext.getInstance("TLS");
             sc.init(null, new TrustManager[]{new TrustAllX509TrustManager()}, new java.security.SecureRandom());
@@ -191,7 +192,7 @@ public class ObservabilityDS {
                 }
             });
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            log.error("Error occured while disabling SSL verification", e);
+            throw new OIDCProviderException("Error occured while disabling SSL verification", e);
         }
     }
 
