@@ -89,6 +89,12 @@ class HttpUtils {
      */
     static callObservabilityAPI = (config, globalState) => {
         config.url = `${globalState.get(StateHolder.CONFIG).observabilityAPIURL}${config.url}`;
+        if (globalState.get(StateHolder.USER) !== null) {
+            config.headers = {
+                Authorization: `Bearer ${globalState.get(StateHolder.USER).accessToken}`
+            };
+        }
+
         return HttpUtils.callAPI(config, globalState);
     };
 
@@ -112,7 +118,6 @@ class HttpUtils {
         if (!config.data && (config.method === "POST" || config.method === "PUT" || config.method === "PATCH")) {
             config.data = {};
         }
-
         axios(config)
             .then((response) => {
                 if (response.status >= 200 && response.status < 400) {
@@ -127,7 +132,7 @@ class HttpUtils {
                     if (errorResponse.status === 401) {
                         // Redirect to home page since the user is not authorised
                         if (globalState) {
-                            AuthUtils.signOut(globalState);
+                            AuthUtils.redirectForTokenRefresh(globalState);
                         }
                     }
                     reject(new Error(errorResponse.data));

@@ -213,7 +213,7 @@ public class DistributedTracingAPI {
     }
 
     @OPTIONS
-    @Path("/*")
+    @Path(".*")
     public Response getOptions() {
         return Response.ok().build();
     }

@@ -34,13 +34,14 @@ import javax.ws.rs.core.HttpHeaders;
  * which methods are allowed. Therefore an endpoint with HTTP Method OPTIONS should be added to all services.
  */
 public class CORSInterceptor implements RequestInterceptor {
+
     @Override
     public boolean interceptRequest(Request request, Response response) {
         response.setHeader(Constants.ACCESS_CONTROL_ALLOW_METHODS, HttpMethod.GET + "," + HttpMethod.POST +
                 "," + HttpMethod.PUT + "," + HttpMethod.DELETE);
         response.setHeader(Constants.ACCESS_CONTROL_MAX_AGE, Constants.MAX_AGE);
-        response.setHeader(Constants.ACCESS_CONTROL_ALLOW_HEADERS, HttpHeaders.CONTENT_TYPE);
-
+        response.setHeader(Constants.ACCESS_CONTROL_ALLOW_HEADERS,
+                HttpHeaders.CONTENT_TYPE + "," + HttpHeaders.AUTHORIZATION);
         if (StringUtils.isNotBlank(request.getHeader(Constants.ORIGIN))) {
             response.setHeader(Constants.ACCESS_CONTROL_ALLOW_ORIGIN, request.getHeader(Constants.ORIGIN));
         } else {

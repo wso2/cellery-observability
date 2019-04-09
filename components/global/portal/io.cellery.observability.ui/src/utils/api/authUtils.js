@@ -16,30 +16,100 @@
  * under the License.
  */
 
+import Constants from "../constants";
+import HttpUtils from "./httpUtils";
+import NotificationUtils from "../common/notificationUtils";
 import {StateHolder} from "../../components/common/state";
+import jwtDecode from "jwt-decode";
 
 /**
  * Authentication/Authorization related utilities.
  */
+
 class AuthUtils {
 
     /**
      * Sign in the user.
      *
-     * @param {string} username The user to be signed in
+     * @param {Object} user The user to be signed in
      * @param {StateHolder} globalState The global state provided to the current component
      */
-    static signIn = (username, globalState) => {
-        // TODO: Implement User Login
-        if (username) {
-            const user = {
-                username: username
-            };
-            localStorage.setItem(StateHolder.USER, JSON.stringify(user));
-            globalState.set(StateHolder.USER, user);
+    static signIn = (user, globalState) => {
+        if (user.username) {
+            AuthUtils.updateUser(user, globalState);
         } else {
-            throw Error(`Username provided cannot be "${username}"`);
+            throw Error(`Username provided cannot be "${user.username}"`);
         }
+    };
+
+    /**
+     * Redirects the user to IDP for authentication.
+     *
+     * @param {StateHolder} globalState The global state provided to the current component
+     */
+    static initiateLoginFlow(globalState) {
+        HttpUtils.callObservabilityAPI(
+            {
+                url: "/auth/client-id",
+                method: "GET"
+            },
+            globalState
+        ).then((resp) => {
+            window.location.href
+                = `${globalState.get(StateHolder.CONFIG).idp.idpURL}${Constants.Dashboard.AUTHORIZATION_EP}`
+                + `&client_id=${resp}&`
+                + `redirect_uri=${globalState.get(StateHolder.CONFIG).idp.callBackURL}&nonce=auth&scope=openid`;
+        }).catch((err) => {
+            throw Error(`Failed to redirect to Identity Provider for Authentication. ${err}`);
+        });
+    }
+
+    /**
+     * Redirects the user to IDP after Access token has expired.
+     *
+     * @param {StateHolder} globalState The global state provided to the current component
+     */
+    static redirectForTokenRefresh(globalState) {
+        localStorage.removeItem(StateHolder.USER);
+        globalState.unset(StateHolder.USER);
+        this.initiateLoginFlow(globalState);
+    }
+
+    /**
+     * Requests the API backend for tokens in exchange for authorization code.
+     *
+     * @param {string} oneTimeCode The one time Authorization code given by the IDP.
+     * @param {StateHolder} globalState The global state provided to the current component
+     */
+    static getTokens(oneTimeCode, globalState) {
+        HttpUtils.callObservabilityAPI(
+            {
+                url: `/auth/tokens/${oneTimeCode}`,
+                method: "GET"
+            },
+            globalState
+        ).then((resp) => {
+            const decodedToken = jwtDecode(resp.id_token);
+            const user = {
+                username: decodedToken.sub,
+                accessToken: resp.access_token,
+                idToken: resp.id_token
+            };
+            AuthUtils.signIn(user, globalState);
+        }).catch(() => {
+            NotificationUtils.showNotification("Authentication Failed", NotificationUtils.Levels.ERROR, globalState);
+        });
+    }
+
+    /**
+     * Updates the StateHolder and localStorage with new user object.
+     *
+     * @param {Object} user The user object which has been created.
+     * @param {StateHolder} globalState The global state provided to the current component
+     */
+    static updateUser = (user, globalState) => {
+        localStorage.setItem(StateHolder.USER, JSON.stringify(user));
+        globalState.set(StateHolder.USER, user);
     };
 
     /**
@@ -49,10 +119,10 @@ class AuthUtils {
      * @param {StateHolder} globalState The global state provided to the current component
      */
     static signOut = (globalState) => {
-        // TODO: Implement User Logout
-        globalState.unset(StateHolder.USER);
-        localStorage.setItem("isAuthenticated", "loggedOut");
-        window.location.reload();
+        const idToken = globalState.get(StateHolder.USER).idToken;
+        localStorage.removeItem(StateHolder.USER);
+        window.location.href = `${globalState.get(StateHolder.CONFIG).idp.idpURL}/oidc/logout?id_token_hint=`
+            + `${idToken}&post_logout_redirect_uri=${globalState.get(StateHolder.CONFIG).idp.callBackURL}`;
     };
 
     /**
@@ -69,7 +139,7 @@ class AuthUtils {
             localStorage.removeItem(StateHolder.USER);
         }
         return user;
-    }
+    };
 
 }
 

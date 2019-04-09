@@ -16,14 +16,18 @@
  * under the License.
  */
 
-package io.cellery.observability.api.exception;
+package io.cellery.observability.api.exception.oidc;
 
 /**
- * Internal generic error in the API.
+ * Internal generic error in the OIDC Manager.
  */
-public class APIInvocationException extends Exception {
+public class OIDCProviderException extends Exception {
 
-    public APIInvocationException(String message, Throwable e) {
+    public OIDCProviderException(String message, Throwable e) {
         super(message, e);
+    }
+
+    public OIDCProviderException(String message) {
+        super(message);
     }
 }

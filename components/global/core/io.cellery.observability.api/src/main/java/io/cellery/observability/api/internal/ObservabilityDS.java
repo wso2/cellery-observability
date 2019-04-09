@@ -21,13 +21,16 @@ import io.cellery.observability.api.AggregatedRequestsAPI;
 import io.cellery.observability.api.DependencyModelAPI;
 import io.cellery.observability.api.DistributedTracingAPI;
 import io.cellery.observability.api.KubernetesAPI;
+import io.cellery.observability.api.TrustAllX509TrustManager;
 import io.cellery.observability.api.UserAuthenticationAPI;
+import io.cellery.observability.api.auth.OIDCOauthManager;
 import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
+import io.cellery.observability.api.exception.oidc.OIDCProviderException;
+import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
 import io.cellery.observability.model.generator.ModelManager;
 import org.apache.log4j.Logger;
-import org.json.JSONObject;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -35,9 +38,18 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+import org.wso2.carbon.config.provider.ConfigProvider;
 import org.wso2.carbon.datasource.core.api.DataSourceService;
 import org.wso2.carbon.kernel.CarbonRuntime;
 import org.wso2.msf4j.MicroservicesRunner;
+
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
 
 /**
  * This is the declarative service component of the observability API component,
@@ -64,18 +76,18 @@ public class ObservabilityDS {
     @Activate
     protected void start(BundleContext bundleContext) throws Exception {
 
-        JSONObject clientJson = RegisterClient.getClientCredentials();
-        String clientId = clientJson.getString("clientId");
-        String clientSecret = clientJson.getString("clientSecret");
         try {
+            disableSSLVerification();
+            ServiceHolder.setOidcOauthManager(new OIDCOauthManager());
+
             // Deploying the microservices
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
             ServiceHolder.setMicroservicesRunner(new MicroservicesRunner(DEFAULT_OBSERVABILITY_API_PORT + offset)
-                    .addGlobalRequestInterceptor(new CORSInterceptor())
+                    .addGlobalRequestInterceptor(new CORSInterceptor(), new AuthInterceptor())
                     .addExceptionMapper(new APIExceptionMapper())
                     .deploy(
                             new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
-                            new KubernetesAPI(), new UserAuthenticationAPI(clientId, clientSecret)
+                            new KubernetesAPI(), new UserAuthenticationAPI()
                     )
             );
             ServiceHolder.getMicroservicesRunner().start();
@@ -153,4 +165,35 @@ public class ObservabilityDS {
     protected void unsetModelManager(ModelManager modelManager) {
         ServiceHolder.setCarbonRuntime(null);
     }
+
+    @Reference(
+            name = "carbon.config.provider",
+            service = ConfigProvider.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetConfigProvider"
+    )
+    protected void setConfigProvider(ConfigProvider configProvider) {
+        ServiceHolder.setConfigProvider(configProvider);
+    }
+
+    protected void unsetConfigProvider(ConfigProvider configProvider) {
+        ServiceHolder.setConfigProvider(null);
+    }
+
+    private static void disableSSLVerification() throws OIDCProviderException {
+        try {
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, new TrustManager[]{new TrustAllX509TrustManager()}, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+                public boolean verify(String string, SSLSession ssls) {
+                    return true;
+                }
+            });
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+            throw new OIDCProviderException("Error occured while disabling SSL verification", e);
+        }
+    }
+
 }

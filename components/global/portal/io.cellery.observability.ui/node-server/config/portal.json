@@ -1,5 +1,9 @@
 {
     "observabilityAPIURL": "http://wso2sp-observability-api/api",
+    "idp": {
+        "idpURL": "https://idp.cellery-system",
+        "callBackURL": "http://cellery-dashboard"
+    },
     "percentageRangeMinValue": {
         "errorThreshold": 0.5,
         "warningThreshold": 0.7

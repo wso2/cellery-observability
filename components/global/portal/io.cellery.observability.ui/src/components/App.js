@@ -35,11 +35,9 @@ class StatelessProtectedPortal extends React.Component {
 
     constructor(props) {
         super(props);
-
         this.state = {
             isAuthenticated: Boolean(props.globalState.get(StateHolder.USER))
         };
-
         props.globalState.addListener(StateHolder.USER, this.handleUserChange);
     }
 

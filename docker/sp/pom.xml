@@ -14,7 +14,8 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>io.cellery.observability</groupId>
         <artifactId>io.cellery.observability.docker</artifactId>
@@ -173,6 +174,26 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpcore</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore-nio</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpasyncclient</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mashape.unirest</groupId>
+            <artifactId>unirest-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -195,7 +216,8 @@
                                 grpc-protobuf, grpc-protobuf-lite, grpc-stub, opencensus-api,
                                 opencensus-contrib-grpc-metrics, proto-google-common-protos,
                                 okhttp-ws, okhttp, adal4j, logging-interceptor, org.apache.oltu.oauth2.client,
-                                org.apache.oltu.oauth2.common,httpclient, httpcore
+                                org.apache.oltu.oauth2.common,httpclient, httpcore, unirest-java, httpcore-nio,
+                                httpasyncclient, jackson-databind, gson
                             </excludeArtifactIds>
                             <excludeTransitive>true</excludeTransitive>
                         </configuration>

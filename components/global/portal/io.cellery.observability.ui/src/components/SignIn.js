@@ -18,10 +18,9 @@
 
 import AuthUtils from "../utils/api/authUtils";
 import CircularProgress from "@material-ui/core/CircularProgress/CircularProgress";
-import Constants from "../utils/constants";
 import HttpUtils from "../utils/api/httpUtils";
 import React from "react";
-import jwtDecode from "jwt-decode";
+import {withRouter} from "react-router-dom";
 import withStyles from "@material-ui/core/styles/withStyles";
 import withGlobalState, {StateHolder} from "./common/state";
 import * as PropTypes from "prop-types";
@@ -69,8 +68,6 @@ const styles = (theme) => ({
     }
 });
 
-const idpAddress = Constants.Dashboard.APIM_HOSTNAME;
-
 class SignIn extends React.Component {
 
     handleLogin = () => {
@@ -101,63 +98,16 @@ class SignIn extends React.Component {
     }
 
     componentDidMount() {
-        const url = window.location.search.substr(1);
-        const searchParams = new URLSearchParams(url);
+        const params = this.props.location.search;
+        const searchParams = HttpUtils.parseQueryParams(params);
         const {globalState} = this.props;
-
-        if (localStorage.getItem("isAuthenticated") === null || localStorage.getItem(StateHolder.USER) === null) {
-            if (localStorage.getItem("isAuthenticated") !== "true"
-                && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
-                localStorage.setItem("isAuthenticated", "true");
-                HttpUtils.callObservabilityAPI(
-                    {
-                        url: "/user-auth/getCredentials/client",
-                        method: "GET"
-                    },
-                    globalState).then((resp) => {
-                    window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
-                        + `&client_id=${resp}&`
-                        + "redirect_uri=http://cellery-dashboard&nonce=abc&scope=openid";
-                }).catch((err) => {
-                    localStorage.setItem("error2", err.toString());
-                });
-            } else if (localStorage.getItem("isAuthenticated") === "true" && !searchParams.has("code")) {
-                HttpUtils.callObservabilityAPI(
-                    {
-                        url: "/user-auth/getCredentials/client",
-                        method: "GET"
-                    },
-                    globalState).then((resp) => {
-                    window.location.href = `https://${idpAddress}/oauth2/authorize?response_type=code`
-                        + `&client_id=${resp}&`
-                        + "redirect_uri=http://cellery-dashboard&nonce=abc&scope=openid";
-                }).catch((err) => {
-                    localStorage.setItem("error2", err.toString());
-                });
-            } else if (searchParams.has("code") && localStorage.getItem("isAuthenticated") !== "codeAuthorized") {
-                const oneTimeToken = searchParams.get("code");
-                HttpUtils.callObservabilityAPI(
-                    {
-                        url: `/user-auth/requestToken/${oneTimeToken}`,
-                        method: "GET"
-                    },
-                    globalState).then((resp) => {
-                    localStorage.setItem("idToken", resp);
-                    const decoded = jwtDecode(resp);
-                    localStorage.setItem("decoded", decoded.toString());
-                    const user1 = {
-                        username: decoded.sub
-                    };
-
-                    AuthUtils.signIn(user1.username, globalState);
-                }).catch((err) => {
-                    localStorage.setItem("error", err.toString());
-                });
+        if (localStorage.getItem(StateHolder.USER) === null) {
+            if (searchParams.code === undefined) {
+                AuthUtils.initiateLoginFlow(globalState);
+            } else {
+                const oneTimeToken = searchParams.code;
+                AuthUtils.getTokens(oneTimeToken, globalState);
             }
-        } else if (localStorage.getItem("isAuthenticated") === "loggedOut") {
-            localStorage.removeItem(StateHolder.USER);
-            window.location.href = `https://${idpAddress}/oidc/logout?id_token_hint=
-            ${localStorage.getItem("idToken")}&post_logout_redirect_uri=http://cellery-dashboard`;
         }
     }
 
@@ -165,7 +115,8 @@ class SignIn extends React.Component {
 
 SignIn.propTypes = {
     classes: PropTypes.object.isRequired,
-    globalState: PropTypes.instanceOf(StateHolder).isRequired
+    globalState: PropTypes.instanceOf(StateHolder).isRequired,
+    location: PropTypes.object.isRequired
 };
 
-export default withStyles(styles)(withGlobalState(SignIn));
+export default withRouter(withStyles(styles)(withGlobalState(SignIn)));

@@ -58,7 +58,7 @@ const Constants = {
         INBOUND: "Inbound",
         OUTBOUND: "Outbound",
         SIDE_NAV_BAR_WIDTH: 240,
-        APIM_HOSTNAME: "wso2-apim" // TODO: Need to add this to portal.json
+        AUTHORIZATION_EP: "/oauth2/authorize?response_type=code"
     }
 };
 

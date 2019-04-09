@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
@@ -174,10 +173,15 @@ describe("HttpUtils", () => {
     describe("callAPI()", () => {
         const backendURL = "http://www.example.com/test";
         let stateHolder;
+        const loggedInUser = {
+            username: "test-user",
+            accessToken: "12345",
+            idToken: "54321"
+        };
 
         beforeEach(() => {
             stateHolder = new StateHolder();
-            stateHolder.set(StateHolder.USER, "user1");
+            stateHolder.set(StateHolder.USER, loggedInUser);
         });
 
         it("should add application/json header", async () => {
@@ -380,7 +384,8 @@ describe("HttpUtils", () => {
                 method: "GET",
                 url: backendURL,
                 headers: {
-                    Accept: "application/xml"
+                    Accept: "application/xml",
+                    Authorization: "12345"
                 }
             }, (noStateHolder ? undefined : stateHolder));
         };
@@ -408,7 +413,7 @@ describe("HttpUtils", () => {
 
         it(`should sign out and reject with response when axios rejects with a ${unauthorizedStatusCode} status code`,
             async () => {
-                const spy = jest.spyOn(AuthUtils, "signOut");
+                const spy = jest.spyOn(AuthUtils, "redirectForTokenRefresh");
 
                 await expect(mockReject(unauthorizedStatusCode)).rejects.toEqual(new Error(ERROR_DATA));
                 expect(spy).toHaveBeenCalledTimes(1);
@@ -417,7 +422,6 @@ describe("HttpUtils", () => {
         it(`should only reject with response when axios rejects with a ${unauthorizedStatusCode} status code`,
             async () => {
                 const spy = jest.spyOn(AuthUtils, "signOut");
-
                 await expect(mockReject(unauthorizedStatusCode, true)).rejects.toEqual(new Error(ERROR_DATA));
                 expect(spy).toHaveBeenCalledTimes(0);
             });
