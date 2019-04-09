@@ -26,6 +26,7 @@ import io.cellery.observability.api.bean.CelleryConfig;
 import io.cellery.observability.api.exception.oidc.OIDCProviderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -47,6 +48,7 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import javax.ws.rs.core.MediaType;
 
 /**
  * This class is used to create a DCR request for Service Provider registeration.
@@ -79,7 +81,6 @@ public class OIDCOauthManager {
         InputStreamReader inputStreamReader = null;
 
         try {
-            JSONObject jsonObject;
             ArrayList<String> uris = new ArrayList<>(Arrays.asList(CelleryConfig.getInstance().getDashboardURL()));
             ArrayList<String> grants = new ArrayList<>(Arrays.asList(Constants.AUTHORIZATION_CODE));
             HttpClient client = Utils.getAllSSLClient();
@@ -97,10 +98,16 @@ public class OIDCOauthManager {
                 builder.append(line);
                 builder.append(System.lineSeparator());
             }
-            jsonObject = new JSONObject(builder.toString());
+            JSONObject jsonObject = new JSONObject(builder.toString());
             if (jsonObject.has(ERROR)) {
-                log.info("Client with name " + Constants.APPLICATION_NAME + " already exists.");
-                jsonObject = checkRegisteration(dcrEP, client);
+                try {
+                    jsonObject = retrieveClientCredentials(dcrEP, client);
+                    log.info("Client with name " + Constants.APPLICATION_NAME + " already exists.");
+
+                } catch (OIDCProviderException e) {
+                    throw new OIDCProviderException("Error while checking for existing client application in IDP." +
+                            " Unable to retrieve existing client", e);
+                }
             } else {
                 jsonObject = new JSONObject(builder.toString());
             }
@@ -148,16 +155,22 @@ public class OIDCOauthManager {
         return BASIC_AUTH + authStringEnc;
     }
 
-    private JSONObject checkRegisteration(String dcrEp, HttpClient client) throws OIDCProviderException {
+    private JSONObject retrieveClientCredentials(String dcrEp, HttpClient client) throws OIDCProviderException {
         try {
             HttpGet getRequest = new HttpGet(dcrEp + "?"
                     + Constants.CLIENT_NAME_PARAM + "=" + Constants.APPLICATION_NAME);
             getRequest.setHeader(Constants.AUTHORIZATION, encodeAuthCredentials());
 
-            HttpResponse resp = client.execute(getRequest);
-            HttpEntity entity = resp.getEntity();
-            String result = EntityUtils.toString(entity, Charset.forName("utf-8"));
-            return new JSONObject(result);
+            HttpResponse response = client.execute(getRequest);
+            HttpEntity entity = response.getEntity();
+            String result = EntityUtils.toString(entity, Charset.forName(StandardCharsets.UTF_8.name()));
+
+            if (response.getStatusLine().getStatusCode() == 200 || result.contains(Constants.CLIENT_ID_TXT)) {
+                return new JSONObject(result);
+            } else {
+                throw new OIDCProviderException("Error while retrieving client credentials." +
+                        " Expected client credentials are not found in the response");
+            }
         } catch (IOException | ConfigurationException e) {
             throw new OIDCProviderException("Error occured while checking for client with name " +
                     Constants.APPLICATION_NAME, e);
@@ -169,7 +182,7 @@ public class OIDCOauthManager {
             Unirest.setHttpClient(Utils.getAllSSLClient());
             com.mashape.unirest.http.HttpResponse<String> stringResponse
                     = Unirest.post(CelleryConfig.getInstance().getIdpURL() + Constants.INTROSPECT_ENDPOINT)
-                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED)
                     .basicAuth(CelleryConfig.getInstance().getIdpAdminUsername()
                             , CelleryConfig.getInstance().getIdpAdminPassword()).body("token=" + token).asString();
 

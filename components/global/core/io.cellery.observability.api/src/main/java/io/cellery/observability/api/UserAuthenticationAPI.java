@@ -72,16 +72,19 @@ public class UserAuthenticationAPI {
 
             return Response.ok().entity(responseMap).build();
         } catch (ConfigurationException | OAuthProblemException | OAuthSystemException e) {
-            log.error("Error occured when fetching tokens from IDP for Authorization Code grant" + e);
-            return Response.serverError().build();
+            throw new APIInvocationException("Error while getting tokens from Token endpoint", e);
         }
     }
 
     @GET
     @Path("/client-id")
     @Produces("application/json")
-    public Response getCredentials() {
-        return Response.ok().entity(ServiceHolder.getOidcOauthManager().getClientId()).build();
+    public Response getCredentials() throws APIInvocationException {
+        try {
+            return Response.ok().entity(ServiceHolder.getOidcOauthManager().getClientId()).build();
+        } catch (Throwable e) {
+            throw new APIInvocationException("Error while getting Client ID for Observability Portal", e);
+        }
     }
 
     @OPTIONS

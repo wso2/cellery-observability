@@ -26,7 +26,6 @@ import jwtDecode from "jwt-decode";
  * Authentication/Authorization related utilities.
  */
 
-
 class AuthUtils {
 
     /**

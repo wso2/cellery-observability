@@ -22,6 +22,7 @@ package io.cellery.observability.api.exception;
  * Internal generic error in the API.
  */
 public class APIInvocationException extends Exception {
+
     public APIInvocationException(String message, Throwable e) {
         super(message, e);
     }

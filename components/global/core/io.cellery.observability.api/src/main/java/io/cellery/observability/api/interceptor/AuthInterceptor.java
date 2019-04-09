@@ -38,11 +38,10 @@ public class AuthInterceptor implements RequestInterceptor {
     @Override
     public boolean interceptRequest(Request request, Response response) {
 
-        String accessToken;
         if (!request.getHttpMethod().equalsIgnoreCase(HttpMethod.OPTIONS) &&
                 request.getHeader(HttpHeaders.AUTHORIZATION) != null) {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-            accessToken = header.split(" ")[1];
+            String accessToken = header.split(" ")[1];
 
             try {
                 if (!ServiceHolder.getOidcOauthManager().validateToken(accessToken)) {
