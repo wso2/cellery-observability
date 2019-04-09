@@ -56,6 +56,16 @@ const styles = () => ({
     clickableMessageText: {
         fill: "#4c4cb3 !important",
         cursor: "pointer"
+    },
+    tooltip: {
+        display: "none",
+        position: "fixed",
+        background: "#f2f2f2",
+        border: "1px solid #eee",
+        borderRadius: 3,
+        padding: 5,
+        fontSize: 10,
+        cursor: "pointer"
     }
 });
 
@@ -109,8 +119,11 @@ class SequenceDiagram extends React.Component {
                 {
                     sequenceDiagramData
                         ? (
-                            <div className={classes.sequenceDiagram} ref={this.mermaidDivRef}>
-                                {sequenceDiagramData}
+                            <div>
+                                <div id="tooltip" className={classes.tooltip}></div>
+                                <div className={classes.sequenceDiagram} ref={this.mermaidDivRef}>
+                                    {sequenceDiagramData}
+                                </div>
                             </div>
                         )
                         : null
@@ -170,6 +183,7 @@ class SequenceDiagram extends React.Component {
         const {colorGenerator} = this.props;
         const {selectedCell} = this.state;
         const elementArray = this.mermaidDivRef.current.getElementsByClassName(SequenceDiagram.Classes.ACTOR);
+        const elementWidth = elementArray[0].getAttribute("width");
         if (isComponentLevel) {
             const cellName = selectedCell;
             let color;
@@ -179,10 +193,37 @@ class SequenceDiagram extends React.Component {
                 color = colorGenerator.getColor(SequenceDiagram.getActorIdFromSanitizedName(cellName));
             }
 
-            for (let i = 0; i < elementArray.length; i += 2) {
-                elementArray[i].style.stroke = color;
-                elementArray[i].style.strokeWidth = 3;
-                elementArray[i].style.fill = "#ffffff";
+            for (let i = 1; i < elementArray.length; i += 2) {
+                const componentName = SequenceDiagram.getActorIdFromSanitizedName(
+                    elementArray[i].firstElementChild.innerHTML);
+
+                // Show and hide actor tooltip on hover to rectangle
+                elementArray[i - 1].addEventListener("mouseenter", (event) => {
+                    this.showTooltip(event, componentName);
+                });
+                elementArray[i - 1].addEventListener("mouseleave", () => {
+                    this.hideTooltip();
+                });
+
+                // Show and hide actor tooltip on hover to text
+                elementArray[i].addEventListener("mouseenter", (event) => {
+                    this.showTooltip(event, componentName);
+                });
+                elementArray[i].addEventListener("mouseleave", () => {
+                    this.hideTooltip();
+                });
+
+                // Truncating cell name when cellName is too long
+                const letterLength = elementArray[i].getBBox().width / elementArray[i].textContent.length;
+                const lettersLength = Math.round(elementWidth / letterLength);
+                if (elementArray[i].getBBox().width > elementWidth) {
+                    const truncatedComponentName = `${componentName.substring(0, lettersLength - 5)}...`;
+                    elementArray[i].textContent = truncatedComponentName;
+                }
+
+                elementArray[i - 1].style.stroke = color;
+                elementArray[i - 1].style.strokeWidth = 3;
+                elementArray[i - 1].style.fill = "#ffffff";
             }
         } else {
             // For loop with iteration by factor 2 to skip SVG `rect` element and get the text in each actor.
@@ -200,10 +241,55 @@ class SequenceDiagram extends React.Component {
                     elementArray[i - 1].style.stroke = color;
                     elementArray[i - 1].style.strokeWidth = 3;
                     elementArray[i - 1].style.fill = "#ffffff";
+
+                    // Show and hide actor tooltip on hover to text
+                    elementArray[i].addEventListener("mouseenter", (event) => {
+                        this.showTooltip(event, cellName);
+                    });
+                    elementArray[i].addEventListener("mouseleave", () => {
+                        this.hideTooltip();
+                    });
+                    // Show and hide actor tooltip on hover to rectangle
+                    elementArray[i - 1].addEventListener("mouseenter", (event) => {
+                        this.showTooltip(event, cellName);
+                    });
+                    elementArray[i - 1].addEventListener("mouseleave", () => {
+                        this.hideTooltip();
+                    });
+
+                    // Truncating cell name when cellName is too long
+                    const letterLength = elementArray[i].getBBox().width / elementArray[i].textContent.length;
+                    const lettersLength = Math.round(elementWidth / letterLength);
+                    if (elementArray[i].getBBox().width > elementWidth) {
+                        const truncatedCellName = `${cellName.substring(0, lettersLength - 5)}...`;
+                        elementArray[i].textContent = truncatedCellName;
+                    }
                 }
             }
         }
     }
+
+    /**
+     * Show tooltip.
+     *
+     * @param {event} evt Mouse event
+     * @param {string} text The actor name
+     */
+    showTooltip = (evt, text) => {
+        const tooltip = document.getElementById("tooltip");
+        tooltip.innerHTML = text;
+        tooltip.style.display = "block";
+        tooltip.style.left = `${evt.pageX}px`;
+        tooltip.style.top = `${evt.pageY}px`;
+    };
+
+    /**
+     * Hide tooltip.
+     */
+    hideTooltip = () => {
+        const tooltip = document.getElementById("tooltip");
+        tooltip.style.display = "none";
+    };
 
     /**
      * Draw the Cell level Sequence Sequence.
