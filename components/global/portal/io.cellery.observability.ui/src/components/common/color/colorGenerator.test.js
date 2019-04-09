@@ -20,7 +20,7 @@ import StateHolder from "../state/stateHolder";
 describe("ColorGenerator", () => {
     const INITIAL_KEYS = [
         ColorGenerator.SYSTEM, ColorGenerator.UNKNOWN, ColorGenerator.SUCCESS,
-        ColorGenerator.WARNING, ColorGenerator.ERROR, ColorGenerator.CLIENT_ERROR
+        ColorGenerator.WARNING, ColorGenerator.ERROR, ColorGenerator.REDIRECTION
     ];
     const INITIAL_KEY_COUNT = INITIAL_KEYS.length;
 
