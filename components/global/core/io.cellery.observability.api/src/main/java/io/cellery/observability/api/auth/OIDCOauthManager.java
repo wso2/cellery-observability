@@ -34,6 +34,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.wso2.carbon.config.ConfigurationException;
 
@@ -174,12 +175,15 @@ public class OIDCOauthManager {
 
             JSONObject jsonResponse = new JSONObject(stringResponse.getBody());
             if (stringResponse.getStatus() != 200) {
-                log.error("Failed to connect to Introspect endpoint in Identity Provider server");
+                log.error("Failed to connect to Introspect endpoint in Identity Provider server." +
+                        " Exited with Status Code " + stringResponse.getStatus());
                 return false;
-            } else if (!((Boolean) jsonResponse.get(ACTIVE_STATUS))) {
+            } else if (!jsonResponse.getBoolean(ACTIVE_STATUS)) {
                 return false;
             }
-
+        } catch (JSONException e) {
+            log.error("Error occured while reading data from Introspect endpoint", e);
+            return false;
         } catch (UnirestException | NoSuchAlgorithmException |
                 KeyManagementException | ConfigurationException e) {
             throw new OIDCProviderException("Error occured while validating access token ", e);
