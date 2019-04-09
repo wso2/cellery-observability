@@ -21,7 +21,6 @@ package io.cellery.observability.api.exception.oidc;
 /**
  * Internal generic error in the OIDC Manager.
  */
-
 public class OIDCProviderException extends Exception {
     public OIDCProviderException(String message, Throwable e) {
         super(message, e);

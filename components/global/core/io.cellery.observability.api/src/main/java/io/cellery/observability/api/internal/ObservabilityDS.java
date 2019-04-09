@@ -23,8 +23,7 @@ import io.cellery.observability.api.DistributedTracingAPI;
 import io.cellery.observability.api.KubernetesAPI;
 import io.cellery.observability.api.TrustAllX509TrustManager;
 import io.cellery.observability.api.UserAuthenticationAPI;
-import io.cellery.observability.api.auth.OIDCoauthManager;
-import io.cellery.observability.api.bean.CelleryConfig;
+import io.cellery.observability.api.auth.OIDCOauthManager;
 import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
@@ -71,14 +70,14 @@ public class ObservabilityDS {
      * satisfied.
      *
      * @param bundleContext the bundle context instance of this bundle.
-     * @throws Exception this will be thrown if an issue occur while executing the activate method
+     * @throws Exception this will be thrown if an issue occurs while executing the activate method
      */
     @Activate
     protected void start(BundleContext bundleContext) throws Exception {
 
         try {
             disableSSLVerification();
-           ServiceHolder.setOidcOauthManager(new OIDCoauthManager());
+            ServiceHolder.setOidcOauthManager(new OIDCOauthManager());
 
             // Deploying the microservices
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
@@ -174,11 +173,11 @@ public class ObservabilityDS {
             unbind = "unsetConfigProvider"
     )
     protected void setConfigProvider(ConfigProvider configProvider) {
-        CelleryConfig.setConfigProvider(configProvider);
+        ServiceHolder.setConfigProvider(configProvider);
     }
 
     protected void unsetConfigProvider(ConfigProvider configProvider) {
-        CelleryConfig.setConfigProvider(null);
+        ServiceHolder.setConfigProvider(null);
     }
 
     private static void disableSSLVerification() {

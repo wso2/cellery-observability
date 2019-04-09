@@ -17,10 +17,10 @@
  */
 package io.cellery.observability.api.bean;
 
+import io.cellery.observability.api.internal.ServiceHolder;
 import org.wso2.carbon.config.ConfigurationException;
 import org.wso2.carbon.config.annotation.Configuration;
 import org.wso2.carbon.config.annotation.Element;
-import org.wso2.carbon.config.provider.ConfigProvider;
 
 /**
  * This bean class is used to read cellery config.
@@ -28,7 +28,6 @@ import org.wso2.carbon.config.provider.ConfigProvider;
 @Configuration(namespace = "celleryObservabilityPortal", description = "Cellery Configuration Parameters")
 public class CelleryConfig {
 
-    private static ConfigProvider configProvider;
     private static volatile CelleryConfig celleryConfig;
 
     @Element(description = "dashboardURL")
@@ -59,17 +58,9 @@ public class CelleryConfig {
         return idpAdminPassword;
     }
 
-    private static ConfigProvider getConfigProvider() {
-        return configProvider;
-    }
-
-    public static void setConfigProvider(ConfigProvider configProvider) {
-        CelleryConfig.configProvider = configProvider;
-    }
-
     public static CelleryConfig getInstance() throws ConfigurationException {
         if (celleryConfig == null) {
-            celleryConfig = CelleryConfig.getConfigProvider().getConfigurationObject(CelleryConfig.class);
+            celleryConfig = ServiceHolder.getConfigProvider().getConfigurationObject(CelleryConfig.class);
         }
         return celleryConfig;
     }

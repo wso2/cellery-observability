@@ -42,7 +42,6 @@ public class AuthInterceptor implements RequestInterceptor {
         if (!request.getHttpMethod().equalsIgnoreCase(HttpMethod.OPTIONS) &&
                 request.getHeader(HttpHeaders.AUTHORIZATION) != null) {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-
             accessToken = header.split(" ")[1];
 
             try {

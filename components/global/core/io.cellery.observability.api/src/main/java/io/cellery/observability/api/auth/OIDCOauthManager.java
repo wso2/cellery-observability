@@ -21,6 +21,7 @@ package io.cellery.observability.api.auth;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import io.cellery.observability.api.Constants;
+import io.cellery.observability.api.Utils;
 import io.cellery.observability.api.bean.CelleryConfig;
 import io.cellery.observability.api.exception.oidc.OIDCProviderException;
 import org.apache.commons.codec.binary.Base64;
@@ -29,20 +30,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.HttpClientConnectionManager;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLContexts;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
@@ -54,20 +43,16 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 /**
  * This class is used to create a DCR request for Service Provider registeration.
  */
-public class OIDCoauthManager {
+public class OIDCOauthManager {
 
-    private static final Logger log = Logger.getLogger(OIDCoauthManager.class);
+    private static final Logger log = Logger.getLogger(OIDCOauthManager.class);
     private static final String ERROR = "error";
     private static final String ACTIVE_STATUS = "active";
     private static final String BASIC_AUTH = "Basic ";
@@ -82,23 +67,23 @@ public class OIDCoauthManager {
         return String.valueOf(this.clientSecret);
     }
 
-    public OIDCoauthManager() throws OIDCProviderException {
-            JSONObject clientJson = getClientCredentials();
-            this.clientId = clientJson.getString("client_id");
-            this.clientSecret = clientJson.getString("client_secret").toCharArray();
+    public OIDCOauthManager() throws OIDCProviderException {
+        JSONObject clientJson = getClientCredentials();
+        this.clientId = clientJson.getString(Constants.CLIENT_ID_TXT);
+        this.clientSecret = clientJson.getString(Constants.CLIENT_SECRET_TXT).toCharArray();
     }
 
     private JSONObject getClientCredentials() throws OIDCProviderException {
         BufferedReader bufReader = null;
         InputStreamReader inputStreamReader = null;
-        JSONObject jsonObject;
 
         try {
+            JSONObject jsonObject;
             ArrayList<String> uris = new ArrayList<>(Arrays.asList(CelleryConfig.getInstance().getDashboardURL()));
             ArrayList<String> grants = new ArrayList<>(Arrays.asList(Constants.AUTHORIZATION_CODE));
-            HttpClient client = getAllSSLClient();
+            HttpClient client = Utils.getAllSSLClient();
             String dcrEP = CelleryConfig.getInstance().getIdpURL() + Constants.IDP_REGISTERATION_ENDPOINT;
-            HttpPost request = constructRequestBody(dcrEP, uris, grants);
+            HttpPost request = constructDCRRequestBody(dcrEP, uris, grants);
 
             HttpResponse response = client.execute(request);
             inputStreamReader = new InputStreamReader(
@@ -139,8 +124,8 @@ public class OIDCoauthManager {
         }
     }
 
-    private HttpPost constructRequestBody(String dcrEp, ArrayList<String> callbackUris,
-                                          ArrayList<String> grants) throws ConfigurationException {
+    private HttpPost constructDCRRequestBody(String dcrEp, ArrayList<String> callbackUris,
+                                             ArrayList<String> grants) throws ConfigurationException {
         HttpPost request = new HttpPost(dcrEp);
         JSONObject clientJson = new JSONObject();
         clientJson.put(Constants.CALL_BACK_URL, callbackUris);
@@ -162,43 +147,6 @@ public class OIDCoauthManager {
         return BASIC_AUTH + authStringEnc;
     }
 
-    private static HttpClient getAllSSLClient()
-            throws NoSuchAlgorithmException, KeyManagementException {
-
-        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
-            @Override
-            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                java.security.cert.X509Certificate[] obj = new java.security.cert.X509Certificate[1];
-                return obj;
-            }
-
-            @Override
-            public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
-            }
-
-            @Override
-            public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
-            }
-        }};
-        SSLContext context = SSLContext.getInstance("SSL");
-        context.init(null, trustAllCerts, null);
-
-        HttpClientBuilder builder = HttpClientBuilder.create();
-        SSLConnectionSocketFactory sslConnectionFactory =
-                new SSLConnectionSocketFactory(context, SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-        builder.setSSLSocketFactory(sslConnectionFactory);
-
-        PlainConnectionSocketFactory plainConnectionSocketFactory = new PlainConnectionSocketFactory();
-        Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
-                .register("https", sslConnectionFactory)
-                .register("http", plainConnectionSocketFactory)
-                .build();
-
-        HttpClientConnectionManager ccm = new BasicHttpClientConnectionManager(registry);
-        builder.setConnectionManager(ccm);
-        return builder.build();
-    }
-
     private JSONObject checkRegisteration(String dcrEp, HttpClient client) throws OIDCProviderException {
         try {
             HttpGet getRequest = new HttpGet(dcrEp + "?"
@@ -217,7 +165,7 @@ public class OIDCoauthManager {
 
     public boolean validateToken(String token) throws OIDCProviderException {
         try {
-            Unirest.setHttpClient(allowAllHostNames());
+            Unirest.setHttpClient(Utils.getAllSSLClient());
             com.mashape.unirest.http.HttpResponse<String> stringResponse
                     = Unirest.post(CelleryConfig.getInstance().getIdpURL() + Constants.INTROSPECT_ENDPOINT)
                     .header("Content-Type", "application/x-www-form-urlencoded")
@@ -232,22 +180,10 @@ public class OIDCoauthManager {
                 return false;
             }
 
-        } catch (UnirestException | KeyStoreException | NoSuchAlgorithmException |
+        } catch (UnirestException | NoSuchAlgorithmException |
                 KeyManagementException | ConfigurationException e) {
             throw new OIDCProviderException("Error occured while validating access token ", e);
         }
         return true;
-    }
-
-    private CloseableHttpClient allowAllHostNames()
-            throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
-        SSLContext sslcontext = SSLContexts.custom()
-                .loadTrustMaterial(null, new TrustSelfSignedStrategy())
-                .build();
-        SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslcontext,
-                SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-        return HttpClients.custom()
-                .setSSLSocketFactory(sslsf)
-                .build();
     }
 }

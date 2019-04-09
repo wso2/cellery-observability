@@ -71,7 +71,6 @@ public class UserAuthenticationAPI {
             responseMap.put(Constants.ID_TOKEN, jsonObj.get(Constants.ID_TOKEN));
 
             return Response.ok().entity(responseMap).build();
-
         } catch (ConfigurationException | OAuthProblemException | OAuthSystemException e) {
             log.error("Error occured when fetching tokens from IDP for Authorization Code grant" + e);
             return Response.serverError().build();

@@ -18,6 +18,7 @@
 
 import Constants from "../constants";
 import HttpUtils from "./httpUtils";
+import NotificationUtils from "../common/notificationUtils";
 import {StateHolder} from "../../components/common/state";
 import jwtDecode from "jwt-decode";
 
@@ -53,7 +54,8 @@ class AuthUtils {
                 url: "/auth/client-id",
                 method: "GET"
             },
-            globalState).then((resp) => {
+            globalState
+        ).then((resp) => {
             window.location.href
                 = `${globalState.get(StateHolder.CONFIG).idp.idpURL}${Constants.Dashboard.AUTHORIZATION_EP}`
                 + `&client_id=${resp}&`
@@ -88,13 +90,15 @@ class AuthUtils {
             },
             globalState
         ).then((resp) => {
-            const decoded = jwtDecode(resp.id_token);
+            const decodedToken = jwtDecode(resp.id_token);
             const user = {
-                username: decoded.sub,
+                username: decodedToken.sub,
                 accessToken: resp.access_token,
                 idToken: resp.id_token
             };
             AuthUtils.signIn(user, globalState);
+        }).catch(() => {
+            NotificationUtils.showNotification("Authentication Failed", NotificationUtils.Levels.ERROR, globalState);
         });
     }
 
