@@ -18,7 +18,6 @@ import ComponentDependencyView from "./ComponentDependencyView";
 import HealthIndicator from "../../common/HealthIndicator";
 import HttpUtils from "../../../utils/api/httpUtils";
 import {Link} from "react-router-dom";
-import NotFound from "../../common/error/NotFound";
 import NotificationUtils from "../../../utils/common/notificationUtils";
 import QueryUtils from "../../../utils/common/queryUtils";
 import React from "react";
@@ -103,8 +102,14 @@ class Details extends React.Component {
                 total: 0
             });
 
+            let health;
+            if (aggregatedData.total > 0) {
+                health = 1 - (aggregatedData.total === 0 ? aggregatedData.errorsCount / aggregatedData.total : 0);
+            } else {
+                health = -1;
+            }
             self.setState({
-                health: 1 - (aggregatedData.total === 0 ? aggregatedData.errorsCount / aggregatedData.total : 0),
+                health: health,
                 isDataAvailable: aggregatedData.total > 0
             });
             if (isUserAction) {
@@ -130,51 +135,39 @@ class Details extends React.Component {
 
     render() {
         const {classes, cell, component} = this.props;
-        const {health, isLoading, isDataAvailable} = this.state;
+        const {health, isLoading} = this.state;
 
-        let view;
-        if (isDataAvailable) {
-            view = (
-                <Table className={classes.table}>
-                    <TableBody>
-                        <TableRow>
-                            <TableCell className={classes.tableCell}>
-                                <Typography color="textSecondary">
-                                    Health
-                                </Typography>
-                            </TableCell>
-                            <TableCell className={classes.tableCell}>
-                                <HealthIndicator value={health}/>
-                            </TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell className={classes.tableCell}>
-                                <Typography color="textSecondary">
-                                    Cell
-                                </Typography>
-                            </TableCell>
-                            <TableCell className={classes.tableCell}>
-                                <Link to={`/cells/${cell}`}>{cell}</Link>
-                            </TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
-            );
-        } else {
-            view = (
-                <NotFound title={"Component Not Found"} description={`The "${component}" component not found. `
-                    + "This is possibly because no requests had been received/sent by this component in the selected "
-                    + "time period"}/>
-            );
-        }
+        const view = (
+            <Table className={classes.table}>
+                <TableBody>
+                    <TableRow>
+                        <TableCell className={classes.tableCell}>
+                            <Typography color="textSecondary">
+                                Health
+                            </Typography>
+                        </TableCell>
+                        <TableCell className={classes.tableCell}>
+                            <HealthIndicator value={health}/>
+                        </TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell className={classes.tableCell}>
+                            <Typography color="textSecondary">
+                                Cell
+                            </Typography>
+                        </TableCell>
+                        <TableCell className={classes.tableCell}>
+                            <Link to={`/cells/${cell}`}>{cell}</Link>
+                        </TableCell>
+                    </TableRow>
+                </TableBody>
+            </Table>
+        );
+
         return (
             <React.Fragment>
                 {isLoading ? null : view}
-                {
-                    isDataAvailable
-                        ? <ComponentDependencyView cell={cell} component={component}/>
-                        : null
-                }
+                <ComponentDependencyView cell={cell} component={component}/>
             </React.Fragment>
         );
     }
