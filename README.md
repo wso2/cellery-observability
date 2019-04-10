@@ -14,7 +14,7 @@ Cellery Observability brings along the capability to observe the Cells deployed 
 
 ## High Level Architecture
 
-![Cellery Observability Architecture Diagram](./docs/images/cellery-observability-archictecure.png)
+![Cellery Observability Architecture Diagram](./docs/images/cellery-observability-archictecure.jpg)
 
 The observability data such as telemetry and request traces is collected from all the components that participated in the data flow.
 
