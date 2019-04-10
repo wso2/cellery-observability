@@ -21,10 +21,8 @@ package io.cellery.observability.model.generator;
  * This class holds the constants that are required for the model generator.
  */
 public class Constants {
-    public static final String SERVER_SPAN_KIND = "SERVER";
-    public static final String CLIENT_SPAN_KIND = "CLIENT";
     public static final String EDGE_NAME_CONNECTOR = " ---> ";
     public static final String LINK_SEPARATOR = "##";
     public static final String CELL_COMPONENT_NAME_SEPARATOR = ":";
-    public static final String IGNORE_OPERATION_NAME = "async ext_authz egress";
+    public static final String IGNORE_OPERATION_NAME = "async ";
 }

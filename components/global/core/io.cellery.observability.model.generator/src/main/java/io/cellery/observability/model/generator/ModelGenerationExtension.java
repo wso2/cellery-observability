@@ -39,8 +39,10 @@ import org.wso2.siddhi.query.api.definition.Attribute;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This is the Siddhi extension which generates the dependency graph for the spans created.
@@ -77,7 +79,7 @@ public class ModelGenerationExtension extends StreamProcessor {
                     equals(ComplexEvent.Type.EXPIRED)) {
                 Map<String, List<SpanInfo>> spanCache = new HashMap<>();
                 String traceId = null;
-                SpanInfo rootSpan = null;
+                List<SpanInfo> rootSpans = new ArrayList<>();
                 int totalSpans = 0;
                 while (complexEventChunk.hasNext()) {
                     StreamEvent streamEvent = complexEventChunk.next();
@@ -100,12 +102,13 @@ public class ModelGenerationExtension extends StreamProcessor {
                     childNodes.add(spanInfo);
                     spanCache.putIfAbsent(parentId, childNodes);
                     if (spanId.equalsIgnoreCase(traceId)) {
-                        rootSpan = spanInfo;
+                        rootSpans.add(spanInfo);
                     }
                     totalSpans++;
                 }
-                if (rootSpan != null) {
-                    List<SpanInfo> rootCellSpans = findRootCellSpan(rootSpan, spanCache);
+                if (!rootSpans.isEmpty()) {
+                    addPossibleLinkForRootSpans(rootSpans);
+                    Set<SpanInfo> rootCellSpans = findRootCellSpan(rootSpans, spanCache);
                     traceWalk(rootCellSpans, spanCache);
                     ServiceHolder.getModelStoreManager().storeCurrentModel();
                 } else {
@@ -120,8 +123,43 @@ public class ModelGenerationExtension extends StreamProcessor {
         }
     }
 
-    private List<SpanInfo> findRootCellSpan(SpanInfo rootSpan, Map<String, List<SpanInfo>> spanInfoMap) {
-        List<SpanInfo> parents = new ArrayList<>();
+    private void addPossibleLinkForRootSpans(List<SpanInfo> spans) {
+        Collections.sort(spans);
+        for (int i = 0; i < spans.size(); i++) {
+            SpanInfo spanInfo = spans.get(i);
+            if (spanInfo.getKind().equals(SpanInfo.Kind.CLIENT) && i + 1 < spans.size()
+                    && spans.get(i + 1).getKind().equals(SpanInfo.Kind.SERVER)) {
+                SpanInfo childSpanInfo = spans.get(i + 1);
+                if ((spanInfo.getCellName() != null && !spanInfo.getCellName().isEmpty() &&
+                        !spanInfo.getOperationName().startsWith(Constants.IGNORE_OPERATION_NAME))
+                        && (childSpanInfo.getCellName() != null && !childSpanInfo.getCellName().isEmpty() &&
+                        !childSpanInfo.getOperationName().startsWith(Constants.IGNORE_OPERATION_NAME))) {
+                    Node cellParentNode = ServiceHolder.getModelManager().getOrGenerateNode(spanInfo.getCellName());
+                    Node cellChildNode = ServiceHolder.getModelManager().getOrGenerateNode(childSpanInfo.getCellName());
+                    if (!cellParentNode.equals(cellChildNode) || !spanInfo.getComponentName().
+                            equalsIgnoreCase(childSpanInfo.getComponentName())) {
+                        cellChildNode.addComponent(childSpanInfo.getComponentName());
+                        ServiceHolder.getModelManager().addNode(cellChildNode);
+                        ServiceHolder.getModelManager().addLink(cellParentNode, cellChildNode,
+                                Utils.generateServiceName(spanInfo.getComponentName(),
+                                        childSpanInfo.getComponentName()));
+                    }
+                }
+            }
+        }
+
+    }
+
+    private Set<SpanInfo> findRootCellSpan(List<SpanInfo> rootSpans, Map<String, List<SpanInfo>> spanInfoMap) {
+        Set<SpanInfo> parents = new HashSet<>();
+        for (SpanInfo spanInfo : rootSpans) {
+            parents.addAll(findRootCellSpan(spanInfo, spanInfoMap));
+        }
+        return parents;
+    }
+
+    private Set<SpanInfo> findRootCellSpan(SpanInfo rootSpan, Map<String, List<SpanInfo>> spanInfoMap) {
+        Set<SpanInfo> parents = new HashSet<>();
         if (rootSpan.getCellName() == null || rootSpan.getCellName().isEmpty()) {
             List<SpanInfo> children = spanInfoMap.get(rootSpan.getSpanId());
             if (children != null) {
@@ -145,13 +183,13 @@ public class ModelGenerationExtension extends StreamProcessor {
         return parents;
     }
 
-    private void traceWalk(List<SpanInfo> rootSpans, Map<String, List<SpanInfo>> spanInfoMap) {
+    private void traceWalk(Set<SpanInfo> rootSpans, Map<String, List<SpanInfo>> spanInfoMap) {
         for (SpanInfo rootSpan : rootSpans) {
             Node parentNode = ServiceHolder.getModelManager().getOrGenerateNode(rootSpan.getCellName());
             parentNode.addComponent(rootSpan.getComponentName());
             ServiceHolder.getModelManager().addNode(parentNode);
             if (spanInfoMap.get(rootSpan.getSpanId()) != null) {
-                List<SpanInfo> linkedChildren = goDepth(parentNode, rootSpan, spanInfoMap);
+                Set<SpanInfo> linkedChildren = goDepth(parentNode, rootSpan, spanInfoMap);
                 if (!linkedChildren.isEmpty()) {
                     traceWalk(linkedChildren, spanInfoMap);
                 }
@@ -159,10 +197,10 @@ public class ModelGenerationExtension extends StreamProcessor {
         }
     }
 
-    private List<SpanInfo> goDepth(Node cellParentNode, SpanInfo parentSpanInfo, Map<String,
+    private Set<SpanInfo> goDepth(Node cellParentNode, SpanInfo parentSpanInfo, Map<String,
             List<SpanInfo>> spanInfoMap) {
         List<SpanInfo> childSpanInfoList = spanInfoMap.get(parentSpanInfo.getSpanId());
-        List<SpanInfo> linkedChildren = new ArrayList<>();
+        Set<SpanInfo> linkedChildren = new HashSet<>();
         if (childSpanInfoList != null) {
             Collections.sort(childSpanInfoList);
             for (int i = 0; i < childSpanInfoList.size(); i++) {
@@ -172,7 +210,7 @@ public class ModelGenerationExtension extends StreamProcessor {
                     continue;
                 }
                 if (childSpanInfo.getCellName() != null && !childSpanInfo.getCellName().isEmpty() &&
-                        !childSpanInfo.getOperationName().equalsIgnoreCase(Constants.IGNORE_OPERATION_NAME)) {
+                        !childSpanInfo.getOperationName().startsWith(Constants.IGNORE_OPERATION_NAME)) {
                     Node childNode = ServiceHolder.getModelManager().getOrGenerateNode(childSpanInfo.getCellName());
                     if (!childNode.equals(cellParentNode) || !parentSpanInfo.getComponentName().
                             equalsIgnoreCase(childSpanInfo.getComponentName())) {
