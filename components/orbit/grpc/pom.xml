@@ -21,7 +21,7 @@
     <parent>
         <groupId>io.cellery.observability</groupId>
         <artifactId>io.cellery.observability.orbit</artifactId>
-        <version>0.2.0</version>
+        <version>0.2.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -29,7 +29,7 @@
     <artifactId>grpc</artifactId>
     <packaging>bundle</packaging>
     <name>Cellery Observability Components - Orbit - GRPC</name>
-    <version>0.2.0</version>
+    <version>0.2.1-SNAPSHOT</version>
     <description>This bundle represents io.grpc cellery orbit bundle</description>
 
     <dependencies>
