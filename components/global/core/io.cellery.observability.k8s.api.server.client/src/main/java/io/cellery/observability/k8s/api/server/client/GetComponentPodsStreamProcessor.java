@@ -18,11 +18,10 @@
 
 package io.cellery.observability.k8s.api.server.client;
 
-import io.kubernetes.client.ApiClient;
-import io.kubernetes.client.apis.CoreV1Api;
-import io.kubernetes.client.models.V1Pod;
-import io.kubernetes.client.models.V1PodList;
-import io.kubernetes.client.util.Config;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodList;
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
@@ -39,9 +38,11 @@ import org.wso2.siddhi.query.api.definition.AbstractDefinition;
 import org.wso2.siddhi.query.api.definition.Attribute;
 import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
 
-import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -61,9 +62,9 @@ import java.util.Map;
         }
 )
 public class GetComponentPodsStreamProcessor extends StreamProcessor {
-    private static final Logger logger = Logger.getLogger(GetComponentPodsStreamProcessor.class.getName());
 
-    private ApiClient k8sApiServerClient;
+    private static final Logger logger = Logger.getLogger(GetComponentPodsStreamProcessor.class.getName());
+    private KubernetesClient k8sApiServerClient;
 
     @Override
     protected List<Attribute> init(AbstractDefinition inputDefinition,
@@ -73,15 +74,6 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
         if (attributeLength != 0) {
             throw new SiddhiAppValidationException("k8sApiServerClient expects exactly zero input parameters, but " +
                     attributeExpressionExecutors.length + " attributes found");
-        }
-
-        // Initializing the K8s API Client
-        try {
-            k8sApiServerClient = Config.defaultClient();
-        } catch (IOException e) {
-            String message = "Failed to initialize Kubernetes API Client";
-            logger.error(message, e);
-            throw new SiddhiAppValidationException(message);
         }
 
         List<Attribute> appendedAttributes = new ArrayList<>();
@@ -94,13 +86,46 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
     }
 
     @Override
+    public void start() {
+        k8sApiServerClient = new DefaultKubernetesClient();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Created API server client");
+        }
+    }
+
+    @Override
+    public void stop() {
+        if (k8sApiServerClient != null) {
+            k8sApiServerClient.close();
+            if (logger.isDebugEnabled()) {
+                logger.debug("Closed API server client");
+            }
+        }
+    }
+
+    @Override
+    public Map<String, Object> currentState() {
+        // No State
+        return null;
+    }
+
+    @Override
+    public void restoreState(Map<String, Object> state) {
+        // Do Nothing
+    }
+
+    @Override
     protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
                            StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater) {
         ComplexEventChunk<StreamEvent> outputStreamEventChunk = new ComplexEventChunk<>(true);
         while (streamEventChunk.hasNext()) {
             StreamEvent incomingStreamEvent = streamEventChunk.next();
-            addComponentPods(outputStreamEventChunk, incomingStreamEvent, Constants.COMPONENT_NAME_LABEL);
-            addComponentPods(outputStreamEventChunk, incomingStreamEvent, Constants.GATEWAY_NAME_LABEL);
+            try {
+                addComponentPods(outputStreamEventChunk, incomingStreamEvent, Constants.COMPONENT_NAME_LABEL);
+                addComponentPods(outputStreamEventChunk, incomingStreamEvent, Constants.GATEWAY_NAME_LABEL);
+            } catch (ParseException e) {
+                logger.error("Failed to parse K8s timestamp", e);
+            }
         }
         if (outputStreamEventChunk.getFirst() != null) {
             nextProcessor.process(outputStreamEventChunk);
@@ -116,27 +141,37 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
      * @param componentNameLabel     The name of the label applied to store the component/gateway name
      */
     private void addComponentPods(ComplexEventChunk<StreamEvent> outputStreamEventChunk,
-                                  StreamEvent incomingStreamEvent, String componentNameLabel) {
+                                  StreamEvent incomingStreamEvent, String componentNameLabel) throws ParseException {
         // Calling the K8s API Servers to fetch component pods
-        V1PodList componentPodList = null;
+        PodList componentPodList = null;
         try {
-            CoreV1Api api = new CoreV1Api(k8sApiServerClient);
-            componentPodList = api.listNamespacedPod(Constants.NAMESPACE, null, null,
-                    Constants.RUNNING_STATUS_FIELD_SELECTOR, false,
-                    Constants.CELL_NAME_LABEL + "," + componentNameLabel, null, null, null, false);
+            componentPodList = k8sApiServerClient.pods()
+                    .inNamespace(Constants.NAMESPACE)
+                    .withLabel(Constants.CELL_NAME_LABEL)
+                    .withLabel(componentNameLabel)
+                    .withField(Constants.STATUS_FIELD, Constants.STATUS_FIELD_RUNNING_VALUE)
+                    .list();
         } catch (Throwable e) {
             logger.error("Failed to fetch current pods for components", e);
         }
 
         if (componentPodList != null) {
-            List<V1Pod> v1Pods = componentPodList.getItems();
-            for (V1Pod v1Pod : v1Pods) {
+            List<Pod> v1Pods = componentPodList.getItems();
+            for (Pod pod : v1Pods) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Added event - pod " + pod.getMetadata().getName() + " belonging to cell " +
+                            pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL) + " of type " +
+                            (Constants.COMPONENT_NAME_LABEL.equals(componentNameLabel) ? "component" : "gateway") +
+                            " to the event");
+                }
+
                 Object[] newData = new Object[5];
-                newData[0] = v1Pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL);
-                newData[1] = getComponentName(v1Pod.getMetadata().getLabels().get(componentNameLabel));
-                newData[2] = v1Pod.getMetadata().getName();
-                newData[3] = v1Pod.getMetadata().getCreationTimestamp().getMillis();
-                newData[4] = v1Pod.getSpec().getNodeName();
+                newData[0] = pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL);
+                newData[1] = getComponentName(pod.getMetadata().getLabels().get(componentNameLabel));
+                newData[2] = pod.getMetadata().getName();
+                newData[3] = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+                        .parse(pod.getMetadata().getCreationTimestamp()).getTime();
+                newData[4] = pod.getSpec().getNodeName();
 
                 StreamEvent streamEventCopy = streamEventCloner.copyStreamEvent(incomingStreamEvent);
                 complexEventPopulater.populateComplexEvent(streamEventCopy, newData);
@@ -157,26 +192,5 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
             componentName = fullyQualifiedName.split("--")[1];
         }
         return componentName;
-    }
-
-    @Override
-    public void start() {
-        // Do Nothing
-    }
-
-    @Override
-    public void stop() {
-        // Do Nothing
-    }
-
-    @Override
-    public Map<String, Object> currentState() {
-        // No State
-        return null;
-    }
-
-    @Override
-    public void restoreState(Map<String, Object> state) {
-        // Do Nothing
     }
 }

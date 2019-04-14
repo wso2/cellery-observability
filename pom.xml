@@ -131,9 +131,14 @@
                 <version>${synapse.core.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.kubernetes</groupId>
-                <artifactId>client-java</artifactId>
-                <version>${k8s.client-java.version}</version>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-model</artifactId>
+                <version>${fabric8.kubernetes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-client</artifactId>
+                <version>${fabric8.kubernetes.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
@@ -209,16 +214,6 @@
                 <groupId>io.opencensus</groupId>
                 <artifactId>opencensus-contrib-grpc-metrics</artifactId>
                 <version>${opencensus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.kubernetes</groupId>
-                <artifactId>client-java-api</artifactId>
-                <version>${kubernetes.client.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.kubernetes</groupId>
-                <artifactId>client-java-proto</artifactId>
-                <version>${kubernetes.client.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.squareup.okhttp</groupId>
@@ -542,7 +537,7 @@
         <zipkin.version>2.11.6</zipkin.version>
         <zipkin.reporter.version>2.5.0</zipkin.reporter.version>
         <thrift.version>0.10.0</thrift.version>
-        <kubernetes.client.version>3.0.0</kubernetes.client.version>
+        <fabric8.kubernetes.version>4.2.2</fabric8.kubernetes.version>
         <com.squareup.okhttp>2.7.5</com.squareup.okhttp>
         <adal4j.version>1.6.0</adal4j.version>
         <joda.time.version>2.9.3</joda.time.version>

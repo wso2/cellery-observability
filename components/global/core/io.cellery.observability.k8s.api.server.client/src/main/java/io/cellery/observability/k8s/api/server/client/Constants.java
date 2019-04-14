@@ -26,5 +26,9 @@ public class Constants {
     public static final String CELL_NAME_LABEL = "mesh.cellery.io/cell";
     public static final String COMPONENT_NAME_LABEL = "mesh.cellery.io/service";
     public static final String GATEWAY_NAME_LABEL = "mesh.cellery.io/gateway";
-    public static final String RUNNING_STATUS_FIELD_SELECTOR = "status.phase=Running";
+    public static final String STATUS_FIELD = "status.phase";
+    public static final String STATUS_FIELD_RUNNING_VALUE = "Running";
+
+    private Constants() {   // Prevent initialization
+    }
 }
