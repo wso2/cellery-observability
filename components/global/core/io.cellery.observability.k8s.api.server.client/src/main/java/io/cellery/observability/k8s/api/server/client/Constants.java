@@ -28,6 +28,7 @@ public class Constants {
     public static final String GATEWAY_NAME_LABEL = "mesh.cellery.io/gateway";
     public static final String STATUS_FIELD = "status.phase";
     public static final String STATUS_FIELD_RUNNING_VALUE = "Running";
+    public static final String K8S_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 
     private Constants() {   // Prevent initialization
     }

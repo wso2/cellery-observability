@@ -70,6 +70,7 @@ The Cellery Team is pleased to welcome all contributors willing to join with us 
 To get started with building Cellery Mesh Observability, the following are required.
 
 * Docker
+* Kubectl pointing to a K8s Cluster
 * JDK 1.8+
 * Node & NPM
 * Maven

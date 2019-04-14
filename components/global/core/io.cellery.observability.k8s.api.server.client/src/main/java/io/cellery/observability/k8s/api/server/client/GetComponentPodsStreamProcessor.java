@@ -169,7 +169,7 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
                 newData[0] = pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL);
                 newData[1] = getComponentName(pod.getMetadata().getLabels().get(componentNameLabel));
                 newData[2] = pod.getMetadata().getName();
-                newData[3] = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+                newData[3] = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
                         .parse(pod.getMetadata().getCreationTimestamp()).getTime();
                 newData[4] = pod.getSpec().getNodeName();
 
