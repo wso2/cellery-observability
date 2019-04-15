@@ -562,6 +562,7 @@
         <org.jacoco.version>0.8.3</org.jacoco.version>
 
         <spotify.docker.plugin.version>1.4.10</spotify.docker.plugin.version>
+        <maven.findbugsplugin.version>3.0.5</maven.findbugsplugin.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
