@@ -263,26 +263,6 @@
                 <version>${httpclient.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.mashape.unirest</groupId>
-                <artifactId>unirest-java</artifactId>
-                <version>${unirest.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpasyncclient</artifactId>
-                <version>${httpasyncclient.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpmime</artifactId>
-                <version>${httpmime.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.json</groupId>
-                <artifactId>json</artifactId>
-                <version>${json.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.oltu.oauth2</groupId>
                 <artifactId>org.apache.oltu.oauth2.client</artifactId>
                 <version>${oltu.oauth2.version}</version>
@@ -298,24 +278,9 @@
                 <version>${httpcore.version}</version>
             </dependency>
             <dependency>
-                <groupId>commons-logging</groupId>
-                <artifactId>commons-logging</artifactId>
-                <version>${logging.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpcore-nio</artifactId>
-                <version>${nio.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.wso2.carbon.config</groupId>
                 <artifactId>org.wso2.carbon.config</artifactId>
                 <version>${carbon.config.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.code.gson</groupId>
@@ -476,15 +441,11 @@
     <properties>
         <siddhi.version>4.1.38</siddhi.version>
         <httpclient.version>4.3.6</httpclient.version>
-        <unirest.version>1.4.9</unirest.version>
         <siddhi.io.http.version>1.0.41</siddhi.io.http.version>
         <siddhi.store.rdbms.version>4.0.52</siddhi.store.rdbms.version>
         <carbon.datasource.version>1.1.4</carbon.datasource.version>
         <msf4j.version>2.6.4</msf4j.version>
-        <httpasyncclient.version>4.0.2</httpasyncclient.version>
-        <httpmime.version>4.3.6</httpmime.version>
         <httpcore.version>4.4.11</httpcore.version>
-        <json.version>20140107</json.version>
         <oltu.oauth2.version>1.0.0</oltu.oauth2.version>
         <synapse.core.version>2.1.7-wso2v80</synapse.core.version>
         <k8s.client-java.version>3.0.0</k8s.client-java.version>
@@ -493,13 +454,11 @@
         <commons.io.version>2.6</commons.io.version>
         <carbon.config.version>2.1.5</carbon.config.version>
         <logging.version>1.2</logging.version>
-        <nio.version>4.4.3</nio.version>
         <protobuf.java.version>3.6.1</protobuf.java.version>
         <proto.google.common.proto>1.12.0</proto.google.common.proto>
         <grpc.protobuf.version>1.15.0</grpc.protobuf.version>
         <grpc.core>1.15.0</grpc.core>
         <grpc.netty>1.15.0</grpc.netty>
-        <jackson.version>2.9.8</jackson.version>
         <grpc.stub.version>1.15.0</grpc.stub.version>
         <open.tracing.version>0.31.0</open.tracing.version>
         <brave.open.tracing.version>0.29.0</brave.open.tracing.version>
