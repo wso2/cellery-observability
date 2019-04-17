@@ -33,11 +33,15 @@ build:
 
 
 .PHONY: docker
-docker: build
-	mvn install -f docker/pom.xml -Ddocker.repo.name=${DOCKER_REPO} -Ddocker.image.tag=${DOCKER_IMAGE_TAG}
+docker: 
+	[ -d "docker/portal/target" ] || mvn initialize -f docker/pom.xml
+	cd docker/portal; \
+	docker build -t $(DOCKER_REPO)/observability-portal:$(DOCKER_IMAGE_TAG) .
+	cd docker/sp; \
+	docker build -t ${DOCKER_REPO}/sp-worker:${DOCKER_IMAGE_TAG} .
 
 
 .PHONY: docker-push
-docker-push:
-	docker push ${DOCKER_REPO}/sp-worker:${DOCKER_IMAGE_TAG}
-	docker push ${DOCKER_REPO}/observability-portal:${DOCKER_IMAGE_TAG}
+docker-push: docker
+	docker push $(DOCKER_REPO)/sp-worker:$(DOCKER_IMAGE_TAG)
+	docker push $(DOCKER_REPO)/observability-portal:$(DOCKER_IMAGE_TAG)
