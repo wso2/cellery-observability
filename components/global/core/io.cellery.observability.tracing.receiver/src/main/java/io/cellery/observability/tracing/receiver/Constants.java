@@ -34,17 +34,15 @@ public class Constants {
     public static final String DEFAULT_TRACING_RECEIVER_API_CONTEXT = "/api/v1/spans";
 
     // Zipkin fields
-    public static final String TRACE_ID = "traceId";
-    public static final String SPAN_ID = "id";
-    public static final String PARENT_ID = "parentId";
-    public static final String NAME = "name";
-    public static final String SERVICE_NAME = "serviceName";
-    public static final String KIND = "kind";
-    public static final String TIMESTAMP = "timestamp";
-    public static final String DURATION = "duration";
-    public static final String TAGS = "tags";
-
-    public static final String SPAN_KIND_TAG_KEY = "span.kind";
+    public static final String ATTRIBUTE_TRACE_ID = "traceId";
+    public static final String ATTRIBUTE_SPAN_ID = "id";
+    public static final String ATTRIBUTE_PARENT_ID = "parentId";
+    public static final String ATTRIBUTE_NAME = "name";
+    public static final String ATTRIBUTE_SERVICE_NAME = "serviceName";
+    public static final String ATTRIBUTE_KIND = "kind";
+    public static final String ATTRIBUTE_TIMESTAMP = "timestamp";
+    public static final String ATTRIBUTE_DURATION = "duration";
+    public static final String ATTRIBUTE_TAGS = "tags";
 
     // Span kinds
     public static final String CLIENT_SPAN_KIND = "CLIENT";

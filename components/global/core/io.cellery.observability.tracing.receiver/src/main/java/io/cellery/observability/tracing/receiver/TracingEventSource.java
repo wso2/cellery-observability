@@ -173,6 +173,7 @@ public class TracingEventSource extends Source {
      */
     public static class HttpServerListener implements HttpHandler {
 
+        private static final Logger logger = Logger.getLogger(HttpServerListener.class.getName());
         private SourceEventListener sourceEventListener;
 
         HttpServerListener(SourceEventListener sourceEventListener) {
@@ -226,19 +227,19 @@ public class TracingEventSource extends Source {
                 for (ZipkinSpan span : spans) {
                     Map<String, Object> attributes = new HashMap<>();
 
-                    attributes.put(Constants.TRACE_ID, span.getTraceId());
-                    attributes.put(Constants.SPAN_ID, span.getId());
-                    attributes.put(Constants.PARENT_ID, span.getParentId());
-                    attributes.put(Constants.NAME, span.getName());
-                    attributes.put(Constants.SERVICE_NAME, span.getServiceName());
-                    attributes.put(Constants.KIND, span.getKind());
-                    attributes.put(Constants.TIMESTAMP, span.getTimestamp() / 1000);
-                    attributes.put(Constants.DURATION, span.getDuration() / 1000);
-                    attributes.put(Constants.TAGS, gson.toJson(span.getTags()));
+                    attributes.put(Constants.ATTRIBUTE_TRACE_ID, span.getTraceId());
+                    attributes.put(Constants.ATTRIBUTE_SPAN_ID, span.getId());
+                    attributes.put(Constants.ATTRIBUTE_PARENT_ID, span.getParentId());
+                    attributes.put(Constants.ATTRIBUTE_NAME, span.getName());
+                    attributes.put(Constants.ATTRIBUTE_SERVICE_NAME, span.getServiceName());
+                    attributes.put(Constants.ATTRIBUTE_KIND, span.getKind());
+                    attributes.put(Constants.ATTRIBUTE_TIMESTAMP, span.getTimestamp() / 1000);
+                    attributes.put(Constants.ATTRIBUTE_DURATION, span.getDuration() / 1000);
+                    attributes.put(Constants.ATTRIBUTE_TAGS, gson.toJson(span.getTags()));
 
                     sourceEventListener.onEvent(attributes, new String[0]);
                     if (logger.isDebugEnabled()) {
-                        logger.debug("Sent span " + span.getTraceId() + "-" + span.getId()
+                        logger.debug("Emitted event - span " + span.getTraceId() + "-" + span.getId()
                                 + " to event source listener");
                     }
                 }

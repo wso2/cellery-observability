@@ -77,11 +77,10 @@ public class TracingEventSourceTestCase {
                 "@map(type=\"keyvalue\", fail.on.missing.attribute=\"false\"))\n" +
                 "define stream zipkinStream (traceId string, id string, parentId string, name string, " +
                 "serviceName string, kind string, timestamp long, duration long, tags string);";
-        String query = ("@info(name = \"query\")\n"
-                + "from zipkinStream\n"
-                + "select *\n"
-                + "insert into outputStream;"
-        );
+        String query = "@info(name = \"query\")\n" +
+                "from zipkinStream\n" +
+                "select *\n" +
+                "insert into outputStream;";
         SiddhiManager siddhiManager = new SiddhiManager();
         siddhiManager.setExtension("keyvalue", KeyValueSourceMapper.class);
         siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition + "\n" + query);
