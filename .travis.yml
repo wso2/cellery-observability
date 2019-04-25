@@ -26,7 +26,7 @@ before_install:
   - sudo minikube start --vm-driver=none --kubernetes-version=v1.11.9
   - minikube update-context
 script:
-  - mvn clean install
+  - mvn clean install -P kubernetes-tests
   - make docker
 after_success:
   - bash <(curl -s https://codecov.io/bash)
