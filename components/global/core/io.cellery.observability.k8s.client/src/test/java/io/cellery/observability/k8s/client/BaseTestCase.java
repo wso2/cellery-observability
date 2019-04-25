@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.api.server.client;
+package io.cellery.observability.k8s.client;
 
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Base Test Case for K8s API server clients.
+ * Base Test Case for K8s Clients.
  */
 public class BaseTestCase {
     private static final Logger logger = Logger.getLogger(BaseTestCase.class.getName());
@@ -38,17 +38,17 @@ public class BaseTestCase {
     protected static final int WAIT_TIME = 50;
     protected static final int TIMEOUT = 5000;
 
-    protected KubernetesClient k8sApiServerClient;
+    protected KubernetesClient k8sClient;
 
     @BeforeClass
     public void initBaseTestCase() {
-        k8sApiServerClient = new DefaultKubernetesClient();
-        k8sApiServerClient.namespaces().list();     // To validate if the access to the K8s cluster is accurate
+        k8sClient = new DefaultKubernetesClient();
+        k8sClient.namespaces().list();     // To validate if the access to the K8s cluster is accurate
     }
 
     @AfterClass
     public void cleanupTestCase() {
-        k8sApiServerClient.close();
+        k8sClient.close();
     }
 
     /**
@@ -109,7 +109,7 @@ public class BaseTestCase {
      * @param podName The name of the pod to be deleted
      */
     protected void deletePod(String podName) {
-        k8sApiServerClient.pods()
+        k8sClient.pods()
                 .inNamespace(Constants.NAMESPACE)
                 .withName(podName)
                 .delete();
@@ -125,7 +125,7 @@ public class BaseTestCase {
      */
     private void createPod(String podName, Map<String, String> labels, String container) {
         labels.put(TEST_LABEL, "true");
-        k8sApiServerClient.pods()
+        k8sClient.pods()
                 .createNew()
                 .withNewMetadata()
                 .withNamespace(Constants.NAMESPACE)
@@ -153,7 +153,7 @@ public class BaseTestCase {
             logger.debug("Waiting for pod " + podName + " to startup");
         }
         while (true) {
-            Pod createdPod = k8sApiServerClient.pods()
+            Pod createdPod = k8sClient.pods()
                     .inNamespace(Constants.NAMESPACE)
                     .withName(podName)
                     .get();
@@ -180,7 +180,7 @@ public class BaseTestCase {
             logger.debug("Waiting for pod " + podName + " to be removed");
         }
         while (true) {
-            Pod pod = k8sApiServerClient.pods()
+            Pod pod = k8sClient.pods()
                     .inNamespace(Constants.NAMESPACE)
                     .withName(podName)
                     .get();

@@ -16,10 +16,10 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.api.server.client;
+package io.cellery.observability.k8s.client;
 
 /**
- * This contains the constants for the K8S API Server Client Extensions
+ * This contains the constants for the K8S Client Extensions
  */
 public class Constants {
     public static final String NAMESPACE = "default";

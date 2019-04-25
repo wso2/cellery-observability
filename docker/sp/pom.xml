@@ -143,7 +143,7 @@
         </dependency>
         <dependency>
             <groupId>io.cellery.observability</groupId>
-            <artifactId>io.cellery.observability.k8s.api.server.client</artifactId>
+            <artifactId>io.cellery.observability.k8s.client</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.oltu.oauth2</groupId>
@@ -195,7 +195,8 @@
                                 grpc-protobuf, grpc-protobuf-lite, grpc-stub, opencensus-api,
                                 opencensus-contrib-grpc-metrics, proto-google-common-protos,
                                 okhttp-ws, okhttp, adal4j, logging-interceptor, org.apache.oltu.oauth2.client,
-                                org.apache.oltu.oauth2.common,httpclient, httpcore, jackson-databind, gson
+                                org.apache.oltu.oauth2.common,httpclient, httpcore, jackson-databind, gson,
+                                kubernetes-model, kubernetes-client
                             </excludeArtifactIds>
                             <excludeTransitive>true</excludeTransitive>
                         </configuration>
@@ -214,7 +215,7 @@
                                 io.cellery.observability.telemetry.receiver, commons-io, gogoproto-java, grpc,
                                 io.cellery.observability.tracing.receiver, protobuf, io.cellery.observability.api,
                                 io.cellery.observability.model.generator, siddhi-io-http, siddhi-store-rdbms,
-                                io.cellery.observability.k8s.api.server.client, joda-time, zipkin, client-java,
+                                io.cellery.observability.k8s.client, joda-time, zipkin, client-java,
                                 client-java-api, guava, commons-codec, commons-compress, commons-lang3,
                                 client-java-proto, bcpkix-jdk15on, bcprov-ext-jdk15on
                             </excludeArtifactIds>

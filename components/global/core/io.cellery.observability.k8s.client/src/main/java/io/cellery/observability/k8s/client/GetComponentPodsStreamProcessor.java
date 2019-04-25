@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.api.server.client;
+package io.cellery.observability.k8s.client;
 
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodList;
@@ -50,13 +50,13 @@ import java.util.Map;
  */
 @Extension(
         name = "getComponentPods",
-        namespace = "k8sApiServerClient",
+        namespace = "k8sClient",
         description = "This is a client which calls the Kubernetes API server based on the received parameters and " +
                 "adds the pod details received. This read the Service Account Token loaded into the pod and calls " +
                 "the API Server using that.",
         examples = {
                 @Example(
-                        syntax = "k8sApiServerClient:getComponentPods()",
+                        syntax = "k8sClient:getComponentPods()",
                         description = "This will fetch the currently running pods from the K8s API Servers"
                 )
         }
@@ -64,7 +64,7 @@ import java.util.Map;
 public class GetComponentPodsStreamProcessor extends StreamProcessor {
 
     private static final Logger logger = Logger.getLogger(GetComponentPodsStreamProcessor.class.getName());
-    private KubernetesClient k8sApiServerClient;
+    private KubernetesClient k8sClient;
 
     @Override
     protected List<Attribute> init(AbstractDefinition inputDefinition,
@@ -72,7 +72,7 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
                                    SiddhiAppContext siddhiAppContext) {
         int attributeLength = attributeExpressionExecutors.length;
         if (attributeLength != 0) {
-            throw new SiddhiAppValidationException("k8sApiServerClient expects exactly zero input parameters, but " +
+            throw new SiddhiAppValidationException("k8sClient expects exactly zero input parameters, but " +
                     attributeExpressionExecutors.length + " attributes found");
         }
 
@@ -87,7 +87,7 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
 
     @Override
     public void start() {
-        k8sApiServerClient = new DefaultKubernetesClient();
+        k8sClient = new DefaultKubernetesClient();
         if (logger.isDebugEnabled()) {
             logger.debug("Created API server client");
         }
@@ -95,8 +95,8 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
 
     @Override
     public void stop() {
-        if (k8sApiServerClient != null) {
-            k8sApiServerClient.close();
+        if (k8sClient != null) {
+            k8sClient.close();
             if (logger.isDebugEnabled()) {
                 logger.debug("Closed API server client");
             }
@@ -145,7 +145,7 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
         // Calling the K8s API Servers to fetch component pods
         PodList componentPodList = null;
         try {
-            componentPodList = k8sApiServerClient.pods()
+            componentPodList = k8sClient.pods()
                     .inNamespace(Constants.NAMESPACE)
                     .withLabel(Constants.CELL_NAME_LABEL)
                     .withLabel(componentNameLabel)

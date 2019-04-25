@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.api.server.client;
+package io.cellery.observability.k8s.client;
 
 import io.fabric8.kubernetes.api.model.Node;
 import org.apache.log4j.Logger;
@@ -55,7 +55,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
 
     @BeforeClass
     public void initTestCase() {
-        nodeValues = k8sApiServerClient.nodes()
+        nodeValues = k8sClient.nodes()
                 .list()
                 .getItems()
                 .stream()
@@ -75,7 +75,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
         if (logger.isDebugEnabled()) {
             logger.debug("Removing all created test pods");
         }
-        k8sApiServerClient.pods()
+        k8sClient.pods()
                 .withLabel(TEST_LABEL)
                 .delete();
     }
@@ -284,7 +284,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
         String inStreamDefinition = "@App:name(\"test-siddhi-app\")\n" +
                 "define stream " + INPUT_STREAM + " (inputValue string);";
         String query = "@info(name = \"query\")\n" +
-                "from inputStream#k8sApiServerClient:getComponentPods()\n" +
+                "from inputStream#k8sClient:getComponentPods()\n" +
                 "select *\n" +
                 "insert into outputStream;";
         SiddhiManager siddhiManager = new SiddhiManager();
