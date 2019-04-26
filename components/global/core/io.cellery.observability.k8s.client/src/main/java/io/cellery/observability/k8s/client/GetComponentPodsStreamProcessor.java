@@ -156,8 +156,7 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
         }
 
         if (componentPodList != null) {
-            List<Pod> v1Pods = componentPodList.getItems();
-            for (Pod pod : v1Pods) {
+            for (Pod pod : componentPodList.getItems()) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Added event - pod " + pod.getMetadata().getName() + " belonging to cell " +
                             pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL) + " of type " +

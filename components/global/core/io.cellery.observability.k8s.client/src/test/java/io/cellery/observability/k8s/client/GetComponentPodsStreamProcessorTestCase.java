@@ -83,9 +83,9 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     @Test
     public void testGetPods() throws InterruptedException {
         initializeSiddhiAppRuntime();
-        createCelleryComponent("pet-be", "test-a");
-        createCelleryComponent("pet-be", "test-b");
-        createCelleryComponent("pet-fe", "test-a");
+        createCelleryComponentPod("pet-be", "test-a");
+        createCelleryComponentPod("pet-be", "test-b");
+        createCelleryComponentPod("pet-fe", "test-a");
         createCelleryGatewayPod("pet-fe");
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
@@ -113,8 +113,8 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     @Test
     public void testGetPodsWithOnlyComponents() throws InterruptedException {
         initializeSiddhiAppRuntime();
-        createCelleryComponent("pet-be", "test-a");
-        createCelleryComponent("pet-be", "test-b");
+        createCelleryComponentPod("pet-be", "test-a");
+        createCelleryComponentPod("pet-be", "test-b");
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-02"});
@@ -161,8 +161,8 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     @Test
     public void testGetPodsWithRunningNonCelleryPods() throws InterruptedException {
         initializeSiddhiAppRuntime();
-        createCelleryComponent("pet-be", "test-a");
-        createCelleryComponent("pet-fe", "test-b");
+        createCelleryComponentPod("pet-be", "test-a");
+        createCelleryComponentPod("pet-fe", "test-b");
         createNormalPod("normal-test-pod-a");
         createNormalPod("normal-test-pod-b");
 
@@ -187,11 +187,11 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     @Test
     public void testGetPodsWithFailingPods() throws InterruptedException {
         initializeSiddhiAppRuntime();
-        createCelleryComponent("pet-be-inst", "test-e");
-        createCelleryComponent("pet-fe-inst", "test-f");
+        createCelleryComponentPod("pet-be-inst", "test-e");
+        createCelleryComponentPod("pet-fe-inst", "test-f");
         createNormalPod("normal-test-pod-a");
-        createFailingContainer("failing-test-pod-b");
-        createFailingContainer("failing-test-pod-e");
+        createFailingPod("failing-test-pod-b");
+        createFailingPod("failing-test-pod-e");
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-05"});
@@ -216,8 +216,8 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
         initializeSiddhiAppRuntime();
         createNormalPod("normal-test-pod-w");
         createNormalPod("normal-test-pod-x");
-        createFailingContainer("failing-test-pod-p");
-        createFailingContainer("failing-test-pod-q");
+        createFailingPod("failing-test-pod-p");
+        createFailingPod("failing-test-pod-q");
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-06"});
@@ -240,8 +240,8 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
         System.setProperty("kubernetes.master", "localhost");
         initializeSiddhiAppRuntime();
 
-        createCelleryComponent("pet-be-inst", "test-e");
-        createCelleryComponent("pet-fe-inst", "test-f");
+        createCelleryComponentPod("pet-be-inst", "test-e");
+        createCelleryComponentPod("pet-fe-inst", "test-f");
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-08"});
@@ -254,7 +254,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     @Test
     public void testPersistence() throws InterruptedException, CannotRestoreSiddhiAppStateException {
         initializeSiddhiAppRuntime();
-        createCelleryComponent("pet-be", "test-a");
+        createCelleryComponentPod("pet-be", "test-a");
         siddhiAppRuntime.persist();
         siddhiAppRuntime.restoreLastRevision();
         createCelleryGatewayPod("pet-fe");

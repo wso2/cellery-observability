@@ -57,7 +57,7 @@ public class BaseTestCase {
      * @param cell      The Cell the Pod belongs to
      * @param component The component of the Cell the pod belongs to
      */
-    protected void createCelleryComponent(String cell, String component) {
+    protected void createCelleryComponentPod(String cell, String component) {
         String podName = cell + "--" + component;
 
         Map<String, String> labels = new HashMap<>();
@@ -99,7 +99,7 @@ public class BaseTestCase {
      *
      * @param podName The name of the pod to create
      */
-    protected void createFailingContainer(String podName) {
+    protected void createFailingPod(String podName) {
         createPod(podName, new HashMap<>(), "non-existent-container");
     }
 
