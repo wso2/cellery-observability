@@ -22,6 +22,7 @@ package io.cellery.observability.k8s.client;
  * This contains the constants for the K8S Client Extensions
  */
 public class Constants {
+
     public static final String NAMESPACE = "default";
     public static final String CELL_NAME_LABEL = "mesh.cellery.io/cell";
     public static final String COMPONENT_NAME_LABEL = "mesh.cellery.io/service";
