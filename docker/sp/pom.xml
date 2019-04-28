@@ -90,27 +90,11 @@
             <artifactId>siddhi-store-rdbms</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.kubernetes</groupId>
-            <artifactId>client-java</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.kubernetes</groupId>
-            <artifactId>client-java-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.kubernetes</groupId>
-            <artifactId>client-java-proto</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.okhttp</groupId>
-            <artifactId>okhttp-ws</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.okhttp</groupId>
+            <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.squareup.okhttp</groupId>
+            <groupId>com.squareup.okhttp3</groupId>
             <artifactId>logging-interceptor</artifactId>
         </dependency>
         <dependency>
@@ -155,7 +139,7 @@
         </dependency>
         <dependency>
             <groupId>io.cellery.observability</groupId>
-            <artifactId>io.cellery.observability.k8s.api.server.client</artifactId>
+            <artifactId>io.cellery.observability.k8s.client</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.oltu.oauth2</groupId>
@@ -176,6 +160,14 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-model</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-client</artifactId>
         </dependency>
     </dependencies>
 
@@ -199,7 +191,8 @@
                                 grpc-protobuf, grpc-protobuf-lite, grpc-stub, opencensus-api,
                                 opencensus-contrib-grpc-metrics, proto-google-common-protos,
                                 okhttp-ws, okhttp, adal4j, logging-interceptor, org.apache.oltu.oauth2.client,
-                                org.apache.oltu.oauth2.common,httpclient, httpcore, jackson-databind, gson
+                                org.apache.oltu.oauth2.common,httpclient, httpcore, jackson-databind, gson,
+                                kubernetes-model, kubernetes-client
                             </excludeArtifactIds>
                             <excludeTransitive>true</excludeTransitive>
                         </configuration>
@@ -218,7 +211,7 @@
                                 io.cellery.observability.telemetry.receiver, commons-io, gogoproto-java, grpc,
                                 io.cellery.observability.tracing.receiver, protobuf, io.cellery.observability.api,
                                 io.cellery.observability.model.generator, siddhi-io-http, siddhi-store-rdbms,
-                                io.cellery.observability.k8s.api.server.client, joda-time, zipkin, client-java,
+                                io.cellery.observability.k8s.client, joda-time, zipkin, client-java,
                                 client-java-api, guava, commons-codec, commons-compress, commons-lang3,
                                 client-java-proto, bcpkix-jdk15on, bcprov-ext-jdk15on
                             </excludeArtifactIds>

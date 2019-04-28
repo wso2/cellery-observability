@@ -29,11 +29,16 @@ clean:
 
 .PHONY: build
 build:
-	mvn install -f components/pom.xml
+	mvn install -f components/pom.xml -Dmaven.test.skip=true
+
+
+.PHONY: test
+test:
+	mvn test -f components/pom.xml
 
 
 .PHONY: docker
-docker: 
+docker:
 	[ -d "docker/portal/target" ] || mvn initialize -f docker/pom.xml
 	cd docker/portal; \
 	docker build -t $(DOCKER_REPO)/observability-portal:$(DOCKER_IMAGE_TAG) .

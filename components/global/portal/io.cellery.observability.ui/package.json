@@ -1,6 +1,6 @@
 {
   "name": "@cellery-io/observability-portal",
-  "version": "0.1.1-SNAPSHOT",
+  "version": "0.2.1-SNAPSHOT",
   "description": "Cellery Observability Portal",
   "author": "WSO2 Cellery Maintainers",
   "license": "Apache-2.0",

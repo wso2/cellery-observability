@@ -9,7 +9,7 @@ define trigger K8sScrapeTrigger at every 10 min;
 define table K8sPodInfoTable (cell string, component string, name string, creationTimestamp long,
                               lastKnownAliveTimestamp long, nodeName string);
 
-from K8sScrapeTrigger#k8sApiServerClient:getComponentPods()
+from K8sScrapeTrigger#k8sClient:getComponentPods()
 select cell, component, name, creationTimestamp, triggered_time as lastKnownAliveTimestamp, nodeName
 update or insert into K8sPodInfoTable
     set K8sPodInfoTable.lastKnownAliveTimestamp = lastKnownAliveTimestamp
