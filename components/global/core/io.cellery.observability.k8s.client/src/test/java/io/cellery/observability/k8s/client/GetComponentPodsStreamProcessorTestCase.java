@@ -28,6 +28,7 @@ import org.testng.annotations.Test;
 import org.wso2.siddhi.core.SiddhiAppRuntime;
 import org.wso2.siddhi.core.SiddhiManager;
 import org.wso2.siddhi.core.event.Event;
+import org.wso2.siddhi.core.exception.SiddhiAppCreationException;
 import org.wso2.siddhi.core.query.output.callback.QueryCallback;
 import org.wso2.siddhi.core.stream.input.InputHandler;
 import org.wso2.siddhi.core.util.EventPrinter;
@@ -43,8 +44,8 @@ import java.util.stream.Collectors;
  * Test Cases for Get Component Pods Stream Processor.
  */
 public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
-    private static final Logger logger = Logger.getLogger(GetComponentPodsStreamProcessorTestCase.class.getName());
 
+    private static final Logger logger = Logger.getLogger(GetComponentPodsStreamProcessorTestCase.class.getName());
     private static final String INPUT_STREAM = "inputStream";
 
     private AtomicInteger eventCount = new AtomicInteger(0);
@@ -77,9 +78,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
         if (logger.isDebugEnabled()) {
             logger.debug("Removing all created test pods");
         }
-        k8sClient.pods()
-                .withLabel(TEST_LABEL)
-                .delete();
+        cleanUpTestPods();
     }
 
     @Test
@@ -192,8 +191,9 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
         createCelleryComponentPod("pet-be-inst", "test-e");
         createCelleryComponentPod("pet-fe-inst", "test-f");
         createNormalPod("normal-test-pod-a");
-        createFailingPod("failing-test-pod-b");
-        createFailingPod("failing-test-pod-e");
+        createFailingCelleryComponentPod("test-cell", "failing-component-a");
+        createFailingCelleryGatewayPod("test-cell");
+        createFailingNormalPod("failing-test-pod-e");
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-05"});
@@ -218,8 +218,9 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
         initializeSiddhiAppRuntime();
         createNormalPod("normal-test-pod-w");
         createNormalPod("normal-test-pod-x");
-        createFailingPod("failing-test-pod-p");
-        createFailingPod("failing-test-pod-q");
+        createFailingCelleryComponentPod("test-cell", "failing-component-b");
+        createFailingCelleryGatewayPod("test-cell");
+        createFailingNormalPod("failing-test-pod-f");
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-06"});
@@ -282,6 +283,19 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
                 Assert.fail("Received unexpect pod " + data[3]);
             }
         }
+    }
+
+    @Test(expectedExceptions = SiddhiAppCreationException.class)
+    public void testInvalidParams() {
+        String inStreamDefinition = "@App:name(\"test-siddhi-app\")\n" +
+                "define stream " + INPUT_STREAM + " (inputValue string);";
+        String query = "@info(name = \"query\")\n" +
+                "from inputStream#k8sClient:getComponentPods(\"unexpected-value\")\n" +
+                "select *\n" +
+                "insert into outputStream;";
+        SiddhiManager siddhiManager = new SiddhiManager();
+        siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition + "\n" + query);
+        siddhiAppRuntime.start();
     }
 
     /**

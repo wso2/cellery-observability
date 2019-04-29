@@ -26,12 +26,15 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Base Test Case for K8s Clients.
  */
 public class BaseTestCase {
+
     private static final Logger logger = Logger.getLogger(BaseTestCase.class.getName());
 
     protected static final String TEST_LABEL = "mesh-observability-test";
@@ -56,6 +59,7 @@ public class BaseTestCase {
 
     @AfterClass
     public void cleanupTestCase() {
+        cleanUpTestPods();
         k8sClient.close();
         k8sServer.after();
     }
@@ -71,7 +75,7 @@ public class BaseTestCase {
 
         Map<String, String> labels = new HashMap<>();
         labels.put(Constants.CELL_NAME_LABEL, cell);
-        labels.put(Constants.COMPONENT_NAME_LABEL, podName);
+        labels.put(Constants.COMPONENT_NAME_LABEL, cell + "--" + component);
 
         createPod(podName, labels, "busybox");
         checkPodCreation(podName);
@@ -87,7 +91,7 @@ public class BaseTestCase {
 
         Map<String, String> labels = new HashMap<>();
         labels.put(Constants.CELL_NAME_LABEL, cell);
-        labels.put(Constants.GATEWAY_NAME_LABEL, podName);
+        labels.put(Constants.GATEWAY_NAME_LABEL, cell + "--gateway");
 
         createPod(podName, labels, "busybox");
         checkPodCreation(podName);
@@ -104,11 +108,42 @@ public class BaseTestCase {
     }
 
     /**
+     * Create a cellery component pod that would fail.
+     *
+     * @param cell      The Cell the Pod belongs to
+     * @param component The component of the Cell the pod belongs to
+     */
+    protected void createFailingCelleryComponentPod(String cell, String component) {
+        String podName = cell + "--" + component;
+
+        Map<String, String> labels = new HashMap<>();
+        labels.put(Constants.CELL_NAME_LABEL, cell);
+        labels.put(Constants.COMPONENT_NAME_LABEL, cell + "--" + component);
+
+        createPod(podName, labels, "non-existent-container");
+    }
+
+    /**
+     * Create a cellery gateway pod that would fail.
+     *
+     * @param cell      The Cell the Pod belongs to
+     */
+    protected void createFailingCelleryGatewayPod(String cell) {
+        String podName = cell + "--gateway";
+
+        Map<String, String> labels = new HashMap<>();
+        labels.put(Constants.CELL_NAME_LABEL, cell);
+        labels.put(Constants.GATEWAY_NAME_LABEL, cell + "--gateway");
+
+        createPod(podName, labels, "non-existent-container");
+    }
+
+    /**
      * Create a pod that would fail.
      *
      * @param podName The name of the pod to create
      */
-    protected void createFailingPod(String podName) {
+    protected void createFailingNormalPod(String podName) {
         createPod(podName, new HashMap<>(), "non-existent-container");
     }
 
@@ -123,6 +158,25 @@ public class BaseTestCase {
                 .withName(podName)
                 .delete();
         waitForPodRemove(podName);
+    }
+
+    /**
+     * Removes all the test pods created.
+     */
+    protected void cleanUpTestPods() {
+        List<String> podNames = k8sClient.pods()
+                .withLabel(TEST_LABEL)
+                .list()
+                .getItems()
+                .stream()
+                .map((pod) -> pod.getMetadata().getName())
+                .collect(Collectors.toList());
+        k8sClient.pods()
+                .withLabel(TEST_LABEL)
+                .delete();
+        for (String podName : podNames) {
+            waitForPodRemove(podName);
+        }
     }
 
     /**
