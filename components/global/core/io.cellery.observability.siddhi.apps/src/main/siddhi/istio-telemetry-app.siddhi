@@ -77,6 +77,10 @@ define stream TelemetryStream(sourceUID string, sourceIP string, sourceLabels st
                               checkErrorCode long, checkErrorMessage string, checkCacheHit bool,
                               quotaCacheHit bool, contextReporterLocal bool);
 
+@source(type="inMemory", topic="k8s-component-pods", @map(type="passThrough"))
+define stream K8sComponentPodsInMemorySink(cell string, component string, name string, creationTimestamp long,
+                                           lastKnownAliveTimestamp long, nodeName string, status string, action string);
+
 @sink(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
 define stream TelemetryInMemorySink(sourceNamespace string, sourceCell string, sourceComponent string,
                                     sourcePod string, destinationNamespace string, destinationCell string,
@@ -85,22 +89,30 @@ define stream TelemetryInMemorySink(sourceNamespace string, sourceCell string, s
                                     requestSizeBytes long, responseCode long, responseDurationNanoSec int,
                                     responseSizeBytes long);
 
+define window K8sComponentPodInfoWindow(podName string, cell string, component string) unique:time(podName, 11 minutes);
+
 define function extractFromUID[javascript] return string {
     var uid = data[0];
-    var index = data[1];    // 1: pod, 2: cell, 3: component, 4: namespace
+    var index = data[1];    // 1: pod, 2: namespace
 
-    var matches = /^(([a-z0-9-]+)--([a-z0-9-]+)-deployment-[a-z0-9]+-[a-z0-9]+)\.([a-z0-9-]+)$/.exec(uid);
+    var matches = /^([a-z0-9-.]+)\.([a-z0-9-]+)$/.exec(uid);
 
     var extractedData = "";
     if (matches) {
         extractedData = matches[index];
     } else if (uid === "Synapse-PT-HttpComponents-NIO") {
-        if (index === 3) {
+        if (index === 1) {
             extractedData = "global-gateway";
+        } else if (index === 2) {
+            extractedData = "cellery-system";
         }
     }
     return extractedData;
 };
+
+from K8sComponentPodsInMemorySink
+select name as podName, cell, component
+insert into K8sComponentPodInfoWindow;
 
 from TelemetryStream[(not sourceUID is null) and (not destinationUID is null)]
 select
@@ -110,10 +122,10 @@ select
     ifThenElse(requestHeaders is null, map:create(), map:createFromJSON(requestHeaders)) as requestHeadersMap,
     requestPath,
     requestMethod,
-    requestTotalSize,
+    requestTotalSize as requestSizeBytes,
     responseCode,
     responseDurationNanoSec,
-    responseTotalSize
+    responseTotalSize as responseSizeBytes
 insert into PreprocessedTelemetryStream;
 
 -- Storing the required attributes in a in memory sink (To be accessed from other siddhi apps)
@@ -122,20 +134,82 @@ insert into PreprocessedTelemetryStream;
 
 from PreprocessedTelemetryStream
 select
-    extractFromUID(sourceUID, 4) as sourceNamespace,
-    extractFromUID(sourceUID, 2) as sourceCell,
-    extractFromUID(sourceUID, 3) as sourceComponent,
+    extractFromUID(sourceUID, 2) as sourceNamespace,
     extractFromUID(sourceUID, 1) as sourcePod,
-    extractFromUID(destinationUID, 4) as destinationNamespace,
-    extractFromUID(destinationUID, 2) as destinationCell,
-    extractFromUID(destinationUID, 3) as destinationComponent,
+    extractFromUID(destinationUID, 2) as destinationNamespace,
     extractFromUID(destinationUID, 1) as destinationPod,
     contextReporterKind,
     requestHeadersMap,
     requestPath,
     requestMethod,
-    requestTotalSize as requestSizeBytes,
+    requestSizeBytes,
     responseCode,
     responseDurationNanoSec,
-    responseTotalSize as responseSizeBytes
+    responseSizeBytes
+insert into ProcessedTelemetryStream;
+
+-- Handling the special case of the global gateway
+
+from ProcessedTelemetryStream[sourcePod == "global-gateway"]
+select
+    sourceNamespace,
+    "" as sourceCell,
+    sourcePod as sourceComponent,
+    "" as sourcePod,
+    destinationNamespace,
+    "" as destinationCell,
+    sourcePod as destinationComponent,
+    "" as destinationPod,
+    contextReporterKind,
+    requestHeadersMap,
+    requestPath,
+    requestMethod,
+    requestSizeBytes,
+    responseCode,
+    responseDurationNanoSec,
+    responseSizeBytes
+insert into TelemetryInMemorySink;
+
+-- This is required since the filter processor is not a findable processor and therefore cannot be joined
+from ProcessedTelemetryStream[sourcePod != "global-gateway"]
+insert into NonGlobalGatewayProcessedTelemetryStream;
+
+from NonGlobalGatewayProcessedTelemetryStream as T inner join K8sComponentPodInfoWindow as K
+    on T.sourcePod == K.podName
+select
+    sourceNamespace,
+    K.cell as sourceCell,
+    K.component as sourceComponent,
+    sourcePod,
+    destinationNamespace,
+    destinationPod,
+    contextReporterKind,
+    requestHeadersMap,
+    requestPath,
+    requestMethod,
+    requestSizeBytes,
+    responseCode,
+    responseDurationNanoSec,
+    responseSizeBytes
+insert into SourceCellExtractedTelemetryStream;
+
+from SourceCellExtractedTelemetryStream as T inner join K8sComponentPodInfoWindow as K
+    on T.destinationPod == K.podName
+select
+    sourceNamespace,
+    sourceCell,
+    sourceComponent,
+    sourcePod,
+    destinationNamespace,
+    K.cell as destinationCell,
+    K.component as destinationComponent,
+    destinationPod,
+    contextReporterKind,
+    requestHeadersMap,
+    requestPath,
+    requestMethod,
+    requestSizeBytes,
+    responseCode,
+    responseDurationNanoSec,
+    responseSizeBytes
 insert into TelemetryInMemorySink;
