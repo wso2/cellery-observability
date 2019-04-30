@@ -19,8 +19,8 @@
 package io.cellery.observability.k8s.client;
 
 import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import org.apache.log4j.Logger;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -39,25 +39,31 @@ public class BaseTestCase {
     protected static final int TIMEOUT = 5000;
 
     protected KubernetesClient k8sClient;
+    protected KubernetesServer k8sServer;
 
     @BeforeClass
     public void initBaseTestCase() {
-        k8sClient = new DefaultKubernetesClient();
+        k8sServer = new KubernetesServer(true, true);
+        k8sServer.before();
+        k8sClient = k8sServer.getClient();
+        k8sClient.getConfiguration().setNamespace(Constants.NAMESPACE);
         k8sClient.namespaces().list();     // To validate if the access to the K8s cluster is accurate
+        K8sClientHolder.setK8sClient(k8sClient);
     }
 
     @AfterClass
     public void cleanupTestCase() {
         k8sClient.close();
+        k8sServer.after();
     }
 
     /**
-     * Create and wait for a K8s pod to start.
+     * Create and check for a K8s pod creation.
      *
      * @param cell      The Cell the Pod belongs to
      * @param component The component of the Cell the pod belongs to
      */
-    protected void createCelleryComponentPod(String cell, String component) {
+    protected void createCelleryComponentPod(String cell, String component) throws Exception {
         String podName = cell + "--" + component;
 
         Map<String, String> labels = new HashMap<>();
@@ -65,15 +71,15 @@ public class BaseTestCase {
         labels.put(Constants.COMPONENT_NAME_LABEL, podName);
 
         createPod(podName, labels, "busybox");
-        waitForPodStartup(podName);
+        checkPodCreation(podName);
     }
 
     /**
-     * Create and wait for a K8s pod to start.
+     * Create and check for a K8s pod creation.
      *
      * @param cell The Cell the Pod belongs to
      */
-    protected void createCelleryGatewayPod(String cell) {
+    protected void createCelleryGatewayPod(String cell) throws Exception {
         String podName = cell + "--gateway";
 
         Map<String, String> labels = new HashMap<>();
@@ -81,17 +87,17 @@ public class BaseTestCase {
         labels.put(Constants.GATEWAY_NAME_LABEL, podName);
 
         createPod(podName, labels, "busybox");
-        waitForPodStartup(podName);
+        checkPodCreation(podName);
     }
 
     /**
-     * Create and wait for a K8s pod to start.
+     * Create and check for a K8s pod creation.
      *
      * @param podName The name of the normal pod
      */
-    protected void createNormalPod(String podName) {
+    protected void createNormalPod(String podName) throws Exception {
         createPod(podName, new HashMap<>(), "busybox");
-        waitForPodStartup(podName);
+        checkPodCreation(podName);
     }
 
     /**
@@ -129,10 +135,12 @@ public class BaseTestCase {
                 .createNew()
                 .withNewMetadata()
                 .withNamespace(Constants.NAMESPACE)
+                .withCreationTimestamp("2019-04-30T13:21:22Z")
                 .withName(podName)
                 .addToLabels(labels)
                 .endMetadata()
                 .withNewSpec()
+                .withNodeName(Constants.NODE_NAME)
                 .addNewContainer()
                 .withName("test-container")
                 .withNewImage(container)
@@ -144,29 +152,21 @@ public class BaseTestCase {
     }
 
     /**
-     * Wait for a pod to startup.
+     * Check for a pod creation.
      *
      * @param podName The name of the pod to wait for
      */
-    private void waitForPodStartup(String podName) {
+    private void checkPodCreation(String podName) throws Exception {
         if (logger.isDebugEnabled()) {
-            logger.debug("Waiting for pod " + podName + " to startup");
+            logger.debug("Checking pod " + podName);
         }
-        while (true) {
-            Pod createdPod = k8sClient.pods()
-                    .inNamespace(Constants.NAMESPACE)
-                    .withName(podName)
-                    .get();
-            if ("Running".equals(createdPod.getStatus().getPhase())) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Started pod " + podName);
-                }
-                break;
-            }
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ignored) {
-            }
+
+        Pod createdPod = k8sClient.pods()
+                .inNamespace(Constants.NAMESPACE)
+                .withName(podName)
+                .get();
+        if (createdPod == null || !createdPod.getMetadata().getName().equalsIgnoreCase(podName)) {
+            throw new Exception("Pod :" + podName + " is not created!");
         }
     }
 
