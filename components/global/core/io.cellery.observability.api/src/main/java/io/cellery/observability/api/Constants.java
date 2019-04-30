@@ -28,6 +28,7 @@ public class Constants {
     public static final String ACCESS_CONTROL_ALLOW_METHODS = "Access-Control-Allow-Methods";
     public static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
     public static final String ACCESS_CONTROL_MAX_AGE = "Access-Control-Max-Age";
+    public static final String ACCESS_CONTROL_ALLOW_CREDENTIALS = "Access-Control-Allow-Credentials";
     public static final String MAX_AGE = "3600";
 
     public static final String ALL_ORIGIN = "*";
@@ -50,5 +51,6 @@ public class Constants {
     public static final String CLIENT_ID_TXT = "client_id";
     public static final String CLIENT_SECRET_TXT = "client_secret";
     public static final String EXT_PARAM_CLIENT_ID = "ext_param_client_id";
+    public static final String HTTP_ONLY_SESSION_COOKIE = "OASID";
     public static final String STANDARD_CLIENT_ID = "celleryobs_0001";
 }

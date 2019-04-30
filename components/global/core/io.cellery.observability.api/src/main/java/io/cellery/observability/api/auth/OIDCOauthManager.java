@@ -182,7 +182,7 @@ public class OIDCOauthManager {
      */
     public boolean validateToken(String token) throws OIDCProviderException {
         try {
-            HttpResponse response = makeRequestforTokenValidition(token);
+            HttpResponse response = makeRequestForTokenValidation(token);
             StringBuilder builder = getResponseString(response);
             JSONObject jsonObject = new JSONObject(builder.toString());
             int statusCode = response.getStatusLine().getStatusCode();
@@ -206,7 +206,7 @@ public class OIDCOauthManager {
      * @param token This will be the access token
      * @return the response object is returned
      */
-    private HttpResponse makeRequestforTokenValidition(String token) throws OIDCProviderException {
+    private HttpResponse makeRequestForTokenValidation(String token) throws OIDCProviderException {
         try {
             HttpClient client = Utils.getAllSSLClient();
             String introspectEP = CelleryConfig.getInstance().getIdpURL() + Constants.INTROSPECT_ENDPOINT;

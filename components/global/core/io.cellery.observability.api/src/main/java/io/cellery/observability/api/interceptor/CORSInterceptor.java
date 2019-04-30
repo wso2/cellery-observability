@@ -42,6 +42,7 @@ public class CORSInterceptor implements RequestInterceptor {
         response.setHeader(Constants.ACCESS_CONTROL_MAX_AGE, Constants.MAX_AGE);
         response.setHeader(Constants.ACCESS_CONTROL_ALLOW_HEADERS,
                 HttpHeaders.CONTENT_TYPE + "," + HttpHeaders.AUTHORIZATION);
+        response.setHeader(Constants.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
         if (StringUtils.isNotBlank(request.getHeader(Constants.ORIGIN))) {
             response.setHeader(Constants.ACCESS_CONTROL_ALLOW_ORIGIN, request.getHeader(Constants.ORIGIN));
         } else {

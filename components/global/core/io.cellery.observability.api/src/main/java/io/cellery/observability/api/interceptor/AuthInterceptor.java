@@ -18,6 +18,7 @@
 
 package io.cellery.observability.api.interceptor;
 
+import io.cellery.observability.api.Constants;
 import io.cellery.observability.api.exception.oidc.OIDCProviderException;
 import io.cellery.observability.api.internal.ServiceHolder;
 import org.apache.log4j.Logger;
@@ -26,6 +27,7 @@ import org.wso2.msf4j.Response;
 import org.wso2.msf4j.interceptor.RequestInterceptor;
 
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.HttpHeaders;
 
 /**
@@ -41,7 +43,8 @@ public class AuthInterceptor implements RequestInterceptor {
         if (!request.getHttpMethod().equalsIgnoreCase(HttpMethod.OPTIONS) &&
                 request.getHeader(HttpHeaders.AUTHORIZATION) != null) {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-            String accessToken = header.split(" ")[1];
+            Cookie oAuthCookie = request.getHeaders().getCookies().get(Constants.HTTP_ONLY_SESSION_COOKIE);
+            String accessToken = header.split(" ")[1] + oAuthCookie.getValue();
 
             try {
                 if (!ServiceHolder.getOidcOauthManager().validateToken(accessToken)) {
@@ -57,4 +60,3 @@ public class AuthInterceptor implements RequestInterceptor {
         return true;
     }
 }
-
