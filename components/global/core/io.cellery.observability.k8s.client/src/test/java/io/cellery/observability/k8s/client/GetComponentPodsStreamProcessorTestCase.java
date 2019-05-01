@@ -28,7 +28,6 @@ import org.testng.annotations.Test;
 import org.wso2.siddhi.core.SiddhiAppRuntime;
 import org.wso2.siddhi.core.SiddhiManager;
 import org.wso2.siddhi.core.event.Event;
-import org.wso2.siddhi.core.exception.CannotRestoreSiddhiAppStateException;
 import org.wso2.siddhi.core.query.output.callback.QueryCallback;
 import org.wso2.siddhi.core.stream.input.InputHandler;
 import org.wso2.siddhi.core.util.EventPrinter;
@@ -52,6 +51,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     private List<String> nodeValues;
     private SiddhiAppRuntime siddhiAppRuntime;
     private List<Event> receivedEvents;
+    private String originalMaster;
 
     @BeforeClass
     public void initTestCase() {
@@ -61,6 +61,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
                 .stream()
                 .map((Node node) -> node.getMetadata().getName())
                 .collect(Collectors.toList());
+        originalMaster = k8sClient.getConfiguration().getMasterUrl();
     }
 
     @BeforeMethod
@@ -71,6 +72,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
 
     @AfterMethod
     public void cleanUp() {
+        k8sClient.getConfiguration().setMasterUrl(originalMaster);
         siddhiAppRuntime.shutdown();
         if (logger.isDebugEnabled()) {
             logger.debug("Removing all created test pods");
@@ -81,7 +83,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     }
 
     @Test
-    public void testGetPods() throws InterruptedException {
+    public void testGetPods() throws Exception {
         initializeSiddhiAppRuntime();
         createCelleryComponentPod("pet-be", "test-a");
         createCelleryComponentPod("pet-be", "test-b");
@@ -111,7 +113,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     }
 
     @Test
-    public void testGetPodsWithOnlyComponents() throws InterruptedException {
+    public void testGetPodsWithOnlyComponents() throws Exception {
         initializeSiddhiAppRuntime();
         createCelleryComponentPod("pet-be", "test-a");
         createCelleryComponentPod("pet-be", "test-b");
@@ -135,7 +137,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     }
 
     @Test
-    public void testGetPodsWithOnlyGateways() throws InterruptedException {
+    public void testGetPodsWithOnlyGateways() throws Exception {
         initializeSiddhiAppRuntime();
         createCelleryGatewayPod("pet-be");
         createCelleryGatewayPod("pet-fe");
@@ -159,7 +161,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     }
 
     @Test
-    public void testGetPodsWithRunningNonCelleryPods() throws InterruptedException {
+    public void testGetPodsWithRunningNonCelleryPods() throws Exception {
         initializeSiddhiAppRuntime();
         createCelleryComponentPod("pet-be", "test-a");
         createCelleryComponentPod("pet-fe", "test-b");
@@ -185,7 +187,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     }
 
     @Test
-    public void testGetPodsWithFailingPods() throws InterruptedException {
+    public void testGetPodsWithFailingPods() throws Exception {
         initializeSiddhiAppRuntime();
         createCelleryComponentPod("pet-be-inst", "test-e");
         createCelleryComponentPod("pet-fe-inst", "test-f");
@@ -212,7 +214,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     }
 
     @Test
-    public void testOnlyNormalPodsWithFailingPods() throws InterruptedException {
+    public void testOnlyNormalPodsWithFailingPods() throws Exception {
         initializeSiddhiAppRuntime();
         createNormalPod("normal-test-pod-w");
         createNormalPod("normal-test-pod-x");
@@ -236,23 +238,28 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     }
 
     @Test
-    public void testWithApiServerDown() throws InterruptedException {
-        System.setProperty("kubernetes.master", "localhost");
+    public void testWithApiServerDown() throws Exception {
+        String originalMaster = k8sClient.getConfiguration().getMasterUrl();
         initializeSiddhiAppRuntime();
 
         createCelleryComponentPod("pet-be-inst", "test-e");
         createCelleryComponentPod("pet-fe-inst", "test-f");
 
+        k8sClient.getConfiguration().setMasterUrl("https://localhost");
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-08"});
         SiddhiTestHelper.waitForEvents(WAIT_TIME, 1, eventCount, TIMEOUT);
         Assert.assertEquals(eventCount.get(), 0);
 
-        System.getProperties().remove("kubernetes.master");
+        k8sClient.getConfiguration().setMasterUrl(originalMaster);
+
+        inputHandler.send(new Object[]{"event-08"});
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 2);
     }
 
     @Test
-    public void testPersistence() throws InterruptedException, CannotRestoreSiddhiAppStateException {
+    public void testPersistence() throws Exception {
         initializeSiddhiAppRuntime();
         createCelleryComponentPod("pet-be", "test-a");
         siddhiAppRuntime.persist();

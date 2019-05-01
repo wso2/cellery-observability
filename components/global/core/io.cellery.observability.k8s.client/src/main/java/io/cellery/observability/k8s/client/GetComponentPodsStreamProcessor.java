@@ -20,7 +20,6 @@ package io.cellery.observability.k8s.client;
 
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodList;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
@@ -87,7 +86,7 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
 
     @Override
     public void start() {
-        k8sClient = new DefaultKubernetesClient();
+        k8sClient = K8sClientHolder.getK8sClient();
         if (logger.isDebugEnabled()) {
             logger.debug("Created API server client");
         }
@@ -164,17 +163,19 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
                             " to the event");
                 }
 
-                Object[] newData = new Object[5];
-                newData[0] = pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL);
-                newData[1] = getComponentName(pod.getMetadata().getLabels().get(componentNameLabel));
-                newData[2] = pod.getMetadata().getName();
-                newData[3] = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
-                        .parse(pod.getMetadata().getCreationTimestamp()).getTime();
-                newData[4] = pod.getSpec().getNodeName();
+                if (pod.getMetadata().getLabels().containsKey(componentNameLabel)) {
+                    Object[] newData = new Object[5];
+                    newData[0] = pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL);
+                    newData[1] = getComponentName(pod.getMetadata().getLabels().get(componentNameLabel));
+                    newData[2] = pod.getMetadata().getName();
+                    newData[3] = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
+                            .parse(pod.getMetadata().getCreationTimestamp()).getTime();
+                    newData[4] = pod.getSpec().getNodeName();
 
-                StreamEvent streamEventCopy = streamEventCloner.copyStreamEvent(incomingStreamEvent);
-                complexEventPopulater.populateComplexEvent(streamEventCopy, newData);
-                outputStreamEventChunk.add(streamEventCopy);
+                    StreamEvent streamEventCopy = streamEventCloner.copyStreamEvent(incomingStreamEvent);
+                    complexEventPopulater.populateComplexEvent(streamEventCopy, newData);
+                    outputStreamEventChunk.add(streamEventCopy);
+                }
             }
         }
     }
