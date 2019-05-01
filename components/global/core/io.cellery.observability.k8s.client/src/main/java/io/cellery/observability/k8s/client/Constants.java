@@ -23,7 +23,6 @@ package io.cellery.observability.k8s.client;
  */
 public class Constants {
     public static final String NAMESPACE = "default";
-    public static final String NODE_NAME = "node1";
     public static final String CELL_NAME_LABEL = "mesh.cellery.io/cell";
     public static final String COMPONENT_NAME_LABEL = "mesh.cellery.io/service";
     public static final String GATEWAY_NAME_LABEL = "mesh.cellery.io/gateway";

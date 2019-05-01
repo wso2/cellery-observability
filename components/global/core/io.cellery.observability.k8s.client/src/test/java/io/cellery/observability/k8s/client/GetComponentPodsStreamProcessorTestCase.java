@@ -55,7 +55,6 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
 
     @BeforeClass
     public void initTestCase() {
-        k8sClient.nodes().createNew().withNewMetadata().withName(Constants.NODE_NAME).endMetadata().done();
         nodeValues = k8sClient.nodes()
                 .list()
                 .getItems()

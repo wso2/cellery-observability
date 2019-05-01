@@ -37,6 +37,8 @@ public class BaseTestCase {
     protected static final String TEST_LABEL = "mesh-observability-test";
     protected static final int WAIT_TIME = 50;
     protected static final int TIMEOUT = 5000;
+    protected static final String NODE_NAME = "node1";
+
 
     protected KubernetesClient k8sClient;
     protected KubernetesServer k8sServer;
@@ -49,6 +51,7 @@ public class BaseTestCase {
         k8sClient.getConfiguration().setNamespace(Constants.NAMESPACE);
         k8sClient.namespaces().list();     // To validate if the access to the K8s cluster is accurate
         K8sClientHolder.setK8sClient(k8sClient);
+        k8sClient.nodes().createNew().withNewMetadata().withName(NODE_NAME).endMetadata().done();
     }
 
     @AfterClass
@@ -140,7 +143,7 @@ public class BaseTestCase {
                 .addToLabels(labels)
                 .endMetadata()
                 .withNewSpec()
-                .withNodeName(Constants.NODE_NAME)
+                .withNodeName(NODE_NAME)
                 .addNewContainer()
                 .withName("test-container")
                 .withNewImage(container)
