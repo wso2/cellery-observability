@@ -186,7 +186,8 @@ describe("HttpUtils", () => {
 
         it("should add application/json header", async () => {
             axios.mockImplementation((config) => {
-                expect(Object.keys(config)).toHaveLength(3);
+                expect(Object.keys(config)).toHaveLength(4);
+                expect(config.withCredentials).toBe(true);
                 expect(config.method).toBe("GET");
                 expect(config.url).toBe(backendURL);
                 expect(Object.keys(config.headers)).toHaveLength(3);
@@ -217,7 +218,8 @@ describe("HttpUtils", () => {
 
         it("should add application/json Accept and Content-Type headers if no headers are provided", async () => {
             axios.mockImplementation((config) => {
-                expect(Object.keys(config)).toHaveLength(3);
+                expect(Object.keys(config)).toHaveLength(4);
+                expect(config.withCredentials).toBe(true);
                 expect(config.method).toBe("GET");
                 expect(config.url).toBe(backendURL);
                 expect(Object.keys(config.headers)).toHaveLength(2);
@@ -244,7 +246,8 @@ describe("HttpUtils", () => {
 
         it("should not change headers if Accept header is already provided", async () => {
             axios.mockImplementation((config) => {
-                expect(Object.keys(config)).toHaveLength(3);
+                expect(Object.keys(config)).toHaveLength(4);
+                expect(config.withCredentials).toBe(true);
                 expect(config.method).toBe("GET");
                 expect(config.url).toBe(backendURL);
                 expect(Object.keys(config.headers)).toHaveLength(2);
@@ -274,7 +277,8 @@ describe("HttpUtils", () => {
 
         it("should add application/json header if Content-Type header is provided", async () => {
             axios.mockImplementation((config) => {
-                expect(Object.keys(config)).toHaveLength(3);
+                expect(Object.keys(config)).toHaveLength(4);
+                expect(config.withCredentials).toBe(true);
                 expect(config.method).toBe("GET");
                 expect(config.url).toBe(backendURL);
                 expect(Object.keys(config.headers)).toHaveLength(2);
@@ -301,7 +305,8 @@ describe("HttpUtils", () => {
 
         it("should not change headers if Content-Type header is already provided", async () => {
             axios.mockImplementation((config) => {
-                expect(Object.keys(config)).toHaveLength(3);
+                expect(Object.keys(config)).toHaveLength(4);
+                expect(config.withCredentials).toBe(true);
                 expect(config.method).toBe("GET");
                 expect(config.url).toBe(backendURL);
                 expect(Object.keys(config.headers)).toHaveLength(2);

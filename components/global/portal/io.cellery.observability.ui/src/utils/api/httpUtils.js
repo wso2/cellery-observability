@@ -106,6 +106,7 @@ class HttpUtils {
      * @returns {Promise} A promise for the API call
      */
     static callAPI = (config, globalState) => new Promise((resolve, reject) => {
+        config.withCredentials = true;
         if (!config.headers) {
             config.headers = {};
         }

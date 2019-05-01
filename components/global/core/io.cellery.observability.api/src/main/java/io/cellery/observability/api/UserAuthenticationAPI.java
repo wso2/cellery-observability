@@ -31,6 +31,7 @@ import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.types.GrantType;
 import org.json.JSONObject;
 import org.wso2.carbon.config.ConfigurationException;
+import org.wso2.msf4j.Request;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,6 +40,8 @@ import javax.ws.rs.OPTIONS;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 /**
@@ -52,9 +55,10 @@ public class UserAuthenticationAPI {
     @GET
     @Path("/tokens/{authCode}")
     @Produces("application/json")
-    public Response getTokens(@PathParam("authCode") String authCode) throws APIInvocationException {
+    public Response getTokens(@PathParam("authCode") String authCode,
+                              @Context Request request) throws APIInvocationException {
         try {
-            OAuthClientRequest request = OAuthClientRequest
+            OAuthClientRequest oAuthClientRequest = OAuthClientRequest
                     .tokenLocation(CelleryConfig.getInstance().getIdpURL() + Constants.TOKEN_ENDPOINT)
                     .setGrantType(GrantType.AUTHORIZATION_CODE)
                     .setClientId(ServiceHolder.getOidcOauthManager().getClientId())
@@ -63,14 +67,21 @@ public class UserAuthenticationAPI {
                     .setCode(authCode).buildBodyMessage();
 
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
-            OAuthAccessTokenResponse oAuthResponse = oAuthClient.accessToken(request);
+            OAuthAccessTokenResponse oAuthResponse = oAuthClient.accessToken(oAuthClientRequest);
             JSONObject jsonObj = new JSONObject(oAuthResponse.getBody());
             Map<Object, Object> responseMap = new HashMap<>();
 
-            responseMap.put(Constants.ACCESS_TOKEN, oAuthResponse.getAccessToken());
+            String accessToken = oAuthResponse.getAccessToken();
+            final int mid = accessToken.length() / 2;
+
+            // Splitting up access token into two parts
+            String[] tokenParts = {accessToken.substring(0, mid), accessToken.substring(mid)};
+            responseMap.put(Constants.ACCESS_TOKEN, tokenParts[0]);
             responseMap.put(Constants.ID_TOKEN, jsonObj.get(Constants.ID_TOKEN));
 
-            return Response.ok().entity(responseMap).build();
+            NewCookie cookie = new NewCookie(Constants.HTTP_ONLY_SESSION_COOKIE, tokenParts[1],
+                    "/", "", "", 3600, false, true);
+            return Response.ok().cookie(cookie).entity(responseMap).build();
         } catch (ConfigurationException | OAuthProblemException | OAuthSystemException e) {
             throw new APIInvocationException("Error while getting tokens from Token endpoint", e);
         }
@@ -92,4 +103,5 @@ public class UserAuthenticationAPI {
     public Response getOptions() {
         return Response.ok().build();
     }
+
 }
