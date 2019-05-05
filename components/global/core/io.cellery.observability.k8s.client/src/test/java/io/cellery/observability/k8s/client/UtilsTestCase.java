@@ -36,11 +36,7 @@ public class UtilsTestCase {
     public void testGetComponentNameWithComponentLabel() {
         Map<String, String> labels = new HashMap<>();
         labels.put(Constants.COMPONENT_NAME_LABEL, "pet-fe--test-c");
-
-        ObjectMeta podMetadata = Mockito.mock(ObjectMeta.class);
-        Mockito.when(podMetadata.getLabels()).thenReturn(labels);
-        Pod pod = Mockito.mock(Pod.class);
-        Mockito.when(pod.getMetadata()).thenReturn(podMetadata);
+        Pod pod = generatePod(labels);
 
         Assert.assertEquals(Utils.getComponentName(pod), "test-c");
     }
@@ -48,13 +44,48 @@ public class UtilsTestCase {
     @Test
     public void testGetComponentNameWithGatewayLabel() {
         Map<String, String> labels = new HashMap<>();
-        labels.put(Constants.GATEWAY_NAME_LABEL, "pet-fe--test-d");
+        labels.put(Constants.GATEWAY_NAME_LABEL, "pet-fe--gateway");
+        Pod pod = generatePod(labels);
 
+        Assert.assertEquals(Utils.getComponentName(pod), "gateway");
+    }
+
+    @Test
+    public void testGetComponentNameWithNoLabels() {
+        Pod pod = generatePod(new HashMap<>());
+
+        Assert.assertEquals(Utils.getComponentName(pod), "");
+    }
+
+    @Test
+    public void testGetComponentNameWithInvalidComponentLabel() {
+        Map<String, String> labels = new HashMap<>();
+        labels.put(Constants.COMPONENT_NAME_LABEL, "pet-fe");
+        Pod pod = generatePod(labels);
+
+        Assert.assertEquals(Utils.getComponentName(pod), "");
+    }
+
+    @Test
+    public void testGetComponentNameWithInvalidGatewayLabel() {
+        Map<String, String> labels = new HashMap<>();
+        labels.put(Constants.GATEWAY_NAME_LABEL, "pet-fe");
+        Pod pod = generatePod(labels);
+
+        Assert.assertEquals(Utils.getComponentName(pod), "");
+    }
+
+    /**
+     * Generate a K8s Pod object.
+     *
+     * @param labels The labels to be applied to the Pod
+     * @return The generated pod
+     */
+    private Pod generatePod(Map<String, String> labels) {
         ObjectMeta podMetadata = Mockito.mock(ObjectMeta.class);
         Mockito.when(podMetadata.getLabels()).thenReturn(labels);
         Pod pod = Mockito.mock(Pod.class);
         Mockito.when(pod.getMetadata()).thenReturn(podMetadata);
-
-        Assert.assertEquals(Utils.getComponentName(pod), "test-d");
+        return pod;
     }
 }

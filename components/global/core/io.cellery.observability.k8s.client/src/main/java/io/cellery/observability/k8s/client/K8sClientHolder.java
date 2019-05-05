@@ -19,24 +19,26 @@ package io.cellery.observability.k8s.client;
 
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import org.apache.log4j.Logger;
 
 /**
  * This class will hold the instance of the k8sClient that is used in the {@link GetComponentPodsStreamProcessor}
  * stream processor extension.
  */
 public class K8sClientHolder {
+
+    private static final Logger logger = Logger.getLogger(K8sClientHolder.class.getName());
     private static KubernetesClient k8sClient;
 
     private K8sClientHolder() {
     }
 
-    static void setK8sClient(KubernetesClient client) {
-        k8sClient = client;
-    }
-
     static synchronized KubernetesClient getK8sClient() {
         if (k8sClient == null) {
             k8sClient = new DefaultKubernetesClient();
+            if (logger.isDebugEnabled()) {
+                logger.debug("Created API server client");
+            }
         }
         return k8sClient;
     }

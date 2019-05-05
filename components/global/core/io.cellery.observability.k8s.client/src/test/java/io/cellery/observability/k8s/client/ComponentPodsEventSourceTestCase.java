@@ -18,11 +18,15 @@
 
 package io.cellery.observability.k8s.client;
 
-import io.fabric8.kubernetes.api.model.Node;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.WatchEvent;
+import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.Watch;
+import io.fabric8.kubernetes.client.Watcher;
 import org.apache.log4j.Logger;
+import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.extension.siddhi.map.keyvalue.sourcemapper.KeyValueSourceMapper;
@@ -30,18 +34,18 @@ import org.wso2.siddhi.core.SiddhiAppRuntime;
 import org.wso2.siddhi.core.SiddhiManager;
 import org.wso2.siddhi.core.event.Event;
 import org.wso2.siddhi.core.query.output.callback.QueryCallback;
+import org.wso2.siddhi.core.stream.input.source.Source;
 import org.wso2.siddhi.core.util.EventPrinter;
 import org.wso2.siddhi.core.util.SiddhiTestHelper;
+import org.wso2.siddhi.core.util.persistence.InMemoryPersistenceStore;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * Test case for Component Pod Event Source.
@@ -51,19 +55,11 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
     private static final Logger logger = Logger.getLogger(ComponentPodsEventSourceTestCase.class.getName());
 
     private AtomicInteger eventCount = new AtomicInteger(0);
-    private List<String> nodeValues;
     private SiddhiAppRuntime siddhiAppRuntime;
     private List<Event> receivedEvents;
 
-    @BeforeClass
-    public void initTestCase() {
-        nodeValues = k8sClient.nodes()
-                .list()
-                .getItems()
-                .stream()
-                .map((Node node) -> node.getMetadata().getName())
-                .collect(Collectors.toList());
-        nodeValues.add("");
+    public ComponentPodsEventSourceTestCase() throws Exception {
+        super();
     }
 
     @BeforeMethod
@@ -75,112 +71,343 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
     @AfterMethod
     public void cleanUp() {
         siddhiAppRuntime.shutdown();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Removing all created test pods");
-        }
-        cleanUpTestPods();
     }
 
     @Test
-    public void testCreatePods() throws Exception {
-        initializeSiddhiAppRuntime();
-        createCelleryComponentPod("pet-be", "test-a");
-        createCelleryGatewayPod("pet-fe");
+    public void testPodEvents() throws Exception {
+        String deletionTimestamp = "2019-04-30T13:52:22Z";
+        Pod podA = generateCelleryComponentPod("pet-be", "test-a");
+        podA.getMetadata().setCreationTimestamp(null);
+        podA.getSpec().setNodeName(null);
 
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 16, eventCount, TIMEOUT);
-        Map<String, String[]> podInfo = new HashMap<>();
-        Set<String> podStatuses = new HashSet<>();
-        Set<String> actions = new HashSet<>();
-        for (Event event : receivedEvents) {
-            Object[] data = event.getData();
-            Assert.assertEquals(data.length, 7);
-            validatePodData(data);
-            podInfo.put((String) data[2], new String[]{(String) data[0], (String) data[1]});
-            podStatuses.add((String) data[5]);
-            actions.add((String) data[6]);
-        }
-        assertEquals(podInfo, new HashMap<String, String[]>() {
-            {
-                put("pet-be--test-a", new String[]{"pet-be", "test-a"});
-                put("pet-fe--gateway", new String[]{"pet-fe", "gateway"});
+        Pod podC = generateCelleryComponentPod("pet-be", "test-c");
+        podC.getMetadata().setDeletionTimestamp(deletionTimestamp);
+
+        k8sServer.expect()
+                .withPath(getWatchComponentPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(1135)
+                .andEmit(new WatchEvent(podA, "ADDED"))
+                .waitFor(193)
+                .andEmit(new WatchEvent(generateCelleryComponentPod("pet-fe", "test-b"), "MODIFIED"))
+                .waitFor(1)
+                .andEmit(new WatchEvent(podC, "DELETED"))
+                .waitFor(21)
+                .andEmit(new WatchEvent(generateFailingCelleryComponentPod("pet-fe", "test-d"), "ERROR"))
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(getWatchGatewayPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(2264)
+                .andEmit(new WatchEvent(generateCelleryGatewayPod("pet-fe"), "MODIFIED"))
+                .waitFor(53)
+                .andEmit(new WatchEvent(generateFailingCelleryGatewayPod("pet-be"), "ERROR"))
+                .done()
+                .once();
+        initializeSiddhiAppRuntime();
+
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 5, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 6);
+        for (Event receivedEvent : receivedEvents) {
+            Object[] data = receivedEvent.getData();
+            Assert.assertEquals(data.length, 8);
+            if ("pet-be--test-a".equals(data[2])) {
+                Assert.assertEquals(data[0], "pet-be");
+                Assert.assertEquals(data[1], "test-a");
+                Assert.assertEquals(data[3], -1L);
+                Assert.assertEquals(data[4], -1L);
+                Assert.assertEquals(data[5], "");
+                Assert.assertEquals(data[6], "Running");
+                Assert.assertEquals(data[7], "ADDED");
+            } else if ("pet-fe--test-b".equals(data[2])) {
+                Assert.assertEquals(data[0], "pet-fe");
+                Assert.assertEquals(data[1], "test-b");
+                Assert.assertEquals(data[3], podCreationTimestamp);
+                Assert.assertEquals(data[4], -1L);
+                Assert.assertEquals(data[5], NODE_NAME);
+                Assert.assertEquals(data[6], "Running");
+                Assert.assertEquals(data[7], "MODIFIED");
+            } else if ("pet-be--test-c".equals(data[2])) {
+                Assert.assertEquals(data[0], "pet-be");
+                Assert.assertEquals(data[1], "test-c");
+                Assert.assertEquals(data[3], podCreationTimestamp);
+                Assert.assertEquals(data[4], new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
+                        .parse(deletionTimestamp).getTime());
+                Assert.assertEquals(data[5], NODE_NAME);
+                Assert.assertEquals(data[6], "Running");
+                Assert.assertEquals(data[7], "DELETED");
+            } else if ("pet-fe--test-d".equals(data[2])) {
+                Assert.assertEquals(data[0], "pet-fe");
+                Assert.assertEquals(data[1], "test-d");
+                Assert.assertEquals(data[3], podCreationTimestamp);
+                Assert.assertEquals(data[4], -1L);
+                Assert.assertEquals(data[5], NODE_NAME);
+                Assert.assertEquals(data[6], "ErrImagePull");
+                Assert.assertEquals(data[7], "ERROR");
+            } else if ("pet-fe--gateway".equals(data[2])) {
+                Assert.assertEquals(data[0], "pet-fe");
+                Assert.assertEquals(data[1], "gateway");
+                Assert.assertEquals(data[3], podCreationTimestamp);
+                Assert.assertEquals(data[4], -1L);
+                Assert.assertEquals(data[5], NODE_NAME);
+                Assert.assertEquals(data[6], "Running");
+                Assert.assertEquals(data[7], "MODIFIED");
+            } else if ("pet-be--gateway".equals(data[2])) {
+                Assert.assertEquals(data[0], "pet-be");
+                Assert.assertEquals(data[1], "gateway");
+                Assert.assertEquals(data[3], podCreationTimestamp);
+                Assert.assertEquals(data[4], -1L);
+                Assert.assertEquals(data[5], NODE_NAME);
+                Assert.assertEquals(data[6], "ErrImagePull");
+                Assert.assertEquals(data[7], "ERROR");
+            } else {
+                Assert.fail("Received unexpect pod " + data[2]);
             }
-        });
-        assertEquals(podStatuses, new HashSet<>(Arrays.asList("Pending", "Running")));
-        assertEquals(actions, new HashSet<>(Arrays.asList("ADDED", "MODIFIED")));
+        }
     }
 
     @Test
-    public void testRemovePods() throws Exception {
-        createCelleryComponentPod("pet-be", "test-a");  // Missed event (will be replayed)
-        createCelleryComponentPod("pet-be", "test-b");  // Missed event (will be replayed)
+    public void testPodEventsWithOnlyComponents() throws Exception {
+        k8sServer.expect()
+                .withPath(getWatchComponentPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(1135)
+                .andEmit(new WatchEvent(generateCelleryComponentPod("pet-be", "test-a"), "ADDED"))
+                .waitFor(193)
+                .andEmit(new WatchEvent(generateCelleryComponentPod("pet-fe", "test-b"), "MODIFIED"))
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(getWatchGatewayPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .done()
+                .once();
         initializeSiddhiAppRuntime();
-        createCelleryGatewayPod("pet-fe");
-        deletePod("pet-be--test-a");
-        deletePod("pet-fe--gateway");
 
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 8, eventCount, TIMEOUT);
-        // K8s server replays the missed events as well
-        Map<String, String[]> podInfo = new HashMap<>();
-        Set<String> podStatuses = new HashSet<>();
-        Set<String> actions = new HashSet<>();
-        for (Event event : receivedEvents) {
-            Object[] data = event.getData();
-            Assert.assertEquals(data.length, 7);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 2);
+        for (Event receivedEvent : receivedEvents) {
+            Object[] data = receivedEvent.getData();
+            Assert.assertEquals(data.length, 8);
             validatePodData(data);
-            podInfo.put((String) data[2], new String[]{(String) data[0], (String) data[1]});
-            podStatuses.add((String) data[5]);
-            actions.add((String) data[6]);
-            if ("DELETED".equals(data[6])) {
-                Assert.assertNotNull(data[6]);
-                Assert.assertNotEquals("", data[6]);
+            if ("pet-be--test-a".equals(data[2])) {
+                Assert.assertEquals(data[0], "pet-be");
+                Assert.assertEquals(data[1], "test-a");
+                Assert.assertEquals(data[6], "Running");
+                Assert.assertEquals(data[7], "ADDED");
+            } else if ("pet-fe--test-b".equals(data[2])) {
+                Assert.assertEquals(data[0], "pet-fe");
+                Assert.assertEquals(data[1], "test-b");
+                Assert.assertEquals(data[6], "Running");
+                Assert.assertEquals(data[7], "MODIFIED");
+            } else {
+                Assert.fail("Received unexpect pod " + data[2]);
             }
         }
-        assertEquals(podInfo, new HashMap<String, String[]>() {
-            {
-                put("pet-be--test-a", new String[]{"pet-be", "test-a"});
-                put("pet-be--test-b", new String[]{"pet-be", "test-b"});
-                put("pet-fe--gateway", new String[]{"pet-fe", "gateway"});
-            }
-        });
-        assertEquals(podStatuses, new HashSet<>(Arrays.asList("Pending", "Running")));
-        assertEquals(actions, new HashSet<>(Arrays.asList("ADDED", "MODIFIED", "DELETED")));
     }
 
     @Test
-    public void testModifyPods() throws Exception {
+    public void testPodEventsWithOnlyGateways() throws Exception {
+        k8sServer.expect()
+                .withPath(getWatchComponentPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(getWatchGatewayPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(1436)
+                .andEmit(new WatchEvent(generateCelleryGatewayPod("pet-be"), "ADDED"))
+                .waitFor(3)
+                .andEmit(new WatchEvent(generateFailingCelleryGatewayPod("pet-fe"), "ERROR"))
+                .done()
+                .once();
         initializeSiddhiAppRuntime();
-        createCelleryComponentPod("pet-be", "test-a");
-        k8sClient.pods()
-                .inNamespace(Constants.NAMESPACE)
-                .withName("pet-be--test-a")
-                .edit()
-                .editSpec()
-                .editFirstContainer()
-                .withNewImage("scratch")
-                .endContainer()
-                .endSpec()
-                .done();
 
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 8, eventCount, TIMEOUT);
-        // K8s server replays the missed events as well
-        Map<String, String[]> podInfo = new HashMap<>();
-        Set<String> podStatuses = new HashSet<>();
-        Set<String> actions = new HashSet<>();
-        for (Event event : receivedEvents) {
-            Object[] data = event.getData();
-            Assert.assertEquals(data.length, 7);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 2);
+        for (Event receivedEvent : receivedEvents) {
+            Object[] data = receivedEvent.getData();
+            Assert.assertEquals(data.length, 8);
             validatePodData(data);
-            podInfo.put((String) data[2], new String[]{(String) data[0], (String) data[1]});
-            podStatuses.add((String) data[5]);
-            actions.add((String) data[6]);
-        }
-        assertEquals(podInfo, new HashMap<String, String[]>() {
-            {
-                put("pet-be--test-a", new String[]{"pet-be", "test-a"});
+            if ("pet-be--gateway".equals(data[2])) {
+                Assert.assertEquals(data[0], "pet-be");
+                Assert.assertEquals(data[1], "gateway");
+                Assert.assertEquals(data[6], "Running");
+                Assert.assertEquals(data[7], "ADDED");
+            } else if ("pet-fe--gateway".equals(data[2])) {
+                Assert.assertEquals(data[0], "pet-fe");
+                Assert.assertEquals(data[1], "gateway");
+                Assert.assertEquals(data[6], "ErrImagePull");
+                Assert.assertEquals(data[7], "ERROR");
+            } else {
+                Assert.fail("Received unexpect pod " + data[2]);
             }
-        });
-        assertEquals(podStatuses, new HashSet<>(Arrays.asList("Pending", "Running")));
-        assertEquals(actions, new HashSet<>(Arrays.asList("ADDED", "MODIFIED")));
+        }
+    }
+
+    @Test
+    public void testPodEventsWithNoPods() throws Exception {
+        k8sServer.expect()
+                .withPath(getWatchComponentPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(getWatchGatewayPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .done()
+                .once();
+        initializeSiddhiAppRuntime();
+
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 1, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 0);
+    }
+
+    @Test
+    public void testPodEventsWithApiServerDown() throws Exception {
+        k8sServer.expect()
+                .withPath(getWatchComponentPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(195)
+                .andEmit(new WatchEvent(generateFailingCelleryComponentPod("pet-be", "test-a"), "ERROR"))
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(getWatchGatewayPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(123)
+                .andEmit(new WatchEvent(generateCelleryGatewayPod("pet-fe"), "MODIFIED"))
+                .done()
+                .once();
+
+        k8sClient.getConfiguration().setMasterUrl("https://localhost");
+        initializeSiddhiAppRuntime();
+
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 1, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 0);
+    }
+
+    @Test
+    public void testPersistence() throws Exception {
+        k8sServer.expect()
+                .withPath(getWatchComponentPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(1135)
+                .andEmit(new WatchEvent(generateCelleryComponentPod("pet-be", "test-a"), "ADDED"))
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(getWatchGatewayPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(2264)
+                .andEmit(new WatchEvent(generateCelleryGatewayPod("pet-fe"), "MODIFIED"))
+                .done()
+                .once();
+        initializeSiddhiAppRuntime();
+        Thread.sleep(1200);
+        siddhiAppRuntime.persist();
+        siddhiAppRuntime.restoreLastRevision();
+
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 2);
+        for (Event receivedEvent : receivedEvents) {
+            Object[] data = receivedEvent.getData();
+            Assert.assertEquals(data.length, 8);
+            validatePodData(data);
+            if ("pet-be--test-a".equals(data[2])) {
+                Assert.assertEquals(data[0], "pet-be");
+                Assert.assertEquals(data[1], "test-a");
+                Assert.assertEquals(data[6], "Running");
+                Assert.assertEquals(data[7], "ADDED");
+            } else if ("pet-fe--gateway".equals(data[2])) {
+                Assert.assertEquals(data[0], "pet-fe");
+                Assert.assertEquals(data[1], "gateway");
+                Assert.assertEquals(data[6], "Running");
+                Assert.assertEquals(data[7], "MODIFIED");
+            } else {
+                Assert.fail("Received unexpect pod " + data[2]);
+            }
+        }
+    }
+
+    @Test
+    public void testTimestampParseFailure() throws Exception {
+        Pod componentPod = generateCelleryComponentPod("pet-be", "test-a");
+        componentPod.getMetadata().setCreationTimestamp("invalid-date-1");
+        Pod gatewayPod = generateCelleryGatewayPod("pet-fe");
+        gatewayPod.getMetadata().setCreationTimestamp("invalid-date-2");
+
+        k8sServer.expect()
+                .withPath(getWatchComponentPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(1135)
+                .andEmit(new WatchEvent(componentPod, "ADDED"))
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(getWatchGatewayPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(2264)
+                .andEmit(new WatchEvent(gatewayPod, "MODIFIED"))
+                .done()
+                .once();
+        initializeSiddhiAppRuntime();
+
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 1, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 0);
+    }
+
+    @Test
+    public void testShutdownWithFailure() throws Exception {
+        k8sServer.expect()
+                .withPath(getWatchComponentPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(1135)
+                .andEmit(new WatchEvent(generateCelleryComponentPod("pet-be", "test-a"), "ADDED"))
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(getWatchGatewayPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(2264)
+                .andEmit(new WatchEvent(generateCelleryGatewayPod("pet-be"), "MODIFIED"))
+                .done()
+                .once();
+        initializeSiddhiAppRuntime();
+
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
+        for (List<Source> siddhiAppSources : siddhiAppRuntime.getSources()) {
+            for (Source source : siddhiAppSources) {
+                if (source instanceof ComponentPodsEventSource) {
+                    ComponentPodsEventSource componentPodsEventSource = (ComponentPodsEventSource) source;
+                    List<Watch> k8sWatches = Whitebox.getInternalState(componentPodsEventSource, "k8sWatches");
+
+                    for (Watch k8sWatch : k8sWatches) {
+                        Watcher<Pod> podWatcher = Whitebox.getInternalState(k8sWatch, "watcher");
+                        podWatcher.onClose(new KubernetesClientException("Mock Exception"));
+                    }
+                }
+            }
+        }
+        Assert.assertEquals(eventCount.get(), 2);
     }
 
     /**
@@ -189,15 +416,16 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
     private void initializeSiddhiAppRuntime() {
         String inStreamDefinition = "@App:name(\"test-siddhi-app\")\n" +
                 "@source(type=\"k8s-component-pods\", @map(type=\"keyvalue\", " +
-                "fail.on.missing.attribute=\"false\"))\n" +
+                "fail.on.missing.attribute=\"true\"))\n" +
                 "define stream k8sComponentPodsStream (cell string, component string, name string, " +
-                "creationTimestamp long, nodeName string, status string, action string);";
+                "creationTimestamp long, deletionTimestamp long, nodeName string, status string, action string);";
         String query = "@info(name = \"query\")\n" +
                 "from k8sComponentPodsStream\n" +
                 "select *\n" +
                 "insert into outputStream;";
         SiddhiManager siddhiManager = new SiddhiManager();
         siddhiManager.setExtension("keyvalue", KeyValueSourceMapper.class);
+        siddhiManager.setPersistenceStore(new InMemoryPersistenceStore());
         siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition + "\n" + query);
         siddhiAppRuntime.addCallback("query", new QueryCallback() {
             @Override
@@ -223,40 +451,30 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
      * @param data      The pod event data
      */
     private void validatePodData(Object[] data) {
-        Assert.assertNotNull(data[3]);
-        Assert.assertTrue(data[4] instanceof String);
-        Assert.assertNotEquals(nodeValues.indexOf(data[4]), -1);
+        Assert.assertEquals(data[3], podCreationTimestamp);
+        Assert.assertEquals(data[4], -1L);
+        Assert.assertEquals(data[5], NODE_NAME);
     }
 
     /**
-     * Assert whether the two pod info maps are equal.
+     * Get a watch component pods URL.
      *
-     * @param actual The actual 2D array
-     * @param expected The expected 2D array
+     * @return The watch component URL
      */
-    private void assertEquals(Map<String, String[]> actual, Map<String, String[]> expected) {
-        Assert.assertEquals(actual.size(), expected.size());
-        for (Map.Entry<String, String[]> expectedEntry : expected.entrySet()) {
-            String[] actualPodInfo = actual.get(expectedEntry.getKey());
-            String[] expectedPodInfo = expectedEntry.getValue();
-            Assert.assertNotNull(actualPodInfo, "expected pod info missing");
-            for (int i = 0; i < expectedPodInfo.length; i++) {
-                Assert.assertEquals(actualPodInfo[i], expectedPodInfo[i], "pod info does not match in pod " +
-                        expectedEntry.getKey());
-            }
-        }
+    private String getWatchComponentPodsUrl() throws Exception {
+        return "/api/v1/namespaces/" + URLEncoder.encode(Constants.NAMESPACE, StandardCharsets.UTF_8.toString())
+                + "/pods?labelSelector=" + URLEncoder.encode(Constants.CELL_NAME_LABEL + ","
+                + Constants.COMPONENT_NAME_LABEL, StandardCharsets.UTF_8.toString()) + "&watch=true";
     }
 
     /**
-     * Assert that two string sets are equal.
+     * Get a watch gateway pods URL.
      *
-     * @param actual   The actual string set
-     * @param expected The expected string set
+     * @return The watch component URL
      */
-    private void assertEquals(Set<String> actual, Set<String> expected) {
-        Assert.assertEquals(actual.size(), expected.size());
-        for (String expectedValue : expected) {
-            Assert.assertTrue(actual.contains(expectedValue));
-        }
+    private String getWatchGatewayPodsUrl() throws Exception {
+        return "/api/v1/namespaces/" + URLEncoder.encode(Constants.NAMESPACE, StandardCharsets.UTF_8.toString())
+                + "/pods?labelSelector=" + URLEncoder.encode(Constants.GATEWAY_NAME_LABEL + ","
+                + Constants.CELL_NAME_LABEL, StandardCharsets.UTF_8.toString()) + "&watch=true";
     }
 }

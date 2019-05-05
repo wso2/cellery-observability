@@ -91,7 +91,7 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
     public void start() {
         k8sClient = K8sClientHolder.getK8sClient();
         if (logger.isDebugEnabled()) {
-            logger.debug("Created API server client");
+            logger.debug("Retrieved API server client instance");
         }
     }
 
@@ -167,19 +167,17 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
                             " to the event");
                 }
 
-                if (pod.getMetadata().getLabels().containsKey(componentNameLabel)) {
-                    Object[] newData = new Object[5];
-                    newData[0] = pod.getMetadata().getLabels().getOrDefault(Constants.CELL_NAME_LABEL, "");
-                    newData[1] = Utils.getComponentName(pod);
-                    newData[2] = pod.getMetadata().getName();
-                    newData[3] = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
-                            .parse(pod.getMetadata().getCreationTimestamp()).getTime();
-                    newData[4] = pod.getSpec().getNodeName();
+                Object[] newData = new Object[5];
+                newData[0] = pod.getMetadata().getLabels().getOrDefault(Constants.CELL_NAME_LABEL, "");
+                newData[1] = Utils.getComponentName(pod);
+                newData[2] = pod.getMetadata().getName();
+                newData[3] = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
+                        .parse(pod.getMetadata().getCreationTimestamp()).getTime();
+                newData[4] = pod.getSpec().getNodeName();
 
-                    StreamEvent streamEventCopy = streamEventCloner.copyStreamEvent(incomingStreamEvent);
-                    complexEventPopulater.populateComplexEvent(streamEventCopy, newData);
-                    outputStreamEventChunk.add(streamEventCopy);
-                }
+                StreamEvent streamEventCopy = streamEventCloner.copyStreamEvent(incomingStreamEvent);
+                complexEventPopulater.populateComplexEvent(streamEventCopy, newData);
+                outputStreamEventChunk.add(streamEventCopy);
             }
         }
     }

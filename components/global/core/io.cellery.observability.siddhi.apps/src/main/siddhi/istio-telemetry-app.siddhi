@@ -103,8 +103,6 @@ define function extractFromUID[javascript] return string {
     } else if (uid === "Synapse-PT-HttpComponents-NIO") {
         if (index === 1) {
             extractedData = "global-gateway";
-        } else if (index === 2) {
-            extractedData = "cellery-system";
         }
     }
     return extractedData;

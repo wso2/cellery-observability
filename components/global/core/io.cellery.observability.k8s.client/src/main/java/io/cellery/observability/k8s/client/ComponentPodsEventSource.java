@@ -19,7 +19,6 @@
 package io.cellery.observability.k8s.client;
 
 import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watch;
@@ -87,9 +86,9 @@ public class ComponentPodsEventSource extends Source {
     @Override
     public void connect(ConnectionCallback connectionCallback) {
         // Initializing the K8s API Client
-        k8sClient = new DefaultKubernetesClient();
+        k8sClient = K8sClientHolder.getK8sClient();
         if (logger.isDebugEnabled()) {
-            logger.debug("Created API server client");
+            logger.debug("Retrieved API server client instance");
         }
 
         // Pod watcher for Cellery components
