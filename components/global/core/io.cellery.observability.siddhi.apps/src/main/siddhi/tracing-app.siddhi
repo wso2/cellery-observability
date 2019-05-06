@@ -3,23 +3,23 @@
 
 @source(type="tracing-receiver", host="0.0.0.0", port="9411", api.context="/api/v1/spans",
         @map(type="keyvalue", fail.on.missing.attribute="false"))
-define stream ZipkinStreamIn (traceId string, id string, parentId string, name string, serviceName string,
-                              kind string, timestamp long, duration long, tags string);
+define stream ZipkinStreamIn(traceId string, id string, parentId string, name string, serviceName string,
+                             kind string, timestamp long, duration long, tags string);
 
 @source(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
-define stream TelemetryStreamIn (sourceNamespace string, sourceCell string, sourceComponent string,
-                                 sourcePod string, destinationNamespace string, destinationCell string,
-                                 destinationComponent string, destinationPod string, contextReporterKind string,
-                                 requestHeadersMap object, requestPath string, requestMethod string,
-                                 requestSizeBytes long, responseCode long, responseDurationNanoSec int,
-                                 responseSizeBytes long);
+define stream TelemetryStreamIn(sourceNamespace string, sourceCell string, sourceComponent string,
+                                sourcePod string, destinationNamespace string, destinationCell string,
+                                destinationComponent string, destinationPod string, contextReporterKind string,
+                                requestHeadersMap object, requestPath string, requestMethod string,
+                                requestSizeBytes long, responseCode long, responseDurationNanoSec int,
+                                responseSizeBytes long);
 
 @Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB", field.length="tags:8000")
 @PrimaryKey("traceId", "spanId", "kind")
 @purge(enable="false")
-define table DistributedTracingTable (traceId string, spanId string, parentId string, namespace string, cell string,
-                                      serviceName string, pod string, operationName string, kind string,
-                                      startTime long, duration long, tags string);
+define table DistributedTracingTable(traceId string, spanId string, parentId string, namespace string, cell string,
+                                     serviceName string, pod string, operationName string, kind string,
+                                     startTime long, duration long, tags string);
 
 define function extractFromServiceName[javascript] return string {
     var serviceName = data[0];

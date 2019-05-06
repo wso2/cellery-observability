@@ -19,126 +19,168 @@
 package io.cellery.observability.k8s.client;
 
 import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodBuilder;
+import io.fabric8.kubernetes.api.model.PodStatus;
+import io.fabric8.kubernetes.api.model.PodStatusBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import org.apache.log4j.Logger;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import org.powermock.reflect.Whitebox;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
  * Base Test Case for K8s Clients.
  */
 public class BaseTestCase {
+
     private static final Logger logger = Logger.getLogger(BaseTestCase.class.getName());
 
     protected static final String TEST_LABEL = "mesh-observability-test";
     protected static final int WAIT_TIME = 50;
     protected static final int TIMEOUT = 5000;
-    protected static final String NODE_NAME = "node1";
 
+    protected static final String NODE_NAME = "node1";
+    protected static final String POD_CREATION_TIMESTAMP_STRING = "2019-04-30T13:21:22Z";
+    protected final long podCreationTimestamp;
+
+    public BaseTestCase() throws Exception {
+        podCreationTimestamp = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
+                .parse(POD_CREATION_TIMESTAMP_STRING).getTime();
+    }
 
     protected KubernetesClient k8sClient;
     protected KubernetesServer k8sServer;
 
-    @BeforeClass
+    @BeforeMethod
     public void initBaseTestCase() {
-        k8sServer = new KubernetesServer(true, true);
+        k8sServer = new KubernetesServer(true, false);
         k8sServer.before();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Started K8s Mock Server");
+        }
+
         k8sClient = k8sServer.getClient();
-        k8sClient.getConfiguration().setNamespace(Constants.NAMESPACE);
-        k8sClient.namespaces().list();     // To validate if the access to the K8s cluster is accurate
-        K8sClientHolder.setK8sClient(k8sClient);
-        k8sClient.nodes().createNew().withNewMetadata().withName(NODE_NAME).endMetadata().done();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Initialized the K8s Client for the K8s Mock Server");
+        }
+        Whitebox.setInternalState(K8sClientHolder.class, "k8sClient", k8sClient);
     }
 
-    @AfterClass
-    public void cleanupTestCase() {
+    @AfterMethod
+    public void cleanupBaseTestCase() {
         k8sClient.close();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Closed the K8s Client");
+        }
         k8sServer.after();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Closed the K8s Mock Server");
+        }
     }
 
     /**
-     * Create and check for a K8s pod creation.
+     * Generate a Cellery Component K8s pod object.
+     * The returned pod can be used as one of the returned pods in K8s Mock Server in expectation mode.
      *
      * @param cell      The Cell the Pod belongs to
      * @param component The component of the Cell the pod belongs to
+     * @return The generated pod
      */
-    protected void createCelleryComponentPod(String cell, String component) throws Exception {
+    protected Pod generateCelleryComponentPod(String cell, String component) {
         String podName = cell + "--" + component;
 
         Map<String, String> labels = new HashMap<>();
         labels.put(Constants.CELL_NAME_LABEL, cell);
-        labels.put(Constants.COMPONENT_NAME_LABEL, podName);
+        labels.put(Constants.COMPONENT_NAME_LABEL, cell + "--" + component);
 
-        createPod(podName, labels, "busybox");
-        checkPodCreation(podName);
+        PodStatus podStatus = new PodStatusBuilder()
+                .withPhase("Running")
+                .build();
+        return generatePod(podName, labels, podStatus);
     }
 
     /**
-     * Create and check for a K8s pod creation.
+     * Generate a Cellery Gateway K8s pod object.
+     * The returned pod can be used as one of the returned pods in K8s Mock Server in expectation mode.
      *
      * @param cell The Cell the Pod belongs to
+     * @return The generated pod
      */
-    protected void createCelleryGatewayPod(String cell) throws Exception {
+    protected Pod generateCelleryGatewayPod(String cell) {
         String podName = cell + "--gateway";
 
         Map<String, String> labels = new HashMap<>();
         labels.put(Constants.CELL_NAME_LABEL, cell);
-        labels.put(Constants.GATEWAY_NAME_LABEL, podName);
+        labels.put(Constants.GATEWAY_NAME_LABEL, cell + "--gateway");
 
-        createPod(podName, labels, "busybox");
-        checkPodCreation(podName);
+        PodStatus podStatus = new PodStatusBuilder()
+                .withPhase("Running")
+                .build();
+        return generatePod(podName, labels, podStatus);
     }
 
     /**
-     * Create and check for a K8s pod creation.
+     * Generate a Cellery Component K8s pod object with a failing state.
+     * The returned pod can be used as one of the returned pods in K8s Mock Server in expectation mode.
      *
-     * @param podName The name of the normal pod
+     * @param cell      The Cell the Pod belongs to
+     * @param component The component of the Cell the pod belongs to
+     * @return The generated pod
      */
-    protected void createNormalPod(String podName) throws Exception {
-        createPod(podName, new HashMap<>(), "busybox");
-        checkPodCreation(podName);
+    protected Pod generateFailingCelleryComponentPod(String cell, String component) {
+        String podName = cell + "--" + component;
+
+        Map<String, String> labels = new HashMap<>();
+        labels.put(Constants.CELL_NAME_LABEL, cell);
+        labels.put(Constants.COMPONENT_NAME_LABEL, cell + "--" + component);
+
+        PodStatus podStatus = new PodStatusBuilder()
+                .withPhase("ErrImagePull")
+                .build();
+        return generatePod(podName, labels, podStatus);
     }
 
     /**
-     * Create a pod that would fail.
+     * Generate a Cellery Gateway K8s pod object with a failing state.
+     * The returned pod can be used as one of the returned pods in K8s Mock Server in expectation mode.
      *
-     * @param podName The name of the pod to create
+     * @param cell      The Cell the Pod belongs to
+     * @return The generated pod
      */
-    protected void createFailingPod(String podName) {
-        createPod(podName, new HashMap<>(), "non-existent-container");
+    protected Pod generateFailingCelleryGatewayPod(String cell) {
+        String podName = cell + "--gateway";
+
+        Map<String, String> labels = new HashMap<>();
+        labels.put(Constants.CELL_NAME_LABEL, cell);
+        labels.put(Constants.GATEWAY_NAME_LABEL, cell + "--gateway");
+
+        PodStatus podStatus = new PodStatusBuilder()
+                .withPhase("ErrImagePull")
+                .build();
+        return generatePod(podName, labels, podStatus);
     }
 
     /**
-     * Delete and wait for K8s pod to be removed.
-     *
-     * @param podName The name of the pod to be deleted
-     */
-    protected void deletePod(String podName) {
-        k8sClient.pods()
-                .inNamespace(Constants.NAMESPACE)
-                .withName(podName)
-                .delete();
-        waitForPodRemove(podName);
-    }
-
-    /**
-     * Create a pod using the provided labels and container with the provided pod name.
+     * Generate a pod using the provided labels and container with the provided pod name.
+     * The returned pod can be used as one of the returned pods in K8s Mock Server in expectation mode.
      *
      * @param podName   The name of the new pod
      * @param labels    The set of labels to apply
-     * @param container The container to use
+     * @param status    The state
+     * @return The generated pod
      */
-    private void createPod(String podName, Map<String, String> labels, String container) {
+    private Pod generatePod(String podName, Map<String, String> labels, PodStatus status) {
         labels.put(TEST_LABEL, "true");
-        k8sClient.pods()
-                .createNew()
+        return new PodBuilder()
                 .withNewMetadata()
                 .withNamespace(Constants.NAMESPACE)
-                .withCreationTimestamp("2019-04-30T13:21:22Z")
+                .withCreationTimestamp(POD_CREATION_TIMESTAMP_STRING)
                 .withName(podName)
                 .addToLabels(labels)
                 .endMetadata()
@@ -146,57 +188,12 @@ public class BaseTestCase {
                 .withNodeName(NODE_NAME)
                 .addNewContainer()
                 .withName("test-container")
-                .withNewImage(container)
+                .withNewImage("busybox")
                 .withNewImagePullPolicy("IfNotPresent")
                 .withCommand("tail", "-f", "/dev/null")
                 .endContainer()
                 .endSpec()
-                .done();
-    }
-
-    /**
-     * Check for a pod creation.
-     *
-     * @param podName The name of the pod to wait for
-     */
-    private void checkPodCreation(String podName) throws Exception {
-        if (logger.isDebugEnabled()) {
-            logger.debug("Checking pod " + podName);
-        }
-
-        Pod createdPod = k8sClient.pods()
-                .inNamespace(Constants.NAMESPACE)
-                .withName(podName)
-                .get();
-        if (createdPod == null || !createdPod.getMetadata().getName().equalsIgnoreCase(podName)) {
-            throw new Exception("Pod :" + podName + " is not created!");
-        }
-    }
-
-    /**
-     * Wait for a pod to be removed.
-     *
-     * @param podName The name of the pod to be deleted
-     */
-    private void waitForPodRemove(String podName) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("Waiting for pod " + podName + " to be removed");
-        }
-        while (true) {
-            Pod pod = k8sClient.pods()
-                    .inNamespace(Constants.NAMESPACE)
-                    .withName(podName)
-                    .get();
-            if (pod == null) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Removed pod " + podName);
-                }
-                break;
-            }
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ignored) {
-            }
-        }
+                .withStatus(status)
+                .build();
     }
 }

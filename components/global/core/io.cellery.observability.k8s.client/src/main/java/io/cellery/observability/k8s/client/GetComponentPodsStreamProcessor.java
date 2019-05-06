@@ -45,13 +45,16 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * This class implements the Stream Processor which can be used to call the K8s API Server and get data about Pods.
+ * This class implements the Stream Processor which can be used to call the K8s API Server and get data about Cellery
+ * Component pods deployed in a namespace.
  */
 @Extension(
         name = "getComponentPods",
         namespace = "k8sClient",
         description = "This is a client which calls the Kubernetes API server based on the received parameters and " +
-                "adds the pod details received. This read the Service Account Token loaded into the pod and calls " +
+                "adds the pod details received. Each pod will be a separate event duplicated from the original event" +
+                "sent to this stream processor. If m number of multiple events are sent while n pods are present," +
+                "m x n events will be sent out. This read the Service Account Token loaded into the pod and calls " +
                 "the API Server using that.",
         examples = {
                 @Example(
@@ -71,8 +74,8 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
                                    SiddhiAppContext siddhiAppContext) {
         int attributeLength = attributeExpressionExecutors.length;
         if (attributeLength != 0) {
-            throw new SiddhiAppValidationException("k8sClient expects exactly zero input parameters, but " +
-                    attributeExpressionExecutors.length + " attributes found");
+            throw new SiddhiAppValidationException("k8sClient:getComponentPods() expects exactly zero input " +
+                    "parameters, but " + attributeExpressionExecutors.length + " attributes found");
         }
 
         List<Attribute> appendedAttributes = new ArrayList<>();
@@ -88,7 +91,7 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
     public void start() {
         k8sClient = K8sClientHolder.getK8sClient();
         if (logger.isDebugEnabled()) {
-            logger.debug("Created API server client");
+            logger.debug("Retrieved API server client instance");
         }
     }
 
@@ -123,6 +126,7 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
                 addComponentPods(outputStreamEventChunk, incomingStreamEvent, Constants.COMPONENT_NAME_LABEL);
                 addComponentPods(outputStreamEventChunk, incomingStreamEvent, Constants.GATEWAY_NAME_LABEL);
             } catch (ParseException e) {
+                // This should not happen unless the K8s date-time format changed (eg:- K8s version upgrade)
                 logger.error("Failed to parse K8s timestamp", e);
             }
         }
@@ -163,34 +167,18 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
                             " to the event");
                 }
 
-                if (pod.getMetadata().getLabels().containsKey(componentNameLabel)) {
-                    Object[] newData = new Object[5];
-                    newData[0] = pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL);
-                    newData[1] = getComponentName(pod.getMetadata().getLabels().get(componentNameLabel));
-                    newData[2] = pod.getMetadata().getName();
-                    newData[3] = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
-                            .parse(pod.getMetadata().getCreationTimestamp()).getTime();
-                    newData[4] = pod.getSpec().getNodeName();
+                Object[] newData = new Object[5];
+                newData[0] = pod.getMetadata().getLabels().getOrDefault(Constants.CELL_NAME_LABEL, "");
+                newData[1] = Utils.getComponentName(pod);
+                newData[2] = pod.getMetadata().getName();
+                newData[3] = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
+                        .parse(pod.getMetadata().getCreationTimestamp()).getTime();
+                newData[4] = pod.getSpec().getNodeName();
 
-                    StreamEvent streamEventCopy = streamEventCloner.copyStreamEvent(incomingStreamEvent);
-                    complexEventPopulater.populateComplexEvent(streamEventCopy, newData);
-                    outputStreamEventChunk.add(streamEventCopy);
-                }
+                StreamEvent streamEventCopy = streamEventCloner.copyStreamEvent(incomingStreamEvent);
+                complexEventPopulater.populateComplexEvent(streamEventCopy, newData);
+                outputStreamEventChunk.add(streamEventCopy);
             }
         }
-    }
-
-    /**
-     * Get the actual component name from the fully qualified name.
-     *
-     * @param fullyQualifiedName The fully qualified name (eg:- "hr--hr")
-     * @return The actual component name
-     */
-    private String getComponentName(String fullyQualifiedName) {
-        String componentName = fullyQualifiedName;
-        if (fullyQualifiedName.contains("--")) {
-            componentName = fullyQualifiedName.split("--")[1];
-        }
-        return componentName;
     }
 }
