@@ -46,7 +46,7 @@ public enum SiddhiStoreQueryTemplates {
             "on (\"${" + Params.SOURCE_CELL + "}\" == \"\" or sourceCell == \"${" + Params.SOURCE_CELL + "}\") " +
             "and (\"${" + Params.DESTINATION_CELL + "}\" == \"\" " +
             "or destinationCell == \"${" + Params.DESTINATION_CELL + "}\") " +
-            "and (sourceCell != destinationCell)\n" +
+            "and (${" + Params.CONDITION + "})\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"${" + Params.TIME_GRANULARITY + "}\"\n" +
             "select AGG_TIMESTAMP, httpResponseGroup, sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, " +
@@ -77,7 +77,7 @@ public enum SiddhiStoreQueryTemplates {
             "or destinationCell == \"${" + Params.DESTINATION_CELL + "}\")\n" +
             "and (\"${" + Params.DESTINATION_COMPONENT + "}\" == \"\" " +
             "or destinationComponent == \"${" + Params.DESTINATION_COMPONENT + "}\") " +
-            "and (sourceCell != destinationCell or sourceComponent != destinationComponent)\n" +
+            "and (${" + Params.CONDITION + "})\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"${" + Params.TIME_GRANULARITY + "}\"\n" +
             "select AGG_TIMESTAMP, httpResponseGroup, sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, " +
