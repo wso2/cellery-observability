@@ -75,7 +75,8 @@ class Details extends React.Component {
         const search = {
             queryStartTime: queryStartTime.valueOf(),
             queryEndTime: queryEndTime.valueOf(),
-            destinationCell: cell
+            destinationCell: cell,
+            includeIntraCell: true
         };
 
         if (isUserAction) {
