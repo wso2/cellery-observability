@@ -51,7 +51,8 @@ const Constants = {
     Status: {
         Success: "Success",
         Error: "Error",
-        Warning: "Warning"
+        Warning: "Warning",
+        Unknown: "Unknown"
     },
     Dashboard: {
         ALL_VALUE: "All",

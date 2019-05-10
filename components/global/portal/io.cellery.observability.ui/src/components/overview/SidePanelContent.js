@@ -29,13 +29,14 @@ import ExpansionPanel from "@material-ui/core/ExpansionPanel";
 import ExpansionPanelDetails from "@material-ui/core/ExpansionPanelDetails";
 import ExpansionPanelSummary from "@material-ui/core/ExpansionPanelSummary";
 import Grey from "@material-ui/core/colors/grey";
+import HealthIndicator from "../common/HealthIndicator";
+import HelpOutlineIcon from "@material-ui/icons/HelpOutline";
 import HttpTrafficIcon from "../../icons/HttpTrafficIcon";
 import HttpUtils from "../../utils/api/httpUtils";
 import IconButton from "@material-ui/core/IconButton";
 import {Link} from "react-router-dom";
 import MUIDataTable from "mui-datatables";
 import React from "react";
-import StateHolder from "../common/state/stateHolder";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
@@ -44,7 +45,6 @@ import TableRow from "@material-ui/core/TableRow";
 import Timeline from "@material-ui/icons/Timeline";
 import Tooltip from "@material-ui/core/Tooltip";
 import Typography from "@material-ui/core/Typography";
-import withGlobalState from "../common/state";
 import {withStyles} from "@material-ui/core/styles";
 import {
     ChartLabel, Hint, HorizontalBarSeries, HorizontalGridLines, VerticalGridLines, XAxis, XYPlot, YAxis
@@ -105,9 +105,6 @@ const styles = () => ({
         fontSize: 12
 
     },
-    listIcon: {
-        width: 20
-    },
     cellNameContainer: {
         marginTop: 10,
         marginBottom: 25
@@ -138,7 +135,7 @@ class SidePanelContent extends React.Component {
     }
 
     render = () => {
-        const {classes, summary, request, selectedCell, colorGenerator, globalState, listData} = this.props;
+        const {classes, summary, request, selectedCell, colorGenerator, listData} = this.props;
         const {trafficTooltip} = this.state;
         const options = {
             download: false,
@@ -153,16 +150,7 @@ class SidePanelContent extends React.Component {
         const columns = [
             {
                 options: {
-                    customBodyRender: (value) => {
-                        const color = colorGenerator.getColorForPercentage(value, globalState);
-                        if (value < globalState.get(StateHolder.CONFIG).percentageRangeMinValue.errorThreshold) {
-                            return <ErrorIcon style={{color: color}} className={classes.listIcon}/>;
-                        } else if (value
-                            < globalState.get(StateHolder.CONFIG).percentageRangeMinValue.warningThreshold) {
-                            return <ErrorIcon style={{color: color}} className={classes.listIcon}/>;
-                        }
-                        return <CheckCircleOutline style={{color: color}} className={classes.listIcon}/>;
-                    }
+                    customBodyRender: (value) => <HealthIndicator value={value}/>
                 }
             },
             {
@@ -443,7 +431,7 @@ class SidePanelContent extends React.Component {
                                     ? null
                                     : (
                                         <Typography className={classes.secondaryHeading}>
-                                            <ErrorIcon className={classes.cellIcon} style={{color: errorColor}}/>
+                                            <ErrorIcon className={classes.cellIcon} style={{color: warningColor}}/>
                                             &nbsp;{summary.content[2].value}
                                         </Typography>
                                     )
@@ -453,8 +441,19 @@ class SidePanelContent extends React.Component {
                                     ? null
                                     : (
                                         <Typography className={classes.secondaryHeading}>
-                                            <ErrorIcon className={classes.cellIcon} style={{color: warningColor}}/>
+                                            <ErrorIcon className={classes.cellIcon} style={{color: errorColor}}/>
                                             &nbsp;{summary.content[3].value}
+                                        </Typography>
+                                    )
+                            }
+                            {
+                                summary.content[4].value === 0
+                                    ? null
+                                    : (
+                                        <Typography className={classes.secondaryHeading}>
+                                            <HelpOutlineIcon className={classes.cellIcon}
+                                                style={{color: unknownColor}}/>
+                                            &nbsp;{summary.content[4].value}
                                         </Typography>
                                     )
                             }
@@ -490,8 +489,7 @@ SidePanelContent.propTypes = {
     summary: PropTypes.object.isRequired,
     request: PropTypes.object.isRequired,
     selectedCell: PropTypes.string,
-    listData: PropTypes.arrayOf(PropTypes.any).isRequired,
-    globalState: PropTypes.instanceOf(StateHolder).isRequired
+    listData: PropTypes.arrayOf(PropTypes.any).isRequired
 };
 
-export default withStyles(styles, {withTheme: true})(withGlobalState(withColor(SidePanelContent)));
+export default withStyles(styles, {withTheme: true})(withColor(SidePanelContent));
