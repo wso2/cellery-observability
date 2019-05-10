@@ -263,7 +263,7 @@ class Overview extends React.Component {
             this.props.globalState
         ).then((response) => {
             const cell = this.state.data.nodes.find((element) => element.id === nodeId);
-            const componentHealth = this.getComponentHealth(cell.components, response);
+            const componentHealth = this.getComponentHealth(cell, response);
             const componentHealthCount = this.getHealthCount(componentHealth);
             const statusCodeContent = this.getStatusCodeContent(nodeId, this.defaultState.request.cellStats);
             const componentInfo = this.loadComponentsInfo(cell.components, componentHealth);
@@ -314,16 +314,16 @@ class Overview extends React.Component {
         });
     };
 
-    getComponentHealth = (components, responseCodeStats) => {
+    getComponentHealth = (cell, responseCodeStats) => {
         const {globalState} = this.props;
         const config = globalState.get(StateHolder.CONFIG);
         const healthInfo = [];
-        components.forEach((component) => {
-            const total = this.getTotalComponentRequests(component, responseCodeStats, "*");
+        cell.components.forEach((component) => {
+            const total = this.getTotalComponentRequests(cell.id, component, responseCodeStats, "*");
             if (total === 0) {
                 healthInfo.push({nodeId: component, status: Constants.Status.Success, percentage: 1});
             } else {
-                const error = this.getTotalComponentRequests(component, responseCodeStats, "5xx");
+                const error = this.getTotalComponentRequests(cell.id, component, responseCodeStats, "5xx");
                 const successPercentage = 1 - (error / total);
 
                 if (successPercentage >= config.percentageRangeMinValue.warningThreshold) {
@@ -626,11 +626,11 @@ class Overview extends React.Component {
         return total;
     };
 
-    getTotalComponentRequests = (cell, stats, responseCode) => {
+    getTotalComponentRequests = (cell, component, stats, responseCode) => {
         let total = 0;
         stats.forEach((stat) => {
             if (stat[2] !== "") {
-                if (!cell || cell === stat[2]) {
+                if (cell === stat[2] && component === stat[3]) {
                     if (responseCode === "*") {
                         total += stat[6];
                     } else if (responseCode === stat[4]) {
