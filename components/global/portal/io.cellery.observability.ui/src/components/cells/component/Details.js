@@ -72,7 +72,8 @@ class Details extends React.Component {
             queryStartTime: queryStartTime.valueOf(),
             queryEndTime: queryEndTime.valueOf(),
             destinationCell: cell,
-            destinationComponent: component
+            destinationComponent: component,
+            includeIntraCell: true
         };
 
         if (isUserAction) {
@@ -104,7 +105,7 @@ class Details extends React.Component {
 
             let health;
             if (aggregatedData.total > 0) {
-                health = 1 - (aggregatedData.total === 0 ? aggregatedData.errorsCount / aggregatedData.total : 0);
+                health = 1 - aggregatedData.errorsCount / aggregatedData.total;
             } else {
                 health = -1;
             }

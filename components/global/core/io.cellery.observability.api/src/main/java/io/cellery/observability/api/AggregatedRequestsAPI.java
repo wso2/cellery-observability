@@ -68,7 +68,9 @@ public class AggregatedRequestsAPI {
                                        @QueryParam("queryEndTime") long queryEndTime,
                                        @DefaultValue("") @QueryParam("sourceCell") String sourceCell,
                                        @DefaultValue("") @QueryParam("destinationCell") String destinationCell,
-                                       @DefaultValue("seconds") @QueryParam("timeGranularity") String timeGranularity)
+                                       @DefaultValue("seconds") @QueryParam("timeGranularity") String timeGranularity,
+                                       @DefaultValue("false")
+                                       @QueryParam("includeIntraCell") boolean includeIntraCell)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELLS_METRICS.builder()
@@ -77,6 +79,10 @@ public class AggregatedRequestsAPI {
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
                     .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_CELL, sourceCell)
                     .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_CELL, destinationCell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
+                            includeIntraCell
+                                    ? "true"
+                                    : "sourceCell != destinationCell")
                     .build()
                     .execute();
             return Response.ok().entity(results).build();
@@ -146,7 +152,9 @@ public class AggregatedRequestsAPI {
                                             @DefaultValue("")
                                             @QueryParam("destinationComponent") String destinationComponent,
                                             @DefaultValue("seconds")
-                                            @QueryParam("timeGranularity") String timeGranularity)
+                                            @QueryParam("timeGranularity") String timeGranularity,
+                                            @DefaultValue("false")
+                                            @QueryParam("includeIntraCell") boolean includeIntraCell)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_COMPONENTS_METRICS.builder()
@@ -157,6 +165,10 @@ public class AggregatedRequestsAPI {
                     .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_COMPONENT, sourceComponent)
                     .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_CELL, destinationCell)
                     .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_COMPONENT, destinationComponent)
+                    .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
+                            includeIntraCell
+                                    ? "sourceComponent != destinationComponent"
+                                    : "sourceCell != destinationCell or sourceComponent != destinationComponent")
                     .build()
                     .execute();
             return Response.ok().entity(results).build();

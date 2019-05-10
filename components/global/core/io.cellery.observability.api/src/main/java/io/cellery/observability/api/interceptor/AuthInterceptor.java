@@ -21,6 +21,7 @@ package io.cellery.observability.api.interceptor;
 import io.cellery.observability.api.Constants;
 import io.cellery.observability.api.exception.oidc.OIDCProviderException;
 import io.cellery.observability.api.internal.ServiceHolder;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.wso2.msf4j.Request;
 import org.wso2.msf4j.Response;
@@ -44,15 +45,21 @@ public class AuthInterceptor implements RequestInterceptor {
                 request.getHeader(HttpHeaders.AUTHORIZATION) != null) {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
             Cookie oAuthCookie = request.getHeaders().getCookies().get(Constants.HTTP_ONLY_SESSION_COOKIE);
-            String accessToken = header.split(" ")[1] + oAuthCookie.getValue();
+            if (StringUtils.isNotEmpty(header) && oAuthCookie != null
+                    && StringUtils.isNotEmpty(oAuthCookie.getValue())) {
+                String accessToken = header.split(" ")[1] + oAuthCookie.getValue();
 
-            try {
-                if (!ServiceHolder.getOidcOauthManager().validateToken(accessToken)) {
+                try {
+                    if (!ServiceHolder.getOidcOauthManager().validateToken(accessToken)) {
+                        response.setStatus(401);
+                        return false;
+                    }
+                } catch (OIDCProviderException e) {
+                    log.debug("Error occurred while authenticating the access token", e);
                     response.setStatus(401);
                     return false;
                 }
-            } catch (OIDCProviderException e) {
-                log.debug("Error occured while authenticating the access token", e);
+            } else {
                 response.setStatus(401);
                 return false;
             }

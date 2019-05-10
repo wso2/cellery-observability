@@ -167,11 +167,15 @@ class Overview extends React.Component {
                         value: 0
                     },
                     {
+                        key: "Warning",
+                        value: 0
+                    },
+                    {
                         key: "Failed",
                         value: 0
                     },
                     {
-                        key: "Warning",
+                        key: "Unknown",
                         value: 0
                     }
                 ]
@@ -263,7 +267,7 @@ class Overview extends React.Component {
             this.props.globalState
         ).then((response) => {
             const cell = this.state.data.nodes.find((element) => element.id === nodeId);
-            const componentHealth = this.getComponentHealth(cell.components, response);
+            const componentHealth = this.getComponentHealth(cell, response);
             const componentHealthCount = this.getHealthCount(componentHealth);
             const statusCodeContent = this.getStatusCodeContent(nodeId, this.defaultState.request.cellStats);
             const componentInfo = this.loadComponentsInfo(cell.components, componentHealth);
@@ -281,12 +285,16 @@ class Overview extends React.Component {
                             value: componentHealthCount.success
                         },
                         {
+                            key: "Warning",
+                            value: componentHealthCount.warning
+                        },
+                        {
                             key: "Failed",
                             value: componentHealthCount.error
                         },
                         {
-                            key: "Warning",
-                            value: componentHealthCount.warning
+                            key: "Unknown",
+                            value: componentHealthCount.unknown
                         }
                     ]
                 },
@@ -314,16 +322,16 @@ class Overview extends React.Component {
         });
     };
 
-    getComponentHealth = (components, responseCodeStats) => {
+    getComponentHealth = (cell, responseCodeStats) => {
         const {globalState} = this.props;
         const config = globalState.get(StateHolder.CONFIG);
         const healthInfo = [];
-        components.forEach((component) => {
-            const total = this.getTotalComponentRequests(component, responseCodeStats, "*");
+        cell.components.forEach((component) => {
+            const total = this.getTotalComponentRequests(cell.id, component, responseCodeStats, "*");
             if (total === 0) {
-                healthInfo.push({nodeId: component, status: Constants.Status.Success, percentage: 1});
+                healthInfo.push({nodeId: component, status: Constants.Status.Unknown, percentage: -1});
             } else {
-                const error = this.getTotalComponentRequests(component, responseCodeStats, "5xx");
+                const error = this.getTotalComponentRequests(cell.id, component, responseCodeStats, "5xx");
                 const successPercentage = 1 - (error / total);
 
                 if (successPercentage >= config.percentageRangeMinValue.warningThreshold) {
@@ -432,12 +440,16 @@ class Overview extends React.Component {
                     value: healthCount.success
                 },
                 {
+                    key: "Warning",
+                    value: healthCount.warning
+                },
+                {
                     key: "Failed",
                     value: healthCount.error
                 },
                 {
-                    key: "Warning",
-                    value: healthCount.warning
+                    key: "Unknown",
+                    value: healthCount.unknown
                 }
             ];
             self.defaultState.summary.content = summaryContent;
@@ -482,16 +494,19 @@ class Overview extends React.Component {
         let successCount = 0;
         let warningCount = 0;
         let errorCount = 0;
+        let unknownCount = 0;
         healthInfo.forEach((info) => {
             if (info.status === Constants.Status.Success) {
                 successCount += 1;
             } else if (info.status === Constants.Status.Warning) {
                 warningCount += 1;
-            } else {
+            } else if (info.status === Constants.Status.Error) {
                 errorCount += 1;
+            } else {
+                unknownCount += 1;
             }
         });
-        return {success: successCount, warning: warningCount, error: errorCount};
+        return {success: successCount, warning: warningCount, error: errorCount, unknown: unknownCount};
     };
 
     getCellHealth = (nodes) => {
@@ -626,11 +641,11 @@ class Overview extends React.Component {
         return total;
     };
 
-    getTotalComponentRequests = (cell, stats, responseCode) => {
+    getTotalComponentRequests = (cell, component, stats, responseCode) => {
         let total = 0;
         stats.forEach((stat) => {
             if (stat[2] !== "") {
-                if (!cell || cell === stat[2]) {
+                if (cell === stat[2] && component === stat[3]) {
                     if (responseCode === "*") {
                         total += stat[6];
                     } else if (responseCode === stat[4]) {
@@ -686,7 +701,8 @@ class Overview extends React.Component {
                 + "</svg>";
 
             let cellView;
-            if (state === Constants.Status.Success) {
+            if (state === Constants.Status.Success || state === Constants.Status.Unknown) {
+                // Not to show any indicators if it is success threshold or status is unknown
                 cellView = successCell;
             } else if (state === Constants.Status.Warning) {
                 cellView = warningCell;
