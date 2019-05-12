@@ -22,14 +22,17 @@ package io.cellery.observability.tracing.synapse.handler;
  * Synapse handler related Constants.
  */
 public class Constants {
-    public static final String ZIPKIN_HOST = "ZIPKIN_HOST";
-    public static final String ZIPKIN_PORT = "ZIPKIN_PORT";
-    public static final String ZIPKIN_API_CONTEXT = "ZIPKIN_API_CONTEXT";
+    public static final String ZIPKIN_HOST_ENV_VAR = "ZIPKIN_HOST";
+    public static final String ZIPKIN_PORT_ENV_VAR = "ZIPKIN_PORT";
+    public static final String ZIPKIN_API_CONTEXT_ENV_VAR = "ZIPKIN_API_CONTEXT";
+    public static final String ZIPKIN_HOST_DEFAULT_VALUE = "wso2sp-worker.cellery-system";
+    public static final int ZIPKIN_PORT_DEFAULT_VALUE = 9411;
+    public static final String ZIPKIN_API_CONTEXT_DEFAULT_VALUE = "/api/v1/spans";
 
     public static final String TRACING_CORRELATION_ID = "TRACING_CORRELATION_ID";
     public static final String GLOBAL_GATEWAY_SERVICE_NAME = "global-gateway";
     public static final boolean TRACING_SENDER_COMPRESSION_ENABLED = false;
-    public static final String B3_GLOBAL_GATEWAY_CORRELATION_ID_HEADER = "X-B3-GlobalGatewayCorrelationID";
+    public static final String B3_GLOBAL_GATEWAY_CORRELATION_ID_HEADER = "X-B3-GlobalGatewayCorrelationId";
 
     // Tag keys
     public static final String TAG_KEY_HTTP_METHOD = "http.method";
@@ -38,6 +41,7 @@ public class Constants {
     public static final String TAG_KEY_PEER_ADDRESS = "peer.address";
     public static final String TAG_KEY_SPAN_KIND = "span.kind";
     public static final String TAG_KEY_HTTP_STATUS_CODE = "http.status_code";
+    public static final String TAG_KEY_ERROR = "error";
 
     // Tag values
     public static final String SPAN_KIND_CLIENT = "client";
