@@ -18,8 +18,8 @@
 
 package io.cellery.observability.tracing.receiver.internal;
 
-import org.junit.Test;
 import org.testng.Assert;
+import org.testng.annotations.Test;
 import zipkin2.Endpoint;
 import zipkin2.Span;
 import zipkin2.codec.SpanBytesEncoder;
