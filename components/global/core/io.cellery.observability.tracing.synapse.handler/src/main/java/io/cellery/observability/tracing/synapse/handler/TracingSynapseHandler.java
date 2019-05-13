@@ -140,40 +140,47 @@ public class TracingSynapseHandler extends AbstractSynapseHandler {
     @Override
     public boolean handleRequestOutFlow(MessageContext messageContext) {
         String correlationID = (String) messageContext.getProperty(Constants.TRACING_CORRELATION_ID);
-        Stack<Span> spanStack = spansMap.get(correlationID);
-        if (!spanStack.empty()) {
-            // Building the request out span
-            String spanName = messageContext.getTo().getAddress();
-            Span span = tracer.buildSpan(spanName)
-                    .asChildOf(spanStack.peek())
-                    .start();
-            if (logger.isDebugEnabled()) {
-                logger.debug("Started span: " + spanName);
-            }
-
-            // Settings tags
-            addTag(span, Constants.TAG_KEY_SPAN_KIND, Constants.SPAN_KIND_CLIENT);
-            addTag(span, Constants.TAG_KEY_HTTP_METHOD,
-                    messageContext.getProperty(Constants.SYNAPSE_MESSAGE_CONTEXT_PROPERTY_HTTP_METHOD));
-            addTag(span, Constants.TAG_KEY_HTTP_URL,
-                    messageContext.getProperty(Constants.SYNAPSE_MESSAGE_CONTEXT_PROPERTY_ENDPOINT));
-            addTag(span, Constants.TAG_KEY_PEER_ADDRESS,
-                    messageContext.getProperty(Constants.SYNAPSE_MESSAGE_CONTEXT_PROPERTY_PEER_ADDRESS));
-            addTag(span, Constants.TAG_KEY_PROTOCOL,
-                    messageContext.getProperty(Constants.SYNAPSE_MESSAGE_CONTEXT_PROPERTY_TRANSPORT));
-
-            // Injecting B3 headers into the outgoing headers
-            Map<String, String> headersMap = extractHeadersFromSynapseContext(messageContext);
-            tracer.inject(
-                    span.context(),
-                    Format.Builtin.HTTP_HEADERS,
-                    new TextMapInjectAdapter(headersMap)
-            );
-            headersMap.put(Constants.B3_GLOBAL_GATEWAY_CORRELATION_ID_HEADER, correlationID);
-
-            // Storing the span in the stack to be accessed later
-            spanStack.push(span);
+        if (correlationID == null) {
+            correlationID = UUID.randomUUID().toString();
+            messageContext.setProperty(Constants.TRACING_CORRELATION_ID, correlationID);
         }
+        Stack<Span> spanStack = spansMap.computeIfAbsent(correlationID, key -> new Stack<>());
+        Span parentSpan = null;
+        if (!spanStack.empty()) {
+            parentSpan = spanStack.peek();
+        }
+
+        // Building the request out span
+        String spanName = messageContext.getTo().getAddress();
+        Span span = tracer.buildSpan(spanName)
+                .asChildOf(parentSpan)
+                .start();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Started span: " + spanName);
+        }
+
+        // Settings tags
+        addTag(span, Constants.TAG_KEY_SPAN_KIND, Constants.SPAN_KIND_CLIENT);
+        addTag(span, Constants.TAG_KEY_HTTP_METHOD,
+                messageContext.getProperty(Constants.SYNAPSE_MESSAGE_CONTEXT_PROPERTY_HTTP_METHOD));
+        addTag(span, Constants.TAG_KEY_HTTP_URL,
+                messageContext.getProperty(Constants.SYNAPSE_MESSAGE_CONTEXT_PROPERTY_ENDPOINT));
+        addTag(span, Constants.TAG_KEY_PEER_ADDRESS,
+                messageContext.getProperty(Constants.SYNAPSE_MESSAGE_CONTEXT_PROPERTY_PEER_ADDRESS));
+        addTag(span, Constants.TAG_KEY_PROTOCOL,
+                messageContext.getProperty(Constants.SYNAPSE_MESSAGE_CONTEXT_PROPERTY_TRANSPORT));
+
+        // Injecting B3 headers into the outgoing headers
+        Map<String, String> headersMap = extractHeadersFromSynapseContext(messageContext);
+        tracer.inject(
+                span.context(),
+                Format.Builtin.HTTP_HEADERS,
+                new TextMapInjectAdapter(headersMap)
+        );
+        headersMap.put(Constants.B3_GLOBAL_GATEWAY_CORRELATION_ID_HEADER, correlationID);
+
+        // Storing the span in the stack to be accessed later
+        spanStack.push(span);
         return true;
     }
 

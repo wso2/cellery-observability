@@ -606,6 +606,94 @@ public class TracingSynapseHandlerTestCase {
     }
 
     @Test
+    public void testRequestOutWithoutRequestIn() {
+        /*
+         * This is an edge case which is not required. However, for safety this is validated.
+         * This validates whether the handler fails when the span stack is empty in the request out flow.
+         */
+
+        TracingSynapseHandler tracingSynapseHandler = new TracingSynapseHandler();
+        Whitebox.setInternalState(tracingSynapseHandler, "tracer", tracer);
+        Map<String, Stack<Span>> spansMap = Whitebox.getInternalState(tracingSynapseHandler, "spansMap");
+
+        String correlationId;
+        // Request Out
+        {
+            Axis2MessageContext synapseAxis2MessageContext = Mockito.mock(Axis2MessageContext.class);
+            MessageContext axis2MessageContext = Mockito.mock(MessageContext.class);
+            EndpointReference toEndpointReference = Mockito.mock(EndpointReference.class);
+
+            Mockito.when(synapseAxis2MessageContext.getAxis2MessageContext()).thenReturn(axis2MessageContext);
+            Mockito.when(axis2MessageContext.getProperty(org.apache.axis2.context.MessageContext.TRANSPORT_HEADERS))
+                    .thenReturn(new HashMap<>());
+            Mockito.when(synapseAxis2MessageContext.getTo()).thenReturn(toEndpointReference);
+            Mockito.when(toEndpointReference.getAddress()).thenReturn("GET /test-call-8-out");
+            Mockito.when(synapseAxis2MessageContext.getProperty(Constants.SYNAPSE_MESSAGE_CONTEXT_PROPERTY_HTTP_METHOD))
+                    .thenReturn("GET");
+            Mockito.when(synapseAxis2MessageContext.getProperty(Constants.SYNAPSE_MESSAGE_CONTEXT_PROPERTY_ENDPOINT))
+                    .thenReturn("destination-service-1");
+            Mockito.when(synapseAxis2MessageContext.getProperty(
+                    Constants.SYNAPSE_MESSAGE_CONTEXT_PROPERTY_PEER_ADDRESS))
+                    .thenReturn("192.168.15.84");
+            Mockito.when(synapseAxis2MessageContext.getProperty(Constants.SYNAPSE_MESSAGE_CONTEXT_PROPERTY_TRANSPORT))
+                    .thenReturn("http");
+
+            String[] correlationIdHolder = new String[1];
+            Mockito.doAnswer(invocation -> correlationIdHolder[0] = invocation.getArguments()[1].toString())
+                    .when(synapseAxis2MessageContext)
+                    .setProperty(Mockito.eq(Constants.TRACING_CORRELATION_ID), Mockito.anyString());
+
+            boolean continueFlow = tracingSynapseHandler.handleRequestOutFlow(synapseAxis2MessageContext);
+            correlationId = correlationIdHolder[0];
+
+            Assert.assertTrue(continueFlow);
+            Assert.assertNotNull(correlationId);
+            Assert.assertEquals(reportedSpans.size(), 0);
+            Assert.assertEquals(spansMap.size(), 1);
+            Assert.assertNotNull(spansMap.get(correlationId));
+            Assert.assertEquals(spansMap.get(correlationId).size(), 1);
+        }
+        // Response in
+        {
+            Axis2MessageContext synapseAxis2MessageContext = Mockito.mock(Axis2MessageContext.class);
+            MessageContext axis2MessageContext = Mockito.mock(MessageContext.class);
+
+            Mockito.when(synapseAxis2MessageContext.getAxis2MessageContext()).thenReturn(axis2MessageContext);
+            Mockito.when(synapseAxis2MessageContext.getProperty(Constants.TRACING_CORRELATION_ID))
+                    .thenReturn(correlationId);
+            Mockito.when(axis2MessageContext.getProperty(Constants.AXIS2_MESSAGE_CONTEXT_PROPERTY_HTTP_STATUS_CODE))
+                    .thenReturn(200);
+
+            boolean continueFlow = tracingSynapseHandler.handleResponseInFlow(synapseAxis2MessageContext);
+
+            Assert.assertTrue(continueFlow);
+            Assert.assertEquals(reportedSpans.size(), 1);
+            Assert.assertEquals(spansMap.size(), 0);
+        }
+
+        zipkin2.Span span1 = reportedSpans.get(0);
+        Assert.assertNotNull(span1.traceId());
+        Assert.assertNotNull(span1.id());
+        Assert.assertEquals(span1.id(), span1.traceId());
+        Assert.assertNull(span1.parentId());
+        Assert.assertEquals(span1.kind(), zipkin2.Span.Kind.CLIENT);
+        Assert.assertEquals(span1.name(), "get /test-call-8-out");
+        Assert.assertTrue(span1.timestamp() > 0);
+        Assert.assertTrue(span1.duration() > 0);
+        Assert.assertNotNull(span1.localEndpoint());
+        Assert.assertEquals(span1.localEndpoint().serviceName(), Constants.GLOBAL_GATEWAY_SERVICE_NAME);
+        Assert.assertNull(span1.remoteEndpoint());
+        Assert.assertEquals(span1.annotations().size(), 0);
+        Assert.assertNotNull(span1.tags());
+        Assert.assertEquals(span1.tags().size(), 5);
+        Assert.assertEquals(span1.tags().get(Constants.TAG_KEY_HTTP_METHOD), "GET");
+        Assert.assertEquals(span1.tags().get(Constants.TAG_KEY_HTTP_STATUS_CODE), "200");
+        Assert.assertEquals(span1.tags().get(Constants.TAG_KEY_HTTP_URL), "destination-service-1");
+        Assert.assertEquals(span1.tags().get(Constants.TAG_KEY_PEER_ADDRESS), "192.168.15.84");
+        Assert.assertEquals(span1.tags().get(Constants.TAG_KEY_PROTOCOL), "http");
+    }
+
+    @Test
     public void testFinishLastSpan() throws Exception {
         String correlationId = UUID.randomUUID().toString();
         TracingSynapseHandler tracingSynapseHandler = Mockito.spy(new TracingSynapseHandler());
