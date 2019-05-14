@@ -36,8 +36,8 @@ public class CustomContext implements Context {
     private HashMap<String, Object> contextObjects;
     private Hashtable<?, ?> environment;
 
-    public CustomContext(Hashtable<?, ?> environment) {
-        this.contextObjects = new HashMap();
+    CustomContext(Hashtable<?, ?> environment) {
+        this.contextObjects = new HashMap<>();
         this.environment = environment;
     }
 
