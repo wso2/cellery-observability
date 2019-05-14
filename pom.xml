@@ -558,7 +558,7 @@
         <siddhi.map.keyvalue.version>1.1.0</siddhi.map.keyvalue.version>
 
         <mockito.version>1.10.19</mockito.version>
-        <powermock.version>1.6.4</powermock.version>
+        <powermock.version>1.7.4</powermock.version>
         <testng.version>6.9.10</testng.version>
         <org.jacoco.version>0.8.3</org.jacoco.version>
 
