@@ -114,7 +114,7 @@ public class ModelGenTestCase {
         ServiceHolder.setModelManager(new ModelManager());
     }
 
-    @Test
+    @Test(groups = "scenarios")
     public void testHelloWorldWebappWithInstanceName() throws Exception {
         long fromTime = System.currentTimeMillis();
         generateModel("hello-world-webapp-name.csv");
@@ -132,7 +132,7 @@ public class ModelGenTestCase {
         resetCount();
     }
 
-    @Test
+    @Test(groups = "scenarios")
     public void testHelloWorldWebappWithUUID() throws Exception {
         long fromTime = System.currentTimeMillis();
         generateModel("hello-world-webapp-uuid.csv");
@@ -150,7 +150,7 @@ public class ModelGenTestCase {
         resetCount();
     }
 
-    @Test
+    @Test(groups = "scenarios")
     public void testEmployeePortal() throws Exception {
         long fromTime = System.currentTimeMillis();
         generateModel("employee-portal.csv");
@@ -179,7 +179,7 @@ public class ModelGenTestCase {
         resetCount();
     }
 
-    @Test
+    @Test(groups = "scenarios")
     public void testPetstore() throws Exception {
         generateModel("pet-store-name.csv");
         String petBe = "pet-be";
@@ -201,7 +201,7 @@ public class ModelGenTestCase {
         resetCount();
     }
 
-    @Test
+    @Test(groups = "scenarios")
     public void testHelloworldAPI() throws Exception {
         generateModel("hello-world-api.csv");
         String helloApiInstance = "hello-world-api-cell-0-2-0-614412b8";
@@ -220,6 +220,14 @@ public class ModelGenTestCase {
         edgeComponents.add(Utils.generateServiceName(GATEWAY_COMPONENT, helloApi));
         validateNode(model, helloApiInstance, components, edgeComponents);
         resetCount();
+    }
+
+    @Test(dependsOnGroups = "scenarios")
+    public void reloadModelManager() throws Exception {
+        ServiceHolder.setModelStoreManager(new ModelStoreManager());
+        ServiceHolder.setModelManager(new ModelManager());
+        Model model = ServiceHolder.getModelManager().getGraph(0, 0);
+        validateModel(model, this.nodes, this.edges);
     }
 
 
