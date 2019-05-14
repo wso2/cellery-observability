@@ -58,7 +58,7 @@ public class ModelStoreManager {
     private Model lastModel;
 
 
-    ModelStoreManager() {
+    public ModelStoreManager() {
         try {
             this.dataSource = (DataSource) ServiceHolder.getDataSourceService().getDataSource(DATASOURCE_NAME);
             createTable();

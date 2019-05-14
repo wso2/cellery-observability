@@ -16,7 +16,8 @@
   ~ specific language governing permissions and limitations
   ~ under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>org.wso2</groupId>
@@ -347,6 +348,18 @@
                 <version>${fabric8.kubernetes.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.wso2.extension.siddhi.script.js</groupId>
+                <artifactId>siddhi-script-js</artifactId>
+                <version>${siddhi.js.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.database.version}</version>
+                <scope>test</scope>
+            </dependency>
             <!-- Test dependencies end here -->
         </dependencies>
     </dependencyManagement>
@@ -556,6 +569,7 @@
         <siddhi.io.http.version>1.0.41</siddhi.io.http.version>
         <siddhi.store.rdbms.version>4.0.52</siddhi.store.rdbms.version>
         <siddhi.map.keyvalue.version>1.1.0</siddhi.map.keyvalue.version>
+        <siddhi.js.version>4.0.14</siddhi.js.version>
 
         <mockito.version>1.10.19</mockito.version>
         <powermock.version>1.7.4</powermock.version>
@@ -564,6 +578,7 @@
 
         <spotify.docker.plugin.version>1.4.10</spotify.docker.plugin.version>
         <maven.findbugsplugin.version>3.0.5</maven.findbugsplugin.version>
+        <h2.database.version>1.4.191</h2.database.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 

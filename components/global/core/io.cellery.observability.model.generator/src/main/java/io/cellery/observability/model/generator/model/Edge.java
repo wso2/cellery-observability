@@ -22,7 +22,7 @@ import io.cellery.observability.model.generator.Utils;
 /**
  * This is the POJO of the Model edge information that is being returned to by the MSF4J services - DependencyModelAPI
  */
-public class Edge {
+public class Edge implements Comparable {
     private String source;
     private String target;
     private String edgeString;
@@ -59,5 +59,9 @@ public class Edge {
 
     public boolean equals(Object object) {
         return object != null && object instanceof Edge && edgeString.equalsIgnoreCase(((Edge) object).edgeString);
+    }
+
+    public int hashCode() {
+        return edgeString.hashCode();
     }
 }
