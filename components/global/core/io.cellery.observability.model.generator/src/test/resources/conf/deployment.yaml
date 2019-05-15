@@ -263,16 +263,11 @@ wso2.datasources:
   dataSources:
     - name: WSO2_CARBON_DB
       jndiConfig:
-        # JNDI name
-        # THIS IS A MANDATORY FIELD
         name: jdbc/WSO2CarbonDB/test
-        # JNDI Reference Flag
         useJndiReference: true
-        # data source definition
         environment:
         - name: 'java.naming.factory.initial'
           value: 'io.cellery.observability.model.generator.datasource.CustomContextFactory'
-        # data source definition
       definition:
         configuration:
           connectionTestQuery: "SELECT 1"

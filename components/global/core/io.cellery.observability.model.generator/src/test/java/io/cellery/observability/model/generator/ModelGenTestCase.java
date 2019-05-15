@@ -25,8 +25,8 @@ import io.cellery.observability.model.generator.model.Model;
 import org.apache.commons.io.IOUtils;
 import org.powermock.api.mockito.PowerMockito;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.wso2.carbon.config.ConfigProviderFactory;
 import org.wso2.carbon.config.ConfigurationException;
@@ -69,7 +69,16 @@ public class ModelGenTestCase {
     private Set<Node> nodes = new HashSet<>();
     private Set<Edge> edges = new HashSet<>();
 
-    @BeforeMethod
+    private final String hrInstance = "hr-1-0-0-e1991fe2";
+    private final String stockInstance = "stock-1-0-0-ae4d1965";
+    private final String employeeInstance = "employee-1-0-0-6cc39e16";
+    private final String hr = "hr";
+    private final String employee = "employee";
+    private final String salary = "salary";
+    private final String stock = "stock";
+
+
+    @BeforeClass
     public void init() throws IOException, ModelException, DataSourceException, ConfigurationException {
         setEnv();
         String tracingAppContent = IOUtils.toString(this.getClass().
@@ -134,29 +143,18 @@ public class ModelGenTestCase {
 
     @Test(groups = "scenarios")
     public void testHelloWorldWebappWithUUID() throws Exception {
-        long fromTime = System.currentTimeMillis();
         generateModel("hello-world-webapp-uuid.csv");
         String cellInstanceName = "hello-world-cell-0-2-0-8d31dd02";
         this.nodes.add(new Node(cellInstanceName));
 
         Model model = ServiceHolder.getModelManager().getGraph(0, 0);
         validateHelloWorldWeb(cellInstanceName, model, nodes, edges);
-
-        model = ServiceHolder.getModelManager().getDependencyModel(fromTime, System.currentTimeMillis(),
-                cellInstanceName);
-        Set<Node> timeSlicedNodes = new HashSet<>();
-        timeSlicedNodes.add(new Node(cellInstanceName));
-        validateHelloWorldWeb(cellInstanceName, model, timeSlicedNodes, new HashSet<>());
         resetCount();
     }
 
     @Test(groups = "scenarios")
     public void testEmployeePortal() throws Exception {
-        long fromTime = System.currentTimeMillis();
         generateModel("employee-portal.csv");
-        String hrInstance = "hr-1-0-0-e1991fe2";
-        String stockInstance = "stock-1-0-0-ae4d1965";
-        String employeeInstance = "employee-1-0-0-6cc39e16";
         HashSet<Node> nodes = new HashSet<>();
         HashSet<Edge> edges = new HashSet<>();
         nodes.add(new Node(hrInstance));
@@ -171,10 +169,6 @@ public class ModelGenTestCase {
 
         Model model = ServiceHolder.getModelManager().getGraph(0, 0);
         validateModel(model, this.nodes, this.edges);
-        validateEmployee(model, hrInstance, stockInstance, employeeInstance);
-
-        model = ServiceHolder.getModelManager().getGraph(fromTime, System.currentTimeMillis());
-        validateModel(model, nodes, edges);
         validateEmployee(model, hrInstance, stockInstance, employeeInstance);
         resetCount();
     }
@@ -230,6 +224,39 @@ public class ModelGenTestCase {
         validateModel(model, this.nodes, this.edges);
     }
 
+    @Test(dependsOnGroups = "scenarios")
+    public void loadModelWithInvalidTimeRange() throws Exception {
+        Model model = ServiceHolder.getModelManager().getGraph(System.currentTimeMillis(),
+                System.currentTimeMillis() + 10000);
+        validateModel(model, this.nodes, this.edges);
+    }
+
+    @Test(dependsOnGroups = "scenarios")
+    public void loadServiceDependencyDiagram() throws Exception {
+        Set<Node> nodes = new HashSet<>();
+        nodes.add(new Node(Utils.getQualifiedServiceName(hrInstance, hr)));
+        nodes.add(new Node(Utils.getQualifiedServiceName(employeeInstance, employee)));
+        nodes.add(new Node(Utils.getQualifiedServiceName(employeeInstance, salary)));
+        nodes.add(new Node(Utils.getQualifiedServiceName(employeeInstance, GATEWAY_COMPONENT)));
+        nodes.add(new Node(Utils.getQualifiedServiceName(stockInstance, stock)));
+        nodes.add(new Node(Utils.getQualifiedServiceName(stockInstance, GATEWAY_COMPONENT)));
+
+        Set<Edge> edges = new HashSet<>();
+        edges.add(new Edge(Utils.generateEdgeName(Utils.getQualifiedServiceName(stockInstance, GATEWAY_COMPONENT),
+                Utils.getQualifiedServiceName(stockInstance, stock), "")));
+        edges.add(new Edge(Utils.generateEdgeName(Utils.getQualifiedServiceName(hrInstance, hr),
+                Utils.getQualifiedServiceName(stockInstance, GATEWAY_COMPONENT), "")));
+        edges.add(new Edge(Utils.generateEdgeName(Utils.getQualifiedServiceName(hrInstance, hr),
+                Utils.getQualifiedServiceName(employeeInstance, GATEWAY_COMPONENT), "")));
+        edges.add(new Edge(Utils.generateEdgeName(Utils.getQualifiedServiceName(employeeInstance, employee),
+                Utils.getQualifiedServiceName(employeeInstance, salary), "")));
+        edges.add(new Edge(Utils.generateEdgeName(Utils.getQualifiedServiceName(employeeInstance, GATEWAY_COMPONENT),
+                Utils.getQualifiedServiceName(employeeInstance, employee), "")));
+
+        Model model = ServiceHolder.getModelManager().getDependencyModel(System.currentTimeMillis(),
+                System.currentTimeMillis() + 10000, hrInstance, hr);
+        validateModel(model, nodes, edges);
+    }
 
     private void validateHelloWorldWeb(String cellInstanceName, Model model, Set<Node> nodes, Set<Edge> nodeEdges) {
         String hello = "hello";
@@ -244,7 +271,6 @@ public class ModelGenTestCase {
     }
 
     private void validateEmployee(Model model, String hrInstance, String stockInstance, String employeeInstance) {
-        String hr = "hr";
         List<String> components = new ArrayList<>();
         components.add(GATEWAY_COMPONENT);
         components.add(hr);
@@ -252,7 +278,6 @@ public class ModelGenTestCase {
         componentEdges.add(Utils.generateServiceName(GATEWAY_COMPONENT, hr));
         validateNode(model, hrInstance, components, componentEdges);
 
-        String stock = "stock";
         components.clear();
         components.add(GATEWAY_COMPONENT);
         components.add(stock);
@@ -260,8 +285,6 @@ public class ModelGenTestCase {
         componentEdges.add(Utils.generateServiceName(GATEWAY_COMPONENT, stock));
         validateNode(model, stockInstance, components, componentEdges);
 
-        String employee = "employee";
-        String salary = "salary";
         components.clear();
         components.add(GATEWAY_COMPONENT);
         components.add(employee);
@@ -364,7 +387,7 @@ public class ModelGenTestCase {
         }
     }
 
-    @AfterMethod
+    @AfterClass
     public void cleanup() {
         siddhiAppRuntime.shutdown();
         System.setProperty("carbon.home", "");
