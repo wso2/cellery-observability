@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.api.exception.oidc;
+package io.cellery.observability.api.exception;
 
 /**
  * Internal generic error in the OIDC Manager.

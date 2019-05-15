@@ -114,7 +114,7 @@ public class TracingSynapseHandlerTestCase {
                     .thenReturn("192.168.12.100");
 
             String[] correlationIdHolder = new String[1];
-            Mockito.doAnswer(invocation -> correlationIdHolder[0] = invocation.getArguments()[1].toString())
+            Mockito.doAnswer(invocation -> correlationIdHolder[0] = invocation.getArgumentAt(1, String.class))
                     .when(synapseAxis2MessageContext)
                     .setProperty(Mockito.eq(Constants.TRACING_CORRELATION_ID), Mockito.anyString());
 
@@ -265,7 +265,7 @@ public class TracingSynapseHandlerTestCase {
                     .thenReturn("192.168.11.153");
 
             String[] correlationIdHolder = new String[1];
-            Mockito.doAnswer(invocation -> correlationIdHolder[0] = invocation.getArguments()[1].toString())
+            Mockito.doAnswer(invocation -> correlationIdHolder[0] = invocation.getArgumentAt(1, String.class))
                     .when(synapseAxis2MessageContext)
                     .setProperty(Mockito.eq(Constants.TRACING_CORRELATION_ID), Mockito.anyString());
 
@@ -552,7 +552,7 @@ public class TracingSynapseHandlerTestCase {
                     .thenReturn("192.168.17.56");
 
             String[] correlationIdHolder = new String[1];
-            Mockito.doAnswer(invocation -> correlationIdHolder[0] = invocation.getArguments()[1].toString())
+            Mockito.doAnswer(invocation -> correlationIdHolder[0] = invocation.getArgumentAt(1, String.class))
                     .when(synapseAxis2MessageContext)
                     .setProperty(Mockito.eq(Constants.TRACING_CORRELATION_ID), Mockito.anyString());
 
@@ -639,7 +639,7 @@ public class TracingSynapseHandlerTestCase {
                     .thenReturn("http");
 
             String[] correlationIdHolder = new String[1];
-            Mockito.doAnswer(invocation -> correlationIdHolder[0] = invocation.getArguments()[1].toString())
+            Mockito.doAnswer(invocation -> correlationIdHolder[0] = invocation.getArgumentAt(1, String.class))
                     .when(synapseAxis2MessageContext)
                     .setProperty(Mockito.eq(Constants.TRACING_CORRELATION_ID), Mockito.anyString());
 

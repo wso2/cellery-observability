@@ -19,7 +19,7 @@
 package io.cellery.observability.api.interceptor;
 
 import io.cellery.observability.api.Constants;
-import io.cellery.observability.api.exception.oidc.OIDCProviderException;
+import io.cellery.observability.api.exception.OIDCProviderException;
 import io.cellery.observability.api.internal.ServiceHolder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;

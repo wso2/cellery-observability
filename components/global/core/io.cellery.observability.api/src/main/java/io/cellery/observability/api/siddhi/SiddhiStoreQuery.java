@@ -19,6 +19,7 @@
 package io.cellery.observability.api.siddhi;
 
 import io.cellery.observability.api.internal.ServiceHolder;
+import org.apache.log4j.Logger;
 import org.wso2.siddhi.core.event.Event;
 
 /**
@@ -27,6 +28,8 @@ import org.wso2.siddhi.core.event.Event;
  * This can be created using the @link {@link SiddhiStoreQueryTemplates}
  */
 public class SiddhiStoreQuery {
+
+    private static final Logger logger = Logger.getLogger(SiddhiStoreQueryTemplates.class);
 
     private String query;
 
@@ -40,22 +43,28 @@ public class SiddhiStoreQuery {
      * @return Siddhi Store Query Results
      */
     public Object[][] execute() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Executed Siddhi store query: " + query);
+        }
         Event[] queryResults = ServiceHolder.getSiddhiStoreQueryManager().query(query);
 
-        Object[][] results;
+        Object[][] results = null;
         if (queryResults != null) {
             int rowCount = queryResults.length;
-            int columnCount = queryResults[0].getData().length;
+            if (rowCount > 0) {
+                int columnCount = queryResults[0].getData().length;
 
-            results = new Object[rowCount][columnCount];
-            for (int i = 0; i < rowCount; i++) {
-                Object[] resultRow = new Object[columnCount];
-                for (int j = 0; j < columnCount; j++) {
-                    resultRow[j] = queryResults[i].getData(j);
+                results = new Object[rowCount][columnCount];
+                for (int i = 0; i < rowCount; i++) {
+                    Object[] resultRow = new Object[columnCount];
+                    for (int j = 0; j < columnCount; j++) {
+                        resultRow[j] = queryResults[i].getData(j);
+                    }
+                    results[i] = resultRow;
                 }
-                results[i] = resultRow;
             }
-        } else {    // No matching results
+        }
+        if (results == null) {    // No matching results
             results = new Object[0][0];
         }
         return results;
@@ -82,6 +91,9 @@ public class SiddhiStoreQuery {
          * @return The Siddhi Store Query Builder for chaining
          */
         public Builder setArg(String key, Object value) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Replacing ${" + key + "} with value " + value + " in query: " + this.query);
+            }
             this.query = this.query.replaceAll("\\$\\{" + key + "}", value.toString());
             return this;
         }

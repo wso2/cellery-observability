@@ -21,7 +21,7 @@ package io.cellery.observability.api.auth;
 import io.cellery.observability.api.Constants;
 import io.cellery.observability.api.Utils;
 import io.cellery.observability.api.bean.CelleryConfig;
-import io.cellery.observability.api.exception.oidc.OIDCProviderException;
+import io.cellery.observability.api.exception.OIDCProviderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -93,7 +93,7 @@ public class OIDCOauthManager {
         try {
             ArrayList<String> uris = new ArrayList<>(Arrays.asList(CelleryConfig.getInstance().getDashboardURL()));
             ArrayList<String> grants = new ArrayList<>(Arrays.asList(Constants.AUTHORIZATION_CODE));
-            HttpClient client = Utils.getAllSSLClient();
+            HttpClient client = Utils.getTrustAllClient();
             String dcrEP = CelleryConfig.getInstance().getIdpURL() + Constants.IDP_REGISTERATION_ENDPOINT;
             HttpPost request = constructDCRRequestBody(dcrEP, uris, grants);
 
@@ -215,7 +215,7 @@ public class OIDCOauthManager {
      */
     private HttpResponse makeRequestForTokenValidation(String token) throws OIDCProviderException {
         try {
-            HttpClient client = Utils.getAllSSLClient();
+            HttpClient client = Utils.getTrustAllClient();
             String introspectEP = CelleryConfig.getInstance().getIdpURL() + Constants.INTROSPECT_ENDPOINT;
             HttpPost request = new HttpPost(introspectEP);
             List<NameValuePair> params = new ArrayList<>();

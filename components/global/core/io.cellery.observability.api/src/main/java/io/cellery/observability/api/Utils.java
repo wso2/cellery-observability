@@ -30,6 +30,8 @@ import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -40,7 +42,7 @@ import javax.net.ssl.X509TrustManager;
 public class Utils {
 
     /**
-     * Generate a Siddhi match condition to match any value from a array of values for a particular attribute.
+     * Generate a Siddhi match condition to match a set of values for a particular attribute.
      *
      * Eg:-
      *     Input  - traceId, ["id01", "id02", "id03"]
@@ -50,7 +52,7 @@ public class Utils {
      * @param values The array of values from which at least one should match
      * @return The match condition which would match any value from the provided array
      */
-    public static String generateSiddhiMatchConditionForAnyValues(String attributeName, String[] values) {
+    public static String generateSiddhiMatchConditionForMultipleValues(String attributeName, String[] values) {
         StringBuilder traceIdMatchConditionBuilder = new StringBuilder();
         for (int i = 0; i < values.length; i++) {
             if (i != 0) {
@@ -65,45 +67,71 @@ public class Utils {
     }
 
     /**
-     * This is the method to by pass SSL check.
+     * Get a HTTP Client which bypasses the SSL checks.
      *
+     * @return HTTP Client which bypasses SSL validations
      * @throws KeyManagementException this will be thrown if an issue occurs while executing this method
      * @throws NoSuchAlgorithmException this will be thrown if an issue occurs while executing this method
      */
-    public static HttpClient getAllSSLClient() throws NoSuchAlgorithmException, KeyManagementException {
-        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+    public static HttpClient getTrustAllClient() throws KeyManagementException, NoSuchAlgorithmException {
+        TrustManager[] trustManagers = new TrustManager[]{new X509TrustManager() {
             @Override
             public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                java.security.cert.X509Certificate[] obj = new java.security.cert.X509Certificate[1];
-                return obj;
+                return new X509Certificate[0];
             }
 
             @Override
             public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
-                // Nothing to implement
+                // Do Nothing
             }
 
             @Override
             public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
-                // Nothing to implement
+                // Do Nothing
             }
         }};
         SSLContext context = SSLContext.getInstance("SSL");
-        context.init(null, trustAllCerts, null);
-
-        HttpClientBuilder builder = HttpClientBuilder.create();
+        context.init(null, trustManagers, null);
         SSLConnectionSocketFactory sslConnectionFactory =
                 new SSLConnectionSocketFactory(context, SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-        builder.setSSLSocketFactory(sslConnectionFactory);
 
         PlainConnectionSocketFactory plainConnectionSocketFactory = new PlainConnectionSocketFactory();
+
         Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
                 .register("https", sslConnectionFactory)
                 .register("http", plainConnectionSocketFactory)
                 .build();
-
         HttpClientConnectionManager ccm = new BasicHttpClientConnectionManager(registry);
-        builder.setConnectionManager(ccm);
-        return builder.build();
+
+        return HttpClientBuilder.create()
+                .setSSLSocketFactory(sslConnectionFactory)
+                .setConnectionManager(ccm)
+                .build();
+    }
+
+    /**
+     * Disable SSL verification for the default URL connection.
+     */
+    public static void disableSSLVerification() throws KeyManagementException, NoSuchAlgorithmException {
+        TrustManager[] trustManagers = new TrustManager[]{new X509TrustManager() {
+            public X509Certificate[] getAcceptedIssuers() {
+                return new X509Certificate[0];
+            }
+
+            public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+                // Do Nothing
+            }
+
+            public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+                // Do Nothing
+            }
+        }};
+        SSLContext context = SSLContext.getInstance("TLS");
+        context.init(null, trustManagers, new java.security.SecureRandom());
+        HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
+        HttpsURLConnection.setDefaultHostnameVerifier((string, sslSession) -> true);
+    }
+
+    private Utils() {   // Prevent initialization
     }
 }
