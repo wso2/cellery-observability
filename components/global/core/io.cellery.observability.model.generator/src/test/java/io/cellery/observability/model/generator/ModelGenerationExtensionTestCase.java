@@ -21,6 +21,9 @@ import org.testng.annotations.Test;
 import org.wso2.siddhi.core.SiddhiManager;
 import org.wso2.siddhi.core.exception.SiddhiAppCreationException;
 
+/**
+ * This test case focuses on the model generation extension initialization
+ */
 public class ModelGenerationExtensionTestCase {
 
     @Test(expectedExceptions = SiddhiAppCreationException.class)
