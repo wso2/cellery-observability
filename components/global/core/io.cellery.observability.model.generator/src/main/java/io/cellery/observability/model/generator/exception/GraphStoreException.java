@@ -21,6 +21,11 @@ package io.cellery.observability.model.generator.exception;
  * This exception represents the exception that occurred when communicating with the graph persistence.
  */
 public class GraphStoreException extends Exception {
+
+    public GraphStoreException(String message) {
+        super(message);
+    }
+
     public GraphStoreException(String message, Exception ex) {
         super(message, ex);
     }

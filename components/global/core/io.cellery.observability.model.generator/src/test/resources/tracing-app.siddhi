@@ -1,0 +1,54 @@
+@App:name("model-test-tracing-app")
+define stream ZipkinStreamIn(traceId string, id string, parentId string, name string, serviceName string,
+                             kind string, timestamp long, duration long, tags string);
+
+
+define function extractFromServiceName[javascript] return string {
+    var serviceName = data[0];
+    var index = data[1];    // 1: cell, 2: service
+
+    var cellGatewayMatches = /^src:\d+\.\d+\.\d+\.(.+)_\d+_\d+_\d+_.+$/.exec(serviceName);
+    var mircoserviceMatches = /^(.+)--(.+)$/.exec(serviceName);
+
+    var extractedData = "";
+    if (cellGatewayMatches) {
+        var cell = cellGatewayMatches[1];
+        if (index == 1) {
+            extractedData = cell;
+        } else if (index == 2) {
+            extractedData = "gateway";
+        }
+    } else if (mircoserviceMatches) {
+        extractedData = mircoserviceMatches[index];
+    }
+
+    // Handling service names that does not match any of the regexes
+    if (!extractedData && index == 2) {
+        extractedData = serviceName;
+    }
+    return extractedData.replace(/_/g, "-");
+};
+
+--
+-- Storing Zipkin data received for Tracing
+--
+
+from ZipkinStreamIn
+select
+    traceId,
+    id as spanId,
+    parentId,
+    "" as namespace,
+    extractFromServiceName(serviceName, 1) as cell,
+    extractFromServiceName(serviceName, 2) as serviceName,
+    "" as pod,
+    name as operationName,
+    kind,
+    timestamp as startTime,
+    duration,
+    tags
+insert into ProcessedZipkinStream;
+
+from ProcessedZipkinStream#observe:traceGroupWindow(5 sec,traceId)#observe:modelGenerator(cell, serviceName, operationName, spanId, parentId, kind, traceId, startTime)
+select *
+insert into AfterModelGenStream;

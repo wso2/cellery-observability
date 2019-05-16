@@ -46,18 +46,11 @@ public class Edge {
         return edgeString;
     }
 
-    public int compareTo(Object anotherNode) {
-        if (anotherNode != null && anotherNode instanceof Edge) {
-            if (this.equals(anotherNode)) {
-                return 0;
-            }
-            return edgeString.compareTo(((Edge) anotherNode).edgeString);
-        } else {
-            return -1;
-        }
-    }
-
     public boolean equals(Object object) {
         return object != null && object instanceof Edge && edgeString.equalsIgnoreCase(((Edge) object).edgeString);
+    }
+
+    public int hashCode() {
+        return edgeString.hashCode();
     }
 }

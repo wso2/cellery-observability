@@ -1,0 +1,79 @@
+3b9c69c787a08f13,52242029c451255f,5b25100c98efc093,async ext_authz egress,hello-world-api-cell-0-2-0-614412b8--gateway,CLIENT,1557826116010,87,"{""component"":""proxy"",""ext_authz_status"":""ext_authz_ok"",""grpc.status_code"":""0"",""upstream_cluster"":""ext_authz""}"
+
+3b9c69c787a08f13,7feb4c85de9a4c70,5b25100c98efc093,async outbound|9091||istio-policy.istio-system.svc.cluster.local egress,hello-world-api-cell-0-2-0-614412b8--gateway,CLIENT,1557826116098,1,"{""component"":""proxy"",""grpc.status_code"":""0"",""upstream_cluster"":""outbound|9091||istio-policy.istio-system.svc.cluster.local""}"
+
+3b9c69c787a08f13,27c88fb02addd981,aeda13989d93ff27,async ext_authz egress,hello-world-api-cell-0-2-0-614412b8--gateway,CLIENT,1557826116131,52,"{""component"":""proxy"",""ext_authz_status"":""ext_authz_ok"",""grpc.status_code"":""0"",""upstream_cluster"":""ext_authz""}"
+
+3b9c69c787a08f13,aeda13989d93ff27,5b25100c98efc093,hello-world-api-cell-0-2-0-614412b8--hello-api-service.default.svc.cluster.local:80/*,hello-world-api-cell-0-2-0-614412b8--gateway,CLIENT,1557826116130,103,"{""component"":""proxy"",""downstream_cluster"":""-"",""guid:x-request-id"":""e6f1136bfbd6251c6142c9c146836d8c"",""http.method"":""GET"",""http.protocol"":""HTTP/1.1"",""http.status_code"":""200"",""http.url"":""https://hello-world-api-cell-0-2-0-614412b8--hello-api-service/"",""node_id"":""sidecar~10.244.0.218~hello-world-api-cell-0-2-0-614412b8--gateway-deployment-848dmkp.default~default.svc.cluster.local"",""request_size"":""0"",""response_flags"":""-"",""response_size"":""14"",""upstream_cluster"":""outbound|80||hello-world-api-cell-0-2-0-614412b8--hello-api-service.default.svc.cluster.local"",""user_agent"":""Synapse-PT-HttpComponents-NIO""}"
+
+3b9c69c787a08f13,5b25100c98efc093,36aabb876759085f,hello-world-api-cell-0-2-0-614412b8--gateway-service.default.svc.cluster.local:80/*,hello-world-api-cell-0-2-0-614412b8--gateway,SERVER,1557826116010,239,"{""component"":""proxy"",""downstream_cluster"":""-"",""guid:x-request-id"":""e6f1136bfbd6251c6142c9c146836d8c"",""http.method"":""GET"",""http.protocol"":""HTTP/1.1"",""http.status_code"":""200"",""http.url"":""https://hello-world-api-cell-0-2-0-614412b8--gateway-service.default/hello/"",""node_id"":""sidecar~10.244.0.218~hello-world-api-cell-0-2-0-614412b8--gateway-deployment-848dmkp.default~default.svc.cluster.local"",""request_size"":""0"",""response_flags"":""-"",""response_size"":""14"",""upstream_cluster"":""inbound|80||hello-world-api-cell-0-2-0-614412b8--gateway-service.default.svc.cluster.local"",""user_agent"":""Synapse-PT-HttpComponents-NIO""}"
+
+3b9c69c787a08f13,5b25100c98efc093,36aabb876759085f,http://hello-world-api-cell-0-2-0-614412b8--gateway-service.default/hello,global-gateway,CLIENT,1557826115982,280,"{""http.method"":""GET"",""http.status_code"":""200"",""http.url"":""http://hello-world-api-cell-0-2-0-614412b8--gateway-service.default/hello"",""peer.address"":""wso2-apim"",""protocol"":""http""}"
+
+3b9c69c787a08f13,36aabb876759085f,86955312a6359890,/hello-world-api-cell-0-2-0-614412b8/hello/1.0.0/,global-gateway,,1557826115979,289,"{""http.method"":""GET"",""http.status_code"":""200"",""peer.address"":""127.0.0.1"",""protocol"":""127.0.0.1""}"
+
+3b9c69c787a08f13,86955312a6359890,3b9c69c787a08f13,http://localhost:8280/hello-world-api-cell-0-2-0-614412b8/hello/1.0.0,global-gateway,CLIENT,1557826115953,354,"{""http.method"":""GET"",""http.status_code"":""200"",""protocol"":""http""}"
+
+3b9c69c787a08f13,3b9c69c787a08f13,null,/hello-world-api-cell-0-2-0-614412b8/hello/,global-gateway,SERVER,1557826115950,358,"{""http.method"":""GET"",""http.status_code"":""200"",""peer.address"":""10.244.0.140"",""protocol"":""10.244.0.140""}"
+
+3b9c69c787a08f13,9fcf42726f914ac7,aeda13989d93ff27,async ext_authz egress,hello-world-api-cell-0-2-0-614412b8--hello-api,CLIENT,1557826116183,46,"{""component"":""proxy"",""ext_authz_status"":""ext_authz_ok"",""grpc.status_code"":""0"",""upstream_cluster"":""ext_authz""}"
+
+3b9c69c787a08f13,448cf8a2ad4b65ce,aeda13989d93ff27,async outbound|9091||istio-policy.istio-system.svc.cluster.local egress,hello-world-api-cell-0-2-0-614412b8--hello-api,CLIENT,1557826116230,1,"{""component"":""proxy"",""grpc.status_code"":""0"",""upstream_cluster"":""outbound|9091||istio-policy.istio-system.svc.cluster.local""}"
+
+3b9c69c787a08f13,aeda13989d93ff27,5b25100c98efc093,hello-world-api-cell-0-2-0-614412b8--hello-api-service.default.svc.cluster.local:80/*,hello-world-api-cell-0-2-0-614412b8--hello-api,SERVER,1557826116183,50,"{""component"":""proxy"",""downstream_cluster"":""-"",""guid:x-request-id"":""e6f1136bfbd6251c6142c9c146836d8c"",""http.method"":""GET"",""http.protocol"":""HTTP/1.1"",""http.status_code"":""200"",""http.url"":""https://hello-world-api-cell-0-2-0-614412b8--hello-api-service/"",""node_id"":""sidecar~10.244.0.219~hello-world-api-cell-0-2-0-614412b8--hello-api-deployment-lhxjl.default~default.svc.cluster.local"",""request_size"":""0"",""response_flags"":""-"",""response_size"":""14"",""upstream_cluster"":""inbound|80||hello-world-api-cell-0-2-0-614412b8--hello-api-service.default.svc.cluster.local"",""user_agent"":""Synapse-PT-HttpComponents-NIO""}"
+
+3b9c69c787a08f13,5aad6987e117d5ed,693f642039cb72f5,kubernetes:handler.kubernetesenv.istio-system(kubernetesenv),istio-mixer,,1557826116099,0,"{""lc"":""istio-mixer""}"
+
+3b9c69c787a08f13,693f642039cb72f5,7feb4c85de9a4c70,/istio.mixer.v1.Mixer/Check,istio-mixer,SERVER,1557826116099,0,"{""component"":""gRPC"",""hostname"":""istio-policy-5f4d6f5fb7-hgth7"",""jaeger.version"":""Go-2.12.0""}"
+
+3b9c69c787a08f13,3506185fb0b080a2,2064c57d0d48eb65,kubernetes:handler.kubernetesenv.istio-system(kubernetesenv),istio-mixer,,1557826116231,0,"{""lc"":""istio-mixer""}"
+
+3b9c69c787a08f13,2064c57d0d48eb65,448cf8a2ad4b65ce,/istio.mixer.v1.Mixer/Check,istio-mixer,SERVER,1557826116231,0,"{""component"":""gRPC"",""hostname"":""istio-policy-5f4d6f5fb7-hgth7"",""jaeger.version"":""Go-2.12.0""}"
+
+79b4a40b10ab624e,68af0a84bcda6a13,77e7c48bed2b6ecc,kubernetes:handler.kubernetesenv.istio-system(kubernetesenv),istio-mixer,,1557826117102,0,"{""lc"":""istio-mixer""}"
+
+79b4a40b10ab624e,77e7c48bed2b6ecc,0cf1663da34c0639,attribute bag 0,,,1557826117102,0,"{""lc"":""istio-mixer""}"
+
+79b4a40b10ab624e,37736bdc613d396d,0cf1663da34c0639,metric:handler.prometheus.istio-system(prometheus),istio-mixer,,1557826117103,0,"{""lc"":""istio-mixer""}"
+
+79b4a40b10ab624e,2a2af22fea70cde3,0cf1663da34c0639,logentry:handler.stdio.istio-system(stdio),istio-mixer,,1557826117103,0,"{""lc"":""istio-mixer""}"
+
+79b4a40b10ab624e,0cf1663da34c0639,32441b06a17a8c8d,Report,,,1557826117102,1,"{""lc"":""istio-mixer""}"
+
+79b4a40b10ab624e,32441b06a17a8c8d,79b4a40b10ab624e,/istio.mixer.v1.Mixer/Report,istio-mixer,SERVER,1557826117102,1,"{""component"":""gRPC"",""hostname"":""istio-telemetry-85cb868c54-77c64"",""jaeger.version"":""Go-2.12.0""}"
+
+82661a05d45f762d,6b7161f9c9d18821,589bb870c5e6138c,kubernetes:handler.kubernetesenv.istio-system(kubernetesenv),istio-mixer,,1557826117236,0,"{""lc"":""istio-mixer""}"
+
+82661a05d45f762d,589bb870c5e6138c,0bdb3618dd9ed25d,attribute bag 0,,,1557826117235,0,"{""lc"":""istio-mixer""}"
+
+82661a05d45f762d,792d36fd2123afbe,0bdb3618dd9ed25d,metric:handler.prometheus.istio-system(prometheus),istio-mixer,,1557826117236,0,"{""lc"":""istio-mixer""}"
+
+82661a05d45f762d,6a588a6932c1dee1,0bdb3618dd9ed25d,logentry:handler.stdio.istio-system(stdio),istio-mixer,,1557826117236,0,"{""lc"":""istio-mixer""}"
+
+82661a05d45f762d,0bdb3618dd9ed25d,00f91be804137bca,Report,,,1557826117235,0,"{""lc"":""istio-mixer""}"
+
+82661a05d45f762d,00f91be804137bca,82661a05d45f762d,/istio.mixer.v1.Mixer/Report,istio-mixer,SERVER,1557826117235,0,"{""component"":""gRPC"",""hostname"":""istio-telemetry-85cb868c54-77c64"",""jaeger.version"":""Go-2.12.0""}"
+
+337f3fc96cd36105,109d0cac001a5a91,2aceeedcaeedbb5f,kubernetes:handler.kubernetesenv.istio-system(kubernetesenv),istio-mixer,,1557826118104,0,"{""lc"":""istio-mixer""}"
+
+337f3fc96cd36105,2aceeedcaeedbb5f,04c627059d661dd3,attribute bag 0,,,1557826118104,0,"{""lc"":""istio-mixer""}"
+
+337f3fc96cd36105,44cf48e7b9d83889,04c627059d661dd3,metric:handler.prometheus.istio-system(prometheus),istio-mixer,,1557826118105,0,"{""lc"":""istio-mixer""}"
+
+337f3fc96cd36105,3e536e39ce1b535b,04c627059d661dd3,logentry:handler.stdio.istio-system(stdio),istio-mixer,,1557826118105,0,"{""lc"":""istio-mixer""}"
+
+337f3fc96cd36105,04c627059d661dd3,337f3fc96cd36105,Report,,,1557826118104,0,"{""lc"":""istio-mixer""}"
+
+337f3fc96cd36105,337f3fc96cd36105,null,/istio.mixer.v1.Mixer/Report,istio-mixer,SERVER,1557826118104,0,"{""component"":""gRPC"",""hostname"":""istio-telemetry-85cb868c54-77c64"",""jaeger.version"":""Go-2.12.0"",""sampler.type"":""const"",""sampler.param"":""true""}"
+
+0cbf91d4b96b1205,1c0da7077d1860bf,691793b185cd0895,kubernetes:handler.kubernetesenv.istio-system(kubernetesenv),istio-mixer,,1557826118242,0,"{""lc"":""istio-mixer""}"
+
+0cbf91d4b96b1205,691793b185cd0895,112a2a3c95e55c0e,attribute bag 0,,,1557826118242,0,"{""lc"":""istio-mixer""}"
+
+0cbf91d4b96b1205,6b29b05c6ba6e457,112a2a3c95e55c0e,metric:handler.prometheus.istio-system(prometheus),istio-mixer,,1557826118243,0,"{""lc"":""istio-mixer""}"
+
+0cbf91d4b96b1205,1ba69f8a307c273e,112a2a3c95e55c0e,logentry:handler.stdio.istio-system(stdio),istio-mixer,,1557826118242,0,"{""lc"":""istio-mixer""}"
+
+0cbf91d4b96b1205,112a2a3c95e55c0e,0cbf91d4b96b1205,Report,,,1557826118242,0,"{""lc"":""istio-mixer""}"
+
+0cbf91d4b96b1205,0cbf91d4b96b1205,null,/istio.mixer.v1.Mixer/Report,istio-mixer,SERVER,1557826118242,0,"{""component"":""gRPC"",""hostname"":""istio-telemetry-85cb868c54-77c64"",""jaeger.version"":""Go-2.12.0"",""sampler.type"":""const"",""sampler.param"":""true""}"

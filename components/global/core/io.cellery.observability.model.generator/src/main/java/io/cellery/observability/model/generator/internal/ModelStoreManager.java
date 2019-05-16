@@ -58,7 +58,7 @@ public class ModelStoreManager {
     private Model lastModel;
 
 
-    ModelStoreManager() {
+    public ModelStoreManager() {
         try {
             this.dataSource = (DataSource) ServiceHolder.getDataSourceService().getDataSource(DATASOURCE_NAME);
             createTable();
@@ -70,7 +70,7 @@ public class ModelStoreManager {
         }
     }
 
-    private void createTable() throws SQLException {
+    private void createTable() throws SQLException, GraphStoreException {
         Connection connection = getConnection();
         PreparedStatement statement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS " + TABLE_NAME +
                 " (MODEL_TIME TIMESTAMP, NODES TEXT, EDGES TEXT)");
@@ -137,8 +137,12 @@ public class ModelStoreManager {
     }
 
 
-    private Connection getConnection() throws SQLException {
-        return this.dataSource.getConnection();
+    private Connection getConnection() throws SQLException, GraphStoreException {
+        if (this.dataSource !=  null) {
+            return this.dataSource.getConnection();
+        } else {
+            throw new GraphStoreException("Datasource is not available!");
+        }
     }
 
     private void cleanupConnection(ResultSet rs, Statement stmt, Connection conn) {
@@ -186,7 +190,7 @@ public class ModelStoreManager {
         }
     }
 
-    public void storeCurrentModel() {
+    public void storeCurrentModel() throws GraphStoreException {
         try {
             MutableNetwork<Node, String> currentModel = ServiceHolder.getModelManager().getDependencyGraph();
             if (lastModel == null) {
@@ -210,6 +214,7 @@ public class ModelStoreManager {
             }
         } catch (GraphStoreException e) {
             log.error("Error occurred while handling the dependency graph persistence. ", e);
+            throw e;
         }
     }
 
