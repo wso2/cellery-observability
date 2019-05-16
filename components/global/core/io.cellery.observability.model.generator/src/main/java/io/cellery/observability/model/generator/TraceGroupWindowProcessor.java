@@ -95,7 +95,6 @@ public class TraceGroupWindowProcessor extends StreamProcessor implements Schedu
     private VariableExpressionExecutor tracekeyExecutor;
     private Scheduler scheduler;
     private Map<String, TraceGroup> traceGroupMap;
-    private TraceGroup traceGroup;
     private ComplexEventChunk<StreamEvent> expiredEventChunk;
 
     @Override
@@ -112,11 +111,9 @@ public class TraceGroupWindowProcessor extends StreamProcessor implements Schedu
     protected List<Attribute> init(AbstractDefinition abstractDefinition, ExpressionExecutor[] expressionExecutors,
                                    ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
         this.traceGroupMap = new ConcurrentHashMap<>();
-        this.traceGroup = new TraceGroup();
         this.expiredEventChunk = new ComplexEventChunk<>(false);
 
         if (attributeExpressionExecutors.length == 2) {
-
             if (attributeExpressionExecutors[0] instanceof ConstantExpressionExecutor) {
                 if (attributeExpressionExecutors[0].getReturnType() == Attribute.Type.INT ||
                         attributeExpressionExecutors[0].getReturnType() == Attribute.Type.LONG) {
@@ -161,6 +158,7 @@ public class TraceGroupWindowProcessor extends StreamProcessor implements Schedu
                 StreamEvent streamEvent = streamEventChunk.next();
                 long eventTimestamp = streamEvent.getTimestamp();
                 long maxTimestamp = eventTimestamp + idleTimeGap;
+                TraceGroup traceGroup;
 
                 if (streamEvent.getType() == StreamEvent.Type.CURRENT) {
                     String key = (String) tracekeyExecutor.execute(streamEvent);
@@ -182,7 +180,7 @@ public class TraceGroupWindowProcessor extends StreamProcessor implements Schedu
                             traceGroup.setEndTimestamp(maxTimestamp);
                             scheduler.notifyAt(maxTimestamp);
                         } else {
-                            addLateEvent(streamEventChunk, eventTimestamp, clonedStreamEvent);
+                            addLateEvent(streamEventChunk, eventTimestamp, clonedStreamEvent, traceGroup);
                         }
                     }
                 } else if (streamEvent.getType() == ComplexEvent.Type.TIMER) {
@@ -204,7 +202,7 @@ public class TraceGroupWindowProcessor extends StreamProcessor implements Schedu
      * Handles when the late event arrives to the system.
      */
     private void addLateEvent(ComplexEventChunk<StreamEvent> streamEventChunk,
-                              long eventTimestamp, StreamEvent streamEvent) {
+                              long eventTimestamp, StreamEvent streamEvent, TraceGroup traceGroup) {
         //check the late event belongs to the same trace
         if (eventTimestamp >= (traceGroup.getStartTimestamp() - idleTimeGap)) {
             traceGroup.add(streamEvent);
@@ -253,7 +251,6 @@ public class TraceGroupWindowProcessor extends StreamProcessor implements Schedu
     public synchronized Map<String, Object> currentState() {
         Map<String, Object> state = new HashMap<>();
         state.put("traceGroupMap", traceGroupMap);
-        state.put("traceGroup", traceGroup);
         state.put("expiredEventChunk", expiredEventChunk);
         return state;
     }
@@ -261,7 +258,6 @@ public class TraceGroupWindowProcessor extends StreamProcessor implements Schedu
     @Override
     public synchronized void restoreState(Map<String, Object> state) {
         traceGroupMap = (ConcurrentHashMap<String, TraceGroup>) state.get("traceGroupMap");
-        traceGroup = (TraceGroup) state.get("traceGroup");
         expiredEventChunk = (ComplexEventChunk<StreamEvent>) state.get("expiredEventChunk");
     }
 

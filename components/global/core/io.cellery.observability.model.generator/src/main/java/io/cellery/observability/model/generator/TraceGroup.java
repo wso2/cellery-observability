@@ -37,10 +37,6 @@ public class TraceGroup implements Serializable, Comparable {
         this.key = key;
     }
 
-    public TraceGroup() {
-        currentTraceGroup = new ComplexEventChunk<>(false);
-    }
-
     public String getKey() {
         return key;
     }
