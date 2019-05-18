@@ -23,9 +23,9 @@ import io.cellery.observability.api.Utils;
 import io.cellery.observability.api.bean.CelleryConfig;
 import io.cellery.observability.api.exception.OIDCProviderException;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.ParseException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
@@ -38,48 +38,66 @@ import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.wso2.carbon.config.ConfigurationException;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * This class is used to create a DCR request for Service Provider registeration.
+ * Manager for managing Open ID Connect related functionality.
  */
 public class OIDCOauthManager {
 
-    private static final Logger log = Logger.getLogger(OIDCOauthManager.class);
+    private static final Logger logger = Logger.getLogger(OIDCOauthManager.class);
+
     private static final String ERROR = "error";
     private static final String ACTIVE_STATUS = "active";
     private static final String BASIC_AUTH = "Basic ";
+
     private String clientId;
     private char[] clientSecret;
 
+    public OIDCOauthManager() {
+        try {
+            retrieveClientCredentials();
+        } catch (OIDCProviderException e) {
+            logger.warn("Fetching Client Credentials failed due to IDP unavailability, " +
+                    "will be re-attempted when a user logs in");
+        }
+    }
+
+    /**
+     * Get the client ID of the SP created for observability portal.
+     *
+     * @return Client Id
+     * @throws OIDCProviderException if fetching client id failed
+     */
     public String getClientId() throws OIDCProviderException {
         if (this.clientId == null) {
             synchronized (this) {
-                performDCR();
+                retrieveClientCredentials();
             }
         }
         return this.clientId;
     }
 
-    public String getClientSecret() {
-        return String.valueOf(this.clientSecret);
-    }
-
-    public OIDCOauthManager() {
-        try {
-            performDCR();
-        } catch (OIDCProviderException e) {
-            log.warn("DCR failure due to IDP unavailability, will be re-attempted when a user logs in");
+    /**
+     * Get the client secret of the SP created for observability portal.
+     *
+     * @return Client secret
+     * @throws OIDCProviderException if fetching client secret failed
+     */
+    public String getClientSecret() throws OIDCProviderException {
+        if (this.clientSecret == null) {
+            synchronized (this) {
+                retrieveClientCredentials();
+            }
         }
+        return String.valueOf(this.clientSecret);
     }
 
     /**
@@ -87,87 +105,73 @@ public class OIDCOauthManager {
      * the client application's credentials from IDP.
      *
      * @return the credentials returned in JSON format
+     * @throws OIDCProviderException if getting the Client Credentials fails
      */
-    private JSONObject getClientCredentials() throws OIDCProviderException {
-
-        try {
-            ArrayList<String> uris = new ArrayList<>(Arrays.asList(CelleryConfig.getInstance().getDashboardURL()));
-            ArrayList<String> grants = new ArrayList<>(Arrays.asList(Constants.AUTHORIZATION_CODE));
-            HttpClient client = Utils.getTrustAllClient();
-            String dcrEP = CelleryConfig.getInstance().getIdpURL() + Constants.IDP_REGISTERATION_ENDPOINT;
-            HttpPost request = constructDCRRequestBody(dcrEP, uris, grants);
-
-            HttpResponse response = client.execute(request);
-            StringBuilder builder = getResponseString(response);
-            JSONObject jsonObject = new JSONObject(builder.toString());
+    private void retrieveClientCredentials() throws OIDCProviderException {
+        if (this.clientId == null || this.clientSecret == null) {
+            JSONObject jsonObject = createClientWithDcr();
             if (jsonObject.has(ERROR)) {
-                try {
-                    jsonObject = retrieveClientCredentials(dcrEP, client);
-                    log.info("Client with name " + Constants.APPLICATION_NAME + " already exists.");
-
-                } catch (OIDCProviderException e) {
-                    throw new OIDCProviderException("Error while checking for existing client application in IDP." +
-                            " Unable to retrieve existing client", e);
-                }
+                logger.info("Fetching the credentials of the already existing client " + Constants.APPLICATION_NAME);
+                jsonObject = retrieveExistingClientCredentials();
             }
-            return jsonObject;
-        } catch (NoSuchAlgorithmException | KeyManagementException | ConfigurationException | IOException e) {
-            throw new OIDCProviderException("Error occured while registering client", e);
+
+            this.clientId = jsonObject.getString(Constants.CLIENT_ID_TXT);
+            this.clientSecret = jsonObject.getString(Constants.CLIENT_SECRET_TXT).toCharArray();
         }
     }
 
     /**
-     * This method will be used to construct request body for DCR registeration
+     * Register a Client for the Observability Portal.
      *
-     * @param dcrEp        This will be the DCR URL
-     * @param callbackUris List of callback URIs
-     * @param grants       List of grant types
      * @return the HttpPost object
+     * @throws OIDCProviderException if the HTTP call for creating the Client fails
      */
-    private HttpPost constructDCRRequestBody(String dcrEp, ArrayList<String> callbackUris,
-                                             ArrayList<String> grants) throws ConfigurationException {
-        HttpPost request = new HttpPost(dcrEp);
-        JSONObject clientJson = new JSONObject();
-        clientJson.put(Constants.CALL_BACK_URL, callbackUris);
-        clientJson.put(Constants.CLIENT_NAME, Constants.APPLICATION_NAME);
-        clientJson.put(Constants.GRANT_TYPE, grants);
-        clientJson.put(Constants.EXT_PARAM_CLIENT_ID, Constants.STANDARD_CLIENT_ID);
-        StringEntity requestEntity = new StringEntity(clientJson.toString(), ContentType.APPLICATION_JSON);
-        request.setHeader(Constants.AUTHORIZATION, getEncodedAuthCredentials());
-        request.setHeader(Constants.CONTENT_TYPE, Constants.APPLICATION_JSON);
-        request.setEntity(requestEntity);
-        return request;
-    }
-
-    /**
-     * This method will be used to construct encoded authenticated credetials.
-     *
-     * @return the String value of encoded credential is returned
-     */
-    private String getEncodedAuthCredentials() throws ConfigurationException {
-        String authString = CelleryConfig.getInstance().getIdpAdminUsername() + ":"
-                + CelleryConfig.getInstance().getIdpAdminPassword();
-        byte[] authEncBytes = Base64.encodeBase64(authString.getBytes(Charset.forName(StandardCharsets.UTF_8.name())));
-        String authStringEnc = new String(authEncBytes, Charset.forName(StandardCharsets.UTF_8.name()));
-        return BASIC_AUTH + authStringEnc;
-    }
-
-    /**
-     * This method will check if the client application is already registered.
-     *
-     * @param dcrEp  This will be the DCR URL
-     * @param client The HttpClient object
-     * @return the credentials returned in JSON format
-     */
-    private JSONObject retrieveClientCredentials(String dcrEp, HttpClient client) throws OIDCProviderException {
+    private JSONObject createClientWithDcr() throws OIDCProviderException {
         try {
-            HttpGet getRequest = new HttpGet(dcrEp + "?"
-                    + Constants.CLIENT_NAME_PARAM + "=" + Constants.APPLICATION_NAME);
-            getRequest.setHeader(Constants.AUTHORIZATION, getEncodedAuthCredentials());
+            List<String> callbackUris = Collections.singletonList(CelleryConfig.getInstance().getDashboardURL());
+            List<String> grants = Collections.singletonList(Constants.AUTHORIZATION_CODE);
 
-            HttpResponse response = client.execute(getRequest);
-            HttpEntity entity = response.getEntity();
-            String result = EntityUtils.toString(entity, Charset.forName(StandardCharsets.UTF_8.name()));
+            String dcrEp = CelleryConfig.getInstance().getIdpURL() + Constants.IDP_REGISTERATION_ENDPOINT;
+            JSONObject clientJson = new JSONObject();
+            clientJson.put(Constants.CALL_BACK_URL, callbackUris);
+            clientJson.put(Constants.CLIENT_NAME, Constants.APPLICATION_NAME);
+            clientJson.put(Constants.GRANT_TYPE, grants);
+            clientJson.put(Constants.EXT_PARAM_CLIENT_ID, Constants.STANDARD_CLIENT_ID);
+            StringEntity requestEntity = new StringEntity(clientJson.toString(), ContentType.APPLICATION_JSON);
+
+            HttpPost request = new HttpPost(dcrEp);
+            request.setHeader(Constants.AUTHORIZATION, getEncodedIdpAdminCredentials());
+            request.setHeader(Constants.CONTENT_TYPE, Constants.APPLICATION_JSON);
+            request.setEntity(requestEntity);
+
+            HttpClient client = Utils.getTrustAllClient();
+            if (logger.isDebugEnabled()) {
+                logger.debug("Creating new Client " + Constants.APPLICATION_NAME);
+            }
+            HttpResponse response = client.execute(request);
+            return new JSONObject(EntityUtils.toString(response.getEntity()));
+        } catch (IOException | ParseException | NoSuchAlgorithmException | KeyManagementException |
+                ConfigurationException e) {
+            throw new OIDCProviderException("Error occurred while registering client", e);
+        }
+    }
+
+    /**
+     * Retrieve the existing credentials for the Observability Portal Client.
+     *
+     * @return the credentials returned in JSON format
+     * @throws OIDCProviderException if retrieving existing client credentials fails
+     */
+    private JSONObject retrieveExistingClientCredentials() throws OIDCProviderException {
+        try {
+            String dcrEp = CelleryConfig.getInstance().getIdpURL() + Constants.IDP_REGISTERATION_ENDPOINT;
+            HttpGet request = new HttpGet(dcrEp + "?"
+                    + Constants.CLIENT_NAME_PARAM + "=" + Constants.APPLICATION_NAME);
+            request.setHeader(Constants.AUTHORIZATION, getEncodedIdpAdminCredentials());
+
+            HttpClient client = Utils.getTrustAllClient();
+            HttpResponse response = client.execute(request);
+            String result = EntityUtils.toString(response.getEntity());
 
             if (response.getStatusLine().getStatusCode() == 200 && result.contains(Constants.CLIENT_ID_TXT)) {
                 return new JSONObject(result);
@@ -175,117 +179,60 @@ public class OIDCOauthManager {
                 throw new OIDCProviderException("Error while retrieving client credentials." +
                         " Expected client credentials are not found in the response");
             }
-        } catch (IOException | ConfigurationException e) {
-            throw new OIDCProviderException("Error occured while checking for client with name " +
+        } catch (IOException | ParseException | NoSuchAlgorithmException | KeyManagementException |
+                ConfigurationException e) {
+            throw new OIDCProviderException("Error occurred while retrieving the client credentials with name " +
                     Constants.APPLICATION_NAME, e);
         }
     }
 
     /**
-     * This method will be used to validate access token.
+     * Validate the token.
      *
      * @param token This will be the access token
      * @return the boolean status of the validity of the access token
+     * @throws OIDCProviderException if validating the token fails
      */
     public boolean validateToken(String token) throws OIDCProviderException {
         try {
-            HttpResponse response = makeRequestForTokenValidation(token);
-            StringBuilder builder = getResponseString(response);
-            JSONObject jsonObject = new JSONObject(builder.toString());
+            List<NameValuePair> params = new ArrayList<>();
+            params.add(new BasicNameValuePair("token", token));
+
+            String introspectEP = CelleryConfig.getInstance().getIdpURL() + Constants.INTROSPECT_ENDPOINT;
+            HttpPost request = new HttpPost(introspectEP);
+            request.setHeader(Constants.AUTHORIZATION, getEncodedIdpAdminCredentials());
+            request.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8.name()));
+
+            HttpClient client = Utils.getTrustAllClient();
+            HttpResponse response = client.execute(request);
             int statusCode = response.getStatusLine().getStatusCode();
-            if (!(statusCode >= 200 && statusCode < 400)) {
-                log.error("Failed to connect to Introspect endpoint in Identity Provider server." +
+            if (statusCode >= 200 && statusCode < 400) {
+                JSONObject jsonObject = new JSONObject(EntityUtils.toString(response.getEntity()));
+                if (!jsonObject.getBoolean(ACTIVE_STATUS)) {
+                    return false;
+                }
+            } else {
+                logger.error("Failed to connect to Introspect endpoint in Identity Provider server." +
                         " Exited with Status Code " + statusCode);
                 return false;
-            } else if (!jsonObject.getBoolean(ACTIVE_STATUS)) {
-                return false;
             }
-        } catch (IOException e) {
-            log.error("Error occured while reading data from Introspect endpoint", e);
-            return false;
+        } catch (IOException | ParseException | NoSuchAlgorithmException | KeyManagementException |
+                ConfigurationException e) {
+            throw new OIDCProviderException("Error occurred while calling the introspect endpoint", e);
         }
         return true;
     }
 
     /**
-     * This method will be used to construct and make the request for validating token .
+     * Get the Base64 encoded IdP Admin Credentials.
      *
-     * @param token This will be the access token
-     * @return the response object is returned
+     * @return the String value of encoded credential is returned
      */
-    private HttpResponse makeRequestForTokenValidation(String token) throws OIDCProviderException {
-        try {
-            HttpClient client = Utils.getTrustAllClient();
-            String introspectEP = CelleryConfig.getInstance().getIdpURL() + Constants.INTROSPECT_ENDPOINT;
-            HttpPost request = new HttpPost(introspectEP);
-            List<NameValuePair> params = new ArrayList<>();
-            params.add(new BasicNameValuePair("token", token));
-
-            request.setHeader(Constants.AUTHORIZATION, getEncodedAuthCredentials());
-            request.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8.name()));
-
-            return client.execute(request);
-        } catch (IOException | NoSuchAlgorithmException | KeyManagementException | ConfigurationException e) {
-            throw new OIDCProviderException("Error occured while making request to Introspect endpoint", e);
-        }
-    }
-
-    /**
-     * This method will be used to close all resources that are used.
-     *
-     * @param inputStreamReader The InputStreamReader used while reading response
-     * @param bufReader         The BufferedReader used while reading response
-     * @return the credentials returned in JSON format
-     */
-    private void closeResources(InputStreamReader inputStreamReader, BufferedReader bufReader) {
-        if (bufReader != null) {
-            try {
-                bufReader.close();
-            } catch (IOException e) {
-                log.debug("Error occured while closing buffered reader ", e);
-            }
-        }
-        if (inputStreamReader != null) {
-            try {
-                inputStreamReader.close();
-            } catch (IOException e) {
-                log.debug("Error occured while closing input stream reader ", e);
-            }
-        }
-    }
-
-    /**
-     * This method will be used to build response to StringBuilder from response object.
-     *
-     * @param response The response that will be obtained
-     * @return The StringBuilder object will be built and returned
-     */
-    private StringBuilder getResponseString(HttpResponse response) throws IOException {
-        InputStreamReader inputStreamReader = new InputStreamReader(
-                response.getEntity().getContent(), StandardCharsets.UTF_8);
-        BufferedReader bufReader = new BufferedReader(inputStreamReader);
-        StringBuilder builder = new StringBuilder();
-
-        try {
-            String line;
-            while ((line = bufReader.readLine()) != null) {
-                builder.append(line);
-                builder.append(System.lineSeparator());
-            }
-        } finally {
-            closeResources(inputStreamReader, bufReader);
-        }
-        return builder;
-    }
-
-    /**
-     * This method will be used to make DCR and set the client credentials obtained from IDP.
-     */
-    private void performDCR() throws OIDCProviderException {
-        if (this.clientId == null) {
-            JSONObject clientJson = getClientCredentials();
-            this.clientId = clientJson.getString(Constants.CLIENT_ID_TXT);
-            this.clientSecret = clientJson.getString(Constants.CLIENT_SECRET_TXT).toCharArray();
-        }
+    private String getEncodedIdpAdminCredentials() throws ConfigurationException {
+        String authString = CelleryConfig.getInstance().getIdpAdminUsername() + ":"
+                + CelleryConfig.getInstance().getIdpAdminPassword();
+        byte[] authEncBytes = Base64.encodeBase64(authString.getBytes(Charset.forName(StandardCharsets.UTF_8.name())));
+        String authStringEnc = new String(authEncBytes, Charset.forName(StandardCharsets.UTF_8.name()));
+        return BASIC_AUTH + authStringEnc;
     }
 }

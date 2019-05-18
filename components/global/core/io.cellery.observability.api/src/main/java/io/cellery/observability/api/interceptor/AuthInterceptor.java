@@ -36,11 +36,10 @@ import javax.ws.rs.core.HttpHeaders;
  */
 public class AuthInterceptor implements RequestInterceptor {
 
-    private static final Logger log = Logger.getLogger(AuthInterceptor.class);
+    private static final Logger logger = Logger.getLogger(AuthInterceptor.class);
 
     @Override
     public boolean interceptRequest(Request request, Response response) {
-
         if (!request.getHttpMethod().equalsIgnoreCase(HttpMethod.OPTIONS) &&
                 request.getHeader(HttpHeaders.AUTHORIZATION) != null) {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
@@ -55,7 +54,7 @@ public class AuthInterceptor implements RequestInterceptor {
                         return false;
                     }
                 } catch (OIDCProviderException e) {
-                    log.debug("Error occurred while authenticating the access token", e);
+                    logger.debug("Error occurred while authenticating the access token", e);
                     response.setStatus(401);
                     return false;
                 }
