@@ -19,14 +19,14 @@
     <parent>
         <groupId>io.cellery.observability</groupId>
         <artifactId>io.cellery.observability.core</artifactId>
-        <version>0.2.2-SNAPSHOT</version>
+        <version>0.2.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <packaging>bundle</packaging>
     <artifactId>io.cellery.observability.telemetry.receiver</artifactId>
-    <version>0.2.2-SNAPSHOT</version>
+    <version>0.2.2</version>
     <name>Cellery Observability Components - Global Plane - Core - Telemetry Receiver</name>
 
     <dependencies>

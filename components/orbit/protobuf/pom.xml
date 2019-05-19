@@ -21,7 +21,7 @@
     <parent>
         <groupId>io.cellery.observability</groupId>
         <artifactId>io.cellery.observability.orbit</artifactId>
-        <version>0.2.2-SNAPSHOT</version>
+        <version>0.2.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -29,7 +29,7 @@
     <artifactId>protobuf</artifactId>
     <packaging>bundle</packaging>
     <name>Cellery Observability Components - Orbit - Protobuf</name>
-    <version>0.2.2-SNAPSHOT</version>
+    <version>0.2.2</version>
     <description> This bundle represents com.google.protobuf with gogo.proto.</description>
 
     <dependencies>
