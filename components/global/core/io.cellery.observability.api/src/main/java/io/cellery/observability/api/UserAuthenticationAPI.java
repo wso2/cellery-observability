@@ -20,7 +20,7 @@ package io.cellery.observability.api;
 
 import io.cellery.observability.api.bean.CelleryConfig;
 import io.cellery.observability.api.exception.APIInvocationException;
-import io.cellery.observability.api.exception.oidc.OIDCProviderException;
+import io.cellery.observability.api.exception.OIDCProviderException;
 import io.cellery.observability.api.internal.ServiceHolder;
 import org.apache.oltu.oauth2.client.OAuthClient;
 import org.apache.oltu.oauth2.client.URLConnectionClient;

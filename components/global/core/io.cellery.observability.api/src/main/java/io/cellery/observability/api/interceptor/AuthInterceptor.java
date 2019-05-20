@@ -40,8 +40,8 @@ public class AuthInterceptor implements RequestInterceptor {
 
     @Override
     public boolean interceptRequest(Request request, Response response) {
-        if (!request.getHttpMethod().equalsIgnoreCase(HttpMethod.OPTIONS) &&
-                request.getHeader(HttpHeaders.AUTHORIZATION) != null) {
+        if (!HttpMethod.OPTIONS.equalsIgnoreCase(request.getHttpMethod()) &&
+                !(StringUtils.isNotEmpty(request.getUri()) && request.getUri().startsWith("/api/auth"))) {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
             Cookie oAuthCookie = request.getHeaders().getCookies().get(Constants.HTTP_ONLY_SESSION_COOKIE);
             if (StringUtils.isNotEmpty(header) && oAuthCookie != null
