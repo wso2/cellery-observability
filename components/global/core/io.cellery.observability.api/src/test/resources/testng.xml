@@ -19,13 +19,14 @@
 
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 <suite name="Core API Test Suite">
-    <test name="tracing-synapse-handler-tests" enabled="true" parallel="false">
+    <test name="api-supporting-classes-tests" enabled="true" parallel="false">
         <classes>
             <class name="io.cellery.observability.api.UtilsTestCase"/>
             <class name="io.cellery.observability.api.siddhi.SiddhiStoreQueryTestCase"/>
             <class name="io.cellery.observability.api.siddhi.SiddhiStoreQueryTemplatesTestCase"/>
             <class name="io.cellery.observability.api.siddhi.SiddhiStoreQueryManagerTestCase"/>
             <class name="io.cellery.observability.api.bean.CelleryConfigTestCase"/>
+            <class name="io.cellery.observability.api.auth.OIDCOauthManagerTestCase"/>
         </classes>
     </test>
 </suite>
