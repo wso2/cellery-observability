@@ -24,8 +24,10 @@ import io.grpc.ManagedChannel;
 import io.grpc.netty.NettyChannelBuilder;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.wso2.extension.siddhi.map.keyvalue.sourcemapper.KeyValueSourceMapper;
 import org.wso2.siddhi.core.SiddhiAppRuntime;
 import org.wso2.siddhi.core.SiddhiManager;
 import org.wso2.siddhi.core.event.Event;
@@ -33,8 +35,12 @@ import org.wso2.siddhi.core.stream.output.StreamCallback;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * This test case focus on testing the functionality of the GRPC Telemetry service.
+ */
 public class TelemetryEventSourceTestCase {
     private SiddhiAppRuntime siddhiAppRuntime;
     private int receive = 0;
@@ -50,6 +56,7 @@ public class TelemetryEventSourceTestCase {
         String tracingAppContent = IOUtils.toString(this.getClass().
                 getResourceAsStream(File.separator + "telemetry-stream.siddhi"), StandardCharsets.UTF_8.name());
         SiddhiManager siddhiManager = new SiddhiManager();
+        siddhiManager.setExtension("keyvalue", KeyValueSourceMapper.class);
         siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(tracingAppContent);
         siddhiAppRuntime.addCallback("TelemetryStream", new StreamCallback() {
             @Override
@@ -61,16 +68,40 @@ public class TelemetryEventSourceTestCase {
     }
 
     private void initClient() {
-        ManagedChannel managedChannel = NettyChannelBuilder.forAddress("localhost", 9091).build();
+        ManagedChannel managedChannel = NettyChannelBuilder.forAddress("localhost", 9091).usePlaintext().build();
         this.mixerBlockingStub = MixerGrpc.newBlockingStub(managedChannel);
     }
 
     @Test
-    public void report() {
-        AttributesOuterClass.CompressedAttributes stringAttr = AttributesOuterClass.CompressedAttributes.newBuilder()
-                .putAllStrings().build();
-        Report.ReportRequest reportRequest = Report.ReportRequest.newBuilder().addAttributes(stringAttr).build();
-        Report.ReportResponse reportResponse = mixerBlockingStub.report(reportRequest);
-        Assert.assertTrue(reportResponse != null);
+    public void report() throws IOException {
+        Report.ReportResponse reportResponse = mixerBlockingStub.report(
+                loadRequest());
+        Assert.assertNotNull(reportResponse);
+        Assert.assertEquals(receive, 1);
+    }
+
+    private Report.ReportRequest loadRequest() throws IOException {
+        InputStream inputStream = this.getClass().getResourceAsStream(File.separator + "telemetry-sample.txt");
+        return Report.ReportRequest.parseFrom(inputStream);
+    }
+
+    @Test(dependsOnMethods = "report")
+    public void reportMissingMethod() throws IOException {
+        Report.ReportRequest reportRequest = loadRequest();
+        AttributesOuterClass.CompressedAttributes attributes = reportRequest.getAttributes(0);
+        AttributesOuterClass.CompressedAttributes newAttributes = AttributesOuterClass.CompressedAttributes.newBuilder()
+                .putAllStringMaps(attributes.getStringMapsMap())
+                .build();
+        Report.ReportRequest newRequest = Report.ReportRequest.newBuilder()
+                .addAllDefaultWords(reportRequest.getDefaultWordsList())
+                .addAttributes(newAttributes).build();
+        Report.ReportResponse reportResponse = mixerBlockingStub.report(newRequest);
+        Assert.assertNotNull(reportResponse);
+        Assert.assertEquals(receive, 2);
+    }
+
+    @AfterClass
+    public void cleanup() {
+        siddhiAppRuntime.shutdown();
     }
 }
