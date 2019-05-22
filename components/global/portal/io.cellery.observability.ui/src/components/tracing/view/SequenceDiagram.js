@@ -120,7 +120,7 @@ class SequenceDiagram extends React.Component {
                     sequenceDiagramData
                         ? (
                             <div>
-                                <div id="tooltip" className={classes.tooltip}></div>
+                                <div id="tooltip" className={classes.tooltip}/>
                                 <div className={classes.sequenceDiagram} ref={this.mermaidDivRef}>
                                     {sequenceDiagramData}
                                 </div>
@@ -137,8 +137,8 @@ class SequenceDiagram extends React.Component {
         const self = this;
         self.drawCellLevelSequenceDiagram();
         interact(`.${SequenceDiagram.Classes.ACTION_MESSAGE_TEXT}`).on("tap", (event) => {
-            if (event.srcElement.innerHTML.match(SequenceDiagram.ACTION_LABEL_PATTERN) && !selectedActionId) {
-                const matches = (SequenceDiagram.ACTION_LABEL_PATTERN).exec(event.srcElement.innerHTML);
+            if (event.currentTarget.innerHTML.match(SequenceDiagram.ACTION_LABEL_PATTERN) && !selectedActionId) {
+                const matches = (SequenceDiagram.ACTION_LABEL_PATTERN).exec(event.currentTarget.innerHTML);
                 this.setState({
                     selectedCell: matches[1]
                 });
@@ -156,8 +156,8 @@ class SequenceDiagram extends React.Component {
             if (!selectedActionId) {
                 this.updateActionLabelStyle();
             }
+            this.updateActorStyle(selectedActionId);
         }
-        this.updateActorStyle(selectedActionId);
     }
 
     /**
@@ -217,8 +217,7 @@ class SequenceDiagram extends React.Component {
                 const letterLength = elementArray[i].getBBox().width / elementArray[i].textContent.length;
                 const lettersLength = Math.round(elementWidth / letterLength);
                 if (elementArray[i].getBBox().width > elementWidth) {
-                    const truncatedComponentName = `${componentName.substring(0, lettersLength - 5)}...`;
-                    elementArray[i].textContent = truncatedComponentName;
+                    elementArray[i].textContent = `${componentName.substring(0, lettersLength - 5)}...`;
                 }
 
                 elementArray[i - 1].style.stroke = color;
@@ -261,8 +260,7 @@ class SequenceDiagram extends React.Component {
                     const letterLength = elementArray[i].getBBox().width / elementArray[i].textContent.length;
                     const lettersLength = Math.round(elementWidth / letterLength);
                     if (elementArray[i].getBBox().width > elementWidth) {
-                        const truncatedCellName = `${cellName.substring(0, lettersLength - 5)}...`;
-                        elementArray[i].textContent = truncatedCellName;
+                        elementArray[i].textContent = `${cellName.substring(0, lettersLength - 5)}...`;
                     }
                 }
             }
@@ -272,15 +270,17 @@ class SequenceDiagram extends React.Component {
     /**
      * Show tooltip.
      *
-     * @param {event} evt Mouse event
+     * @param {Event} evt Mouse event
      * @param {string} text The actor name
      */
     showTooltip = (evt, text) => {
+        const mouseEvent = /** @type {MouseEvent} */ evt;
         const tooltip = document.getElementById("tooltip");
+
         tooltip.innerHTML = text;
         tooltip.style.display = "block";
-        tooltip.style.left = `${evt.pageX}px`;
-        tooltip.style.top = `${evt.pageY}px`;
+        tooltip.style.left = `${mouseEvent.pageX}px`;
+        tooltip.style.top = `${mouseEvent.pageY}px`;
     };
 
     /**
@@ -318,16 +318,17 @@ class SequenceDiagram extends React.Component {
         const {spans} = this.props;
         const subTree = spans.find((span) => (span.actionId && span.actionId === actionId));
 
-        const resolveActorName = (span) => SequenceDiagram.sanitizeActorName(span.serviceName);
-        const resolveCallingId = (id) => `${actionId}.${id}`;
-        const shouldTerminate = (span) => ((subTree.cell !== null && span.cell === null)
-            || (subTree.cell === null && span.cell !== null)
-            || subTree.cell.name !== span.cell.name);
+        if (subTree) {
+            const resolveActorName = (span) => SequenceDiagram.sanitizeActorName(span.serviceName);
+            const resolveCallingId = (id) => `${actionId}.${id}`;
+            const shouldTerminate = (span) => (subTree.cell !== null || span.cell !== null)
+                && (span.cell === null || subTree.cell === null || subTree.cell.name !== span.cell.name);
 
-        this.setState({
-            selectedActionId: actionId
-        });
-        this.drawSequenceDiagram(subTree, resolveActorName, resolveCallingId, shouldTerminate);
+            this.setState({
+                selectedActionId: actionId
+            });
+            this.drawSequenceDiagram(subTree, resolveActorName, resolveCallingId, shouldTerminate);
+        }
     };
 
     /**

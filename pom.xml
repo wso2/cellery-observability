@@ -16,8 +16,7 @@
   ~ specific language governing permissions and limitations
   ~ under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>org.wso2</groupId>
@@ -29,7 +28,7 @@
     <groupId>io.cellery.observability</groupId>
     <artifactId>io.cellery.observability.parent</artifactId>
     <name>Cellery Observability</name>
-    <version>0.2.1-SNAPSHOT</version>
+    <version>0.2.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -568,9 +567,9 @@
         <commons.compress.version>1.18</commons.compress.version>
         <bouncy.castle.version>1.59</bouncy.castle.version>
         <opencensus.version>0.16.1</opencensus.version>
-        <protobuf.orbit.version>0.2.1-SNAPSHOT</protobuf.orbit.version>
-        <gogoproto.orbit.version>0.2.1-SNAPSHOT</gogoproto.orbit.version>
-        <grpc.orbit.version>0.2.1-SNAPSHOT</grpc.orbit.version>
+        <protobuf.orbit.version>0.2.3-SNAPSHOT</protobuf.orbit.version>
+        <gogoproto.orbit.version>0.2.3-SNAPSHOT</gogoproto.orbit.version>
+        <grpc.orbit.version>0.2.3-SNAPSHOT</grpc.orbit.version>
         <gson.version>2.8.5</gson.version>
         <zipkin.sender.okhttp3.version>2.5.0</zipkin.sender.okhttp3.version>
 
