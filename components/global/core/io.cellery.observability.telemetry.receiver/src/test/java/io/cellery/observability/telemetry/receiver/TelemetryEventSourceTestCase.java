@@ -86,7 +86,7 @@ public class TelemetryEventSourceTestCase {
     }
 
     @Test(dependsOnMethods = "report")
-    public void reportMissingMethod() throws IOException {
+    public void reportWithMissingAttributes() throws IOException {
         Report.ReportRequest reportRequest = loadRequest();
         AttributesOuterClass.CompressedAttributes attributes = reportRequest.getAttributes(0);
         AttributesOuterClass.CompressedAttributes newAttributes = AttributesOuterClass.CompressedAttributes.newBuilder()
