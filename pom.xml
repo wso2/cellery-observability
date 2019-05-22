@@ -16,7 +16,8 @@
   ~ specific language governing permissions and limitations
   ~ under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>org.wso2</groupId>
@@ -359,6 +360,13 @@
                 <version>${h2.database.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>${io.netty.version}</version>
+                <scope>test</scope>
+            </dependency>
+
             <!-- Test dependencies end here -->
         </dependencies>
     </dependencyManagement>
@@ -587,6 +595,7 @@
         <spotify.docker.plugin.version>1.4.10</spotify.docker.plugin.version>
         <maven.findbugsplugin.version>3.0.5</maven.findbugsplugin.version>
         <h2.database.version>1.4.191</h2.database.version>
+        <io.netty.version>4.1.36.Final</io.netty.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
