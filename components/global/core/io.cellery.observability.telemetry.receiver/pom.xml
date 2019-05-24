@@ -52,7 +52,7 @@
             <artifactId>siddhi-query-compiler</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.cellery.observability</groupId>
+            <groupId>org.wso2.orbit.gogoproto-java</groupId>
             <artifactId>gogoproto-java</artifactId>
         </dependency>
         <dependency>
@@ -66,10 +66,6 @@
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-protobuf</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.cellery.observability</groupId>
-            <artifactId>grpc</artifactId>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
@@ -103,7 +99,6 @@
         <!-- Test dependencies end here-->
     </dependencies>
 
-
     <build>
         <plugins>
             <plugin>
@@ -116,6 +111,7 @@
                         <Bundle-Name>${project.artifactId}</Bundle-Name>
                         <Export-Package>
                             io.cellery.observability.telemetry.receiver.*,
+                            com.google.protobuf.*;version="${exp.package.version}"
                             !io.cellery.observability.telemetry.receiver.internal
                         </Export-Package>
                         <Import-Package>
@@ -149,6 +145,8 @@
     <properties>
         <maven.checkstyleplugin.excludes>**/generated/**</maven.checkstyleplugin.excludes>
         <mavan.findbugsplugin.exclude.file>spotbugs-exclude.xml</mavan.findbugsplugin.exclude.file>
+        <exp.package.version>3.6.1</exp.package.version>
+        <grpc.version>1.15.0</grpc.version>
     </properties>
 
 </project>
