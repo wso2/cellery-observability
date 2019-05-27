@@ -20,6 +20,7 @@ package io.cellery.observability.api;
 
 import io.cellery.observability.api.bean.CelleryConfig;
 import io.cellery.observability.api.exception.APIInvocationException;
+import io.cellery.observability.api.exception.oidc.OIDCProviderException;
 import io.cellery.observability.api.internal.ServiceHolder;
 import org.apache.log4j.Logger;
 import org.apache.oltu.oauth2.client.OAuthClient;
@@ -82,7 +83,7 @@ public class UserAuthenticationAPI {
             NewCookie cookie = new NewCookie(Constants.HTTP_ONLY_SESSION_COOKIE, tokenParts[1],
                     "/", "", "", 3600, false, true);
             return Response.ok().cookie(cookie).entity(responseMap).build();
-        } catch (ConfigurationException | OAuthProblemException | OAuthSystemException e) {
+        } catch (ConfigurationException | OAuthProblemException | OAuthSystemException | OIDCProviderException e) {
             throw new APIInvocationException("Error while getting tokens from Token endpoint", e);
         }
     }
