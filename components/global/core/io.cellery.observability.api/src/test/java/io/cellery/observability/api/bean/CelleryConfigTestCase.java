@@ -40,7 +40,8 @@ public class CelleryConfigTestCase {
 
     @BeforeMethod
     public void init() {
-        Path configPath = Paths.get("src", "test", "resources", "conf", "deployment.yaml");
+        String carbonHomePath = this.getClass().getResource("/").getFile();
+        Path configPath = Paths.get(carbonHomePath, "conf", "deployment.yaml");
         ConfigFileReader configFileReader = new YAMLBasedConfigFileReader(configPath);
         SecureVault secureVault = new SecureVaultImpl();
         ConfigProvider configProvider = new ConfigProviderImpl(configFileReader, secureVault);

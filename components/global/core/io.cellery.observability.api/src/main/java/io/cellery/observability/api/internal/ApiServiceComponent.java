@@ -41,6 +41,7 @@ import org.wso2.carbon.config.provider.ConfigProvider;
 import org.wso2.carbon.datasource.core.api.DataSourceService;
 import org.wso2.carbon.kernel.CarbonRuntime;
 import org.wso2.msf4j.MicroservicesRunner;
+import org.wso2.siddhi.core.SiddhiManager;
 
 /**
  * This is the declarative service component of the observability API component,
@@ -69,6 +70,10 @@ public class ApiServiceComponent {
         try {
             Utils.disableSSLVerification();
             ServiceHolder.setOidcOauthManager(new OIDCOauthManager());
+            ServiceHolder.setSiddhiManager(new SiddhiManager());
+
+            // Starting the Siddhi Manager
+            ServiceHolder.setSiddhiStoreQueryManager(new SiddhiStoreQueryManager());
 
             // Deploying the microservices
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
@@ -81,9 +86,6 @@ public class ApiServiceComponent {
                     )
             );
             ServiceHolder.getMicroservicesRunner().start();
-
-            // Starting the Siddhi Manager
-            ServiceHolder.setSiddhiStoreQueryManager(new SiddhiStoreQueryManager());
         } catch (Throwable throwable) {
             log.error("Error occured while activating the Observability API bundle", throwable);
             throw throwable;

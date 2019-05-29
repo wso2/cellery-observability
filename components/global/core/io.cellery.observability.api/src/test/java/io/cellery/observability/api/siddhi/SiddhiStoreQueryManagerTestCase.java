@@ -18,8 +18,8 @@
 
 package io.cellery.observability.api.siddhi;
 
+import io.cellery.observability.api.internal.ServiceHolder;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.testng.PowerMockObjectFactory;
@@ -39,7 +39,7 @@ import org.wso2.siddhi.core.SiddhiManager;
 public class SiddhiStoreQueryManagerTestCase {
 
     private SiddhiStoreQueryManager siddhiStoreQueryManager;
-    private SiddhiManager internalSiddhiManager;
+    private SiddhiManager siddhiManager;
     private SiddhiAppRuntime internalSiddhiAppRuntime;
 
     @ObjectFactory
@@ -48,17 +48,14 @@ public class SiddhiStoreQueryManagerTestCase {
     }
 
     @BeforeMethod
-    public void init() throws Exception {
+    public void init() {
         String siddhiAppString = Whitebox.getInternalState(SiddhiStoreQueryManager.class, "SIDDHI_APP");
         internalSiddhiAppRuntime = Mockito.mock(SiddhiAppRuntime.class);
 
-        internalSiddhiManager = Mockito.mock(SiddhiManager.class);
-        Mockito.when(internalSiddhiManager.createSiddhiAppRuntime(siddhiAppString))
+        siddhiManager = Mockito.mock(SiddhiManager.class);
+        Mockito.when(siddhiManager.createSiddhiAppRuntime(siddhiAppString))
                 .thenReturn(internalSiddhiAppRuntime);
-
-        PowerMockito.whenNew(SiddhiManager.class)
-                .withNoArguments()
-                .thenReturn(internalSiddhiManager);
+        ServiceHolder.setSiddhiManager(siddhiManager);
 
         siddhiStoreQueryManager = new SiddhiStoreQueryManager();
     }
@@ -66,9 +63,7 @@ public class SiddhiStoreQueryManagerTestCase {
     @Test
     public void testInitialization() throws Exception {
         String siddhiAppString = Whitebox.getInternalState(SiddhiStoreQueryManager.class, "SIDDHI_APP");
-        PowerMockito.verifyNew(SiddhiManager.class, Mockito.times(1))
-                .withNoArguments();
-        Mockito.verify(internalSiddhiManager, Mockito.times(1))
+        Mockito.verify(siddhiManager, Mockito.times(1))
                 .createSiddhiAppRuntime(siddhiAppString);
         Mockito.verify(internalSiddhiAppRuntime, Mockito.times(1)).start();
     }

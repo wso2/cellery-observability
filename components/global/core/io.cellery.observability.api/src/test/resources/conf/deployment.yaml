@@ -14,6 +14,13 @@
 #   limitations under the License.
 ################################################################################
 
+# Carbon Configuration Parameters
+wso2.carbon:
+  # ports used by this server
+  ports:
+    # port offset
+    offset: 9000
+
 celleryObservabilityPortal:
   # Cellery Dashboard URL
   dashboardURL: http://cellery-dashboard
@@ -23,3 +30,27 @@ celleryObservabilityPortal:
   idpAdminUsername: testadmin
   # Default password for IDP client registeration and token introspection
   idpAdminPassword: testpass
+
+# Datasource Configurations
+wso2.datasources:
+  dataSources:
+  - name: CELLERY_OBSERVABILITY_DB
+    description: The datasource used for HTTP Analytics dashboard
+    jndiConfig:
+      name: jdbc/CELLERY_OBSERVABILITY_DB
+      useJndiReference: true
+      environment:
+        - name: 'java.naming.factory.initial'
+          value: 'io.cellery.observability.api.datasource.CustomContextFactory'
+    definition:
+      type: RDBMS
+      configuration:
+        jdbcUrl: 'jdbc:h2:${sys:carbon.home}/wso2/${sys:wso2.runtime}/database/CELLERY_OBSERVABILITY_DB;DB_CLOSE_ON_EXIT=FALSE;LOCK_TIMEOUT=60000'
+        username: wso2carbon
+        password: wso2carbon
+        driverClassName: org.h2.Driver
+        maxPoolSize: 30
+        idleTimeout: 60000
+        connectionTestQuery: SELECT 1
+        validationTimeout: 30000
+        isAutoCommit: false
