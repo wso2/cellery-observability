@@ -61,18 +61,25 @@ public class OIDCOauthManager {
     private String clientId;
     private char[] clientSecret;
 
-    public String getClientId() {
-        return clientId;
+    public String getClientId() throws OIDCProviderException {
+        if (this.clientId == null) {
+            synchronized (this) {
+                performDCR();
+            }
+        }
+        return this.clientId;
     }
 
     public String getClientSecret() {
         return String.valueOf(this.clientSecret);
     }
 
-    public OIDCOauthManager() throws OIDCProviderException {
-        JSONObject clientJson = getClientCredentials();
-        this.clientId = clientJson.getString(Constants.CLIENT_ID_TXT);
-        this.clientSecret = clientJson.getString(Constants.CLIENT_SECRET_TXT).toCharArray();
+    public OIDCOauthManager() {
+        try {
+            performDCR();
+        } catch (OIDCProviderException e) {
+            log.warn("DCR failure due to IDP unavailability, will be re-attempted when a user logs in");
+        }
     }
 
     /**
@@ -269,5 +276,16 @@ public class OIDCOauthManager {
             closeResources(inputStreamReader, bufReader);
         }
         return builder;
+    }
+
+    /**
+     * This method will be used to make DCR and set the client credentials obtained from IDP.
+     */
+    private void performDCR() throws OIDCProviderException {
+        if (this.clientId == null) {
+            JSONObject clientJson = getClientCredentials();
+            this.clientId = clientJson.getString(Constants.CLIENT_ID_TXT);
+            this.clientSecret = clientJson.getString(Constants.CLIENT_SECRET_TXT).toCharArray();
+        }
     }
 }
