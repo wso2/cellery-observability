@@ -133,17 +133,19 @@ public class OIDCOauthManagerTestCase {
         Assert.assertEquals(oidcOauthManager.getClientSecret(), clientSecret);
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testInitializationWithConfigurationException() throws Exception {
         ConfigProvider configProvider = Mockito.mock(ConfigProvider.class);
         Mockito.when(configProvider.getConfigurationObject(CelleryConfig.class))
                 .thenThrow(new ConfigurationException("Test Exception"));
         ServiceHolder.setConfigProvider(configProvider);
 
-        new OIDCOauthManager();
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testInitializationWithHttpRequestThrowingIOException() throws Exception {
         HttpClient httpClient = Mockito.mock(HttpClient.class);
         Mockito.when(httpClient.execute(Mockito.any(HttpPost.class)))
@@ -151,24 +153,32 @@ public class OIDCOauthManagerTestCase {
         PowerMockito.mockStatic(Utils.class);
         Mockito.when(Utils.getTrustAllClient()).thenReturn(httpClient);
 
-        new OIDCOauthManager();
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testInitializationWithTrustAllClientThrowingKeyManagementException() throws Exception {
         PowerMockito.mockStatic(Utils.class);
         Mockito.when(Utils.getTrustAllClient()).thenThrow(new KeyManagementException("Test Exception"));
-        new OIDCOauthManager();
+
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testInitializationWithTrustAllClientThrowingNoSuchAlgorithmException() throws Exception {
         PowerMockito.mockStatic(Utils.class);
         Mockito.when(Utils.getTrustAllClient()).thenThrow(new NoSuchAlgorithmException("Test Exception"));
-        new OIDCOauthManager();
+
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testInitializationWithGetContentThrowingIOException() throws Exception {
         HttpClient httpClient = Mockito.mock(HttpClient.class);
         Mockito.when(httpClient.execute(Mockito.any(HttpPost.class)))
@@ -183,10 +193,12 @@ public class OIDCOauthManagerTestCase {
         PowerMockito.mockStatic(Utils.class);
         Mockito.when(Utils.getTrustAllClient()).thenReturn(httpClient);
 
-        new OIDCOauthManager();
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testInitializationWithEntityUtilsThrowingParseException() throws Exception {
         HttpClient httpClient = Mockito.mock(HttpClient.class);
         Mockito.when(httpClient.execute(Mockito.any(HttpPost.class)))
@@ -204,7 +216,9 @@ public class OIDCOauthManagerTestCase {
         PowerMockito.mockStatic(Utils.class);
         Mockito.when(Utils.getTrustAllClient()).thenReturn(httpClient);
 
-        new OIDCOauthManager();
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
     @Test
@@ -252,7 +266,7 @@ public class OIDCOauthManagerTestCase {
         Assert.assertEquals(oidcOauthManager.getClientSecret(), clientSecret);
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testGetExistingAppWithErrorStatusCode() throws Exception {
         HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -277,10 +291,12 @@ public class OIDCOauthManagerTestCase {
                 .thenReturn(createClientHttpClient)
                 .thenReturn(getExistingCredentialsHttpClient);
 
-        new OIDCOauthManager();
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testGetExistingAppWithErrorMessage() throws Exception {
         HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -304,10 +320,12 @@ public class OIDCOauthManagerTestCase {
                 .thenReturn(createClientHttpClient)
                 .thenReturn(getExistingCredentialsHttpClient);
 
-        new OIDCOauthManager();
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testGetExistingAppWithHttpRequestThrowingIOException() throws Exception {
         HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -325,10 +343,13 @@ public class OIDCOauthManagerTestCase {
         Mockito.when(Utils.getTrustAllClient())
                 .thenReturn(createClientHttpClient)
                 .thenReturn(getExistingCredentialsHttpClient);
-        new OIDCOauthManager();
+
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testGetExistingAppWithTrustAllClientThrowingKeyManagementException() throws Exception {
         HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -343,10 +364,13 @@ public class OIDCOauthManagerTestCase {
         Mockito.when(Utils.getTrustAllClient())
                 .thenReturn(createClientHttpClient)
                 .thenThrow(new KeyManagementException("Test Exception"));
-        new OIDCOauthManager();
+
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testGetExistingAppWithTrustAllClientThrowingNoSuchAlgorithmException() throws Exception {
         HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -361,10 +385,13 @@ public class OIDCOauthManagerTestCase {
         Mockito.when(Utils.getTrustAllClient())
                 .thenReturn(createClientHttpClient)
                 .thenThrow(new NoSuchAlgorithmException("Test Exception"));
-        new OIDCOauthManager();
+
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testGetExistingAppWithGetContentThrowingIOException() throws Exception {
         HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -390,10 +417,12 @@ public class OIDCOauthManagerTestCase {
                 .thenReturn(createClientHttpClient)
                 .thenReturn(getExistingCredentialsHttpClient);
 
-        new OIDCOauthManager();
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
-    @Test(expectedExceptions = OIDCProviderException.class)
+    @Test
     public void testGetExistingAppWithEntityUtilsThrowingParseException() throws Exception {
         HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -422,7 +451,9 @@ public class OIDCOauthManagerTestCase {
                 .thenReturn(createClientHttpClient)
                 .thenReturn(getExistingCredentialsHttpClient);
 
-        new OIDCOauthManager();
+        OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
+        Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
     }
 
     @Test
@@ -797,5 +828,223 @@ public class OIDCOauthManagerTestCase {
                 .thenReturn(-1);
 
         return response;
+    }
+
+    @Test
+    public void testGetClientId() throws Exception {
+        String clientId = "testClientId13";
+        String clientSecret = "8nekrnfqbrbeihr";
+        OIDCOauthManager oidcOauthManager = mockOidcOAuthManagerWithInitialIdPDown();
+
+        Whitebox.setInternalState(oidcOauthManager, "clientId", clientId);
+        Whitebox.setInternalState(oidcOauthManager, "clientSecret", clientSecret.toCharArray());
+
+        Assert.assertEquals(oidcOauthManager.getClientId(), clientId);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientId"), clientId);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientSecret"),
+                clientSecret.toCharArray());
+    }
+
+    @Test
+    public void testGetClientIdWithIdpFailureAtInitialization() throws Exception {
+        String clientId = "testClientId14";
+        String clientSecret = "fiun3j4nfjfewf";
+        OIDCOauthManager oidcOauthManager = mockOidcOAuthManagerWithInitialIdPDown();
+
+        JSONObject credentialsJsonObject = new JSONObject();
+        credentialsJsonObject.put(Constants.CLIENT_ID_TXT, clientId);
+        credentialsJsonObject.put(Constants.CLIENT_SECRET_TXT, clientSecret);
+        PowerMockito.when(oidcOauthManager, "retrieveClientCredentials").thenCallRealMethod();
+        PowerMockito.when(oidcOauthManager, "createClientWithDcr").thenReturn(credentialsJsonObject);
+
+        Assert.assertEquals(oidcOauthManager.getClientId(), clientId);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientId"), clientId);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientSecret"),
+                clientSecret.toCharArray());
+        PowerMockito.verifyPrivate(oidcOauthManager, Mockito.times(1))
+                .invoke("createClientWithDcr");
+        PowerMockito.verifyPrivate(oidcOauthManager, Mockito.times(0))
+                .invoke("retrieveExistingClientCredentials");
+    }
+
+    @Test
+    public void testGetClientIdWithIdpFailureAtInitializationAndExistingApp() throws Exception {
+        String clientId = "testClientId14";
+        String clientSecret = "fiun3j4nfjfewf";
+        OIDCOauthManager oidcOauthManager = mockOidcOAuthManagerWithInitialIdPDown();
+
+        JSONObject credentialsJsonObject = new JSONObject();
+        credentialsJsonObject.put(Constants.CLIENT_ID_TXT, clientId);
+        credentialsJsonObject.put(Constants.CLIENT_SECRET_TXT, clientSecret);
+        PowerMockito.when(oidcOauthManager, "retrieveClientCredentials").thenCallRealMethod();
+        PowerMockito.when(oidcOauthManager, "retrieveExistingClientCredentials")
+                .thenReturn(credentialsJsonObject);
+
+        JSONObject errorJsonObject = new JSONObject();
+        errorJsonObject.put("error", "client_exists");
+        PowerMockito.when(oidcOauthManager, "createClientWithDcr").thenReturn(errorJsonObject);
+
+        Assert.assertEquals(oidcOauthManager.getClientId(), clientId);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientId"), clientId);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientSecret"),
+                clientSecret.toCharArray());
+        PowerMockito.verifyPrivate(oidcOauthManager, Mockito.times(1))
+                .invoke("createClientWithDcr");
+        PowerMockito.verifyPrivate(oidcOauthManager, Mockito.times(1))
+                .invoke("retrieveExistingClientCredentials");
+    }
+
+    @Test
+    public void testGetClientIdWithIdpFailureAtInitializationByMultipleThreads() throws Exception {
+        String clientId = "testClientId14";
+        String clientSecret = "fiun3j4nfjfewf";
+        OIDCOauthManager oidcOauthManager = mockOidcOAuthManagerWithInitialIdPDown();
+
+        PowerMockito.when(oidcOauthManager, "retrieveClientCredentials").thenCallRealMethod();
+        PowerMockito.when(oidcOauthManager, "createClientWithDcr").thenAnswer(invocation -> {
+            Thread.sleep(1000);
+            JSONObject credentialsJsonObject = new JSONObject();
+            credentialsJsonObject.put(Constants.CLIENT_ID_TXT, clientId);
+            credentialsJsonObject.put(Constants.CLIENT_SECRET_TXT, clientSecret);
+            return credentialsJsonObject;
+        });
+
+        Thread thread = new Thread(() -> {
+            try {
+                Assert.assertEquals(oidcOauthManager.getClientId(), clientId);
+                Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientId"), clientId);
+                Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientSecret"),
+                        clientSecret.toCharArray());
+            } catch (OIDCProviderException e) {
+                Assert.fail("Unexpected failure", e);
+            }
+        });
+
+        Assert.assertEquals(oidcOauthManager.getClientId(), clientId);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientId"), clientId);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientSecret"),
+                clientSecret.toCharArray());
+        thread.join();
+        PowerMockito.verifyPrivate(oidcOauthManager, Mockito.times(1))
+                .invoke("createClientWithDcr");
+        PowerMockito.verifyPrivate(oidcOauthManager, Mockito.times(0))
+                .invoke("retrieveExistingClientCredentials");
+    }
+
+    @Test
+    public void testGetClientSecret() throws Exception {
+        String clientId = "testClientId14";
+        String clientSecret = "fiun3j4nfjfewf";
+        OIDCOauthManager oidcOauthManager = mockOidcOAuthManagerWithInitialIdPDown();
+
+        Whitebox.setInternalState(oidcOauthManager, "clientId", clientId);
+        Whitebox.setInternalState(oidcOauthManager, "clientSecret", clientSecret.toCharArray());
+
+        Assert.assertEquals(oidcOauthManager.getClientSecret(), clientSecret);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientId"), clientId);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientSecret"),
+                clientSecret.toCharArray());
+    }
+
+    @Test
+    public void testGetClientSecretWithIdpFailureAtInitialization() throws Exception {
+        String clientId = "testClientId14";
+        String clientSecret = "fiun3j4nfjfewf";
+        OIDCOauthManager oidcOauthManager = mockOidcOAuthManagerWithInitialIdPDown();
+
+        JSONObject credentialsJsonObject = new JSONObject();
+        credentialsJsonObject.put(Constants.CLIENT_ID_TXT, clientId);
+        credentialsJsonObject.put(Constants.CLIENT_SECRET_TXT, clientSecret);
+        PowerMockito.when(oidcOauthManager, "retrieveClientCredentials").thenCallRealMethod();
+        PowerMockito.when(oidcOauthManager, "createClientWithDcr").thenReturn(credentialsJsonObject);
+
+        Assert.assertEquals(oidcOauthManager.getClientSecret(), clientSecret);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientId"), clientId);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientSecret"),
+                clientSecret.toCharArray());
+        PowerMockito.verifyPrivate(oidcOauthManager, Mockito.times(1))
+                .invoke("createClientWithDcr");
+        PowerMockito.verifyPrivate(oidcOauthManager, Mockito.times(0))
+                .invoke("retrieveExistingClientCredentials");
+    }
+
+    @Test
+    public void testGetClientSecretWithIdpFailureAtInitializationAndExistingApp() throws Exception {
+        String clientId = "testClientId14";
+        String clientSecret = "fiun3j4nfjfewf";
+        OIDCOauthManager oidcOauthManager = mockOidcOAuthManagerWithInitialIdPDown();
+
+        JSONObject credentialsJsonObject = new JSONObject();
+        credentialsJsonObject.put(Constants.CLIENT_ID_TXT, clientId);
+        credentialsJsonObject.put(Constants.CLIENT_SECRET_TXT, clientSecret);
+        PowerMockito.when(oidcOauthManager, "retrieveClientCredentials").thenCallRealMethod();
+        PowerMockito.when(oidcOauthManager, "retrieveExistingClientCredentials")
+                .thenReturn(credentialsJsonObject);
+
+        JSONObject errorJsonObject = new JSONObject();
+        errorJsonObject.put("error", "client_exists");
+        PowerMockito.when(oidcOauthManager, "createClientWithDcr").thenReturn(errorJsonObject);
+
+        Assert.assertEquals(oidcOauthManager.getClientSecret(), clientSecret);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientId"), clientId);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientSecret"),
+                clientSecret.toCharArray());
+        PowerMockito.verifyPrivate(oidcOauthManager, Mockito.times(1))
+                .invoke("createClientWithDcr");
+        PowerMockito.verifyPrivate(oidcOauthManager, Mockito.times(1))
+                .invoke("retrieveExistingClientCredentials");
+    }
+
+    @Test
+    public void testGetClientSecretWithIdpFailureAtInitializationByMultipleThreads() throws Exception {
+        String clientId = "testClientId14";
+        String clientSecret = "fiun3j4nfjfewf";
+        OIDCOauthManager oidcOauthManager = mockOidcOAuthManagerWithInitialIdPDown();
+
+        PowerMockito.when(oidcOauthManager, "retrieveClientCredentials").thenCallRealMethod();
+        PowerMockito.when(oidcOauthManager, "createClientWithDcr").thenAnswer(invocation -> {
+            Thread.sleep(1000);
+            JSONObject credentialsJsonObject = new JSONObject();
+            credentialsJsonObject.put(Constants.CLIENT_ID_TXT, clientId);
+            credentialsJsonObject.put(Constants.CLIENT_SECRET_TXT, clientSecret);
+            return credentialsJsonObject;
+        });
+
+        Thread thread = new Thread(() -> {
+            try {
+                Assert.assertEquals(oidcOauthManager.getClientSecret(), clientSecret);
+                Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientId"), clientId);
+                Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientSecret"),
+                        clientSecret.toCharArray());
+            } catch (OIDCProviderException e) {
+                Assert.fail("Unexpected failure", e);
+            }
+        });
+
+        Assert.assertEquals(oidcOauthManager.getClientSecret(), clientSecret);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientId"), clientId);
+        Assert.assertEquals(Whitebox.getInternalState(oidcOauthManager, "clientSecret"),
+                clientSecret.toCharArray());
+        thread.join();
+        PowerMockito.verifyPrivate(oidcOauthManager, Mockito.times(1))
+                .invoke("createClientWithDcr");
+        PowerMockito.verifyPrivate(oidcOauthManager, Mockito.times(0))
+                .invoke("retrieveExistingClientCredentials");
+    }
+
+    /**
+     * mock the OIDC OAuth Manager mocking a IdP call failure.
+     *
+     * @return initialized OIDC OAuth manager
+     * @throws Exception initialization fails
+     */
+    private OIDCOauthManager mockOidcOAuthManagerWithInitialIdPDown() throws Exception {
+        OIDCOauthManager oidcOauthManager = PowerMockito.mock(OIDCOauthManager.class);
+        Whitebox.setInternalState(oidcOauthManager, "clientId", (String) null);
+        Whitebox.setInternalState(oidcOauthManager, "clientSecret", (String) null);
+
+        Mockito.when(oidcOauthManager.getClientId()).thenCallRealMethod();
+        Mockito.when(oidcOauthManager.getClientSecret()).thenCallRealMethod();
+        return oidcOauthManager;
     }
 }
