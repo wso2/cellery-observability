@@ -109,8 +109,9 @@ class StateHolder {
                     value: null
                 };
             }
-            this.notify(key, value);
+            const oldValue = this.state[key].value;
             this.state[key].value = value;
+            this.notify(key, oldValue, value);
         }
     };
 
@@ -121,8 +122,9 @@ class StateHolder {
      */
     unset = (key) => {
         if (key && this.state[key]) {
-            this.notify(key, null);
+            const oldValue = this.state[key].value;
             this.state[key].value = null;
+            this.notify(key, oldValue, null);
         }
     };
 
@@ -177,11 +179,11 @@ class StateHolder {
      * Notify the listeners about a state change.
      *
      * @param {string} key The key of which the listeners should be notified
+     * @param {Object} oldValue The old value of the key
      * @param {Object} newValue The new value of the key
      * @private
      */
-    notify = (key, newValue) => {
-        const oldValue = this.state[key].value;
+    notify = (key, oldValue, newValue) => {
         const listeners = this.state[key].listeners;
         if (oldValue !== newValue && listeners) {
             listeners.forEach((listener) => listener(key, oldValue, newValue));

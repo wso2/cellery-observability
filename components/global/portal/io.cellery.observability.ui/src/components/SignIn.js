@@ -70,19 +70,6 @@ const styles = (theme) => ({
 
 class SignIn extends React.Component {
 
-    handleLogin = () => {
-        const {globalState} = this.props;
-
-        const username = document.getElementById("username").value;
-        AuthUtils.signIn(username, globalState);
-    };
-
-    handleKeyPress = (event) => {
-        if (event.key === "Enter") {
-            this.handleLogin();
-        }
-    };
-
     render() {
         const {classes} = this.props;
         return (
