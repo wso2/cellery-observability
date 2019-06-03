@@ -32,7 +32,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>orbit</module>
         <module>global</module>
     </modules>
 </project>

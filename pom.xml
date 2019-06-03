@@ -132,6 +132,11 @@
                 <version>${synapse.core.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.wso2.orbit.gogoproto-java</groupId>
+                <artifactId>gogoproto-java</artifactId>
+                <version>${gogo-proto.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.fabric8</groupId>
                 <artifactId>kubernetes-model</artifactId>
                 <version>${fabric8.kubernetes.version}</version>
@@ -547,6 +552,7 @@
         <httpclient.version>4.3.6</httpclient.version>
         <carbon.datasource.version>1.1.4</carbon.datasource.version>
         <msf4j.version>2.6.4</msf4j.version>
+        <gogo-proto.version>1.0.0.wso2v1</gogo-proto.version>
         <httpcore.version>4.4.11</httpcore.version>
         <oltu.oauth2.version>1.0.0</oltu.oauth2.version>
         <synapse.core.version>2.1.7-wso2v80</synapse.core.version>

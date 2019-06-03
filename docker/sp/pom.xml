@@ -14,7 +14,8 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>io.cellery.observability</groupId>
         <artifactId>io.cellery.observability.docker</artifactId>
@@ -38,26 +39,6 @@
             <artifactId>commons-io</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.cellery.observability</groupId>
-            <artifactId>gogoproto-java</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-protobuf</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-protobuf-lite</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-stub</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.cellery.observability</groupId>
-            <artifactId>grpc</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.opencensus</groupId>
             <artifactId>opencensus-api</artifactId>
         </dependency>
@@ -72,10 +53,6 @@
         <dependency>
             <groupId>com.google.api.grpc</groupId>
             <artifactId>proto-google-common-protos</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.cellery.observability</groupId>
-            <artifactId>protobuf</artifactId>
         </dependency>
         <dependency>
             <groupId>io.zipkin.zipkin2</groupId>
@@ -188,8 +165,7 @@
                             <includeScope>runtime</includeScope>
                             <outputDirectory>${project.build.directory}/files/lib</outputDirectory>
                             <excludeArtifactIds>
-                                grpc-protobuf, grpc-protobuf-lite, grpc-stub, opencensus-api,
-                                opencensus-contrib-grpc-metrics, proto-google-common-protos,
+                                opencensus-api, opencensus-contrib-grpc-metrics, proto-google-common-protos,
                                 okhttp-ws, okhttp, adal4j, logging-interceptor, org.apache.oltu.oauth2.client,
                                 org.apache.oltu.oauth2.common,httpclient, httpcore, jackson-databind, gson,
                                 kubernetes-model, kubernetes-client
@@ -208,8 +184,8 @@
                             <includeScope>runtime</includeScope>
                             <outputDirectory>${project.build.directory}/files/non-osgi/</outputDirectory>
                             <excludeArtifactIds>
-                                io.cellery.observability.telemetry.receiver, commons-io, gogoproto-java, grpc,
-                                io.cellery.observability.tracing.receiver, protobuf, io.cellery.observability.api,
+                                io.cellery.observability.telemetry.receiver, commons-io,
+                                io.cellery.observability.tracing.receiver, io.cellery.observability.api,
                                 io.cellery.observability.model.generator, siddhi-io-http, siddhi-store-rdbms,
                                 io.cellery.observability.k8s.client, joda-time, zipkin, client-java,
                                 client-java-api, guava, commons-codec, commons-compress, commons-lang3,
