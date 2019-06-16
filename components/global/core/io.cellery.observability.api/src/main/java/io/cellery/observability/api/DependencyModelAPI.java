@@ -17,6 +17,7 @@
  */
 package io.cellery.observability.api;
 
+import com.google.gson.JsonArray;
 import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.internal.ServiceHolder;
 import io.cellery.observability.model.generator.model.Model;
@@ -63,6 +64,19 @@ public class DependencyModelAPI {
         } catch (Throwable e) {
             throw new APIInvocationException("API Invocation error occurred while fetching the dependency model for " +
                     "cell :" + cellName, e);
+        }
+    }
+
+    @GET
+    @Path("/cellData")
+    @Produces("application/json")
+    public Response getCellData()
+            throws APIInvocationException {
+        try {
+            JsonArray jsonArray = ServiceHolder.getModelManager().getCellData();
+            return Response.ok().entity(jsonArray).build();
+        } catch (Throwable e) {
+            throw new APIInvocationException("API Invocation error occurred while fetching cell data " , e);
         }
     }
 

@@ -1,0 +1,18 @@
+@App:name("k8s-cell-app")
+@App:description("This collects cell data and stores them in relevant data sources")
+
+@source(type="k8s-cellery-cells",
+        @map(type="keyvalue", fail.on.missing.attribute="false"))
+define stream K8sCellEventSourceStream(cell String, creationTimestamp long, action string, Ingress_Types string, component string);
+
+@Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB")
+@PrimaryKey("cell","component")
+@purge(enable="false")
+define table K8sCellInfoTable(cell String, creationTimestamp long, action string, Ingress_Types string, component string);
+
+from K8sCellEventSourceStream[action == "ADDED"]
+select cell, creationTimestamp, action, Ingress_Types, component
+update or insert into K8sCellInfoTable
+set  K8sCellInfoTable.creationTimestamp = creationTimestamp, K8sCellInfoTable.action = action,
+K8sCellInfoTable.Ingress_Types = Ingress_Types
+on K8sCellInfoTable.cell == cell and K8sCellInfoTable.component == component;

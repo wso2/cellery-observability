@@ -63,14 +63,10 @@ public class ComponentPodsEventSource extends Source {
 
     private static final Logger logger = Logger.getLogger(ComponentPodsEventSource.class.getName());
 
-    private static final String ATTRIBUTE_CELL = "cell";
-    private static final String ATTRIBUTE_COMPONENT = "component";
     private static final String ATTRIBUTE_POD_NAME = "name";
-    private static final String ATTRIBUTE_CREATION_TIMESTAMP = "creationTimestamp";
     private static final String ATTRIBUTE_DELETION_TIMESTAMP = "deletionTimestamp";
     private static final String ATTRIBUTE_NODE_NAME = "nodeName";
     private static final String ATTRIBUTE_STATUS = "status";
-    private static final String ATTRIBUTE_ACTION = "action";
 
     private KubernetesClient k8sClient;
     private SourceEventListener sourceEventListener;
@@ -176,10 +172,10 @@ public class ComponentPodsEventSource extends Source {
         public void eventReceived(Action action, Pod pod) {
             try {
                 Map<String, Object> attributes = new HashMap<>();
-                attributes.put(ATTRIBUTE_CELL, pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL));
-                attributes.put(ATTRIBUTE_COMPONENT, Utils.getComponentName(pod));
+                attributes.put(Constants.ATTRIBUTE_CELL, pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL));
+                attributes.put(Constants.ATTRIBUTE_COMPONENT, Utils.getComponentName(pod));
                 attributes.put(ATTRIBUTE_POD_NAME, pod.getMetadata().getName());
-                attributes.put(ATTRIBUTE_CREATION_TIMESTAMP, pod.getMetadata().getCreationTimestamp() == null
+                attributes.put(Constants.ATTRIBUTE_CREATION_TIMESTAMP, pod.getMetadata().getCreationTimestamp() == null
                         ? -1
                         : new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US).parse(
                                 pod.getMetadata().getCreationTimestamp()).getTime());
@@ -190,7 +186,7 @@ public class ComponentPodsEventSource extends Source {
                 attributes.put(ATTRIBUTE_NODE_NAME,
                         pod.getSpec().getNodeName() == null ? "" : pod.getSpec().getNodeName());
                 attributes.put(ATTRIBUTE_STATUS, pod.getStatus().getPhase());
-                attributes.put(ATTRIBUTE_ACTION, action.toString());
+                attributes.put(Constants.ATTRIBUTE_ACTION, action.toString());
 
                 sourceEventListener.onEvent(attributes, new String[0]);
                 if (logger.isDebugEnabled()) {

@@ -19,6 +19,8 @@ package io.cellery.observability.model.generator.internal;
 
 import com.google.common.graph.MutableNetwork;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import io.cellery.observability.model.generator.Node;
 import io.cellery.observability.model.generator.Utils;
@@ -48,7 +50,10 @@ public class ModelStoreManager {
     private static final Logger log = Logger.getLogger(ModelStoreManager.class);
 
     private static final String TABLE_NAME = "DependencyModelTable";
+    private static final String CELL_TABLE_NAME = "K8sCellInfoTable";
     private static final String DATASOURCE_NAME = "CELLERY_OBSERVABILITY_DB";
+    private static final String CELL = "cell";
+    private static final String INGRESS_TYPE = "Ingress_Types";
     private static final Type NODE_SET_TYPE = new TypeToken<HashSet<Node>>() {
     }.getType();
     private static final Type STRING_SET_TYPE = new TypeToken<HashSet<String>>() {
@@ -95,6 +100,31 @@ public class ModelStoreManager {
         }
     }
 
+    public JsonArray loadCellData() throws GraphStoreException {
+        try {
+            Connection connection = getConnection();
+            PreparedStatement statement = connection.prepareStatement("SELECT cell, GROUP_CONCAT(Ingress_Types)" +
+                    " as types FROM " + CELL_TABLE_NAME + " GROUP BY cell");
+            ResultSet resultSet = statement.executeQuery();
+            JsonArray jsonArray = new JsonArray();
+            String cell;
+            String types;
+
+            while (resultSet.next()) {
+                JsonObject jsonObject = new JsonObject();
+                cell = resultSet.getString(CELL);
+                types = resultSet.getString(INGRESS_TYPE);
+                jsonObject.addProperty(CELL, cell);
+                jsonObject.addProperty(INGRESS_TYPE, types);
+                jsonArray.add(jsonObject);
+            }
+            cleanupConnection(resultSet, statement, connection);
+            return jsonArray;
+        } catch (SQLException ex) {
+            throw new GraphStoreException("Unable to load the cell data from datasource : " + DATASOURCE_NAME, ex);
+        }
+    }
+
     private Model getModel(ResultSet resultSet) throws SQLException {
         String nodes = resultSet.getString(2);
         String edges = resultSet.getString(3);
@@ -138,7 +168,7 @@ public class ModelStoreManager {
 
 
     private Connection getConnection() throws SQLException, GraphStoreException {
-        if (this.dataSource !=  null) {
+        if (this.dataSource != null) {
             return this.dataSource.getConnection();
         } else {
             throw new GraphStoreException("Datasource is not available!");
