@@ -1,9 +1,29 @@
+/*
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package io.cellery.observability.k8s.client;
 
-import io.cellery.observability.k8s.client.crds.Cell;
-import io.cellery.observability.k8s.client.crds.CellList;
-import io.cellery.observability.k8s.client.crds.DoneableCell;
-import io.cellery.observability.k8s.client.crds.model.Http;
+import io.cellery.observability.k8s.client.cells.Cell;
+import io.cellery.observability.k8s.client.cells.CellList;
+import io.cellery.observability.k8s.client.cells.DoneableCell;
+import io.cellery.observability.k8s.client.cells.model.HTTP;
+import io.cellery.observability.k8s.client.cells.model.IngressTypes;
+import io.cellery.observability.k8s.client.cells.model.TCP;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionList;
@@ -13,6 +33,7 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
@@ -34,33 +55,37 @@ import java.util.Map;
  * This class implements the Event Source which can be used to listen for K8s cell changes.
  */
 @Extension(
-        name = "k8s-cellery-cells",
+        name = "k8s-cellery-components",
         namespace = "source",
         description = "This is an event source which emits events upon changes to Cellery cells deployed as" +
                 "Kubernetes resource",
         examples = {
                 @Example(
-                        syntax = "@source(type='k8s-cellery-cells', @map(type='keyvalue', " +
+                        syntax = "@source(type='k8s-cellery-components', @map(type='keyvalue', " +
                                 "fail.on.missing.attribute='false'))\n" +
-                                "define stream k8sCellEvents (cell string, creationTimestamp long, " +
-                                "action string, Ingress_Types string, component string)",
+                                "define stream K8sComponentEventSourceStream (cell string, component string," +
+                                " creationTimestamp long, lastKnownActiveTimestamp long, Ingress_Types string" +
+                                ", action string)",
+
                         description = "This will listen for kubernetes cell events and emit events upon changes " +
                                 "to the pods"
                 )
         }
 )
-public class CellsEventSource extends Source {
+public class ComponentsEventSource extends Source {
 
-    private static final Logger logger = Logger.getLogger(CellsEventSource.class.getName());
+    private static final Logger logger = Logger.getLogger(ComponentsEventSource.class.getName());
 
     private static final String CELL_CRD_GROUP = "mesh.cellery.io";
     private static final String CELL_CRD_NAME = "cells." + CELL_CRD_GROUP;
     private static final String INGRESS_TYPES = "Ingress_Types";
     private static final String HTTP = "HTTP";
-    private static final String WEB = "WEB";
+    private static final String WEB = "Web";
+    private static final String TCP = "TCP";
     private static final String VERSION = "/v1alpha1";
     private static final String DEFAULT_NAMESPACE = "default";
     private static final String CELL = "Cell";
+    private static final String LAST_KNOWN_ACTIVE_TIMESTAMP = "lastKnownActiveTimestamp";
     private KubernetesClient k8sClient;
     private SourceEventListener sourceEventListener;
 
@@ -96,6 +121,7 @@ public class CellsEventSource extends Source {
                 }
             }
         }
+        // Register the custom resource kind cell to Kubernetes deserializer to perform deserialization of cell objects.
         KubernetesDeserializer.registerCustomKind(CELL_CRD_GROUP + VERSION, CELL, Cell.class);
 
         // Create client for cell resource
@@ -107,7 +133,9 @@ public class CellsEventSource extends Source {
         cellClient.watch(new Watcher<Cell>() {
             @Override
             public void eventReceived(Action action, Cell cell) {
-                List<Http> httpObjectsList = cell.getSpec().getGatewayTemplate().getSpec().getHttp();
+                List<HTTP> httpObjectsList = cell.getSpec().getGatewayTemplate().getSpec().getHttp();
+                List<TCP> tcpObjectsList = cell.getSpec().getGatewayTemplate().getSpec().getTcp();
+                IngressTypes ingressList = new IngressTypes();
                 try {
                     Map<String, Object> attributes = new HashMap<>();
                     attributes.put(Constants.ATTRIBUTE_CELL, cell.getMetadata().getName());
@@ -117,16 +145,14 @@ public class CellsEventSource extends Source {
                                     : new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US).parse(
                                     cell.getMetadata().getCreationTimestamp()).getTime());
                     attributes.put(Constants.ATTRIBUTE_ACTION, action.toString());
-
-//                    for (ServicesTemplate data : cell.getSpec().getServicesTemplates()) {
-//                        attributes.put("component", data.getMetadata().getName());
-//                        sourceEventListener.onEvent(attributes, new String[0]);
-//                    }
+                    attributes.put(LAST_KNOWN_ACTIVE_TIMESTAMP, 0L);
 
                     // Checks and add HTTP as Ingress type
-                    addHTTPTypes(httpObjectsList, sourceEventListener, attributes);
+                    addHTTPTypes(httpObjectsList, sourceEventListener, attributes, ingressList);
+                    // Checks and add TCP as Ingress type
+                    addTCPTypes(tcpObjectsList, sourceEventListener, attributes, ingressList);
                     // Checks and add HTTP as Ingress type
-                    addWEBTypes(httpObjectsList, sourceEventListener, attributes, cell);
+                    addWEBTypes(httpObjectsList, sourceEventListener, attributes, cell, ingressList);
 
                 } catch (ParseException e) {
                     logger.error("Ignored cell change due to creation timestamp parse failure", e);
@@ -185,15 +211,33 @@ public class CellsEventSource extends Source {
     }
 
     /**
-     * This method checks if the ingress type is of HTTP type and adds it to the relevant cell data
+     * This method checks if the ingress type is of HTTP and adds it to the relevant cell data
      */
-    public void addHTTPTypes(List<Http> httpObjectsList, SourceEventListener sourceEventListener,
-                             Map<String, Object> attributes) {
+    public void addHTTPTypes(List<HTTP> httpObjectsList, SourceEventListener sourceEventListener,
+                             Map<String, Object> attributes, IngressTypes ingressTypes) {
         if (httpObjectsList != null) {
-            for (Http httpObj : httpObjectsList) {
+            for (HTTP httpObj : httpObjectsList) {
                 if (httpObj.getBackend() != null && !httpObj.getBackend().isEmpty()) {
-                    attributes.put(INGRESS_TYPES, HTTP);
+                    ingressTypes.addType(HTTP);
+                    attributes.put(INGRESS_TYPES, StringUtils.join(ingressTypes.getTypes(), ','));
                     attributes.put(Constants.ATTRIBUTE_COMPONENT, httpObj.getBackend());
+                    sourceEventListener.onEvent(attributes, new String[0]);
+                }
+            }
+        }
+    }
+
+    /**
+     * This method checks if the ingress type is of TCP and adds it to the relevant cell data
+     */
+    public void addTCPTypes(List<TCP> tcpObjectsList, SourceEventListener sourceEventListener,
+                            Map<String, Object> attributes, IngressTypes ingressTypes) {
+        if (tcpObjectsList != null) {
+            for (TCP tcpObject : tcpObjectsList) {
+                if (tcpObject.getBackendHost() != null && !tcpObject.getBackendHost().isEmpty()) {
+                    ingressTypes.addType(TCP);
+                    attributes.put(INGRESS_TYPES, StringUtils.join(ingressTypes.getTypes(), ','));
+                    attributes.put(Constants.ATTRIBUTE_COMPONENT, tcpObject.getBackendHost());
                     sourceEventListener.onEvent(attributes, new String[0]);
                 }
             }
@@ -203,10 +247,11 @@ public class CellsEventSource extends Source {
     /**
      * This method checks if the ingress type is of WEB type and adds it to the relevant cell data
      */
-    public void addWEBTypes(List<Http> httpObjectsList, SourceEventListener sourceEventListener,
-                            Map<String, Object> attributes, Cell cell) {
+    public void addWEBTypes(List<HTTP> httpObjectsList, SourceEventListener sourceEventListener,
+                            Map<String, Object> attributes, Cell cell, IngressTypes ingressTypes) {
         if (cell.getSpec().getGatewayTemplate().getSpec().getHost() != null) {
-            attributes.put(INGRESS_TYPES, WEB);
+            ingressTypes.addType(WEB);
+            attributes.put(INGRESS_TYPES, StringUtils.join(ingressTypes.getTypes(), ','));
             attributes.put(Constants.ATTRIBUTE_COMPONENT, httpObjectsList.get(0).getBackend());
             sourceEventListener.onEvent(attributes, new String[0]);
         }

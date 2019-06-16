@@ -1,4 +1,4 @@
-@App:name("k8s-telemetry-app")
+@App:name("k8s-pod-telemetry-app")
 @App:description("This collects Kubernetes related metrics and stores them in the relevant data sources")
 
 define trigger K8sScrapeTrigger at every 10 min;

@@ -139,6 +139,18 @@ public enum SiddhiStoreQueryTemplates {
             "or (creationTimestamp <= ${" + Params.QUERY_START_TIME + "}L " +
             "and lastKnownAliveTimestamp >= ${" + Params.QUERY_END_TIME + "}L))\n" +
             "select cell, component, name, creationTimestamp, lastKnownAliveTimestamp, nodeName"
+    ),
+    K8S_GET_COMPONENTS("from K8sComponentInfoTable\n" +
+            "on (\"${" + Params.CELL + "}\" == \"\" or cell == \"${" + Params.CELL + "}\") " +
+            "and (\"${" + Params.COMPONENT + "}\" == \"\" or component == \"${" + Params.COMPONENT + "}\") " +
+            "and ((creationTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
+            "and creationTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
+            "or (lastKnownActiveTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
+            "and lastKnownActiveTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
+            "or (creationTimestamp <= ${" + Params.QUERY_START_TIME + "}L " +
+            "and (lastKnownActiveTimestamp >= ${" + Params.QUERY_END_TIME + "}L or" +
+            " lastKnownActiveTimestamp == 0L)))\n" +
+            "select cell, component, Ingress_Types"
     );
 
     /*

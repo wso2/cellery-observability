@@ -50,7 +50,8 @@ class Details extends React.Component {
             isDataAvailable: false,
             health: -1,
             dependencyGraphData: [],
-            isLoading: false
+            isLoading: false,
+            ingressTypes: ""
         };
     }
 
@@ -70,11 +71,12 @@ class Details extends React.Component {
 
         const search = {
             queryStartTime: queryStartTime.valueOf(),
-            queryEndTime: queryEndTime.valueOf(),
-            destinationCell: cell,
-            destinationComponent: component,
-            includeIntraCell: true
+            queryEndTime: queryEndTime.valueOf()
         };
+        this.getIngressTypes(search);
+        search.destinationCell = cell;
+        search.destinationComponent = component;
+        search.includeIntraCell = true;
 
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Component Info", globalState);
@@ -134,9 +136,37 @@ class Details extends React.Component {
         });
     };
 
+    getIngressTypes = (searchParams) => {
+        const {cell, component} = this.props;
+        const self = this;
+        HttpUtils.callObservabilityAPI(
+            {
+                url: `/k8s/components${HttpUtils.generateQueryParamString(searchParams)}`,
+                method: "GET"
+            },
+            this.props.globalState
+        ).then(
+            (response) => {
+                for (let i = 0; i < response.length; i++) {
+                    const responseData = response[i];
+                    if (responseData[0] === cell && responseData[1] === component) {
+                        self.setState({
+                            ingressTypes: responseData[2].replace(/,/g, ", ")
+                        });
+                    }
+                }
+            }).catch((error) => {
+            NotificationUtils.showNotification(
+                "Failed to load component ingress types",
+                NotificationUtils.Levels.ERROR,
+                this.props.globalState
+            );
+        });
+    };
+
     render() {
         const {classes, cell, component} = this.props;
-        const {health, isLoading} = this.state;
+        const {health, isLoading, ingressTypes} = this.state;
 
         const view = (
             <Table className={classes.table}>
@@ -159,6 +189,16 @@ class Details extends React.Component {
                         </TableCell>
                         <TableCell className={classes.tableCell}>
                             <Link to={`/cells/${cell}`}>{cell}</Link>
+                        </TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell className={classes.tableCell}>
+                            <Typography color="textSecondary">
+                                Ingress Types
+                            </Typography>
+                        </TableCell>
+                        <TableCell className={classes.tableCell}>
+                            <p>{ingressTypes ? ingressTypes : "Not Exposed"}</p>
                         </TableCell>
                     </TableRow>
                 </TableBody>

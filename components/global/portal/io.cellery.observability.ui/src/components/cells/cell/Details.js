@@ -54,7 +54,8 @@ class Details extends React.Component {
             isDataAvailable: false,
             health: -1,
             dependencyGraphData: [],
-            isLoading: false
+            isLoading: false,
+            ingressTypes: ""
         };
     }
 
@@ -74,10 +75,12 @@ class Details extends React.Component {
 
         const search = {
             queryStartTime: queryStartTime.valueOf(),
-            queryEndTime: queryEndTime.valueOf(),
-            destinationCell: cell,
-            includeIntraCell: true
+            queryEndTime: queryEndTime.valueOf()
         };
+        this.getIngressTypes(search);
+
+        search.destinationCell = cell;
+        search.includeIntraCell = true;
 
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Cell Info", globalState);
@@ -138,9 +141,41 @@ class Details extends React.Component {
         });
     };
 
+    getIngressTypes = (searchParams) => {
+        const {cell} = this.props;
+        searchParams.cell = cell;
+        const self = this;
+        HttpUtils.callObservabilityAPI(
+            {
+                url: `/k8s/components${HttpUtils.generateQueryParamString(searchParams)}`,
+                method: "GET"
+            },
+            this.props.globalState
+        ).then(
+            (response) => {
+                const ingressTypeSet = new Set();
+                for (let i = 0; i < response.length; i++) {
+                    const ingressDatum = response[i];
+                    const ingressTypeArray = ingressDatum[2].split(",");
+                    ingressTypeArray.forEach((ingressValue) => {
+                        ingressTypeSet.add(ingressValue);
+                    });
+                }
+                self.setState({
+                    ingressTypes: Array.from(ingressTypeSet).join(", ")
+                });
+            }).catch((error) => {
+            NotificationUtils.showNotification(
+                "Failed to load cell ingress types",
+                NotificationUtils.Levels.ERROR,
+                this.props.globalState
+            );
+        });
+    };
+
     render = () => {
         const {classes, cell} = this.props;
-        const {health, isLoading} = this.state;
+        const {health, isLoading, ingressTypes} = this.state;
 
         const view = (
             <Table className={classes.table}>
@@ -155,6 +190,16 @@ class Details extends React.Component {
                             <HealthIndicator value={health}/>
                         </TableCell>
                     </TableRow>
+                    <TableRow>
+                        <TableCell className={classes.tableCell}>
+                            <Typography color="textSecondary">
+                                Ingress Types
+                            </Typography>
+                        </TableCell>
+                        <TableCell className={classes.tableCell}>
+                            <p>{ingressTypes}</p>
+                        </TableCell>
+                    </TableRow>
                 </TableBody>
             </Table>
         );
@@ -162,7 +207,7 @@ class Details extends React.Component {
         return (
             <React.Fragment>
                 {isLoading ? null : view}
-                <CellDependencyView cell={cell} className={classes.root} />
+                <CellDependencyView cell={cell} className={classes.root}/>
             </React.Fragment>
         );
     }

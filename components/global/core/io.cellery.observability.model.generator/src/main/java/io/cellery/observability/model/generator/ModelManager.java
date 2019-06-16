@@ -19,7 +19,6 @@ package io.cellery.observability.model.generator;
 
 import com.google.common.graph.MutableNetwork;
 import com.google.common.graph.NetworkBuilder;
-import com.google.gson.JsonArray;
 import io.cellery.observability.model.generator.exception.GraphStoreException;
 import io.cellery.observability.model.generator.exception.ModelException;
 import io.cellery.observability.model.generator.internal.ServiceHolder;
@@ -84,10 +83,6 @@ public class ModelManager {
                 throw new ModelException(msg);
             }
         }
-    }
-
-    public JsonArray getCellData() throws GraphStoreException {
-        return ServiceHolder.getModelStoreManager().loadCellData();
     }
 
     public Node getNode(String nodeName) {

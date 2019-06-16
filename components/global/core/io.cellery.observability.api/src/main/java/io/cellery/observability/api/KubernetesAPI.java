@@ -59,6 +59,29 @@ public class KubernetesAPI {
         }
     }
 
+    @GET
+    @Path("/components")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getK8sCellInfo(@QueryParam("queryStartTime") long queryStartTime,
+                                @QueryParam("queryEndTime") long queryEndTime,
+                                @DefaultValue("") @QueryParam("cell") String cell,
+                                @DefaultValue("") @QueryParam("component") String component)
+            throws APIInvocationException {
+        try {
+            Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_COMPONENTS.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.CELL, cell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.COMPONENT, component)
+                    .build()
+                    .execute();
+            return Response.ok().entity(results).build();
+        } catch (Throwable throwable) {
+            throw new APIInvocationException("API Invocation error occurred while fetching Kubernetes pod information",
+                    throwable);
+        }
+    }
+
     @OPTIONS
     @Path(".*")
     public Response getOptions() {
