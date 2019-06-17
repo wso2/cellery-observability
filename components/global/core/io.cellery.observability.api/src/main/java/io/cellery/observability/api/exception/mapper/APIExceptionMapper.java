@@ -35,6 +35,7 @@ import javax.ws.rs.ext.ExceptionMapper;
  * Exception Mapper for mapping Server Error Exceptions.
  */
 public class APIExceptionMapper implements ExceptionMapper {
+
     private static final Logger log = Logger.getLogger(AggregatedRequestsAPI.class);
     private Gson gson = new Gson();
 
@@ -57,7 +58,7 @@ public class APIExceptionMapper implements ExceptionMapper {
             status = Response.Status.INTERNAL_SERVER_ERROR;
             message = "Unknown Error Occurred";
         }
-        log.error(message, throwable);
+        log.error("Error in Observability Portal API", throwable);
 
         JsonObject errorResponseJsonObject = new JsonObject();
         errorResponseJsonObject.add(STATUS, new JsonPrimitive(STATUS_ERROR));

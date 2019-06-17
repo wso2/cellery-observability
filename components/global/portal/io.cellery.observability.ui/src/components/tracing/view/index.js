@@ -56,7 +56,7 @@ class View extends React.Component {
 
         this.tabs = [
             "timeline",
-            "sequenceDiagram",
+            "sequence-diagram",
             "dependency-diagram"
         ];
         const queryParams = HttpUtils.parseQueryParams(props.location.search);

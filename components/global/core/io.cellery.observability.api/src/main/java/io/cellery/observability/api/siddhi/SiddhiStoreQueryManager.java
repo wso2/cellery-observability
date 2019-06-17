@@ -18,8 +18,8 @@
 
 package io.cellery.observability.api.siddhi;
 
+import io.cellery.observability.api.internal.ServiceHolder;
 import org.wso2.siddhi.core.SiddhiAppRuntime;
-import org.wso2.siddhi.core.SiddhiManager;
 import org.wso2.siddhi.core.event.Event;
 
 /**
@@ -60,9 +60,7 @@ public class SiddhiStoreQueryManager {
     private SiddhiAppRuntime siddhiAppRuntime;
 
     public SiddhiStoreQueryManager() {
-        SiddhiManager siddhiManager = new SiddhiManager();
-
-        siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(SIDDHI_APP);
+        siddhiAppRuntime = ServiceHolder.getSiddhiManager().createSiddhiAppRuntime(SIDDHI_APP);
         siddhiAppRuntime.start();
     }
 

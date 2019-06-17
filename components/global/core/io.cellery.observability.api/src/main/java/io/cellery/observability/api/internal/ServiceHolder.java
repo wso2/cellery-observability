@@ -23,6 +23,7 @@ import io.cellery.observability.model.generator.ModelManager;
 import org.wso2.carbon.config.provider.ConfigProvider;
 import org.wso2.carbon.kernel.CarbonRuntime;
 import org.wso2.msf4j.MicroservicesRunner;
+import org.wso2.siddhi.core.SiddhiManager;
 
 /**
  * This is a static class which holds the references of the OSGI services registered.
@@ -34,6 +35,7 @@ public class ServiceHolder {
     private static SiddhiStoreQueryManager siddhiStoreQueryManager;
     private static OIDCOauthManager oidcOauthManager;
     private static ConfigProvider configProvider;
+    private static SiddhiManager siddhiManager;
 
     public static ConfigProvider getConfigProvider() {
         return configProvider;
@@ -84,5 +86,13 @@ public class ServiceHolder {
 
     public static void setSiddhiStoreQueryManager(SiddhiStoreQueryManager siddhiStoreQueryManager) {
         ServiceHolder.siddhiStoreQueryManager = siddhiStoreQueryManager;
+    }
+
+    public static SiddhiManager getSiddhiManager() {
+        return siddhiManager;
+    }
+
+    public static void setSiddhiManager(SiddhiManager siddhiManager) {
+        ServiceHolder.siddhiManager = siddhiManager;
     }
 }

@@ -16,26 +16,18 @@
  * under the License.
  */
 
-package io.cellery.observability.api;
-
-import java.security.cert.X509Certificate;
-import javax.net.ssl.X509TrustManager;
+package io.cellery.observability.api.exception;
 
 /**
- * This class will simply trust everything that comes along.
+ * Internal generic error in the OIDC Manager.
  */
-public class TrustAllX509TrustManager implements X509TrustManager {
+public class OIDCProviderException extends Exception {
 
-    public X509Certificate[] getAcceptedIssuers() {
-        return new X509Certificate[0];
+    public OIDCProviderException(String message, Throwable e) {
+        super(message, e);
     }
 
-    public void checkClientTrusted(java.security.cert.X509Certificate[] certs,
-                                   String authType) {
+    public OIDCProviderException(String message) {
+        super(message);
     }
-
-    public void checkServerTrusted(java.security.cert.X509Certificate[] certs,
-                                   String authType) {
-    }
-
 }

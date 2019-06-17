@@ -153,7 +153,7 @@ public class DistributedTracingAPI {
                         .builder()
                         .setArg(
                                 SiddhiStoreQueryTemplates.Params.CONDITION,
-                                Utils.generateSiddhiMatchConditionForAnyValues(
+                                Utils.generateSiddhiMatchConditionForMultipleValues(
                                         "traceId", traceIds.toArray(new String[0]))
                         )
                         .setArg(SiddhiStoreQueryTemplates.Params.MAX_DURATION, maxDuration)
@@ -173,7 +173,7 @@ public class DistributedTracingAPI {
                             SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_MULTIPLE_CELL_SERVICE_COUNTS
                                     .builder()
                                     .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
-                                            Utils.generateSiddhiMatchConditionForAnyValues("traceId",
+                                            Utils.generateSiddhiMatchConditionForMultipleValues("traceId",
                                                     rootSpanResultIds))
                                     .build()
                                     .execute();

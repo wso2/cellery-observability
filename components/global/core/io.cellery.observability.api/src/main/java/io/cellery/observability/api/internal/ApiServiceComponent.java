@@ -21,11 +21,10 @@ import io.cellery.observability.api.AggregatedRequestsAPI;
 import io.cellery.observability.api.DependencyModelAPI;
 import io.cellery.observability.api.DistributedTracingAPI;
 import io.cellery.observability.api.KubernetesAPI;
-import io.cellery.observability.api.TrustAllX509TrustManager;
 import io.cellery.observability.api.UserAuthenticationAPI;
+import io.cellery.observability.api.Utils;
 import io.cellery.observability.api.auth.OIDCOauthManager;
 import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
-import io.cellery.observability.api.exception.oidc.OIDCProviderException;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
@@ -42,14 +41,7 @@ import org.wso2.carbon.config.provider.ConfigProvider;
 import org.wso2.carbon.datasource.core.api.DataSourceService;
 import org.wso2.carbon.kernel.CarbonRuntime;
 import org.wso2.msf4j.MicroservicesRunner;
-
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
+import org.wso2.siddhi.core.SiddhiManager;
 
 /**
  * This is the declarative service component of the observability API component,
@@ -75,10 +67,13 @@ public class ApiServiceComponent {
      */
     @Activate
     protected void start(BundleContext bundleContext) throws Exception {
-
         try {
-            disableSSLVerification();
+            Utils.disableSSLVerification();
             ServiceHolder.setOidcOauthManager(new OIDCOauthManager());
+            ServiceHolder.setSiddhiManager(new SiddhiManager());
+
+            // Starting the Siddhi Manager
+            ServiceHolder.setSiddhiStoreQueryManager(new SiddhiStoreQueryManager());
 
             // Deploying the microservices
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
@@ -91,9 +86,6 @@ public class ApiServiceComponent {
                     )
             );
             ServiceHolder.getMicroservicesRunner().start();
-
-            // Starting the Siddhi Manager
-            ServiceHolder.setSiddhiStoreQueryManager(new SiddhiStoreQueryManager());
         } catch (Throwable throwable) {
             log.error("Error occured while activating the Observability API bundle", throwable);
             throw throwable;
@@ -180,20 +172,4 @@ public class ApiServiceComponent {
     protected void unsetConfigProvider(ConfigProvider configProvider) {
         ServiceHolder.setConfigProvider(null);
     }
-
-    private static void disableSSLVerification() throws OIDCProviderException {
-        try {
-            SSLContext sc = SSLContext.getInstance("TLS");
-            sc.init(null, new TrustManager[]{new TrustAllX509TrustManager()}, new java.security.SecureRandom());
-            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
-                public boolean verify(String string, SSLSession ssls) {
-                    return true;
-                }
-            });
-        } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            throw new OIDCProviderException("Error occured while disabling SSL verification", e);
-        }
-    }
-
 }

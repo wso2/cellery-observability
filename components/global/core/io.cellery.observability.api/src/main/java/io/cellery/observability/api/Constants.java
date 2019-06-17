@@ -41,7 +41,7 @@ public class Constants {
     public static final String AUTHORIZATION_CODE = "authorization_code";
     public static final String CALL_BACK_URL = "redirect_uris";
     public static final String CLIENT_NAME = "client_name";
-    public static final String APPLICATION_NAME = "Cellery-Observability-Portal";
+    public static final String APPLICATION_NAME = "cellery-observability-portal";
     public static final String GRANT_TYPE = "grant_types";
     public static final String AUTHORIZATION = "Authorization";
     public static final String CONTENT_TYPE = "content-type";

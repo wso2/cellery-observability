@@ -75,6 +75,7 @@
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty</artifactId>
         </dependency>
+
         <!-- Test dependencies start here-->
         <dependency>
             <groupId>org.testng</groupId>
@@ -101,6 +102,14 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${org.jacoco.version}</version>
+                <configuration>
+                    <excludes>**/io/cellery/observability/telemetry/receiver/generated/**</excludes>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -148,5 +157,4 @@
         <exp.package.version>3.6.1</exp.package.version>
         <grpc.version>1.15.0</grpc.version>
     </properties>
-
 </project>

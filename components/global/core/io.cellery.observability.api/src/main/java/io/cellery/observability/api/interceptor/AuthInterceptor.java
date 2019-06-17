@@ -19,7 +19,7 @@
 package io.cellery.observability.api.interceptor;
 
 import io.cellery.observability.api.Constants;
-import io.cellery.observability.api.exception.oidc.OIDCProviderException;
+import io.cellery.observability.api.exception.OIDCProviderException;
 import io.cellery.observability.api.internal.ServiceHolder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
@@ -36,13 +36,12 @@ import javax.ws.rs.core.HttpHeaders;
  */
 public class AuthInterceptor implements RequestInterceptor {
 
-    private static final Logger log = Logger.getLogger(AuthInterceptor.class);
+    private static final Logger logger = Logger.getLogger(AuthInterceptor.class);
 
     @Override
     public boolean interceptRequest(Request request, Response response) {
-
-        if (!request.getHttpMethod().equalsIgnoreCase(HttpMethod.OPTIONS) &&
-                request.getHeader(HttpHeaders.AUTHORIZATION) != null) {
+        if (!HttpMethod.OPTIONS.equalsIgnoreCase(request.getHttpMethod()) &&
+                !(StringUtils.isNotEmpty(request.getUri()) && request.getUri().startsWith("/api/auth"))) {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
             Cookie oAuthCookie = request.getHeaders().getCookies().get(Constants.HTTP_ONLY_SESSION_COOKIE);
             if (StringUtils.isNotEmpty(header) && oAuthCookie != null
@@ -55,7 +54,7 @@ public class AuthInterceptor implements RequestInterceptor {
                         return false;
                     }
                 } catch (OIDCProviderException e) {
-                    log.debug("Error occurred while authenticating the access token", e);
+                    logger.debug("Error occurred while authenticating the access token", e);
                     response.setStatus(401);
                     return false;
                 }

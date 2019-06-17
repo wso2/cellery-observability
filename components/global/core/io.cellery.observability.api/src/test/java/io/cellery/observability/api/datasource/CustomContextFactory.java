@@ -16,18 +16,19 @@
  * under the License.
  */
 
-package io.cellery.observability.api.exception.oidc;
+package io.cellery.observability.api.datasource;
+
+import java.util.Hashtable;
+import javax.naming.Context;
+import javax.naming.NamingException;
+import javax.naming.spi.InitialContextFactory;
 
 /**
- * Internal generic error in the OIDC Manager.
+ * Custom context factory for unit tests.
  */
-public class OIDCProviderException extends Exception {
-
-    public OIDCProviderException(String message, Throwable e) {
-        super(message, e);
-    }
-
-    public OIDCProviderException(String message) {
-        super(message);
+public class CustomContextFactory implements InitialContextFactory {
+    @Override
+    public Context getInitialContext(Hashtable<?, ?> environment) throws NamingException {
+        return new CustomContext(environment);
     }
 }

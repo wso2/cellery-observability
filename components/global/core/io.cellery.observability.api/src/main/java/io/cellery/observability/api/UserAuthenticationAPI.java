@@ -20,9 +20,8 @@ package io.cellery.observability.api;
 
 import io.cellery.observability.api.bean.CelleryConfig;
 import io.cellery.observability.api.exception.APIInvocationException;
-import io.cellery.observability.api.exception.oidc.OIDCProviderException;
+import io.cellery.observability.api.exception.OIDCProviderException;
 import io.cellery.observability.api.internal.ServiceHolder;
-import org.apache.log4j.Logger;
 import org.apache.oltu.oauth2.client.OAuthClient;
 import org.apache.oltu.oauth2.client.URLConnectionClient;
 import org.apache.oltu.oauth2.client.request.OAuthClientRequest;
@@ -50,8 +49,6 @@ import javax.ws.rs.core.Response;
  */
 @Path("/api/auth")
 public class UserAuthenticationAPI {
-
-    private static final Logger log = Logger.getLogger(UserAuthenticationAPI.class);
 
     @GET
     @Path("/tokens/{authCode}")

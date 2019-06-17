@@ -55,7 +55,7 @@ public enum SiddhiStoreQueryTemplates {
             "group by AGG_TIMESTAMP, httpResponseGroup"
     ),
     REQUEST_AGGREGATION_CELL_COMPONENTS("from RequestAggregation\n" +
-            "on sourceCell == \"${" + Params.CELL + "}\" or destinationCell == \"${" + Params.CELL + "}\"" +
+            "on sourceCell == \"${" + Params.CELL + "}\" or destinationCell == \"${" + Params.CELL + "}\"\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"${" + Params.TIME_GRANULARITY + "}\"\n" +
             "select sourceCell, sourceComponent, destinationCell, destinationComponent, httpResponseGroup, " +
@@ -97,7 +97,7 @@ public enum SiddhiStoreQueryTemplates {
             "serviceName == \"${" + Params.SERVICE_NAME + "}\") " +
             "and (\"${" + Params.OPERATION_NAME + "}\" == \"\" or " +
             "operationName == \"${" + Params.OPERATION_NAME + "}\") " +
-            "and (${" + Params.MIN_DURATION + "}L == -1 or duration >= ${" + Params.MIN_DURATION + "}L) " +
+            "and (${" + Params.MIN_DURATION + "}L == -1 or duration >= ${" + Params.MIN_DURATION + "}L)\n" +
             "select traceId\n" +
             "group by traceId"
     ),
@@ -114,7 +114,7 @@ public enum SiddhiStoreQueryTemplates {
             "on traceId == spanId and (${" + Params.CONDITION + "}) " +
             "and (${" + Params.MAX_DURATION + "}L == -1 or duration <= ${" + Params.MAX_DURATION + "}L) " +
             "and (${" + Params.QUERY_START_TIME + "}L == -1 or startTime >= ${" + Params.QUERY_START_TIME + "}L) " +
-            "and (${" + Params.QUERY_END_TIME + "}L == -1 or startTime <= ${" + Params.QUERY_END_TIME + "}L) " +
+            "and (${" + Params.QUERY_END_TIME + "}L == -1 or startTime <= ${" + Params.QUERY_END_TIME + "}L)\n" +
             "select traceId, cell, serviceName, operationName, startTime, duration\n" +
             "order by startTime desc"
     ),
@@ -172,6 +172,9 @@ public enum SiddhiStoreQueryTemplates {
         public static final String MIN_DURATION = "minDuration";
         public static final String MAX_DURATION = "maxDuration";
         public static final String TRACE_ID = "traceId";
+
+        private Params() {      // Prevent initialization
+        }
     }
 
     /**
