@@ -75,12 +75,28 @@ class Details extends React.Component {
 
         const search = {
             queryStartTime: queryStartTime.valueOf(),
-            queryEndTime: queryEndTime.valueOf()
+            queryEndTime: queryEndTime.valueOf(),
+            destinationCell: cell,
+            includeIntraCell: true
         };
-        this.getIngressTypes(search);
 
-        search.destinationCell = cell;
-        search.includeIntraCell = true;
+        const ingressQueryParams = {
+            queryStartTime: queryStartTime.valueOf(),
+            queryEndTime: queryEndTime.valueOf(),
+            cell: cell
+        };
+
+        const cellMetricsPromise = HttpUtils.callObservabilityAPI(
+            {
+                url: `/http-requests/cells/metrics/${HttpUtils.generateQueryParamString(search)}`,
+                method: "GET"
+            }, globalState);
+
+        const ingressDataPromise = HttpUtils.callObservabilityAPI(
+            {
+                url: `/k8s/components${HttpUtils.generateQueryParamString(ingressQueryParams)}`,
+                method: "GET"
+            }, this.props.globalState);
 
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Cell Info", globalState);
@@ -88,37 +104,19 @@ class Details extends React.Component {
                 isLoading: true
             });
         }
-        HttpUtils.callObservabilityAPI(
-            {
-                url: `/http-requests/cells/metrics/${HttpUtils.generateQueryParamString(search)}`,
-                method: "GET"
-            },
-            globalState
-        ).then((data) => {
-            const aggregatedData = data.map((datum) => ({
-                isError: datum[1] === "5xx",
-                count: datum[5]
-            })).reduce((accumulator, currentValue) => {
-                if (currentValue.isError) {
-                    accumulator.errorsCount += currentValue.count;
-                }
-                accumulator.total += currentValue.count;
-                return accumulator;
-            }, {
-                errorsCount: 0,
-                total: 0
-            });
-
-            let health;
-            if (aggregatedData.total > 0) {
-                health = 1 - aggregatedData.errorsCount / aggregatedData.total;
-            } else {
-                health = -1;
+        Promise.all([cellMetricsPromise, ingressDataPromise]).then((data) => {
+            const cellInfoData = data[1];
+            this.loadCellMetrics(data[0]);
+            const ingressTypeSet = new Set();
+            for (let i = 0; i < cellInfoData.length; i++) {
+                const ingressDatum = cellInfoData[i];
+                const ingressTypeArray = ingressDatum[2].split(",");
+                ingressTypeArray.forEach((ingressValue) => {
+                    ingressTypeSet.add(ingressValue);
+                });
             }
-
             self.setState({
-                health: health,
-                isDataAvailable: aggregatedData.total > 0
+                ingressTypes: Array.from(ingressTypeSet).join(", ")
             });
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
@@ -141,35 +139,32 @@ class Details extends React.Component {
         });
     };
 
-    getIngressTypes = (searchParams) => {
-        const {cell} = this.props;
-        searchParams.cell = cell;
+    loadCellMetrics = (data) => {
         const self = this;
-        HttpUtils.callObservabilityAPI(
-            {
-                url: `/k8s/components${HttpUtils.generateQueryParamString(searchParams)}`,
-                method: "GET"
-            },
-            this.props.globalState
-        ).then(
-            (response) => {
-                const ingressTypeSet = new Set();
-                for (let i = 0; i < response.length; i++) {
-                    const ingressDatum = response[i];
-                    const ingressTypeArray = ingressDatum[2].split(",");
-                    ingressTypeArray.forEach((ingressValue) => {
-                        ingressTypeSet.add(ingressValue);
-                    });
-                }
-                self.setState({
-                    ingressTypes: Array.from(ingressTypeSet).join(", ")
-                });
-            }).catch((error) => {
-            NotificationUtils.showNotification(
-                "Failed to load cell ingress types",
-                NotificationUtils.Levels.ERROR,
-                this.props.globalState
-            );
+        const aggregatedData = data.map((datum) => ({
+            isError: datum[1] === "5xx",
+            count: datum[5]
+        })).reduce((accumulator, currentValue) => {
+            if (currentValue.isError) {
+                accumulator.errorsCount += currentValue.count;
+            }
+            accumulator.total += currentValue.count;
+            return accumulator;
+        }, {
+            errorsCount: 0,
+            total: 0
+        });
+
+        let health;
+        if (aggregatedData.total > 0) {
+            health = 1 - aggregatedData.errorsCount / aggregatedData.total;
+        } else {
+            health = -1;
+        }
+
+        self.setState({
+            health: health,
+            isDataAvailable: aggregatedData.total > 0
         });
     };
 
