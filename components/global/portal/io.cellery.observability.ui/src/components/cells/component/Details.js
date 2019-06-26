@@ -51,7 +51,7 @@ class Details extends React.Component {
             health: -1,
             dependencyGraphData: [],
             isLoading: false,
-            ingressTypes: ""
+            ingressTypes: []
         };
     }
 
@@ -105,11 +105,11 @@ class Details extends React.Component {
         );
         Promise.all([componentMetricPromise, IngressDataPromise]).then((data) => {
             const ingressData = data[1];
-            this.loadComponentInfo(data[0]);
+            self.loadComponentInfo(data[0]);
             for (let i = 0; i < ingressData.length; i++) {
                 const responseData = ingressData[i];
                 self.setState({
-                    ingressTypes: responseData[2].replace(/,/g, ", ")
+                    ingressTypes: responseData[2].split(",")
                 });
             }
             if (isUserAction) {
@@ -164,6 +164,7 @@ class Details extends React.Component {
     render() {
         const {classes, cell, component} = this.props;
         const {health, isLoading, ingressTypes} = this.state;
+        const ingressListStr = ingressTypes.toString().replace(/,/g, ", ");
 
         const view = (
             <Table className={classes.table}>
@@ -195,7 +196,7 @@ class Details extends React.Component {
                             </Typography>
                         </TableCell>
                         <TableCell className={classes.tableCell}>
-                            <p>{ingressTypes ? ingressTypes : "Not Available"}</p>
+                            <p>{ingressListStr ? ingressListStr : "Not Available"}</p>
                         </TableCell>
                     </TableRow>
                 </TableBody>

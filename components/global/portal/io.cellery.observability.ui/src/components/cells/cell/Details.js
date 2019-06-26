@@ -55,7 +55,7 @@ class Details extends React.Component {
             health: -1,
             dependencyGraphData: [],
             isLoading: false,
-            ingressTypes: ""
+            ingressTypes: []
         };
     }
 
@@ -105,17 +105,17 @@ class Details extends React.Component {
         }
         Promise.all([cellMetricsPromise, ingressDataPromise]).then((data) => {
             const cellInfoData = data[1];
-            this.loadCellMetrics(data[0]);
-            const ingressTypeSet = new Set();
+            self.loadCellMetrics(data[0]);
+            const ingressTypesSet = new Set();
             for (let i = 0; i < cellInfoData.length; i++) {
                 const ingressDatum = cellInfoData[i];
                 const ingressTypeArray = ingressDatum[2].split(",");
                 ingressTypeArray.forEach((ingressValue) => {
-                    ingressTypeSet.add(ingressValue);
+                    ingressTypesSet.add(ingressValue);
                 });
             }
             self.setState({
-                ingressTypes: Array.from(ingressTypeSet).join(", ")
+                ingressTypes: Array.from(ingressTypesSet)
             });
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
@@ -170,7 +170,6 @@ class Details extends React.Component {
     render = () => {
         const {classes, cell} = this.props;
         const {health, isLoading, ingressTypes} = this.state;
-
         const view = (
             <Table className={classes.table}>
                 <TableBody>
@@ -191,7 +190,7 @@ class Details extends React.Component {
                             </Typography>
                         </TableCell>
                         <TableCell className={classes.tableCell}>
-                            <p>{ingressTypes}</p>
+                            <p>{ingressTypes.length > 0 ? ingressTypes.join(", ") : "Not Available"}</p>
                         </TableCell>
                     </TableRow>
                 </TableBody>

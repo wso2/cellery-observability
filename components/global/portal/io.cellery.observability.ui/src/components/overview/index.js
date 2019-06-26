@@ -222,7 +222,7 @@ class Overview extends React.Component {
             listData: [],
             page: 0,
             rowsPerPage: 5,
-            cellIngress: []
+            cellIngresses: []
         };
 
         const queryParams = HttpUtils.parseQueryParams(props.location.search);
@@ -501,8 +501,7 @@ class Overview extends React.Component {
                 url: `/k8s/cells${HttpUtils.generateQueryParamString(searchParams)}`,
                 method: "GET"
             },
-            this.props.globalState
-        ).then(
+            this.props.globalState).then(
             (response) => {
                 const cellNameSet = new Set();
                 for (let i = 0; i < response.length; i++) {
@@ -516,7 +515,7 @@ class Overview extends React.Component {
                     ingressDataArray.push(obj);
                 }
                 self.setState({
-                    cellIngress: self.getCellIngresses(ingressDataArray, cellNameSet)
+                    cellIngresses: self.getCellIngresses(ingressDataArray, cellNameSet)
                 });
             }).catch((error) => {
             NotificationUtils.showNotification(
@@ -754,7 +753,6 @@ class Overview extends React.Component {
                 + 'stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/></g>'
                 + `<path fill="${warningColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
                 + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
-                + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
                 + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
                 + "</svg>";
 
@@ -771,8 +769,8 @@ class Overview extends React.Component {
             return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cellView)}`;
         };
 
-        const loadCellIngress = (nodeId) => {
-            const cellInfoObj = this.state.cellIngress.find((cellIngressDatum) => cellIngressDatum.cellName === nodeId);
+        const renderNodeLabel = (nodeId) => {
+            const cellInfoObj = this.state.cellIngresses.find((cellIngressDatum) => cellIngressDatum.cellName === nodeId);
             if (cellInfoObj) {
                 return `${nodeId}\n<b>(${cellInfoObj.ingressTypes})</b>`;
             }
@@ -801,7 +799,7 @@ class Overview extends React.Component {
                                                         <div className={classes.diagram}>
                                                             <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges}
                                                                 onClickNode={(nodeId) => this.onClickCell(nodeId, true)} viewGenerator={viewGenerator}
-                                                                onClickGraph={this.onClickGraph} selectedCell={selectedCell} graphType="overview" loadCellIngress={loadCellIngress}
+                                                                onClickGraph={this.onClickGraph} selectedCell={selectedCell} graphType="overview" renderNodeLabel={renderNodeLabel}
                                                             />
                                                         </div>
                                                     </div>

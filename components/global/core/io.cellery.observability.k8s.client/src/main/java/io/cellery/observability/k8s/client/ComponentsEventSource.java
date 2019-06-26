@@ -73,7 +73,7 @@ import java.util.Set;
                                 ", action string)",
 
                         description = "This will listen for kubernetes cell events and emit events upon changes " +
-                                "to the pods"
+                                "to the cells"
                 )
         }
 )
@@ -110,24 +110,12 @@ public class ComponentsEventSource extends Source {
             logger.debug("Retrieved API server client instance");
         }
 
-        // Get CRD for cell resource
-        CustomResourceDefinitionList crdList = k8sClient.customResourceDefinitions().list();
-        List<CustomResourceDefinition> crdsItems = crdList.getItems();
-        CustomResourceDefinition cellCRD = null;
-        for (CustomResourceDefinition crd : crdsItems) {
-            ObjectMeta metadata = crd.getMetadata();
-            if (metadata != null) {
-                if (CELL_CRD_NAME.equalsIgnoreCase(metadata.getName())) {
-                    cellCRD = crd;
-                }
-            }
-        }
         // Register the custom resource kind cell to Kubernetes deserializer to perform deserialization of cell objects.
         KubernetesDeserializer.registerCustomKind(CELL_CRD_GROUP + "/" + CELL_CRD_VERSION, CELL, Cell.class);
 
         // Create client for cell resource
         MixedOperation<Cell, CellList, DoneableCell, Resource<Cell, DoneableCell>> cellClient =
-                k8sClient.customResources(cellCRD, Cell.class, CellList.class, DoneableCell.class);
+                k8sClient.customResources(getCellCRD(), Cell.class, CellList.class, DoneableCell.class);
 
         // Cell watcher for Cellery cell updates
          cellWatcher = cellClient.inNamespace(DEFAULT_NAMESPACE).watch(new Watcher<Cell>() {
@@ -148,15 +136,7 @@ public class ComponentsEventSource extends Source {
                     attributes.put(Constants.ATTRIBUTE_ACTION, action.toString());
                     attributes.put(Constants.ATTRIBUTE_LAST_KNOWN_ACTIVE_TIMESTAMP, 0L);
 
-                    for (String componentName : getComponentsList(cell)) {
-                        List<String> ingressTypesList = new ArrayList<>();
-                        addHttpType(httpObjectsList, componentName, ingressTypesList, isWebCell);
-                        addTcpType(tcpObjectsList, componentName, ingressTypesList);
-                        attributes.put(Constants.ATTRIBUTE_COMPONENT, componentName);
-                        attributes.put(INGRESS_TYPES,  StringUtils.join(ingressTypesList, ','));
-                        sourceEventListener.onEvent(attributes, new String[0]);
-                    }
-
+                    addComponentsInfo(cell, httpObjectsList, tcpObjectsList, attributes, isWebCell);
 
                 } catch (ParseException e) {
                     logger.error("Ignored cell change due to creation timestamp parse failure", e);
@@ -242,9 +222,8 @@ public class ComponentsEventSource extends Source {
      */
     private void addTcpType(List<TCP> tcpObjectsList, String componentName, List<String> ingressTypes) {
         if (tcpObjectsList != null) {
-            boolean isTCP = tcpObjectsList.stream().anyMatch(tcpObject -> tcpObject.getBackendHost()
-                    .equals(componentName));
-            if (isTCP) {
+            if (tcpObjectsList.stream().anyMatch(tcpObject -> tcpObject.getBackendHost()
+                    .equals(componentName))) {
                 ingressTypes.add(Constants.INGRESS_TYPE_TCP);
             }
         }
@@ -260,5 +239,38 @@ public class ComponentsEventSource extends Source {
             componentsList.add(service.getMetadata().getName());
         }
         return componentsList;
+    }
+
+    /**
+     * This method returns the cell CRD.
+     */
+    private CustomResourceDefinition getCellCRD() {
+        // Get CRD for cell resource
+        CustomResourceDefinitionList crdList = k8sClient.customResourceDefinitions().list();
+        List<CustomResourceDefinition> crdsItems = crdList.getItems();
+        for (CustomResourceDefinition crd : crdsItems) {
+            ObjectMeta metadata = crd.getMetadata();
+            if (metadata != null) {
+                if (CELL_CRD_NAME.equalsIgnoreCase(metadata.getName())) {
+                    return crd;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * This method maps the respective components with the Ingress types it exposes.
+     */
+    private void addComponentsInfo(Cell cell, List<HTTP> httpObjectsList, List<TCP> tcpObjectsList,
+                                   Map<String, Object> attributes, boolean isWebCell) {
+        for (String componentName : getComponentsList(cell)) {
+            List<String> ingressTypesList = new ArrayList<>();
+            addHttpType(httpObjectsList, componentName, ingressTypesList, isWebCell);
+            addTcpType(tcpObjectsList, componentName, ingressTypesList);
+            attributes.put(Constants.ATTRIBUTE_COMPONENT, componentName);
+            attributes.put(INGRESS_TYPES,  StringUtils.join(ingressTypesList, ','));
+            sourceEventListener.onEvent(attributes, new String[0]);
+        }
     }
 }

@@ -63,31 +63,31 @@ public class KubernetesAPI {
     @GET
     @Path("/cells")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAllIngressTypes(@QueryParam("queryStartTime") long queryStartTime,
-                                       @QueryParam("queryEndTime") long queryEndTime)
+    public Response getAllCellsInfo(@QueryParam("queryStartTime") long queryStartTime,
+                                    @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
-        return getComponentInfo(queryStartTime, queryEndTime, "", "");
+        return getCellsAndComponentsInfo(queryStartTime, queryEndTime, "", "");
     }
 
     @GET
     @Path("/cells/{cellName}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getCellIngressType(@QueryParam("queryStartTime") long queryStartTime,
-                                       @QueryParam("queryEndTime") long queryEndTime,
-                                       @PathParam("cellName") String cell)
+    public Response getCellInfo(@QueryParam("queryStartTime") long queryStartTime,
+                                @QueryParam("queryEndTime") long queryEndTime,
+                                @PathParam("cellName") String cell)
             throws APIInvocationException {
-        return getComponentInfo(queryStartTime, queryEndTime, cell, "");
+        return getCellsAndComponentsInfo(queryStartTime, queryEndTime, cell, "");
     }
 
     @GET
     @Path("/cells/{cellName}/components/{componentName}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getComponentIngressTypes(@QueryParam("queryStartTime") long queryStartTime,
-                                             @QueryParam("queryEndTime") long queryEndTime,
-                                             @PathParam("cellName") String cell,
-                                             @PathParam("componentName") String component)
+    public Response getComponentInfo(@QueryParam("queryStartTime") long queryStartTime,
+                                     @QueryParam("queryEndTime") long queryEndTime,
+                                     @PathParam("cellName") String cell,
+                                     @PathParam("componentName") String component)
             throws APIInvocationException {
-        return getComponentInfo(queryStartTime, queryEndTime, cell, component);
+        return getCellsAndComponentsInfo(queryStartTime, queryEndTime, cell, component);
     }
 
     @OPTIONS
@@ -96,7 +96,7 @@ public class KubernetesAPI {
         return Response.ok().build();
     }
 
-    private Response getComponentInfo(long queryStartTime, long queryEndTime, String cell, String component)
+    private Response getCellsAndComponentsInfo(long queryStartTime, long queryEndTime, String cell, String component)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_COMPONENTS.builder()
