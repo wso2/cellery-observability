@@ -498,7 +498,7 @@ class Overview extends React.Component {
         const self = this;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/k8s/components${HttpUtils.generateQueryParamString(searchParams)}`,
+                url: `/k8s/cells${HttpUtils.generateQueryParamString(searchParams)}`,
                 method: "GET"
             },
             this.props.globalState
@@ -520,7 +520,7 @@ class Overview extends React.Component {
                 });
             }).catch((error) => {
             NotificationUtils.showNotification(
-                "Failed to load component ingress types",
+                "Failed to load cell ingress types",
                 NotificationUtils.Levels.ERROR,
                 this.props.globalState
             );

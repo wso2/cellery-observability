@@ -82,8 +82,7 @@ class Details extends React.Component {
 
         const ingressQueryParams = {
             queryStartTime: queryStartTime.valueOf(),
-            queryEndTime: queryEndTime.valueOf(),
-            cell: cell
+            queryEndTime: queryEndTime.valueOf()
         };
 
         const cellMetricsPromise = HttpUtils.callObservabilityAPI(
@@ -94,7 +93,7 @@ class Details extends React.Component {
 
         const ingressDataPromise = HttpUtils.callObservabilityAPI(
             {
-                url: `/k8s/components${HttpUtils.generateQueryParamString(ingressQueryParams)}`,
+                url: `/k8s/cells/${cell}${HttpUtils.generateQueryParamString(ingressQueryParams)}`,
                 method: "GET"
             }, this.props.globalState);
 

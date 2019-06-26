@@ -150,7 +150,7 @@ public enum SiddhiStoreQueryTemplates {
             "or (creationTimestamp <= ${" + Params.QUERY_START_TIME + "}L " +
             "and (lastKnownActiveTimestamp >= ${" + Params.QUERY_END_TIME + "}L or" +
             " lastKnownActiveTimestamp == 0L)))\n" +
-            "select cell, component, Ingress_Types"
+            "select cell, component, ingressTypes"
     );
 
     /*

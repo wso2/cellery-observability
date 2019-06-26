@@ -95,9 +95,10 @@ class Details extends React.Component {
             },
             globalState
         );
+        const generatedQueryParam = HttpUtils.generateQueryParamString(ingressQueryParams);
         const IngressDataPromise = HttpUtils.callObservabilityAPI(
             {
-                url: `/k8s/components${HttpUtils.generateQueryParamString(ingressQueryParams)}`,
+                url: `/k8s/cells/${cell}/components/${component}${generatedQueryParam}`,
                 method: "GET"
             },
             globalState
@@ -107,11 +108,9 @@ class Details extends React.Component {
             this.loadComponentInfo(data[0]);
             for (let i = 0; i < ingressData.length; i++) {
                 const responseData = ingressData[i];
-                if (responseData[0] === cell && responseData[1] === component) {
-                    self.setState({
-                        ingressTypes: responseData[2].replace(/,/g, ", ")
-                    });
-                }
+                self.setState({
+                    ingressTypes: responseData[2].replace(/,/g, ", ")
+                });
             }
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
@@ -160,7 +159,7 @@ class Details extends React.Component {
             health: health,
             isDataAvailable: aggregatedData.total > 0
         });
-    }
+    };
 
     render() {
         const {classes, cell, component} = this.props;

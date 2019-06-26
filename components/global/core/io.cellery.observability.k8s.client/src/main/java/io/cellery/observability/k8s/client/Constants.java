@@ -28,12 +28,16 @@ public class Constants {
     public static final String ATTRIBUTE_ACTION = "action";
     public static final String ATTRIBUTE_COMPONENT = "component";
     public static final String ATTRIBUTE_CREATION_TIMESTAMP = "creationTimestamp";
+    public static final String ATTRIBUTE_LAST_KNOWN_ACTIVE_TIMESTAMP = "lastKnownActiveTimestamp";
     public static final String CELL_NAME_LABEL = "mesh.cellery.io/cell";
     public static final String COMPONENT_NAME_LABEL = "mesh.cellery.io/service";
     public static final String GATEWAY_NAME_LABEL = "mesh.cellery.io/gateway";
     public static final String STATUS_FIELD = "status.phase";
     public static final String STATUS_FIELD_RUNNING_VALUE = "Running";
     public static final String K8S_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+    public static final String INGRESS_TYPE_HTTP = "HTTP";
+    public static final String INGRESS_TYPE_WEB = "Web";
+    public static final String INGRESS_TYPE_TCP = "TCP";
 
     private Constants() {   // Prevent initialization
     }

@@ -59,7 +59,7 @@ public class SiddhiStoreQueryManager {
             "@PrimaryKey(\"cell\", \"component\")\n" +
             "@purge(enable=\"false\")\n" +
             "define table K8sComponentInfoTable(cell string, component string, creationTimestamp long," +
-            " lastKnownActiveTimestamp long, Ingress_Types string)";
+            " lastKnownActiveTimestamp long, ingressTypes string)";
 
     private static final String SIDDHI_APP = DISTRIBUTED_TRACING_TABLE_DEFINITION + "\n" +
             REQUEST_AGGREGATION_DEFINITION + "\n" + K8S_POD_INFO_TABLE  + "\n" + K8S_COMPONENT_INFO_TABLE;
