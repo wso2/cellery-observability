@@ -589,7 +589,7 @@
         <zipkin.version>2.11.6</zipkin.version>
         <zipkin.reporter.version>2.5.0</zipkin.reporter.version>
         <thrift.version>0.10.0</thrift.version>
-        <fabric8.kubernetes.version>4.2.2</fabric8.kubernetes.version>
+        <fabric8.kubernetes.version>4.3.0</fabric8.kubernetes.version>
         <com.squareup.okhttp3>3.14.1</com.squareup.okhttp3>
         <adal4j.version>1.6.0</adal4j.version>
         <joda.time.version>2.9.3</joda.time.version>
