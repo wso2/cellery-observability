@@ -1,0 +1,25 @@
+@App:name("k8s-component-telemetry-app")
+@App:description("This collects cell data and stores them in relevant data sources")
+
+@source(type="k8s-components",
+        @map(type="keyvalue", fail.on.missing.attribute="false"))
+define stream K8sComponentEventSourceStream(cell String, component string, creationTimestamp long, lastKnownActiveTimestamp long, ingressTypes string, action string);
+
+@Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB")
+@PrimaryKey("cell","component")
+@purge(enable="false")
+define table K8sComponentInfoTable(cell string, component string, creationTimestamp long, lastKnownActiveTimestamp long, ingressTypes string);
+
+from K8sComponentEventSourceStream[action == "ADDED" and ingressTypes != ""]
+select cell, component, creationTimestamp, lastKnownActiveTimestamp, ingressTypes
+update or insert into K8sComponentInfoTable
+set  K8sComponentInfoTable.creationTimestamp = creationTimestamp, K8sComponentInfoTable.lastKnownActiveTimestamp = lastKnownActiveTimestamp,
+K8sComponentInfoTable.ingressTypes = ingressTypes
+on K8sComponentInfoTable.cell == cell and K8sComponentInfoTable.component == component;
+
+from K8sComponentEventSourceStream[action == "DELETED"]
+select cell, component, creationTimestamp, time:timestampInMilliseconds() as lastKnownActiveTimestamp, ingressTypes
+update or insert into K8sComponentInfoTable
+set  K8sComponentInfoTable.creationTimestamp = creationTimestamp, K8sComponentInfoTable.lastKnownActiveTimestamp = lastKnownActiveTimestamp,
+K8sComponentInfoTable.ingressTypes = ingressTypes
+on K8sComponentInfoTable.cell == cell and K8sComponentInfoTable.component == component;

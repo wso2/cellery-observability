@@ -50,7 +50,8 @@ class Details extends React.Component {
             isDataAvailable: false,
             health: -1,
             dependencyGraphData: [],
-            isLoading: false
+            isLoading: false,
+            ingressTypes: []
         };
     }
 
@@ -76,43 +77,41 @@ class Details extends React.Component {
             includeIntraCell: true
         };
 
+        const ingressQueryParams = {
+            queryStartTime: queryStartTime.valueOf(),
+            queryEndTime: queryEndTime.valueOf()
+        };
+
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Component Info", globalState);
             self.setState({
                 isLoading: true
             });
         }
-        HttpUtils.callObservabilityAPI(
+        const componentMetricPromise = HttpUtils.callObservabilityAPI(
             {
                 url: `/http-requests/cells/components/metrics/${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState
-        ).then((data) => {
-            const aggregatedData = data.map((datum) => ({
-                isError: datum[1] === "5xx",
-                count: datum[5]
-            })).reduce((accumulator, currentValue) => {
-                if (currentValue.isError) {
-                    accumulator.errorsCount += currentValue.count;
-                }
-                accumulator.total += currentValue.count;
-                return accumulator;
-            }, {
-                errorsCount: 0,
-                total: 0
-            });
-
-            let health;
-            if (aggregatedData.total > 0) {
-                health = 1 - aggregatedData.errorsCount / aggregatedData.total;
-            } else {
-                health = -1;
+        );
+        const generatedQueryParam = HttpUtils.generateQueryParamString(ingressQueryParams);
+        const IngressDataPromise = HttpUtils.callObservabilityAPI(
+            {
+                url: `/k8s/cells/${cell}/components/${component}${generatedQueryParam}`,
+                method: "GET"
+            },
+            globalState
+        );
+        Promise.all([componentMetricPromise, IngressDataPromise]).then((data) => {
+            const ingressData = data[1];
+            self.loadComponentInfo(data[0]);
+            for (let i = 0; i < ingressData.length; i++) {
+                const responseData = ingressData[i];
+                self.setState({
+                    ingressTypes: responseData[2].split(",")
+                });
             }
-            self.setState({
-                health: health,
-                isDataAvailable: aggregatedData.total > 0
-            });
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState({
@@ -134,9 +133,38 @@ class Details extends React.Component {
         });
     };
 
+    loadComponentInfo = (data) => {
+        const self = this;
+        const aggregatedData = data.map((datum) => ({
+            isError: datum[1] === "5xx",
+            count: datum[5]
+        })).reduce((accumulator, currentValue) => {
+            if (currentValue.isError) {
+                accumulator.errorsCount += currentValue.count;
+            }
+            accumulator.total += currentValue.count;
+            return accumulator;
+        }, {
+            errorsCount: 0,
+            total: 0
+        });
+
+        let health;
+        if (aggregatedData.total > 0) {
+            health = 1 - aggregatedData.errorsCount / aggregatedData.total;
+        } else {
+            health = -1;
+        }
+        self.setState({
+            health: health,
+            isDataAvailable: aggregatedData.total > 0
+        });
+    };
+
     render() {
         const {classes, cell, component} = this.props;
-        const {health, isLoading} = this.state;
+        const {health, isLoading, ingressTypes} = this.state;
+        const ingressListStr = ingressTypes.toString().replace(/,/g, ", ");
 
         const view = (
             <Table className={classes.table}>
@@ -159,6 +187,16 @@ class Details extends React.Component {
                         </TableCell>
                         <TableCell className={classes.tableCell}>
                             <Link to={`/cells/${cell}`}>{cell}</Link>
+                        </TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell className={classes.tableCell}>
+                            <Typography color="textSecondary">
+                                Ingress Types
+                            </Typography>
+                        </TableCell>
+                        <TableCell className={classes.tableCell}>
+                            <p>{ingressListStr ? ingressListStr : "Not Available"}</p>
                         </TableCell>
                     </TableRow>
                 </TableBody>

@@ -54,7 +54,8 @@ class Details extends React.Component {
             isDataAvailable: false,
             health: -1,
             dependencyGraphData: [],
-            isLoading: false
+            isLoading: false,
+            ingressTypes: []
         };
     }
 
@@ -79,43 +80,42 @@ class Details extends React.Component {
             includeIntraCell: true
         };
 
+        const ingressQueryParams = {
+            queryStartTime: queryStartTime.valueOf(),
+            queryEndTime: queryEndTime.valueOf()
+        };
+
+        const cellMetricsPromise = HttpUtils.callObservabilityAPI(
+            {
+                url: `/http-requests/cells/metrics/${HttpUtils.generateQueryParamString(search)}`,
+                method: "GET"
+            }, globalState);
+
+        const ingressDataPromise = HttpUtils.callObservabilityAPI(
+            {
+                url: `/k8s/cells/${cell}${HttpUtils.generateQueryParamString(ingressQueryParams)}`,
+                method: "GET"
+            }, this.props.globalState);
+
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Cell Info", globalState);
             self.setState({
                 isLoading: true
             });
         }
-        HttpUtils.callObservabilityAPI(
-            {
-                url: `/http-requests/cells/metrics/${HttpUtils.generateQueryParamString(search)}`,
-                method: "GET"
-            },
-            globalState
-        ).then((data) => {
-            const aggregatedData = data.map((datum) => ({
-                isError: datum[1] === "5xx",
-                count: datum[5]
-            })).reduce((accumulator, currentValue) => {
-                if (currentValue.isError) {
-                    accumulator.errorsCount += currentValue.count;
-                }
-                accumulator.total += currentValue.count;
-                return accumulator;
-            }, {
-                errorsCount: 0,
-                total: 0
-            });
-
-            let health;
-            if (aggregatedData.total > 0) {
-                health = 1 - aggregatedData.errorsCount / aggregatedData.total;
-            } else {
-                health = -1;
+        Promise.all([cellMetricsPromise, ingressDataPromise]).then((data) => {
+            const cellInfoData = data[1];
+            self.loadCellMetrics(data[0]);
+            const ingressTypesSet = new Set();
+            for (let i = 0; i < cellInfoData.length; i++) {
+                const ingressDatum = cellInfoData[i];
+                const ingressTypeArray = ingressDatum[2].split(",");
+                ingressTypeArray.forEach((ingressValue) => {
+                    ingressTypesSet.add(ingressValue);
+                });
             }
-
             self.setState({
-                health: health,
-                isDataAvailable: aggregatedData.total > 0
+                ingressTypes: Array.from(ingressTypesSet)
             });
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
@@ -138,10 +138,38 @@ class Details extends React.Component {
         });
     };
 
+    loadCellMetrics = (data) => {
+        const self = this;
+        const aggregatedData = data.map((datum) => ({
+            isError: datum[1] === "5xx",
+            count: datum[5]
+        })).reduce((accumulator, currentValue) => {
+            if (currentValue.isError) {
+                accumulator.errorsCount += currentValue.count;
+            }
+            accumulator.total += currentValue.count;
+            return accumulator;
+        }, {
+            errorsCount: 0,
+            total: 0
+        });
+
+        let health;
+        if (aggregatedData.total > 0) {
+            health = 1 - aggregatedData.errorsCount / aggregatedData.total;
+        } else {
+            health = -1;
+        }
+
+        self.setState({
+            health: health,
+            isDataAvailable: aggregatedData.total > 0
+        });
+    };
+
     render = () => {
         const {classes, cell} = this.props;
-        const {health, isLoading} = this.state;
-
+        const {health, isLoading, ingressTypes} = this.state;
         const view = (
             <Table className={classes.table}>
                 <TableBody>
@@ -155,6 +183,16 @@ class Details extends React.Component {
                             <HealthIndicator value={health}/>
                         </TableCell>
                     </TableRow>
+                    <TableRow>
+                        <TableCell className={classes.tableCell}>
+                            <Typography color="textSecondary">
+                                Ingress Types
+                            </Typography>
+                        </TableCell>
+                        <TableCell className={classes.tableCell}>
+                            <p>{ingressTypes.length > 0 ? ingressTypes.join(", ") : "Not Available"}</p>
+                        </TableCell>
+                    </TableRow>
                 </TableBody>
             </Table>
         );
@@ -162,7 +200,7 @@ class Details extends React.Component {
         return (
             <React.Fragment>
                 {isLoading ? null : view}
-                <CellDependencyView cell={cell} className={classes.root} />
+                <CellDependencyView cell={cell} className={classes.root}/>
             </React.Fragment>
         );
     }

@@ -47,8 +47,12 @@ class DependencyGraph extends React.Component {
             borderWidth: 1,
             size: 35,
             font: {
+                color: "#000000",
                 size: 15,
-                color: "#000000"
+                bold: {
+                    color: "#777777",
+                    size: 12
+                }
             }
         },
         edges: {
@@ -137,15 +141,23 @@ class DependencyGraph extends React.Component {
     };
 
     draw = () => {
-        const {nodeData, edgeData, onClickNode, onClickGraph, selectedCell, viewGenerator, graphType} = this.props;
+        const {nodeData, edgeData, onClickNode, onClickGraph, selectedCell,
+            viewGenerator, graphType, renderNodeLabel} = this.props;
         const dataNodes = [];
         const dataEdges = [];
 
         if (nodeData) {
             nodeData.forEach((node, index) => {
+                let label = "";
+                if (graphType === DependencyGraph.GraphType.OVERVIEW) {
+                    label = renderNodeLabel(node.id);
+                } else {
+                    label = node.id;
+                }
                 dataNodes.push({
                     id: node.id,
-                    label: node.id,
+                    font: {multi: true},
+                    label: label,
                     shape: "image",
                     image: viewGenerator(node.id, 0)
                 });
@@ -298,7 +310,8 @@ DependencyGraph.propTypes = {
     onClickNode: PropTypes.func,
     onClickGraph: PropTypes.func,
     graphType: PropTypes.string,
-    viewGenerator: PropTypes.func
+    viewGenerator: PropTypes.func,
+    renderNodeLabel: PropTypes.func
 };
 
 export default withStyles(styles)(DependencyGraph);

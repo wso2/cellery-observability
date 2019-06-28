@@ -221,7 +221,8 @@ class Overview extends React.Component {
             legendOpen: false,
             listData: [],
             page: 0,
-            rowsPerPage: 5
+            rowsPerPage: 5,
+            cellIngresses: []
         };
 
         const queryParams = HttpUtils.parseQueryParams(props.location.search);
@@ -416,6 +417,8 @@ class Overview extends React.Component {
             search.queryStartTime = fromTime.valueOf();
             search.queryEndTime = toTime.valueOf();
         }
+
+        this.getIngressesData(search);
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Cell Dependencies", globalState);
         }
@@ -488,6 +491,59 @@ class Overview extends React.Component {
                 );
             }
         });
+    };
+
+    getIngressesData = (searchParams) => {
+        const ingressDataArray = [];
+        const self = this;
+        HttpUtils.callObservabilityAPI(
+            {
+                url: `/k8s/cells${HttpUtils.generateQueryParamString(searchParams)}`,
+                method: "GET"
+            },
+            this.props.globalState).then(
+            (response) => {
+                const cellNameSet = new Set();
+                for (let i = 0; i < response.length; i++) {
+                    const cellInfo = response[i];
+                    const obj = {
+                        cellName: cellInfo[0],
+                        component: cellInfo[1],
+                        ingressTypes: cellInfo[2]
+                    };
+                    cellNameSet.add(obj.cellName);
+                    ingressDataArray.push(obj);
+                }
+                self.setState({
+                    cellIngresses: self.getCellIngresses(ingressDataArray, cellNameSet)
+                });
+            }).catch((error) => {
+            NotificationUtils.showNotification(
+                "Failed to load cell ingress types",
+                NotificationUtils.Levels.ERROR,
+                this.props.globalState
+            );
+        });
+    };
+
+    getCellIngresses = (ingressDataArray, cellNameSet) => {
+        const cellIngressArray = [];
+        cellNameSet.forEach((singleCellName) => {
+            const jsonObj = {};
+            const set = new Set();
+            const cellSpecificArray = ingressDataArray.filter((cellInfo) => cellInfo.cellName === singleCellName);
+            jsonObj.cellName = singleCellName;
+            jsonObj.ingressTypes = "";
+            cellSpecificArray.forEach((specifiCell) => {
+                const ingressTypeArray = specifiCell.ingressTypes.split(",");
+                ingressTypeArray.forEach((ingressValue) => {
+                    set.add(ingressValue);
+                });
+            });
+            jsonObj.ingressTypes = Array.from(set).join(", ");
+            cellIngressArray.push(jsonObj);
+        });
+        return cellIngressArray;
     };
 
     getHealthCount = (healthInfo) => {
@@ -713,6 +769,14 @@ class Overview extends React.Component {
             return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cellView)}`;
         };
 
+        const renderNodeLabel = (nodeId) => {
+            const cellInfoObj = this.state.cellIngresses.find((cellIngressDatum) => cellIngressDatum.cellName === nodeId);
+            if (cellInfoObj) {
+                return `${nodeId}\n<b>(${cellInfoObj.ingressTypes})</b>`;
+            }
+            return nodeId;
+        };
+
         const dataNodes = this.state.data.nodes;
         const dataEdges = this.state.data.edges;
 
@@ -735,7 +799,7 @@ class Overview extends React.Component {
                                                         <div className={classes.diagram}>
                                                             <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges}
                                                                 onClickNode={(nodeId) => this.onClickCell(nodeId, true)} viewGenerator={viewGenerator}
-                                                                onClickGraph={this.onClickGraph} selectedCell={selectedCell} graphType="overview"
+                                                                onClickGraph={this.onClickGraph} selectedCell={selectedCell} graphType="overview" renderNodeLabel={renderNodeLabel}
                                                             />
                                                         </div>
                                                     </div>
