@@ -16,8 +16,7 @@
   ~ specific language governing permissions and limitations
   ~ under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>org.wso2</groupId>
@@ -29,7 +28,7 @@
     <groupId>io.cellery.observability</groupId>
     <artifactId>io.cellery.observability.parent</artifactId>
     <name>Cellery Observability</name>
-    <version>0.2.3-SNAPSHOT</version>
+    <version>0.3.0</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -491,7 +490,7 @@
         <url>https://github.com/cellery-io/mesh-observability.git</url>
         <developerConnection>scm:git:https://github.com/cellery-io/mesh-observability.git</developerConnection>
         <connection>scm:git:https://github.com/cellery-io/mesh-observability.git</connection>
-        <tag>HEAD</tag>
+        <tag>v0.3.0</tag>
     </scm>
 
     <repositories>
