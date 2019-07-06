@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.cells.model;
+package io.cellery.observability.k8s.client.crds;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -25,50 +25,68 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.cellery.observability.k8s.client.crds.model.GatewayTemplate;
+import io.cellery.observability.k8s.client.crds.model.STSTemplate;
+import io.cellery.observability.k8s.client.crds.model.ServicesTemplate;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
+import javax.annotation.Generated;
+
 /**
- * This represnets the serializable class for GatewayTemplate in cell yaml.
- * */
+ * This represents the serializable class for cell spec.
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Generated("org.jsonschema2pojo")
 @JsonPropertyOrder({
-        "metadata",
-        "spec"
+        "gatewayTemplate",
+        "servicesTemplates",
+        "stsTemplate"
 })
 @JsonDeserialize(using = com.fasterxml.jackson.databind.JsonDeserializer.None.class)
-public class GatewayTemplate implements KubernetesResource {
-
+public class CellSpec implements KubernetesResource {
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("metadata")
-    private ObjectMeta metadata;
-    @JsonProperty("spec")
-    private GatewayTemplateSpec spec;
+    @JsonProperty("gatewayTemplate")
+    private GatewayTemplate gatewayTemplate;
+    @JsonProperty("servicesTemplates")
+    private List<ServicesTemplate> servicesTemplates = null;
+    @JsonProperty("stsTemplate")
+    private STSTemplate stsTemplate;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new HashMap<>();
 
-    @JsonProperty("metadata")
-    public ObjectMeta getMetadata() {
-        return metadata;
+    @JsonProperty("gatewayTemplate")
+    public GatewayTemplate getGatewayTemplate() {
+        return gatewayTemplate;
     }
 
-    @JsonProperty("metadata")
-    public void setMetadata(ObjectMeta metadata) {
-        this.metadata = metadata;
+    @JsonProperty("gatewayTemplate")
+    public void setGatewayTemplate(GatewayTemplate gatewayTemplate) {
+        this.gatewayTemplate = gatewayTemplate;
     }
 
-    @JsonProperty("spec")
-    public GatewayTemplateSpec getSpec() {
-        return spec;
+    @JsonProperty("servicesTemplates")
+    public List<ServicesTemplate> getServicesTemplates() {
+        return servicesTemplates;
     }
 
-    @JsonProperty("spec")
-    public void setSpec(GatewayTemplateSpec spec) {
-        this.spec = spec;
+    @JsonProperty("servicesTemplates")
+    public void setServicesTemplates(List<ServicesTemplate> servicesTemplates) {
+        this.servicesTemplates = servicesTemplates;
+    }
+
+    @JsonProperty("stsTemplate")
+    public STSTemplate getStsTemplate() {
+        return stsTemplate;
+    }
+
+    @JsonProperty("stsTemplate")
+    public void setStsTemplate(STSTemplate stsTemplate) {
+        this.stsTemplate = stsTemplate;
     }
 
     @JsonAnyGetter
@@ -81,4 +99,3 @@ public class GatewayTemplate implements KubernetesResource {
         this.additionalProperties.put(name, value);
     }
 }
-

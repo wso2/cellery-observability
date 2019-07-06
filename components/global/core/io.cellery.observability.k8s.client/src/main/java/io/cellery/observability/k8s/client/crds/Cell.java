@@ -16,14 +16,14 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.cells;
+package io.cellery.observability.k8s.client.crds;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
 /**
  * This interface represents certain methods to be implemented accordingly.
  */
-public interface CustomCell extends HasMetadata {
+public interface Cell extends HasMetadata {
     CellSpec getSpec();
     String getKind();
 }
