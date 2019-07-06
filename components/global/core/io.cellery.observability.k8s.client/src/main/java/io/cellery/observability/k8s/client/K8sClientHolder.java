@@ -17,20 +17,25 @@
  */
 package io.cellery.observability.k8s.client;
 
+import io.cellery.observability.k8s.client.crds.CellImpl;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.apache.log4j.Logger;
 
 /**
  * This class will hold the instance of the k8sClient that is used in the {@link GetComponentPodsStreamProcessor}
  * stream processor extension.
  */
-public class K8sClientHolder {
+class K8sClientHolder {
 
     private static final Logger logger = Logger.getLogger(K8sClientHolder.class.getName());
     private static KubernetesClient k8sClient;
 
     private K8sClientHolder() {
+        // Register the custom resource kind cell to Kubernetes deserializer to perform deserialization of cell objects.
+        KubernetesDeserializer.registerCustomKind(Constants.CELL_CRD_GROUP + "/" + Constants.CELL_CRD_VERSION,
+                Constants.CELL_KIND, CellImpl.class);
     }
 
     static synchronized KubernetesClient getK8sClient() {

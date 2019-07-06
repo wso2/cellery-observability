@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.cells.model;
+package io.cellery.observability.k8s.client.crds.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -26,48 +26,60 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
+
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This represents the serializable class for STSTemplate in cell yaml.
- * */
+ * This is used to represent TCP Ingress_Type
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-        "metadata",
-        "spec"
+        "port",
+        "backendHost",
+        "backendPort"
 })
-@JsonDeserialize(using = com.fasterxml.jackson.databind.JsonDeserializer.None.class)
-public class STSTemplate implements KubernetesResource {
-
+@JsonDeserialize
+public class TCP implements KubernetesResource {
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("metadata")
-    private ObjectMeta metadata;
-    @JsonProperty("spec")
-    private STSTemplateSpec spec;
+    @JsonProperty("port")
+    private Integer port;
+    @JsonProperty("backendHost")
+    private String backendHost;
+    @JsonProperty("backendPort")
+    private Integer backendPort;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
-    @JsonProperty("metadata")
-    public ObjectMeta getMetadata() {
-        return metadata;
+    @JsonProperty("port")
+    public Integer getPort() {
+        return port;
     }
 
-    @JsonProperty("metadata")
-    public void setMetadata(ObjectMeta metadata) {
-        this.metadata = metadata;
+    @JsonProperty("port")
+    public void setPort(Integer port) {
+        this.port = port;
     }
 
-    @JsonProperty("spec")
-    public STSTemplateSpec getSpec() {
-        return spec;
+    @JsonProperty("backendHost")
+    public String getBackendHost() {
+        return backendHost;
     }
 
-    @JsonProperty("spec")
-    public void setSpec(STSTemplateSpec spec) {
-        this.spec = spec;
+    @JsonProperty("backendHost")
+    public void setBackendHost(String backendHost) {
+        this.backendHost = backendHost;
+    }
+
+    @JsonProperty("backendPort")
+    public Integer getBackendPort() {
+        return backendPort;
+    }
+
+    @JsonProperty("backendPort")
+    public void setBackendPort(Integer backendPort) {
+        this.backendPort = backendPort;
     }
 
     @JsonAnyGetter

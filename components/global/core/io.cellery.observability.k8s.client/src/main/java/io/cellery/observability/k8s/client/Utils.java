@@ -18,9 +18,13 @@
 
 package io.cellery.observability.k8s.client;
 
+import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionList;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -50,6 +54,26 @@ public class Utils {
             componentName = "";
         }
         return componentName;
+    }
+
+    /**
+     * Get the Cell Custom Resource Definition from the server.
+     */
+    public static CustomResourceDefinition getCellCRDFromServer() {
+        // Get CRD for cell resource
+        CustomResourceDefinitionList crdList = K8sClientHolder.getK8sClient()
+                .customResourceDefinitions()
+                .list();
+        List<CustomResourceDefinition> crdsItems = crdList.getItems();
+        for (CustomResourceDefinition crd : crdsItems) {
+            ObjectMeta metadata = crd.getMetadata();
+            if (metadata != null) {
+                if (Constants.CELL_CRD_NAME.equalsIgnoreCase(metadata.getName())) {
+                    return crd;
+                }
+            }
+        }
+        return null;
     }
 
     private Utils() {   // Prevent initialization

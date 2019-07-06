@@ -16,11 +16,10 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.cells;
+package io.cellery.observability.k8s.client.crds;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.client.CustomResource;
 
@@ -30,11 +29,9 @@ import javax.validation.Valid;
  * This class implements the Event Source which can be used to listen for k8s cell changes.
  */
 
-@JsonDeserialize(
-        using = JsonDeserializer.None.class
-)
+@JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Cell extends CustomResource implements CustomCell {
+public class CellImpl extends CustomResource implements Cell {
 
     @JsonProperty("spec")
     @Valid

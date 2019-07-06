@@ -5,7 +5,7 @@ define trigger K8sScrapeTrigger at every 10 min;
 
 @source(type="k8s-component-pods",
         @map(type="keyvalue", fail.on.missing.attribute="false"))
-define stream K8sPodEventSourceStream(cell string, component string, name string, creationTimestamp long,
+define stream K8sPodEventSourceStream(cell string, component string, podName string, creationTimestamp long,
                                       deletionTimestamp long, nodeName string, status string, action string);
 
 @sink(type="inMemory", topic="k8s-component-pods", @map(type="passThrough"))
@@ -25,11 +25,13 @@ define stream K8sComponentPodStream(cell string, component string, name string, 
 -- This collects Pod Info from the K8s watch as well as periodically by scraping K8s API Server
 
 from K8sScrapeTrigger#k8sClient:getComponentPods()
-select cell, component, name, creationTimestamp, triggered_time as lastKnownAliveTimestamp, nodeName, "Running" as status, "" as action
+select cell, component, podName as name, creationTimestamp, triggered_time as lastKnownAliveTimestamp, nodeName,
+    "Running" as status, "" as action
 insert into K8sComponentPodStream;
 
 from K8sPodEventSourceStream
-select cell, component, name, creationTimestamp, deletionTimestamp as lastKnownAliveTimestamp, nodeName, status, action
+select cell, component, podName as name, creationTimestamp, deletionTimestamp as lastKnownAliveTimestamp, nodeName,
+    status, action
 insert into K8sComponentPodStream;
 
 -- Inserting Pod info to the K8sPodInfoTable

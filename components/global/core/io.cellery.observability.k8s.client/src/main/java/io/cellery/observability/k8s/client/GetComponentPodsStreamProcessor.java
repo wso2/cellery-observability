@@ -79,11 +79,11 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
         }
 
         List<Attribute> appendedAttributes = new ArrayList<>();
-        appendedAttributes.add(new Attribute("cell", Attribute.Type.STRING));
-        appendedAttributes.add(new Attribute("component", Attribute.Type.STRING));
-        appendedAttributes.add(new Attribute("name", Attribute.Type.STRING));
-        appendedAttributes.add(new Attribute("creationTimestamp", Attribute.Type.LONG));
-        appendedAttributes.add(new Attribute("nodeName", Attribute.Type.STRING));
+        appendedAttributes.add(new Attribute(Constants.Attribute.CELL, Attribute.Type.STRING));
+        appendedAttributes.add(new Attribute(Constants.Attribute.COMPONENT, Attribute.Type.STRING));
+        appendedAttributes.add(new Attribute(Constants.Attribute.POD_NAME, Attribute.Type.STRING));
+        appendedAttributes.add(new Attribute(Constants.Attribute.CREATION_TIMESTAMP, Attribute.Type.LONG));
+        appendedAttributes.add(new Attribute(Constants.Attribute.NODE_NAME, Attribute.Type.STRING));
         return appendedAttributes;
     }
 
