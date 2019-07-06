@@ -330,4 +330,32 @@ public class SiddhiStoreQueryTemplatesTestCase {
                 "lastKnownAliveTimestamp >= 243423L))\n" +
                 "select cell, component, name, creationTimestamp, lastKnownAliveTimestamp, nodeName");
     }
+
+    @Test
+    public void testK8sGetComponentsTemplate() {
+        final long queryStartTime = 21234322;
+        final long queryEndTime = 243423;
+        final String cell = "pet-be";
+        final String component = "catalog";
+
+        SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.K8S_GET_COMPONENTS.builder()
+                .setArg(Params.QUERY_START_TIME, queryStartTime)
+                .setArg(Params.QUERY_END_TIME, queryEndTime)
+                .setArg(Params.CELL, cell)
+                .setArg(Params.COMPONENT, component)
+                .build();
+        String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
+
+        Assert.assertEquals(resultantQuery, "from K8sComponentInfoTable\n" +
+                "on (\"" + cell + "\" == \"\" or cell == \"" + cell + "\") " +
+                "and (\"" + component + "\" == \"\" or component == \"" + component + "\") " +
+                "and ((creationTimestamp >= " + queryStartTime + "L " +
+                "and creationTimestamp <= " + queryEndTime + "L) " +
+                "or (lastKnownActiveTimestamp >= " + queryStartTime + "L " +
+                "and lastKnownActiveTimestamp <= " + queryEndTime + "L) " +
+                "or (creationTimestamp <= " + queryStartTime + "L " +
+                "and (lastKnownActiveTimestamp >= " + queryEndTime + "L " +
+                "or lastKnownActiveTimestamp == 0L)))\n" +
+                "select cell, component, ingressTypes");
+    }
 }
