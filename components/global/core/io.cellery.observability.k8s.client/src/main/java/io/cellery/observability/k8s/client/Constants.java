@@ -38,6 +38,7 @@ public class Constants {
     public static final String INGRESS_TYPE_HTTP = "HTTP";
     public static final String INGRESS_TYPE_WEB = "Web";
     public static final String INGRESS_TYPE_TCP = "TCP";
+    public static final String INGRESS_TYPE_GRPC = "gRPC";
 
     private Constants() {   // Prevent initialization
     }
