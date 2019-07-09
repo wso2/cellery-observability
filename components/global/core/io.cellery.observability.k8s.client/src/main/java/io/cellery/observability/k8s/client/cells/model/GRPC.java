@@ -26,85 +26,60 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
+
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
- * This represents the serializable class for GatewayTemplate spec in cell yaml.
- * */
+ * This is used to represent TCP Ingress_Type
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-        "host",
-        "http",
-        "type"
+        "port",
+        "backendHost",
+        "backendPort"
 })
 @JsonDeserialize(using = com.fasterxml.jackson.databind.JsonDeserializer.None.class)
-public class GatewayTemplateSpec implements KubernetesResource {
-
+public class GRPC implements KubernetesResource {
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("host")
-    private String host;
-    @JsonProperty("http")
-    private List<HTTP> http = null;
-    @JsonProperty("tcp")
-    private List<TCP> tcp = null;
-    @JsonProperty("grpc")
-    private List<GRPC> grpc = null;
-    @JsonProperty("type")
-    private String type;
+    @JsonProperty("port")
+    private Integer port;
+    @JsonProperty("backendHost")
+    private String backendHost;
+    @JsonProperty("backendPort")
+    private Integer backendPort;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
-    @JsonProperty("host")
-    public String getHost() {
-        return host;
+    @JsonProperty("port")
+    public Integer getPort() {
+        return port;
     }
 
-    @JsonProperty("host")
-    public void setHost(String host) {
-        this.host = host;
+    @JsonProperty("port")
+    public void setPort(Integer port) {
+        this.port = port;
     }
 
-    @JsonProperty("http")
-    public List<HTTP> getHttp() {
-        return http;
+    @JsonProperty("backendHost")
+    public String getBackendHost() {
+        return backendHost;
     }
 
-    @JsonProperty("http")
-    public void setHttp(List<HTTP> http) {
-        this.http = http;
+    @JsonProperty("backendHost")
+    public void setBackendHost(String backendHost) {
+        this.backendHost = backendHost;
     }
 
-    @JsonProperty("tcp")
-    public List<TCP> getTcp() {
-        return tcp;
+    @JsonProperty("backendPort")
+    public Integer getBackendPort() {
+        return backendPort;
     }
 
-    @JsonProperty("tcp")
-    public void setTcp(List<TCP> tcp) {
-        this.tcp = tcp;
-    }
-
-    @JsonProperty("grpc")
-    public List<GRPC> getGrpc() {
-        return grpc;
-    }
-
-    @JsonProperty("grpc")
-    public void setGrpc(List<GRPC> grpc) {
-        this.grpc = grpc;
-    }
-
-    @JsonProperty("type")
-    public String getType() {
-        return type;
-    }
-
-    @JsonProperty("type")
-    public void setType(String type) {
-        this.type = type;
+    @JsonProperty("backendPort")
+    public void setBackendPort(Integer backendPort) {
+        this.backendPort = backendPort;
     }
 
     @JsonAnyGetter
