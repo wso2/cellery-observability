@@ -1,6 +1,8 @@
 language: java
 jdk:
   - openjdk8
+go:
+  - 1.11.x
 services:
   - docker
 cache:
@@ -9,7 +11,12 @@ cache:
     - $HOME/.m2
 before_install:
   - npm i -g npm
+  - mkdir -p $HOME/gopath/src/github.com/cellery-io
+  - mv ${TRAVIS_BUILD_DIR} $GOPATH/src/github.com/cellery-io/mesh-observability
+  - export TRAVIS_BUILD_DIR=$HOME/gopath/src/github.com/cellery-io/mesh-observability
+  - cd $HOME/gopath/src/github.com/cellery-io/mesh-observability
 script:
+  - make clean.mixer-adapter check-style.mixer-adapter build.mixer-adapter # TODO add test.mixer-adapter
   - mvn clean install
   - make docker
 after_success:
