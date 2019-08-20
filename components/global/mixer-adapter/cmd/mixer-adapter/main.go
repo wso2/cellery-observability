@@ -18,8 +18,30 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+
+	wso2spadapter "github.com/wso2-cellery/mesh-observability/components/global/mixer-adapter"
+)
 
 func main() {
-	fmt.Println("Mixer Adapter Started")
+
+	addr := "38355" //Pre defined port for the adaptor. envi
+
+	if len(os.Args) > 1 {
+		addr = os.Args[1]
+	}
+
+	adapter, err := wso2spadapter.NewWso2SpAdapter(addr)
+	if err != nil {
+		fmt.Printf("unable to start server: %v", err)
+		os.Exit(-1)
+	}
+
+	shutdown := make(chan error, 1)
+	go func() {
+		adapter.Run(shutdown)
+	}()
+	_ = <-shutdown
 }
