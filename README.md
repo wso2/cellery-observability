@@ -1,5 +1,5 @@
 Mesh Observability
-==================
+===================
 
   [![Build Status](https://wso2.org/jenkins/view/cellery/job/cellery/job/mesh-observability/badge/icon)](https://wso2.org/jenkins/view/cellery/job/cellery/job/mesh-observability/)
   [![GitHub (pre-)release](https://img.shields.io/github/release/wso2-cellery/mesh-observability/all.svg)](https://github.com/wso2-cellery/mesh-observability/releases)
