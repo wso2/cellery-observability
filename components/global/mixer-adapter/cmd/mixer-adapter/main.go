@@ -19,23 +19,33 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
-	wso2spadapter "github.com/wso2-cellery/mesh-observability/components/global/mixer-adapter"
+	"github.com/wso2-cellery/mesh-observability/components/global/mixer-adapter/pkg/logging"
+
+	wso2spadapter "github.com/wso2-cellery/mesh-observability/components/global/mixer-adapter/pkg/wso2spadapter"
+
 )
+
+const defaultAdapterPort string = "38355"
 
 func main() {
 
-	addr := "38355" //Pre defined port for the adaptor. envi
+	addr := defaultAdapterPort //Pre defined port for the adaptor. ToDo: Should get this as an environment variable
 
 	if len(os.Args) > 1 {
 		addr = os.Args[1]
 	}
 
-	adapter, err := wso2spadapter.NewWso2SpAdapter(addr)
+	logger, err := logging.NewLogger()
 	if err != nil {
-		fmt.Printf("unable to start server: %v", err)
+		logger.Fatalf("Error building logger: ", err.Error())
+	}
+	defer logger.Sync()
+
+	adapter, err := wso2spadapter.NewWso2SpAdapter(addr, logger)
+	if err != nil {
+		logger.Info("unable to start server: ", err)
 		os.Exit(-1)
 	}
 

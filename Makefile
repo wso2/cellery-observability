@@ -53,7 +53,7 @@ init.tools:
 check-style: check-style.mixer-adapter
 
 .PHONY: check-style.mixer-adapter
-check-style.mixer-adapter:
+check-style.mixer-adapter: init.tools
 	test -z "$$(goimports -local $(PROJECT_PKG) -l ./components/global/mixer-adapter | tee /dev/stderr)"
 
 

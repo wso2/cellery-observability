@@ -1,3 +1,21 @@
+/*
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 // nolint:lll
 // Generates the mygrpcadapter adapter's resource yaml. It contains the adapter's configuration, name,
 // supported template names (metric in this case), and whether it is session or no-session based.
@@ -13,6 +31,8 @@ import (
 	"io/ioutil"
 	"net"
 
+	"go.uber.org/zap"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -23,8 +43,11 @@ import (
 	"istio.io/api/mixer/adapter/model/v1beta1"
 	policy "istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/template/metric"
-	"istio.io/pkg/log"
 )
+
+const grpcAdapterCredential string = "GRPC_ADAPTER_CREDENTIAL"
+const grpcAdapterPrivateKey string = "GRPC_ADAPTER_PRIVATE_KEY"
+const grpcAdapterCertificate string = "GRPC_ADAPTER_CERTIFICATE"
 
 type (
 	// Server is basic server interface
@@ -38,38 +61,46 @@ type (
 	Wso2SpAdapter struct {
 		listener net.Listener
 		server   *grpc.Server
+		logger   *zap.SugaredLogger
 	}
 )
 
 // HandleMetric records metric entries
-func (s *Wso2SpAdapter) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) (*v1beta1.ReportResult, error) {
+func (wso2SpAdapter *Wso2SpAdapter) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) (*v1beta1.ReportResult, error) {
 
-	log.Infof("received request %v\n", *r)
+	wso2SpAdapter.logger.Info("received request : ", *r)
 
 	var buffer bytes.Buffer
 	cfg := &config.Params{}
 
+	if r.AdapterConfig != nil {
+		if err := cfg.Unmarshal(r.AdapterConfig.Value); err != nil {
+			wso2SpAdapter.logger.Error("error unmarshalling adapter config: ", err)
+			return nil, err
+		}
+	}
+
 	buffer.WriteString(fmt.Sprintf("HandleMetric invoked with:\n  Adapter config: %s\n  Instances: %s\n",
 		cfg.String(), instances(r.Instances)))
 
-	log.Infof(fmt.Sprintf("Instances: %s\n", instances(r.Instances)))
+	wso2SpAdapter.logger.Info(fmt.Sprintf("Instances: %s\n", instances(r.Instances)))
 
 	if cfg.FilePath == "" {
-		fmt.Println(buffer.String())
+		wso2SpAdapter.logger.Info(buffer.String())
 	} else {
 		_, err := os.OpenFile("out.txt", os.O_RDONLY|os.O_CREATE, 0666)
 		if err != nil {
-			log.Errorf("error creating file: %v", err)
+			return nil, fmt.Errorf("error creating file: %v", err)
 		}
 		file, err := os.OpenFile(cfg.FilePath, os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
-			log.Errorf("error opening file for append: %v", err)
+			return nil, fmt.Errorf("error opening file for append: %v", err)
 		}
 
 		defer file.Close()
 
 		if _, err = file.Write(buffer.Bytes()); err != nil {
-			log.Errorf("error writing to file: %v", err)
+			return nil, fmt.Errorf("error writing to file: %v", err)
 		}
 	}
 
@@ -110,23 +141,23 @@ func instances(in []*metric.InstanceMsg) string {
 }
 
 // Addr returns the listening address of the server
-func (s *Wso2SpAdapter) Addr() string {
-	return s.listener.Addr().String()
+func (wso2SpAdapter *Wso2SpAdapter) Addr() string {
+	return wso2SpAdapter.listener.Addr().String()
 }
 
 // Run starts the server run
-func (s *Wso2SpAdapter) Run(shutdown chan error) {
-	shutdown <- s.server.Serve(s.listener)
+func (wso2SpAdapter *Wso2SpAdapter) Run(shutdown chan error) {
+	shutdown <- wso2SpAdapter.server.Serve(wso2SpAdapter.listener)
 }
 
 // Close gracefully shuts down the server; used for testing
-func (s *Wso2SpAdapter) Close() error {
-	if s.server != nil {
-		s.server.GracefulStop()
+func (wso2SpAdapter *Wso2SpAdapter) Close() error {
+	if wso2SpAdapter.server != nil {
+		wso2SpAdapter.server.GracefulStop()
 	}
 
-	if s.listener != nil {
-		_ = s.listener.Close()
+	if wso2SpAdapter.listener != nil {
+		_ = wso2SpAdapter.listener.Close()
 	}
 
 	return nil
@@ -141,12 +172,12 @@ func getServerTLSOption(credential, privateKey, caCertificate string) (grpc.Serv
 		return nil, fmt.Errorf("failed to load key cert pair")
 	}
 	certPool := x509.NewCertPool()
-	bs, err := ioutil.ReadFile(caCertificate)
+	bytesArray, err := ioutil.ReadFile(caCertificate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read client ca cert: %s", err)
 	}
 
-	ok := certPool.AppendCertsFromPEM(bs)
+	ok := certPool.AppendCertsFromPEM(bytesArray)
 	if !ok {
 		return nil, fmt.Errorf("failed to append client certs")
 	}
@@ -161,21 +192,24 @@ func getServerTLSOption(credential, privateKey, caCertificate string) (grpc.Serv
 }
 
 // NewWso2SpAdapter creates a new IBP adapter that listens at provided port.
-func NewWso2SpAdapter(addr string) (Server, error) {
+func NewWso2SpAdapter(addr string, logger *zap.SugaredLogger) (Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", addr))
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on socket: %v", err)
 	}
 	adapter := &Wso2SpAdapter{
 		listener: listener,
+		logger:   logger,
 	}
-	fmt.Printf("listening on \"%v\"\n", adapter.Addr())
+
+	logger.Info("listening on ", adapter.Addr())
 
 	/* Mutual TLS feature to secure connection between workloads
 	   This is optional. */
-	credential := os.Getenv("GRPC_ADAPTER_CREDENTIAL")   // adapter.crt
-	privateKey := os.Getenv("GRPC_ADAPTER_PRIVATE_KEY")  // adapter.key
-	certificate := os.Getenv("GRPC_ADAPTER_CERTIFICATE") // ca.pem
+	credential := os.Getenv(grpcAdapterCredential)   // adapter.crt
+	privateKey := os.Getenv(grpcAdapterPrivateKey)   // adapter.key
+	certificate := os.Getenv(grpcAdapterCertificate) // ca.pem
+
 	if credential != "" {
 		serverOption, err := getServerTLSOption(credential, privateKey, certificate)
 		if err != nil {
