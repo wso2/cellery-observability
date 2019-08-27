@@ -1,13 +1,12 @@
-language: java
+language: go
 jdk:
   - openjdk8
 go:
-  - 1.11.x
+  - 1.12.x
 services:
   - docker
 cache:
   directories:
-    - .autoconf
     - $HOME/.m2
 before_install:
   - npm i -g npm
@@ -17,7 +16,7 @@ before_install:
   - cd $HOME/gopath/src/github.com/cellery-io/mesh-observability
 script:
   - make clean.mixer-adapter check-style.mixer-adapter build.mixer-adapter # TODO add test.mixer-adapter
-  - mvn clean install
+  - mvn clean install -q
   - make docker
 after_success:
   - bash <(curl -s https://codecov.io/bash)
