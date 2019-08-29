@@ -32,30 +32,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  name = "github.com/inconshreveable/mousetrap"
-  packages = ["."]
-  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
-  version = "v1.0"
-
-[[projects]]
-  name = "github.com/natefinch/lumberjack"
-  packages = ["."]
-  revision = "a96e63847dc3c67d17befa69c303767e2f84e54f"
-  version = "v2.1"
-
-[[projects]]
-  name = "github.com/spf13/cobra"
-  packages = ["."]
-  revision = "f2b07da1e2c38d5f12845a4f607e2e1018cbb1f5"
-  version = "v0.0.5"
-
-[[projects]]
-  name = "github.com/spf13/pflag"
-  packages = ["."]
-  revision = "298182f68c66c05229eb03ac171abe6e309ee79a"
-  version = "v1.0.3"
-
-[[projects]]
   name = "go.uber.org/atomic"
   packages = ["."]
   revision = "df976f2515e274675050de7b3f42545de80594fd"
@@ -69,7 +45,7 @@
 
 [[projects]]
   name = "go.uber.org/zap"
-  packages = [".","buffer","internal/bufferpool","internal/color","internal/exit","zapcore","zapgrpc"]
+  packages = [".","buffer","internal/bufferpool","internal/color","internal/exit","zapcore"]
   revision = "27376062155ad36be76b0f12cf1572a221d3a48c"
   version = "v1.10.0"
 
@@ -118,12 +94,12 @@
 [[projects]]
   branch = "master"
   name = "istio.io/pkg"
-  packages = ["attribute","log","pool"]
+  packages = ["attribute","pool"]
   revision = "fcbac27d69d52daffe4ad3f878ee2a4d2313300c"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6237c6e443c28e9fcd28b2d8ea2e90f5c0f414f96051457e616ab45b3e73765e"
+  inputs-digest = "58352023527dfda87a77e1c06cb34848ebd327edd7289152420802b147d22842"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -1,0 +1,53 @@
+{{ define "content" }}
+
+<br>
+<button class="btn btn-istio" onclick="doClear()">Clear</button>
+<br>
+<button class="btn btn-istio" onclick="doSnapshot()">Snapshot</button>
+<br>
+<form method="get"  action="download">
+    <button class="btn btn-istio" download="cover.profile" type="submit">Download</button>
+</form>
+
+{{ template "last-refresh" .}}
+
+<script>
+    "use strict";
+
+    function doClear() {
+        let url = window.location.protocol + "//" + window.location.host + "/coveragej/clear";
+
+        let ajax = new XMLHttpRequest();
+        ajax.onload = onload;
+        ajax.onerror = onerror;
+        ajax.open("POST", url, true);
+        ajax.send();
+
+        function onload() {
+        }
+
+        function onerror(e) {
+            console.error(e);
+        }
+    }
+
+    function doSnapshot() {
+        let url = window.location.protocol + "//" + window.location.host + "/coveragej/snapshot";
+
+        let ajax = new XMLHttpRequest();
+        ajax.onload = onload;
+        ajax.onerror = onerror;
+        ajax.open("POST", url, true);
+        ajax.send();
+
+        function onload() {
+        }
+
+        function onerror(e) {
+            console.error(e);
+        }
+    }
+
+</script>
+
+{{ end }}
