@@ -27,11 +27,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
-	"net/http"
 
 	"go.uber.org/zap"
 
@@ -51,7 +49,6 @@ import (
 const grpcAdapterCredential string = "GRPC_ADAPTER_CREDENTIAL"
 const grpcAdapterPrivateKey string = "GRPC_ADAPTER_PRIVATE_KEY"
 const grpcAdapterCertificate string = "GRPC_ADAPTER_CERTIFICATE"
-const spServerUrl string = "http://wso2sp-worker.cellery-system.svc.cluster.local:9091"
 
 type (
 	// Server is basic server interface
@@ -72,6 +69,8 @@ type (
 // HandleMetric records metric entries
 func (wso2SpAdapter *Wso2SpAdapter) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) (*v1beta1.ReportResult, error) {
 
+	wso2SpAdapter.logger.Info("received request : ", *r)
+
 	var buffer bytes.Buffer
 	cfg := &config.Params{}
 
@@ -84,6 +83,8 @@ func (wso2SpAdapter *Wso2SpAdapter) HandleMetric(ctx context.Context, r *metric.
 
 	buffer.WriteString(fmt.Sprintf("HandleMetric invoked with:\n  Adapter config: %s\n  Instances: %s\n",
 		cfg.String(), instances(r.Instances)))
+
+	wso2SpAdapter.logger.Info(fmt.Sprintf("Instances: %s\n", instances(r.Instances)))
 
 	if cfg.FilePath == "" {
 		wso2SpAdapter.logger.Info(buffer.String())
@@ -104,35 +105,7 @@ func (wso2SpAdapter *Wso2SpAdapter) HandleMetric(ctx context.Context, r *metric.
 		}
 	}
 
-	var insts = r.Instances
-	for _, inst := range insts {
-		var attributesMap = decodeDimensions(inst.Dimensions)
-		wso2SpAdapter.logger.Info(json.Marshal(attributesMap))
-		sendRequest(attributesMap)
-	}
-
 	return &v1beta1.ReportResult{}, nil
-}
-
-func sendRequest(attributeMap map[string]interface{}) bool {
-	jsonValue, _ := json.Marshal(attributeMap)
-	var jsonStr = []byte(jsonValue)
-	req, err := http.NewRequest("POST", spServerUrl, bytes.NewBuffer(jsonStr))
-	req.Header.Set("X-Custom-Header", "myvalue")
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	fmt.Println("response Status:", resp.Status)
-	fmt.Println("response Headers:", resp.Header)
-	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
-	return true
 }
 
 func decodeDimensions(in map[string]*policy.Value) map[string]interface{} {

@@ -38,7 +38,6 @@ init: init.mixer-adapter
 
 .PHONY: init.mixer-adapter
 init.mixer-adapter: init.tools
-	dep ensure
 
 .PHONY: init.tools
 init.tools:

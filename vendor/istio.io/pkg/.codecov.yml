@@ -1,6 +1,0 @@
-coverage:
-  ignore:
-    - pkg/ctrlz/assets/**/*
-    - pkg/ctrlz/cover/assets/**/*
-    - pkg/ctrlz/topics/assets/**/*
-    - pkg/collateral

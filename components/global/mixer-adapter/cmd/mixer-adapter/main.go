@@ -21,10 +21,9 @@ package main
 import (
 	"os"
 
-	"github.com/wso2-cellery/mesh-observability/components/global/mixer-adapter/pkg/logging"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 
-	wso2spadapter "github.com/wso2-cellery/mesh-observability/components/global/mixer-adapter/pkg/wso2spadapter"
-
+	wso2spadapter "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/wso2spadapter"
 )
 
 const defaultAdapterPort string = "38355"

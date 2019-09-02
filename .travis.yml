@@ -8,6 +8,8 @@ services:
 cache:
   directories:
     - $HOME/.m2
+env:
+  - GO111MODULE=on
 before_install:
   - npm i -g npm
   - mkdir -p $HOME/gopath/src/github.com/cellery-io
