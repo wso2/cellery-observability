@@ -23,7 +23,7 @@ import (
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 
-	wso2spadapter "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/wso2spadapter"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/wso2spadapter"
 )
 
 const defaultAdapterPort string = "38355"
@@ -44,7 +44,7 @@ func main() {
 
 	adapter, err := wso2spadapter.NewWso2SpAdapter(addr, logger)
 	if err != nil {
-		logger.Info("unable to start server: ", err)
+		logger.Error("unable to start server: ", err.Error())
 		os.Exit(-1)
 	}
 

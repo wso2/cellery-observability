@@ -69,14 +69,14 @@ type (
 // HandleMetric records metric entries
 func (wso2SpAdapter *Wso2SpAdapter) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) (*v1beta1.ReportResult, error) {
 
-	wso2SpAdapter.logger.Info("received request : ", *r)
+	wso2SpAdapter.logger.Debug("received request : ", *r)
 
 	var buffer bytes.Buffer
 	cfg := &config.Params{}
 
 	if r.AdapterConfig != nil {
 		if err := cfg.Unmarshal(r.AdapterConfig.Value); err != nil {
-			wso2SpAdapter.logger.Error("error unmarshalling adapter config: ", err)
+			wso2SpAdapter.logger.Error("error unmarshalling adapter config: ", err.Error())
 			return nil, err
 		}
 	}
@@ -84,24 +84,25 @@ func (wso2SpAdapter *Wso2SpAdapter) HandleMetric(ctx context.Context, r *metric.
 	buffer.WriteString(fmt.Sprintf("HandleMetric invoked with:\n  Adapter config: %s\n  Instances: %s\n",
 		cfg.String(), instances(r.Instances)))
 
-	wso2SpAdapter.logger.Info(fmt.Sprintf("Instances: %s\n", instances(r.Instances)))
-
 	if cfg.FilePath == "" {
-		wso2SpAdapter.logger.Info(buffer.String())
+		wso2SpAdapter.logger.Debug(buffer.String())
 	} else {
 		_, err := os.OpenFile("out.txt", os.O_RDONLY|os.O_CREATE, 0666)
 		if err != nil {
-			return nil, fmt.Errorf("error creating file: %v", err)
+			wso2SpAdapter.logger.Error("error creating file: ", err.Error())
+			return nil, err
 		}
 		file, err := os.OpenFile(cfg.FilePath, os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
-			return nil, fmt.Errorf("error opening file for append: %v", err)
+			wso2SpAdapter.logger.Error("error opening file for append: ", err.Error())
+			return nil, err
 		}
 
 		defer file.Close()
 
 		if _, err = file.Write(buffer.Bytes()); err != nil {
-			return nil, fmt.Errorf("error writing to file: %v", err)
+			wso2SpAdapter.logger.Error("error writing to file: ", err.Error())
+			return nil, err
 		}
 	}
 
