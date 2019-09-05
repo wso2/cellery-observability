@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+// config for wso2spadapter
+package adapter.wso2spadapter.config;
+
+import "gogoproto/gogo.proto";
+
+option go_package="config";
+
+// config for wso2spadapter
+message Params {
+    // Path of the file to save the information about runtime requests.
+    string storage_file_path = 1;
+}
