@@ -6,12 +6,12 @@ define stream TelemetryStreamIn(sourceNamespace string, sourceCell string, sourc
                                 sourcePod string, destinationNamespace string, destinationCell string,
                                 destinationComponent string, destinationPod string, contextReporterKind string,
                                 requestHeadersMap object, requestPath string, requestMethod string,
-                                requestSizeBytes long, responseCode long, responseDurationNanoSec int,
-                                responseSizeBytes long);
+                                requestSizeBytes int, responseCode int, responseDurationNanoSec int,
+                                responseSizeBytes int);
 
 define stream ProcessedRequestsStream(sourceCell string, sourceComponent string, destinationCell string,
                                       destinationComponent string, httpResponseGroup string,
-                                      responseTimeMilliSec double, requestSizeBytes long, responseSizeBytes long);
+                                      responseTimeMilliSec double, requestSizeBytes int, responseSizeBytes int);
 
 @store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB", field.length="sourceCell:253, sourceComponent:253, destinationCell:253, destinationComponent: 253, httpResponseGroup:3")
 @purge(enable="false")
@@ -44,8 +44,8 @@ select
     cast(map:get(requestHeadersMap, "x-request-id"), "string") as requestId,
     str:concat(convert(cast(responseCode, "int") / 100, "string"), "xx") as httpResponseGroup,
     convert(responseDurationNanoSec, "double") / 1000000 as responseTimeMilliSec,
-    ifThenElse(requestSizeBytes is null, 0L, requestSizeBytes) as requestSizeBytes,
-    ifThenElse(responseSizeBytes is null, 0L, responseSizeBytes) as responseSizeBytes
+    ifThenElse(requestSizeBytes is null, 0, requestSizeBytes) as requestSizeBytes,
+    ifThenElse(responseSizeBytes is null, 0, responseSizeBytes) as responseSizeBytes
 insert into ProcessedTelemetryStream;
 
 from every(e1=ProcessedTelemetryStream) ->
