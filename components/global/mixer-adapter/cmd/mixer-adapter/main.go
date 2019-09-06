@@ -22,7 +22,6 @@ import (
 	"os"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
-
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/wso2spadapter"
 )
 

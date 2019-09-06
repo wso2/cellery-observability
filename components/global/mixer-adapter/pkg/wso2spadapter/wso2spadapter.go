@@ -27,9 +27,11 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
 
 	"go.uber.org/zap"
 
@@ -49,6 +51,7 @@ import (
 const grpcAdapterCredential string = "GRPC_ADAPTER_CREDENTIAL"
 const grpcAdapterPrivateKey string = "GRPC_ADAPTER_PRIVATE_KEY"
 const grpcAdapterCertificate string = "GRPC_ADAPTER_CERTIFICATE"
+const spServerUrl string = "http://wso2sp-worker:9091"
 
 type (
 	// Server is basic server interface
@@ -106,7 +109,30 @@ func (wso2SpAdapter *Wso2SpAdapter) HandleMetric(ctx context.Context, r *metric.
 		}
 	}
 
-	return &v1beta1.ReportResult{}, nil
+	var insts = r.Instances
+	for _, inst := range insts {
+		var attributesMap = decodeDimensions(inst.Dimensions)
+		sendRequest(attributesMap, wso2SpAdapter.logger) // ToDO : get the boolean value from the function to check whether the metric is delivered or not
+	}
+
+	return nil, fmt.Errorf("Error")
+}
+
+func sendRequest(attributeMap map[string]interface{}, logger *zap.SugaredLogger) bool {
+	jsonValue, _ := json.Marshal(attributeMap)
+	var jsonStr = []byte(jsonValue)
+	req, err := http.NewRequest("POST", spServerUrl, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	logger.Info("response : ", string(body))
+	return true // ToDo : return the boolean value considering the response
 }
 
 func decodeDimensions(in map[string]*policy.Value) map[string]interface{} {
@@ -125,6 +151,10 @@ func decodeValue(in interface{}) interface{} {
 		return t.Int64Value
 	case *policy.Value_DoubleValue:
 		return t.DoubleValue
+	case *policy.Value_BoolValue:
+		return t.BoolValue
+	case *policy.Value_IpAddressValue:
+		return t.IpAddressValue
 	default:
 		return fmt.Sprintf("%v", in)
 	}

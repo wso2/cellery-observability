@@ -1,0 +1,123 @@
+# handler for adapter wso2spadapter
+apiVersion: "config.istio.io/v1alpha2"
+kind: handler
+metadata:
+  name: wso2spadapter-handler
+  namespace: istio-system
+spec:
+  adapter: wso2spadapter
+  connection:
+    address: "wso2spadapterservice:38355" #replaces at runtime by the test
+  params:
+    file_path: "out.txt"
+---
+
+# instance for template metric
+apiVersion: "config.istio.io/v1alpha2"
+kind: instance
+metadata:
+  name: wso2spadapter-metric
+  namespace: istio-system
+spec:
+  template: metric
+  params:
+    dimensions:
+      source.uid: source.uid
+      #     source.ip: source.ip
+      source.labels.app: source.labels["app"] | ""
+      source.labels.version: source.labels["version"] | ""
+      source.labels.svc: source.labels["svc"] | ""
+      source.labels.cell: source.labels["mesh.cellery.io.cell"] | ""
+      source.labels.cell.slash: source.labels["mesh.cellery.io/cell"] | ""
+      source.labels.cell.gateway: source.labels["mesh.cellery.io/gateway"] | ""
+      source.labels.pod.template.hash: source.labels["pod-template-hash"] | ""
+      source.labels: source.labels | ""
+      source.name: source.name | ""
+      source.namespace: source.namespace | ""
+      source.principal: source.principal | ""
+      source.owner: source.owner | ""
+      source.workload.uid: source.workload.uid | ""
+      source.workload.name: source.workload.name | ""
+      source.workload.namespace: source.workload.namespace | ""
+      destination.uid: destination.uid
+      #     destination.ip: destination.ip
+      destination.port: destination.port | 0
+      destination.name: destination.name | ""
+      destination.namespace: destination.namespace | ""
+      destination.principal: destination.principal | ""
+      destination.owner: destination.owner | ""
+      destination.workload.uid: destination.workload.uid | ""
+      destination.workload: destination.workload.name | ""
+      destination.workload.namespace: destination.workload.namespace | ""
+      destination.container.name: destination.container.name | ""
+      #     destination.container.image: destination.container.image | ""
+      destination.service.host: destination.service.host | ""
+      destination.service.uid: destination.service.uid | ""
+      destination.service.name: destination.service.name | ""
+      destination.service.namespace: destination.service.namespace | ""
+      #     request.headers: request.headers | emptyStringMap()
+      request.id: request.id | ""
+      request.path: request.path | ""
+      request.host: request.host | ""
+      request.method: request.method | ""
+      request.reason: request.reason | ""
+      request.referer: request.referer | ""
+      request.scheme: request.scheme | ""
+      request.size: request.size | 0
+      request.total_size: request.total_size | 0
+      #     request.time_sec: request.time_sec | 0
+      #     request.time_nanosec: request.time_nano_sec | 0
+      request.useragent: request.useragent | ""
+      #     response.headers: response.headers | ""
+      response.size: response.size | 0
+      response.total_size: response.total_size | 0
+      #     response.time_second: response.time_sec | 0
+      #     response.time_nano_second: response.time_nano_sec | 0
+      #     response.duration_sec: response.duration_sec | 0
+      response.duration_nanosec: 0
+      response.code: response.code | 0
+      response.grpc_status: response.grpc_status | ""
+      response.grpc_message: response.grpc_message | ""
+      connection.id: connection.id | ""
+      connection.event: connection.event | ""
+      connection.received.bytes: connection.received.bytes | 0
+      connection.received.bytes_total: connection.received.bytes_total | 0
+      connection.sent.bytes: connection.sent.bytes | 0
+      connection.sent.bytes_total: connection.sent.bytes_total | 0
+      #     connection.duration_sec: connection.duration_sec | 0
+      #     connection.duration_nanosec: connection.duration_nanosec | 0
+      connection.mtls: connection.mtls | false
+      connection.requested_server_name: connection.requested_server_name | ""
+      context.protocol: context.protocol | ""
+      #     context.time_sec: context.time_sec | 0
+      #     context.time_nano_sec: context.time_nanosec | 0
+      context.reporter.kind: context.reporter.kind | ""
+      context.reporter.uid: context.reporter.uid | ""
+      api.service: api.service | ""
+      api.version: api.version | ""
+      api.operation: api.operation | ""
+      api.protocol: api.protocol | ""
+      request.auth.principal: request.auth.principal | ""
+      request.auth.audiences: request.auth.audiences | ""
+      request.auth.presenter: request.auth.presenter | ""
+      #     request.auth.claims: request.auth.claims | ""
+      request.api_key: request.api_key | ""
+      check.error_code: check.error_code | 0
+      check.error_message: check.error_message | ""
+      check.cashe_hit: check.cache_hit | false
+      quota.cache_hit: quota.cache_hit | false
+      context.reporter.local: context.reporter.local | false
+---
+
+# rule to dispatch to handler wso2spadapter-handler
+apiVersion: "config.istio.io/v1alpha2"
+kind: rule
+metadata:
+  name: wso2spadapter-rule
+  namespace: istio-system
+spec:
+  actions:
+    - handler: wso2spadapter-handler.istio-system
+      instances:
+        - wso2spadapter-metric
+---

@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wso2spadapterservice
+  namespace: istio-system
+  labels:
+    app: wso2spadapter
+spec:
+  type: ClusterIP
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 38355
+      targetPort: 38355
+  selector:
+    app: wso2spadapter
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: wso2spadapter
+  namespace: istio-system
+  labels:
+    app: wso2spadapter
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: wso2spadapter
+      annotations:
+        sidecar.istio.io/inject: "false"
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+    spec:
+      containers:
+        - name: wso2spadapter
+          image: athukorala/mixer-adapter:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 38355
