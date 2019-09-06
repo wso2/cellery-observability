@@ -19,9 +19,12 @@
 
 package io.cellery.observability.telemetry.receiver;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -33,11 +36,26 @@ public class Utils {
     private Utils() {
     }
 
-    static String toString(Map<String, String> attributes) {
+    public static String toString(Map<String, String> attributes) {
         return gson.toJson(attributes);
     }
 
-    static String toString(ByteString byteString) {
+    public static String toString(ByteString byteString) {
         return gson.toJson(byteString);
     }
+
+    public static String toString(String string) {
+        return gson.toJson(string);
+    }
+
+    public static HashMap<String, Object> toMap(String json) throws IOException {
+        HashMap<String, Object> result;
+        try {
+            result = new ObjectMapper().readValue(json, HashMap.class);
+            return result;
+        } catch (IOException e) {
+            throw new IOException("Unexpected IO error while reading reading the json");
+        }
+    }
+
 }
