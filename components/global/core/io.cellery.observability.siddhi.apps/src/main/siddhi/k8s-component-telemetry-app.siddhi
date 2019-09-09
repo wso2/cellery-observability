@@ -11,15 +11,7 @@ define stream K8sComponentEventSourceStream(cell String, component string, creat
 define table K8sComponentInfoTable(cell string, component string, creationTimestamp long, lastKnownActiveTimestamp long,
                                    ingressTypes string);
 
-from K8sComponentEventSourceStream[action == "ADDED" and ingressTypes != ""]
-select cell, component, creationTimestamp, lastKnownActiveTimestamp, ingressTypes
-update or insert into K8sComponentInfoTable
-    set K8sComponentInfoTable.creationTimestamp = creationTimestamp,
-        K8sComponentInfoTable.lastKnownActiveTimestamp = lastKnownActiveTimestamp,
-        K8sComponentInfoTable.ingressTypes = ingressTypes
-    on K8sComponentInfoTable.cell == cell and K8sComponentInfoTable.component == component;
-
-from K8sComponentEventSourceStream[action == "DELETED"]
+from K8sComponentEventSourceStream
 select cell, component, creationTimestamp, time:timestampInMilliseconds() as lastKnownActiveTimestamp, ingressTypes
 update or insert into K8sComponentInfoTable
     set K8sComponentInfoTable.creationTimestamp = creationTimestamp,

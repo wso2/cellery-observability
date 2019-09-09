@@ -22,6 +22,9 @@ import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.api.model.PodStatus;
 import io.fabric8.kubernetes.api.model.PodStatusBuilder;
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceColumnDefinitionBuilder;
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionBuilder;
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionNamesBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import org.apache.log4j.Logger;
@@ -46,12 +49,12 @@ public class BaseTestCase {
     protected static final int TIMEOUT = 5000;
 
     protected static final String NODE_NAME = "node1";
-    protected static final String POD_CREATION_TIMESTAMP_STRING = "2019-04-30T13:21:22Z";
-    protected final long podCreationTimestamp;
+    protected static final String CREATION_TIMESTAMP_STRING = "2019-04-30T13:21:22Z";
+    protected final long creationTimestamp;
 
     public BaseTestCase() throws Exception {
-        podCreationTimestamp = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
-                .parse(POD_CREATION_TIMESTAMP_STRING).getTime();
+        creationTimestamp = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
+                .parse(CREATION_TIMESTAMP_STRING).getTime();
     }
 
     protected KubernetesClient k8sClient;
@@ -70,6 +73,49 @@ public class BaseTestCase {
             logger.debug("Initialized the K8s Client for the K8s Mock Server");
         }
         Whitebox.setInternalState(K8sClientHolder.class, "k8sClient", k8sClient);
+
+        k8sServer.expect()
+                .withPath("/apis/apiextensions.k8s.io/v1beta1/customresourcedefinitions/" + Constants.CELL_CRD_NAME)
+                .andReturn(200, new CustomResourceDefinitionBuilder()
+                        .withNewMetadata()
+                        .withNamespace(Constants.NAMESPACE)
+                        .withName(Constants.CELL_CRD_NAME)
+                        .endMetadata()
+                        .withNewSpec()
+                        .withGroup(Constants.CELL_CRD_GROUP)
+                        .withVersion(Constants.CELL_CRD_VERSION)
+                        .withScope("Namespaces")
+                        .withNames(new CustomResourceDefinitionNamesBuilder()
+                                .withKind(Constants.CELL_KIND)
+                                .withPlural("cells")
+                                .withSingular("cell")
+                                .build())
+                        .addToAdditionalPrinterColumns(new CustomResourceColumnDefinitionBuilder()
+                                .withName("Status")
+                                .withType("string")
+                                .withJSONPath(".status.status")
+                                .build())
+                        .addToAdditionalPrinterColumns(new CustomResourceColumnDefinitionBuilder()
+                                .withName("Gateway")
+                                .withType("string")
+                                .withDescription("Host name of the gateway")
+                                .withJSONPath(".status.gatewayHostname")
+                                .build())
+                        .addToAdditionalPrinterColumns(new CustomResourceColumnDefinitionBuilder()
+                                .withName("Services")
+                                .withType("integer")
+                                .withDescription("Number of services in this cell")
+                                .withJSONPath(".status.serviceCount")
+                                .build())
+                        .addToAdditionalPrinterColumns(new CustomResourceColumnDefinitionBuilder()
+                                .withName("Age")
+                                .withType("date")
+                                .withJSONPath(".metadata.creationTimestamp")
+                                .build())
+                        .endSpec()
+                        .build()
+                )
+                .always();
     }
 
     @AfterMethod
@@ -180,7 +226,7 @@ public class BaseTestCase {
         return new PodBuilder()
                 .withNewMetadata()
                 .withNamespace(Constants.NAMESPACE)
-                .withCreationTimestamp(POD_CREATION_TIMESTAMP_STRING)
+                .withCreationTimestamp(CREATION_TIMESTAMP_STRING)
                 .withName(podName)
                 .addToLabels(labels)
                 .endMetadata()

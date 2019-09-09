@@ -45,17 +45,4 @@ public class CellImpl extends CustomResource implements Cell {
     public void setSpec(CellSpec spec) {
         this.spec = spec;
     }
-
-    public String getKind() {
-        return "Cell";
-    }
-
-    @Override
-    public String toString() {
-        return "Cell{" +
-                "apiVersion='" + getApiVersion() + '\'' +
-                ", metadata=" + getMetadata() +
-                ", spec=" + spec +
-                '}';
-    }
 }
