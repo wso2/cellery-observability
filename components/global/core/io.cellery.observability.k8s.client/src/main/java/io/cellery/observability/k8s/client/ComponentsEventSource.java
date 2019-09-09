@@ -18,13 +18,14 @@
 
 package io.cellery.observability.k8s.client;
 
-import io.cellery.observability.k8s.client.cells.model.GRPC;
 import io.cellery.observability.k8s.client.crds.CellImpl;
 import io.cellery.observability.k8s.client.crds.CellList;
 import io.cellery.observability.k8s.client.crds.DoneableCell;
+import io.cellery.observability.k8s.client.crds.model.GRPC;
 import io.cellery.observability.k8s.client.crds.model.HTTP;
 import io.cellery.observability.k8s.client.crds.model.ServicesTemplate;
 import io.cellery.observability.k8s.client.crds.model.TCP;
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watch;
@@ -75,7 +76,7 @@ public class ComponentsEventSource extends Source {
 
     private static final Logger logger = Logger.getLogger(ComponentsEventSource.class.getName());
 
-    private Watch cellWatcher;
+    private Watch cellWatch;
     private KubernetesClient k8sClient;
     private SourceEventListener sourceEventListener;
 
@@ -97,9 +98,12 @@ public class ComponentsEventSource extends Source {
         if (logger.isDebugEnabled()) {
             logger.debug("Retrieved API server client instance");
         }
+        CustomResourceDefinition cellCrd = k8sClient.customResourceDefinitions()
+                .withName(Constants.CELL_CRD_NAME)
+                .get();
 
-        cellWatcher = k8sClient.customResources(Utils.getCellCRDFromServer(), CellImpl.class, CellList.class,
-                    DoneableCell.class)
+        // Cell watch for Cellery cell updates
+        cellWatch = k8sClient.customResources(cellCrd, CellImpl.class, CellList.class, DoneableCell.class)
                 .inNamespace(Constants.NAMESPACE)
                 .watch(new Watcher<CellImpl>() {
                     @Override
@@ -107,23 +111,18 @@ public class ComponentsEventSource extends Source {
                         List<HTTP> httpObjectsList = cell.getSpec().getGatewayTemplate().getSpec().getHttp();
                         List<TCP> tcpObjectsList = cell.getSpec().getGatewayTemplate().getSpec().getTcp();
                         List<GRPC> grpcObjectList = cell.getSpec().getGatewayTemplate().getSpec().getGrpc();
-                        boolean isWebCell = !StringUtils.isEmpty(
-                                cell.getSpec().getGatewayTemplate().getSpec().getHost());
 
                         try {
                             Map<String, Object> attributes = new HashMap<>();
                             attributes.put(Constants.Attribute.CELL, cell.getMetadata().getName());
                             attributes.put(Constants.Attribute.CREATION_TIMESTAMP,
-                                    cell.getMetadata().getCreationTimestamp() == null
+                                    StringUtils.isEmpty(cell.getMetadata().getCreationTimestamp())
                                             ? -1
                                             : new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US).parse(
-                                            cell.getMetadata().getCreationTimestamp()).getTime());
+                                                    cell.getMetadata().getCreationTimestamp()).getTime());
                             attributes.put(Constants.Attribute.ACTION, action.toString());
-                            attributes.put(Constants.Attribute.LAST_KNOWN_ACTIVE_TIMESTAMP, 0L);
 
-                            addComponentsInfo(cell, httpObjectsList, tcpObjectsList, grpcObjectList, attributes,
-                                    isWebCell);
-
+                            addComponentsInfo(cell, httpObjectsList, tcpObjectsList, grpcObjectList, attributes);
                         } catch (ParseException e) {
                             logger.error("Ignored cell change due to creation timestamp parse failure", e);
                         }
@@ -147,8 +146,8 @@ public class ComponentsEventSource extends Source {
 
     @Override
     public void disconnect() {
-        if (cellWatcher != null) {
-            cellWatcher.close();
+        if (cellWatch != null) {
+            cellWatch.close();
             if (logger.isDebugEnabled()) {
                 logger.debug("Closed cell watcher");
             }
@@ -192,8 +191,7 @@ public class ComponentsEventSource extends Source {
     private void addHttpType(List<HTTP> httpObjectsList, String componentName,
                              List<String> ingressTypes, boolean isWebCell) {
         if (httpObjectsList != null) {
-            boolean isHttp = httpObjectsList.stream().anyMatch(httpObj -> httpObj.getBackend()
-                    .equals(componentName));
+            boolean isHttp = httpObjectsList.stream().anyMatch(httpObj -> httpObj.getBackend().equals(componentName));
             // Check for Web ingresses
             if (isHttp && isWebCell) {
                 ingressTypes.add(Constants.IngressType.WEB);
@@ -243,15 +241,16 @@ public class ComponentsEventSource extends Source {
      * This method maps the respective components with the Ingress types it exposes.
      */
     private void addComponentsInfo(CellImpl cell, List<HTTP> httpObjectsList, List<TCP> tcpObjectsList,
-                                   List<GRPC> grpcObjectList, Map<String, Object> attributes, boolean isWebCell) {
+                                   List<GRPC> grpcObjectList, Map<String, Object> attributes) {
         for (String componentName : getComponentsList(cell)) {
             List<String> ingressTypesList = new ArrayList<>();
+            boolean isWebCell = StringUtils.isNotEmpty(cell.getSpec().getGatewayTemplate().getSpec().getHost());
             addHttpType(httpObjectsList, componentName, ingressTypesList, isWebCell);
             addTcpType(tcpObjectsList, componentName, ingressTypesList);
             addGrpcType(grpcObjectList, componentName, ingressTypesList);
 
             attributes.put(Constants.Attribute.COMPONENT, componentName);
-            attributes.put(Constants.Attribute.INGRESS_TYPES,  StringUtils.join(ingressTypesList, ','));
+            attributes.put(Constants.Attribute.INGRESS_TYPES,  StringUtils.join(ingressTypesList, ","));
             sourceEventListener.onEvent(attributes, new String[0]);
         }
     }

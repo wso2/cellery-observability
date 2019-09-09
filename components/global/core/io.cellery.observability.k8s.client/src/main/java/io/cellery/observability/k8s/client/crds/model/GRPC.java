@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.cells.model;
+package io.cellery.observability.k8s.client.crds.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
