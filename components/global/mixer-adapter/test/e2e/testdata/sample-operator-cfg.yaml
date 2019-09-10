@@ -1,0 +1,40 @@
+# handler for adapter wso2spadapter
+apiVersion: "config.istio.io/v1alpha2"
+kind: handler
+metadata:
+  name: wso2spadapter-handler
+  namespace: istio-system
+spec:
+  adapter: wso2spadapter
+  connection:
+    address: "[::]:38355"
+  params:
+    file_path: "out.txt"
+---
+
+# instance for template metric
+apiVersion: "config.istio.io/v1alpha2"
+kind: instance
+metadata:
+  name: wso2spadapter-metric
+  namespace: istio-system
+spec:
+  template: metric
+  params:
+    value: request.size | 0
+    dimensions:
+      response_code: response.code | 0
+---
+
+# rule to dispatch to handler wso2spadapter-handler
+apiVersion: "config.istio.io/v1alpha2"
+kind: rule
+metadata:
+  name: wso2spadapter-rule
+  namespace: istio-system
+spec:
+  actions:
+    - handler: wso2spadapter-handler.istio-system
+      instances:
+        - wso2spadapter-metric
+---

@@ -24,6 +24,7 @@
 package wso2spadapter
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -32,15 +33,11 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-
-	"go.uber.org/zap"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-
-	"bytes"
 	"os"
 
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"istio.io/api/mixer/adapter/model/v1beta1"
 	policy "istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/template/metric"
@@ -48,9 +45,6 @@ import (
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/config"
 )
 
-const grpcAdapterCredential string = "GRPC_ADAPTER_CREDENTIAL"
-const grpcAdapterPrivateKey string = "GRPC_ADAPTER_PRIVATE_KEY"
-const grpcAdapterCertificate string = "GRPC_ADAPTER_CERTIFICATE"
 const spServerUrl string = "http://wso2sp-worker:9091"
 
 type (
@@ -63,10 +57,19 @@ type (
 
 	// Wso2SpAdapter supports metric template.
 	Wso2SpAdapter struct {
-		listener net.Listener
-		server   *grpc.Server
-		logger   *zap.SugaredLogger
+		listener          net.Listener
+		server            *grpc.Server
+		logger            *zap.SugaredLogger
+		httpClient        *http.Client
+		responseInfoError ResponseInfoError
 	}
+
+	/* This interface and the struct has been implemented to test the sendMetrics() function */
+	ResponseInfoError interface {
+		sendMetrics(attributeMap map[string]interface{}, logger *zap.SugaredLogger, httpClient *http.Client) bool
+	}
+
+	SpServerResponseInfoError struct{}
 )
 
 // HandleMetric records metric entries
@@ -87,9 +90,7 @@ func (wso2SpAdapter *Wso2SpAdapter) HandleMetric(ctx context.Context, r *metric.
 	buffer.WriteString(fmt.Sprintf("HandleMetric invoked with:\n  Adapter config: %s\n  Instances: %s\n",
 		cfg.String(), instances(r.Instances)))
 
-	if cfg.FilePath == "" {
-		wso2SpAdapter.logger.Debug(buffer.String())
-	} else {
+	if cfg.FilePath != "" {
 		_, err := os.OpenFile("out.txt", os.O_RDONLY|os.O_CREATE, 0666)
 		if err != nil {
 			wso2SpAdapter.logger.Error("error creating file: ", err.Error())
@@ -112,20 +113,20 @@ func (wso2SpAdapter *Wso2SpAdapter) HandleMetric(ctx context.Context, r *metric.
 	var insts = r.Instances
 	for _, inst := range insts {
 		var attributesMap = decodeDimensions(inst.Dimensions)
-		sendRequest(attributesMap, wso2SpAdapter.logger) // ToDO : get the boolean value from the function to check whether the metric is delivered or not
+		wso2SpAdapter.responseInfoError.sendMetrics(attributesMap, wso2SpAdapter.logger, wso2SpAdapter.httpClient) // ToDO : get the boolean value from the function to check whether the metric is delivered or not
 	}
 
-	return nil, fmt.Errorf("Error")
+	return &v1beta1.ReportResult{}, nil
 }
 
-func sendRequest(attributeMap map[string]interface{}, logger *zap.SugaredLogger) bool {
+/* Send metrics to sp server */
+func (spServerResponseInfoErr SpServerResponseInfoError) sendMetrics(attributeMap map[string]interface{}, logger *zap.SugaredLogger, httpClient *http.Client) bool {
 	jsonValue, _ := json.Marshal(attributeMap)
 	var jsonStr = []byte(jsonValue)
 	req, err := http.NewRequest("POST", spServerUrl, bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return false
 	}
@@ -224,23 +225,20 @@ func getServerTLSOption(credential, privateKey, caCertificate string) (grpc.Serv
 }
 
 // NewWso2SpAdapter creates a new IBP adapter that listens at provided port.
-func NewWso2SpAdapter(addr string, logger *zap.SugaredLogger) (Server, error) {
+func NewWso2SpAdapter(addr string, logger *zap.SugaredLogger, httpClient *http.Client, responseInfoError ResponseInfoError, credential string, privateKey string, certificate string) (Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", addr))
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on socket: %v", err)
 	}
+
 	adapter := &Wso2SpAdapter{
-		listener: listener,
-		logger:   logger,
+		listener:          listener,
+		logger:            logger,
+		httpClient:        httpClient,
+		responseInfoError: responseInfoError,
 	}
 
 	logger.Info("listening on ", adapter.Addr())
-
-	/* Mutual TLS feature to secure connection between workloads
-	   This is optional. */
-	credential := os.Getenv(grpcAdapterCredential)   // adapter.crt
-	privateKey := os.Getenv(grpcAdapterPrivateKey)   // adapter.key
-	certificate := os.Getenv(grpcAdapterCertificate) // ca.pem
 
 	if credential != "" {
 		serverOption, err := getServerTLSOption(credential, privateKey, certificate)

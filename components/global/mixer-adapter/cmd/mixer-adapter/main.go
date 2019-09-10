@@ -19,6 +19,7 @@
 package main
 
 import (
+	"net/http"
 	"os"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
@@ -26,6 +27,9 @@ import (
 )
 
 const defaultAdapterPort string = "38355"
+const grpcAdapterCredential string = "GRPC_ADAPTER_CREDENTIAL"
+const grpcAdapterPrivateKey string = "GRPC_ADAPTER_PRIVATE_KEY"
+const grpcAdapterCertificate string = "GRPC_ADAPTER_CERTIFICATE"
 
 func main() {
 
@@ -41,7 +45,16 @@ func main() {
 	}
 	defer logger.Sync()
 
-	adapter, err := wso2spadapter.NewWso2SpAdapter(addr, logger)
+	/* Mutual TLS feature to secure connection between workloads
+	   This is optional. */
+	credential := os.Getenv(grpcAdapterCredential)   // adapter.crt
+	privateKey := os.Getenv(grpcAdapterPrivateKey)   // adapter.key
+	certificate := os.Getenv(grpcAdapterCertificate) // ca.pem
+
+	client := &http.Client{}
+	spServerResponseInfoError := wso2spadapter.SpServerResponseInfoError{}
+
+	adapter, err := wso2spadapter.NewWso2SpAdapter(addr, logger, client, spServerResponseInfoError, credential, privateKey, certificate)
 	if err != nil {
 		logger.Error("unable to start server: ", err.Error())
 		os.Exit(-1)

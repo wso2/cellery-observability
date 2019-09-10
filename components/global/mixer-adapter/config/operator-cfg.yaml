@@ -7,7 +7,7 @@ metadata:
 spec:
   adapter: wso2spadapter
   connection:
-    address: "wso2spadapterservice:38355" #replaces at runtime by the test
+    address: "wso2spadapterservice:38355"
   params:
     file_path: "out.txt"
 ---
@@ -22,7 +22,6 @@ spec:
   template: metric
   params:
     dimensions:
-      source.uid: source.uid
       #     source.ip: source.ip
       source.labels.app: source.labels["app"] | ""
       source.labels.version: source.labels["version"] | ""
@@ -31,7 +30,6 @@ spec:
       source.labels.cell.slash: source.labels["mesh.cellery.io/cell"] | ""
       source.labels.cell.gateway: source.labels["mesh.cellery.io/gateway"] | ""
       source.labels.pod.template.hash: source.labels["pod-template-hash"] | ""
-      source.labels: source.labels | ""
       source.name: source.name | ""
       source.namespace: source.namespace | ""
       source.principal: source.principal | ""
@@ -39,7 +37,6 @@ spec:
       source.workload.uid: source.workload.uid | ""
       source.workload.name: source.workload.name | ""
       source.workload.namespace: source.workload.namespace | ""
-      destination.uid: destination.uid
       #     destination.ip: destination.ip
       destination.port: destination.port | 0
       destination.name: destination.name | ""
