@@ -26,7 +26,7 @@ define function extractFromServiceName[javascript] return string {
     var index = data[1];    // 1: cell, 2: service
 
     var cellGatewayMatches = /^src:\d+\.\d+\.\d+\.(.+)_\d+_\d+_\d+_.+$/.exec(serviceName);
-    var mircoserviceMatches = /^(.+)--(.+)$/.exec(serviceName);
+    var mircoserviceMatches = /^(.+)--(.+)\.(.+)$/.exec(serviceName);
 
     var extractedData = "";
     if (cellGatewayMatches) {
@@ -56,7 +56,7 @@ select
     traceId,
     id as spanId,
     parentId,
-    "" as namespace,
+    extractFromServiceName(serviceName, 3) as namespace,
     extractFromServiceName(serviceName, 1) as cell,
     extractFromServiceName(serviceName, 2) as serviceName,
     "" as pod,
