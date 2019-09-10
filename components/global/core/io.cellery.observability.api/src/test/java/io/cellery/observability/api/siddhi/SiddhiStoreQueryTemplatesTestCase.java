@@ -267,7 +267,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
-                "on traceId == spanId and (traceId=\"342fsd23423\" or traceId=\"4ger435f324\") and " +
+                "on parentId is null and (traceId=\"342fsd23423\" or traceId=\"4ger435f324\") and " +
                 "(4323453L == -1 or duration <= 4323453L) and (21234322L == -1 or startTime >= 21234322L) " +
                 "and (243423L == -1 or startTime <= 243423L)\n" +
                 "select traceId, cell, serviceName, " +
