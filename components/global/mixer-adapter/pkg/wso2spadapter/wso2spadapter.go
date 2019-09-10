@@ -26,8 +26,6 @@ package wso2spadapter
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -37,7 +35,6 @@ import (
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"istio.io/api/mixer/adapter/model/v1beta1"
 	policy "istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/template/metric"
@@ -90,7 +87,7 @@ func (wso2SpAdapter *Wso2SpAdapter) HandleMetric(ctx context.Context, r *metric.
 	buffer.WriteString(fmt.Sprintf("HandleMetric invoked with:\n  Adapter config: %s\n  Instances: %s\n",
 		cfg.String(), instances(r.Instances)))
 
-	if cfg.FilePath != "" {
+	if cfg.FilePath != " " {
 		_, err := os.OpenFile("out.txt", os.O_RDONLY|os.O_CREATE, 0666)
 		if err != nil {
 			wso2SpAdapter.logger.Error("error creating file: ", err.Error())
@@ -196,36 +193,8 @@ func (wso2SpAdapter *Wso2SpAdapter) Close() error {
 	return nil
 }
 
-func getServerTLSOption(credential, privateKey, caCertificate string) (grpc.ServerOption, error) {
-	certificate, err := tls.LoadX509KeyPair(
-		credential,
-		privateKey,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load key cert pair")
-	}
-	certPool := x509.NewCertPool()
-	bytesArray, err := ioutil.ReadFile(caCertificate)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read client ca cert: %s", err)
-	}
-
-	ok := certPool.AppendCertsFromPEM(bytesArray)
-	if !ok {
-		return nil, fmt.Errorf("failed to append client certs")
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{certificate},
-		ClientCAs:    certPool,
-	}
-	tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-
-	return grpc.Creds(credentials.NewTLS(tlsConfig)), nil
-}
-
 // NewWso2SpAdapter creates a new IBP adapter that listens at provided port.
-func NewWso2SpAdapter(addr string, logger *zap.SugaredLogger, httpClient *http.Client, responseInfoError ResponseInfoError, credential string, privateKey string, certificate string) (Server, error) {
+func NewWso2SpAdapter(addr string, logger *zap.SugaredLogger, httpClient *http.Client, responseInfoError ResponseInfoError, serverOption grpc.ServerOption) (Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", addr))
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on socket: %v", err)
@@ -240,11 +209,7 @@ func NewWso2SpAdapter(addr string, logger *zap.SugaredLogger, httpClient *http.C
 
 	logger.Info("listening on ", adapter.Addr())
 
-	if credential != "" {
-		serverOption, err := getServerTLSOption(credential, privateKey, certificate)
-		if err != nil {
-			return nil, err
-		}
+	if serverOption != nil {
 		adapter.server = grpc.NewServer(serverOption)
 	} else {
 		adapter.server = grpc.NewServer()

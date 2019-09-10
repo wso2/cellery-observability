@@ -6,6 +6,10 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/gogo/protobuf/types"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/config"
+
 	"go.uber.org/zap"
 	"istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/template/metric"
@@ -36,7 +40,29 @@ var (
 		Name: "wso2spadapter-metric",
 		Dimensions: map[string]*v1beta1.Value{
 			"response_code": {
-				Value: &v1beta1.Value_Int64Value{Int64Value: 0},
+				Value: &v1beta1.Value_BoolValue{BoolValue: false},
+			},
+		},
+		Value: &v1beta1.Value{
+			Value: &v1beta1.Value_Int64Value{Int64Value: 0},
+		},
+	}
+	sampleInstance3 = &metric.InstanceMsg{
+		Name: "wso2spadapter-metric",
+		Dimensions: map[string]*v1beta1.Value{
+			"response_code": {
+				Value: &v1beta1.Value_StringValue{StringValue: "Test"},
+			},
+		},
+		Value: &v1beta1.Value{
+			Value: &v1beta1.Value_Int64Value{Int64Value: 0},
+		},
+	}
+	sampleInstance4 = &metric.InstanceMsg{
+		Name: "wso2spadapter-metric",
+		Dimensions: map[string]*v1beta1.Value{
+			"response_code": {
+				Value: &v1beta1.Value_DoubleValue{DoubleValue: 1.5},
 			},
 		},
 		Value: &v1beta1.Value{
@@ -58,7 +84,7 @@ func TestNewWso2SpAdapter(t *testing.T) {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 	defer logger.Sync()
-	adapter, err := NewWso2SpAdapter(defaultAdapterPort, logger, &http.Client{}, DummyServerResponseInfoError{}, "", "", "")
+	adapter, err := NewWso2SpAdapter(defaultAdapterPort, logger, &http.Client{}, DummyServerResponseInfoError{}, nil)
 	wantStr := "[::]:38355"
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %s", err.Error())
@@ -86,7 +112,7 @@ func TestWso2SpAdapter_HandleMetric(t *testing.T) {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 
-	adapter := &Wso2SpAdapter{
+	wso2SpAdapter := &Wso2SpAdapter{
 		listener:          listener,
 		logger:            logger,
 		httpClient:        &http.Client{},
@@ -96,12 +122,21 @@ func TestWso2SpAdapter_HandleMetric(t *testing.T) {
 	var sampleInstances []*metric.InstanceMsg
 	sampleInstances = append(sampleInstances, sampleInstance1)
 	sampleInstances = append(sampleInstances, sampleInstance2)
+	sampleInstances = append(sampleInstances, sampleInstance3)
+	sampleInstances = append(sampleInstances, sampleInstance4)
+
+	anyType := &types.Any{}
+	configP := &config.Params{}
+	configP.FilePath = "out.txt"
+	data, err := configP.Marshal()
+	anyType.Value = data
 
 	sampleMetricRequest := metric.HandleMetricRequest{
-		Instances: sampleInstances,
+		Instances:     sampleInstances,
+		AdapterConfig: anyType,
 	}
 
-	_, err = adapter.HandleMetric(nil, &sampleMetricRequest)
+	_, err = wso2SpAdapter.HandleMetric(nil, &sampleMetricRequest)
 
 	if err != nil {
 		t.Errorf("Metric could not be handled : %s", err.Error())
