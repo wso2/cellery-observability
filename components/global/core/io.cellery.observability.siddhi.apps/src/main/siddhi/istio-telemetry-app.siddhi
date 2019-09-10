@@ -51,7 +51,7 @@ define stream TelemetryStream(sourceUID string, sourceIP string, sourceLabels st
                               sourceNamespace string, sourcePrincipal string, sourceOwner string,
                               sourceWorkloadUID string, sourceWorkloadName string,
                               sourceWorkloadNamespace string, destinationUID string, destinationIP string,
-                              destinationPort long, destinationLabels string, destinationName string,
+                              destinationPort int, destinationLabels string, destinationName string,
                               destinationNamespace string, destinationPrincipal string, destinationOwner string,
                               destinationWorkloadUID string, destinationWorkloadName string,
                               destinationWorkloadNamespace string, destinationContainerName string,
@@ -59,35 +59,36 @@ define stream TelemetryStream(sourceUID string, sourceIP string, sourceLabels st
                               destinationServiceUID string, destinationServiceName string,
                               destinationServiceNamespace string, requestHeaders string, requestID string,
                               requestPath string, requestHost string, requestMethod string, requestReason string,
-                              requestReferer string, requestScheme string, requestSize long,
-                              requestTotalSize long, requestTimeSec long, requestTimeNanoSec int,
-                              requestUserAgent string, responseHeaders string, responseSize long,
-                              responseTotalSize long, responseTimeSec long, responseTimeNanoSec int,
-                              responseDurationSec long, responseDurationNanoSec int, responseCode long,
+                              requestReferer string, requestScheme string, requestSize int,
+                              requestTotalSize int, requestTimeSec int, requestTimeNanoSec int,
+                              requestUserAgent string, responseHeaders string, responseSize int,
+                              responseTotalSize int, responseTimeSec int, responseTimeNanoSec int,
+                              responseDurationSec int, responseDurationNanoSec int, responseCode int,
                               responseGRPCStatus string, responseGRPCMessage string, connectionID string,
-                              connectionEvent string, connectionReceivedBytes long,
-                              connectionReceivedBytesTotal long, connectionSentBytes long,
-                              connectionSentBytesTotal long, connectionDurationSec long,
+                              connectionEvent string, connectionReceivedBytes int,
+                              connectionReceivedBytesTotal int, connectionSentBytes int,
+                              connectionSentBytesTotal int, connectionDurationSec int,
                               connectionDurationNanoSec int, connectionMTLS bool,
-                              connectionRequestedServerName string, contextProtocol string, contextTimeSec long,
+                              connectionRequestedServerName string, contextProtocol string, contextTimeSec int,
                               contextTimeNanoSec int, contextReporterKind string, contextReporterUID string,
                               apiService string, apiVersion string, apiOperation string, apiProtocol string,
                               requestAuthPrincipal string, requestAuthAudiences string,
                               requestAuthPresenter string, requestAuthClaims string, requestAPIKey string,
-                              checkErrorCode long, checkErrorMessage string, checkCacheHit bool,
+                              checkErrorCode int, checkErrorMessage string, checkCacheHit bool,
                               quotaCacheHit bool, contextReporterLocal bool);
 
+
 @source(type="inMemory", topic="k8s-component-pods", @map(type="passThrough"))
-define stream K8sComponentPodsInMemorySink(cell string, component string, name string, creationTimestamp long,
-                                           lastKnownAliveTimestamp long, nodeName string, status string, action string);
+define stream K8sComponentPodsInMemorySink(cell string, component string, name string, creationTimestamp int,
+                                           lastKnownAliveTimestamp int, nodeName string, status string, action string);
 
 @sink(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
 define stream TelemetryInMemorySink(sourceNamespace string, sourceCell string, sourceComponent string,
                                     sourcePod string, destinationNamespace string, destinationCell string,
                                     destinationComponent string, destinationPod string, contextReporterKind string,
                                     requestHeadersMap object, requestPath string, requestMethod string,
-                                    requestSizeBytes long, responseCode long, responseDurationNanoSec int,
-                                    responseSizeBytes long);
+                                    requestSizeBytes int, responseCode int, responseDurationNanoSec int,
+                                    responseSizeBytes int);
 
 define window K8sComponentPodInfoWindow(podName string, cell string, component string) unique:time(podName, 11 minutes);
 
@@ -112,7 +113,8 @@ from K8sComponentPodsInMemorySink
 select name as podName, cell, component
 insert into K8sComponentPodInfoWindow;
 
-from TelemetryStream[(not sourceUID is null) and (not destinationUID is null)]
+from TelemetryStream
+[(not sourceUID is null) and (not destinationUID is null)]
 select
     str:replaceFirst(sourceUID, "^kubernetes://", "") as sourceUID,
     str:replaceFirst(destinationUID, "^kubernetes://", "") as destinationUID,
