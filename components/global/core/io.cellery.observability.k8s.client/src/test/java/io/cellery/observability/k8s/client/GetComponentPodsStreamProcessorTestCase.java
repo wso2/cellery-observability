@@ -294,7 +294,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     private void validatePodData(String cell, String component, Object[] data) {
         Assert.assertEquals(data[1], cell);
         Assert.assertEquals(data[2], component);
-        Assert.assertEquals(data[4], podCreationTimestamp);
+        Assert.assertEquals(data[4], creationTimestamp);
         Assert.assertEquals(data[5], NODE_NAME);
     }
 

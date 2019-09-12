@@ -109,7 +109,7 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
                 .once();
         initializeSiddhiAppRuntime();
 
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 5, eventCount, TIMEOUT);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 6, eventCount, TIMEOUT);
         Assert.assertEquals(eventCount.get(), 6);
         for (Event receivedEvent : receivedEvents) {
             Object[] data = receivedEvent.getData();
@@ -125,7 +125,7 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
             } else if ("pet-fe--test-b".equals(data[2])) {
                 Assert.assertEquals(data[0], "pet-fe");
                 Assert.assertEquals(data[1], "test-b");
-                Assert.assertEquals(data[3], podCreationTimestamp);
+                Assert.assertEquals(data[3], creationTimestamp);
                 Assert.assertEquals(data[4], -1L);
                 Assert.assertEquals(data[5], NODE_NAME);
                 Assert.assertEquals(data[6], "Running");
@@ -133,7 +133,7 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
             } else if ("pet-be--test-c".equals(data[2])) {
                 Assert.assertEquals(data[0], "pet-be");
                 Assert.assertEquals(data[1], "test-c");
-                Assert.assertEquals(data[3], podCreationTimestamp);
+                Assert.assertEquals(data[3], creationTimestamp);
                 Assert.assertEquals(data[4], new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
                         .parse(deletionTimestamp).getTime());
                 Assert.assertEquals(data[5], NODE_NAME);
@@ -142,7 +142,7 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
             } else if ("pet-fe--test-d".equals(data[2])) {
                 Assert.assertEquals(data[0], "pet-fe");
                 Assert.assertEquals(data[1], "test-d");
-                Assert.assertEquals(data[3], podCreationTimestamp);
+                Assert.assertEquals(data[3], creationTimestamp);
                 Assert.assertEquals(data[4], -1L);
                 Assert.assertEquals(data[5], NODE_NAME);
                 Assert.assertEquals(data[6], "ErrImagePull");
@@ -150,7 +150,7 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
             } else if ("pet-fe--gateway".equals(data[2])) {
                 Assert.assertEquals(data[0], "pet-fe");
                 Assert.assertEquals(data[1], "gateway");
-                Assert.assertEquals(data[3], podCreationTimestamp);
+                Assert.assertEquals(data[3], creationTimestamp);
                 Assert.assertEquals(data[4], -1L);
                 Assert.assertEquals(data[5], NODE_NAME);
                 Assert.assertEquals(data[6], "Running");
@@ -158,7 +158,7 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
             } else if ("pet-be--gateway".equals(data[2])) {
                 Assert.assertEquals(data[0], "pet-be");
                 Assert.assertEquals(data[1], "gateway");
-                Assert.assertEquals(data[3], podCreationTimestamp);
+                Assert.assertEquals(data[3], creationTimestamp);
                 Assert.assertEquals(data[4], -1L);
                 Assert.assertEquals(data[5], NODE_NAME);
                 Assert.assertEquals(data[6], "ErrImagePull");
@@ -320,9 +320,10 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
         initializeSiddhiAppRuntime();
         Thread.sleep(1200);
         siddhiAppRuntime.persist();
+        Thread.sleep(100);
         siddhiAppRuntime.restoreLastRevision();
 
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 3, eventCount, TIMEOUT);
         Assert.assertEquals(eventCount.get(), 2);
         for (Event receivedEvent : receivedEvents) {
             Object[] data = receivedEvent.getData();
@@ -417,7 +418,7 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
         String inStreamDefinition = "@App:name(\"test-siddhi-app\")\n" +
                 "@source(type=\"k8s-component-pods\", @map(type=\"keyvalue\", " +
                 "fail.on.missing.attribute=\"true\"))\n" +
-                "define stream k8sComponentPodsStream (cell string, component string, name string, " +
+                "define stream k8sComponentPodsStream (cell string, component string, podName string, " +
                 "creationTimestamp long, deletionTimestamp long, nodeName string, status string, action string);";
         String query = "@info(name = \"query\")\n" +
                 "from k8sComponentPodsStream\n" +
@@ -451,7 +452,7 @@ public class ComponentPodsEventSourceTestCase extends BaseTestCase {
      * @param data      The pod event data
      */
     private void validatePodData(Object[] data) {
-        Assert.assertEquals(data[3], podCreationTimestamp);
+        Assert.assertEquals(data[3], creationTimestamp);
         Assert.assertEquals(data[4], -1L);
         Assert.assertEquals(data[5], NODE_NAME);
     }

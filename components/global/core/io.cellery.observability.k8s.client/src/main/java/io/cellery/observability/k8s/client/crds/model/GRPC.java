@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.cells.model;
+package io.cellery.observability.k8s.client.crds.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -26,86 +26,60 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
+
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This represents the serializable class for HTTP in cell yaml.
- * */
+ * This is used to represent TCP Ingress_Type
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-        "authenticate",
-        "backend",
-        "context",
-        "definitions",
-        "global"
+        "port",
+        "backendHost",
+        "backendPort"
 })
 @JsonDeserialize(using = com.fasterxml.jackson.databind.JsonDeserializer.None.class)
-public class HTTP implements KubernetesResource {
-
+public class GRPC implements KubernetesResource {
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("authenticate")
-    private Boolean authenticate;
-    @JsonProperty("backend")
-    private String backend;
-    @JsonProperty("context")
-    private String context;
-    @JsonProperty("definitions")
-    private Object definitions;
-    @JsonProperty("global")
-    private Boolean global;
+    @JsonProperty("port")
+    private Integer port;
+    @JsonProperty("backendHost")
+    private String backendHost;
+    @JsonProperty("backendPort")
+    private Integer backendPort;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
-    @JsonProperty("authenticate")
-    public Boolean getAuthenticate() {
-        return authenticate;
+    @JsonProperty("port")
+    public Integer getPort() {
+        return port;
     }
 
-    @JsonProperty("authenticate")
-    public void setAuthenticate(Boolean authenticate) {
-        this.authenticate = authenticate;
+    @JsonProperty("port")
+    public void setPort(Integer port) {
+        this.port = port;
     }
 
-    @JsonProperty("backend")
-    public String getBackend() {
-        return backend;
+    @JsonProperty("backendHost")
+    public String getBackendHost() {
+        return backendHost;
     }
 
-    @JsonProperty("backend")
-    public void setBackend(String backend) {
-        this.backend = backend;
+    @JsonProperty("backendHost")
+    public void setBackendHost(String backendHost) {
+        this.backendHost = backendHost;
     }
 
-    @JsonProperty("context")
-    public String getContext() {
-        return context;
+    @JsonProperty("backendPort")
+    public Integer getBackendPort() {
+        return backendPort;
     }
 
-    @JsonProperty("context")
-    public void setContext(String context) {
-        this.context = context;
-    }
-
-    @JsonProperty("definitions")
-    public Object getDefinitions() {
-        return definitions;
-    }
-
-    @JsonProperty("definitions")
-    public void setDefinitions(Object definitions) {
-        this.definitions = definitions;
-    }
-
-    @JsonProperty("global")
-    public Boolean getGlobal() {
-        return global;
-    }
-
-    @JsonProperty("global")
-    public void setGlobal(Boolean global) {
-        this.global = global;
+    @JsonProperty("backendPort")
+    public void setBackendPort(Integer backendPort) {
+        this.backendPort = backendPort;
     }
 
     @JsonAnyGetter
@@ -117,4 +91,5 @@ public class HTTP implements KubernetesResource {
     public void setAdditionalProperty(String name, Object value) {
         this.additionalProperties.put(name, value);
     }
+
 }

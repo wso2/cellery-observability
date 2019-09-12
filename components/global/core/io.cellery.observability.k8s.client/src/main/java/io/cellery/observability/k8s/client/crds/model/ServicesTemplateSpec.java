@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.cells.model;
+package io.cellery.observability.k8s.client.crds.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -42,8 +42,7 @@ import java.util.Map;
         "serviceAccountName",
         "servicePort"
 })
-@JsonDeserialize(using = com.fasterxml.jackson.databind.JsonDeserializer.None.class)
-
+@JsonDeserialize
 public class ServicesTemplateSpec implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
@@ -61,7 +60,7 @@ public class ServicesTemplateSpec implements KubernetesResource {
     @JsonProperty("servicePort")
     private Integer servicePort;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new HashMap<>();
 
     @JsonProperty("autoscaling")
     public Object getAutoscaling() {

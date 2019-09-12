@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.cells.model;
+package io.cellery.observability.k8s.client.crds.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -39,8 +39,8 @@ import java.util.Map;
         "backendHost",
         "backendPort"
 })
-@JsonDeserialize(using = com.fasterxml.jackson.databind.JsonDeserializer.None.class)
-public class GRPC implements KubernetesResource {
+@JsonDeserialize
+public class TCP implements KubernetesResource {
     private static final long serialVersionUID = 1L;
 
     @JsonProperty("port")
