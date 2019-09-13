@@ -49,14 +49,6 @@ public class CodecTestCase {
         }
     }
 
-    @Test
-    public void testDecodingThriftSpans() throws Exception {
-        List<Span> spansList = generateSpans();
-        byte[] bytes = SpanBytesEncoder.THRIFT.encodeList(spansList);
-        List<ZipkinSpan> decodedSpans = Codec.decodeThriftData(bytes);
-        assertEqual(decodedSpans, spansList);
-    }
-
     /**
      * Generate spans list for testing.
      *

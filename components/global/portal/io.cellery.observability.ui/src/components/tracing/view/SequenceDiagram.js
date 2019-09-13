@@ -358,18 +358,19 @@ class SequenceDiagram extends React.Component {
         tree.walk((span, data) => {
             let linkSource = data;
             if (!Constants.System.SIDECAR_AUTH_FILTER_OPERATION_NAME_PATTERN.test(span.operationName)
-                && !Constants.System.ISTIO_MIXER_NAME_PATTERN.test(span.serviceName)
-                && (!linkSource || resolveActorName(linkSource) !== resolveActorName(span))) {
+                && !Constants.System.ISTIO_MIXER_NAME_PATTERN.test(span.serviceName)) {
                 const linkTarget = span;
-                if (linkSource && linkTarget.kind === Constants.Span.Kind.SERVER) { // Ending link traversing
-                    const linkSourceActor = resolveActorName(linkSource);
-                    const linkTargetActor = resolveActorName(linkTarget);
-                    actions.push(`${linkSourceActor}->>+${linkTargetActor}: `
-                        + `Call ${linkTargetActor} [${resolveCallingId(actionId)}] \n`);
-                    linkTarget.actionId = actionId;
-                    actionId += 1;
-                    linkSource = null;
-                } else if (!linkSource && span.kind === Constants.Span.Kind.CLIENT) { // Starting link traversing
+                if (linkSource) {
+                    if (resolveActorName(linkSource) !== resolveActorName(span)) { // Ending link traversing
+                        const linkSourceActor = resolveActorName(linkSource);
+                        const linkTargetActor = resolveActorName(linkTarget);
+                        actions.push(`${linkSourceActor}->>+${linkTargetActor}: `
+                            + `Call ${linkTargetActor} [${resolveCallingId(actionId)}] \n`);
+                        linkTarget.actionId = actionId;
+                        actionId += 1;
+                        linkSource = null;
+                    }
+                } else { // Starting link traversing
                     linkSource = span;
                 }
                 addActorIfNotPresent(span);
@@ -379,9 +380,9 @@ class SequenceDiagram extends React.Component {
             const linkSource = span;
             const linkTarget = data;
             if (!Constants.System.SIDECAR_AUTH_FILTER_OPERATION_NAME_PATTERN.test(linkSource.operationName)
-                && !Constants.System.ISTIO_MIXER_NAME_PATTERN.test(linkSource.serviceName)
-                && (!linkTarget || resolveActorName(linkTarget) !== resolveActorName(linkSource))) {
-                if (linkTarget && linkSource.kind === Constants.Span.Kind.SERVER) { // Ending link traversing
+                && !Constants.System.ISTIO_MIXER_NAME_PATTERN.test(linkSource.serviceName)) {
+                if (linkTarget && resolveActorName(linkTarget) !== resolveActorName(linkSource)) {
+                    // Ending link traversing
                     actions.push(`${resolveActorName(linkSource)}-->>-${resolveActorName(linkTarget)}: Return \n`);
                 }
             }

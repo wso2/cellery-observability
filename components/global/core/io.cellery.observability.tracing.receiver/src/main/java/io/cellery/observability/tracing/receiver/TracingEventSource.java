@@ -27,7 +27,6 @@ import io.cellery.observability.tracing.receiver.internal.Codec;
 import io.cellery.observability.tracing.receiver.internal.ZipkinSpan;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
-import org.apache.thrift.TException;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.annotation.Parameter;
@@ -45,7 +44,6 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * This class implements the event source, where the received telemetry attributes can be injected to streams.
@@ -203,23 +201,15 @@ public class TracingEventSource extends Source {
             }
 
             // Decoding the Zipkin spans
+            // Decoding Zipkin spans (encoding is automatically detected)
             List<ZipkinSpan> spans = null;
-            if (Objects.equals(contentType, Constants.HTTP_APPLICATION_THRIFT_CONTENT_TYPE)) {
-                try {
-                    // Decoding Thrift encoded Zipkin spans
-                    spans = Codec.decodeThriftData(byteArray);
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Decoded " + spans.size() + " Thrift encoded Zipkin Spans");
-                    }
-                } catch (TException e) {
-                    logger.error("Failed to decode Thrift tracing data", e);
-                }
-            } else {
-                // Decoding Zipkin spans (encoding is automatically detected)
+            try {
                 spans = Codec.decodeData(byteArray);
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Decoded " + spans.size() + " Thrift encoded Zipkin Spans");
+                    logger.debug("Decoded " + spans.size() + " Zipkin Spans");
                 }
+            } catch (Throwable t) {
+                logger.error("Failed to parse received tracing data", t);
             }
 
             if (spans != null) {

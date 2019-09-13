@@ -245,8 +245,7 @@ public class TracingEventSourceTestCase {
         Assert.assertEquals(data[5], "CLIENT");
         Assert.assertNotEquals(data[6], 10001);
         Assert.assertNotEquals(data[7], 100000001);
-        // "sa": "true" is automatically added
-        Assert.assertEquals(data[8], "{\"keyA2\":\"valueA2\",\"keyA1\":\"valueA1\",\"sa\":\"true\"}");
+        Assert.assertEquals(data[8], "{\"keyA1\":\"valueA1\",\"keyA2\":\"valueA2\"}");
     }
 
     @Test
