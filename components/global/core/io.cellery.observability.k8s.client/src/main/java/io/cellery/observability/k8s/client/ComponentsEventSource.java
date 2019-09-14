@@ -18,12 +18,12 @@
 
 package io.cellery.observability.k8s.client;
 
-import io.cellery.observability.k8s.client.crds.CellImpl;
-import io.cellery.observability.k8s.client.crds.CellList;
-import io.cellery.observability.k8s.client.crds.CompositeImpl;
-import io.cellery.observability.k8s.client.crds.CompositeList;
-import io.cellery.observability.k8s.client.crds.DoneableCell;
-import io.cellery.observability.k8s.client.crds.DoneableComposite;
+import io.cellery.observability.k8s.client.crds.cell.CellImpl;
+import io.cellery.observability.k8s.client.crds.cell.CellList;
+import io.cellery.observability.k8s.client.crds.cell.DoneableCell;
+import io.cellery.observability.k8s.client.crds.composite.CompositeImpl;
+import io.cellery.observability.k8s.client.crds.composite.CompositeList;
+import io.cellery.observability.k8s.client.crds.composite.DoneableComposite;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;

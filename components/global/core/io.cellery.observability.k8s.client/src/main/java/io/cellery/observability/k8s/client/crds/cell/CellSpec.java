@@ -16,14 +16,14 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds;
+package io.cellery.observability.k8s.client.crds.cell;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.cellery.observability.k8s.client.crds.model.GatewayTemplate;
-import io.cellery.observability.k8s.client.crds.model.ServicesTemplate;
+import io.cellery.observability.k8s.client.crds.gateway.GatewayTemplate;
+import io.cellery.observability.k8s.client.crds.service.ServicesTemplate;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 import java.util.List;
 

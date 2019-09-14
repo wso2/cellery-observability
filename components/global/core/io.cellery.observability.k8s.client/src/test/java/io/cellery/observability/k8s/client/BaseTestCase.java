@@ -18,19 +18,19 @@
 
 package io.cellery.observability.k8s.client;
 
-import io.cellery.observability.k8s.client.crds.Cell;
-import io.cellery.observability.k8s.client.crds.CellImpl;
-import io.cellery.observability.k8s.client.crds.CellSpec;
-import io.cellery.observability.k8s.client.crds.Composite;
-import io.cellery.observability.k8s.client.crds.CompositeImpl;
-import io.cellery.observability.k8s.client.crds.CompositeSpec;
-import io.cellery.observability.k8s.client.crds.model.GRPC;
-import io.cellery.observability.k8s.client.crds.model.GatewayTemplate;
-import io.cellery.observability.k8s.client.crds.model.GatewayTemplateSpec;
-import io.cellery.observability.k8s.client.crds.model.HTTP;
-import io.cellery.observability.k8s.client.crds.model.ServicesTemplate;
-import io.cellery.observability.k8s.client.crds.model.ServicesTemplateSpec;
-import io.cellery.observability.k8s.client.crds.model.TCP;
+import io.cellery.observability.k8s.client.crds.cell.Cell;
+import io.cellery.observability.k8s.client.crds.cell.CellImpl;
+import io.cellery.observability.k8s.client.crds.cell.CellSpec;
+import io.cellery.observability.k8s.client.crds.composite.Composite;
+import io.cellery.observability.k8s.client.crds.composite.CompositeImpl;
+import io.cellery.observability.k8s.client.crds.composite.CompositeSpec;
+import io.cellery.observability.k8s.client.crds.gateway.GRPC;
+import io.cellery.observability.k8s.client.crds.gateway.GatewayTemplate;
+import io.cellery.observability.k8s.client.crds.gateway.GatewayTemplateSpec;
+import io.cellery.observability.k8s.client.crds.gateway.HTTP;
+import io.cellery.observability.k8s.client.crds.gateway.TCP;
+import io.cellery.observability.k8s.client.crds.service.ServicesTemplate;
+import io.cellery.observability.k8s.client.crds.service.ServicesTemplateSpec;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Pod;

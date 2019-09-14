@@ -16,47 +16,32 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds.model;
+package io.cellery.observability.k8s.client.crds.cell;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.fabric8.kubernetes.api.model.KubernetesResource;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.client.CustomResource;
 
 /**
- * This represents the serializable class for GatewayTemplate.
- * */
+ * This class implements the Event Source which can be used to listen for k8s cell changes.
+ */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class GatewayTemplate implements KubernetesResource {
+public class CellImpl extends CustomResource implements Cell {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("metadata")
-    private ObjectMeta metadata;
     @JsonProperty("spec")
-    private GatewayTemplateSpec spec;
+    private CellSpec spec;
 
-    @JsonProperty("metadata")
-    public ObjectMeta getMetadata() {
-        return metadata;
-    }
-
-    @JsonProperty("metadata")
-    public void setMetadata(ObjectMeta metadata) {
-        this.metadata = metadata;
-    }
-
-    @JsonProperty("spec")
-    public GatewayTemplateSpec getSpec() {
+    public CellSpec getSpec() {
         return spec;
     }
 
-    @JsonProperty("spec")
-    public void setSpec(GatewayTemplateSpec spec) {
+    public void setSpec(CellSpec spec) {
         this.spec = spec;
     }
 

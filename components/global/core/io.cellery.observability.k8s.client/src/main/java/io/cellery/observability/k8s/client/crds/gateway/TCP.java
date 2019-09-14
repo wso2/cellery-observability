@@ -16,36 +16,59 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds;
+package io.cellery.observability.k8s.client.crds.gateway;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.fabric8.kubernetes.client.CustomResource;
-
-import javax.validation.Valid;
+import io.fabric8.kubernetes.api.model.KubernetesResource;
 
 /**
- * This class implements the Event Source which can be used to listen for k8s composite changes.
+ * This is used to represent TCP Ingress Type.
  */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CompositeImpl extends CustomResource implements Composite {
+public class TCP implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("spec")
-    @Valid
-    private CompositeSpec spec;
+    @JsonProperty("port")
+    private Integer port;
+    @JsonProperty("backendHost")
+    private String backendHost;
+    @JsonProperty("backendPort")
+    private Integer backendPort;
 
-    public CompositeSpec getSpec() {
-        return spec;
+    @JsonProperty("port")
+    public Integer getPort() {
+        return port;
     }
 
-    public void setSpec(CompositeSpec spec) {
-        this.spec = spec;
+    @JsonProperty("port")
+    public void setPort(Integer port) {
+        this.port = port;
+    }
+
+    @JsonProperty("backendHost")
+    public String getBackendHost() {
+        return backendHost;
+    }
+
+    @JsonProperty("backendHost")
+    public void setBackendHost(String backendHost) {
+        this.backendHost = backendHost;
+    }
+
+    @JsonProperty("backendPort")
+    public Integer getBackendPort() {
+        return backendPort;
+    }
+
+    @JsonProperty("backendPort")
+    public void setBackendPort(Integer backendPort) {
+        this.backendPort = backendPort;
     }
 
 }
