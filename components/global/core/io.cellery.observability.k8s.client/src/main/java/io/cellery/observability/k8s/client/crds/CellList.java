@@ -23,7 +23,7 @@ import io.fabric8.kubernetes.client.CustomResourceList;
 /**
  * This class represents the List resource for Cellery cells.
  */
-public class CellList extends CustomResourceList<CellImpl> {
+public class CellList extends CustomResourceList<Cell> {
 
     private static final long serialVersionUID = 1L;
 
