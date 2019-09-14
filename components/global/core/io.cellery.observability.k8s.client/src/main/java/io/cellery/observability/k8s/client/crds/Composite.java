@@ -18,16 +18,15 @@
 
 package io.cellery.observability.k8s.client.crds;
 
-import io.fabric8.kubernetes.api.builder.Function;
-import io.fabric8.kubernetes.client.CustomResourceDoneable;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 
 /**
- * This class represents Doneable resource for Cellery cells.
+ * This interface represents certain methods to be implemented in a Composite.
  */
-public class DoneableCell extends CustomResourceDoneable<CellImpl> {
+public interface Composite extends HasMetadata {
 
-    public DoneableCell(CellImpl resource, Function<CellImpl, CellImpl> function) {
-        super(resource, function);
-    }
+    CompositeSpec getSpec();
+
+    String getKind();
 
 }

@@ -21,9 +21,12 @@ package io.cellery.observability.k8s.client.crds;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
 /**
- * This interface represents certain methods to be implemented accordingly.
+ * This interface represents certain methods to be implemented in a Cell.
  */
 public interface Cell extends HasMetadata {
+
     CellSpec getSpec();
+
     String getKind();
+
 }

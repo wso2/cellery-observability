@@ -18,28 +18,19 @@
 
 package io.cellery.observability.k8s.client.crds.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
-import java.util.HashMap;
-import java.util.Map;
-
 
 /**
- * This represnets the serializable class for GatewayTemplate in cell yaml.
+ * This represents the serializable class for GatewayTemplate.
  * */
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-        "metadata",
-        "spec"
-})
 @JsonDeserialize
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class GatewayTemplate implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
@@ -48,8 +39,6 @@ public class GatewayTemplate implements KubernetesResource {
     private ObjectMeta metadata;
     @JsonProperty("spec")
     private GatewayTemplateSpec spec;
-    @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<>();
 
     @JsonProperty("metadata")
     public ObjectMeta getMetadata() {
@@ -71,13 +60,4 @@ public class GatewayTemplate implements KubernetesResource {
         this.spec = spec;
     }
 
-    @JsonAnyGetter
-    public Map<String, Object> getAdditionalProperties() {
-        return this.additionalProperties;
-    }
-
-    @JsonAnySetter
-    public void setAdditionalProperty(String name, Object value) {
-        this.additionalProperties.put(name, value);
-    }
 }
