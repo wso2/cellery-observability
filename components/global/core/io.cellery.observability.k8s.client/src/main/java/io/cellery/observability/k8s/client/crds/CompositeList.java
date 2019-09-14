@@ -23,7 +23,7 @@ import io.fabric8.kubernetes.client.CustomResourceList;
 /**
  * This class represents the List resource for Cellery composites.
  */
-public class CompositeList extends CustomResourceList<CompositeImpl> {
+public class CompositeList extends CustomResourceList<Composite> {
 
     private static final long serialVersionUID = 1L;
 
