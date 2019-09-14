@@ -49,17 +49,16 @@ public class SiddhiStoreQueryManager {
             "aggregate every sec...year;";
     private static final String K8S_POD_INFO_TABLE = "@Store(type=\"rdbms\", " +
             "datasource=\"CELLERY_OBSERVABILITY_DB\")\n" +
-            "@PrimaryKey(\"cell\", \"component\", \"name\")\n" +
+            "@PrimaryKey(\"instance\", \"component\", \"name\")\n" +
             "@purge(enable=\"false\")\n" +
-            "define table K8sPodInfoTable (cell string, component string, name string, creationTimestamp long, " +
-            "lastKnownAliveTimestamp long, nodeName string);";
-
+            "define table K8sPodInfoTable (instance string, kind string, component string, name string," +
+            "creationTimestamp long, lastKnownAliveTimestamp long, nodeName string);";
     private static final String K8S_COMPONENT_INFO_TABLE = "@Store(type=\"rdbms\", " +
             "datasource=\"CELLERY_OBSERVABILITY_DB\")\n" +
-            "@PrimaryKey(\"cell\", \"component\")\n" +
+            "@PrimaryKey(\"instance\", \"component\")\n" +
             "@purge(enable=\"false\")\n" +
-            "define table K8sComponentInfoTable(cell string, component string, creationTimestamp long," +
-            " lastKnownActiveTimestamp long, ingressTypes string)";
+            "define table K8sComponentInfoTable(instance string, kind string, component string, " +
+            "creationTimestamp long, lastKnownActiveTimestamp long, ingressTypes string)";
 
     private static final String SIDDHI_APP = DISTRIBUTED_TRACING_TABLE_DEFINITION + "\n" +
             REQUEST_AGGREGATION_DEFINITION + "\n" + K8S_POD_INFO_TABLE  + "\n" + K8S_COMPONENT_INFO_TABLE;

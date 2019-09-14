@@ -3,57 +3,56 @@
 
 define trigger K8sScrapeTrigger at every 10 min;
 
-@source(type="k8s-component-pods",
-        @map(type="keyvalue", fail.on.missing.attribute="false"))
-define stream K8sPodEventSourceStream(cell string, component string, podName string, creationTimestamp long,
+@source(type="k8s-component-pods", @map(type="keyvalue", fail.on.missing.attribute="false"))
+define stream K8sPodEventSourceStream(instance string, kind string, component string, podName string, creationTimestamp long,
                                       deletionTimestamp long, nodeName string, status string, action string);
 
 @sink(type="inMemory", topic="k8s-component-pods", @map(type="passThrough"))
-define stream K8sComponentPodsInMemorySink(cell string, component string, name string, creationTimestamp long,
+define stream K8sComponentPodsInMemorySink(instance string, kind string, component string, name string, creationTimestamp long,
                                            lastKnownAliveTimestamp long, nodeName string, status string, action string);
 
 @Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB")
-@PrimaryKey("cell", "component", "name")
+@PrimaryKey("instance", "component", "name")
 @purge(enable="false")
-define table K8sPodInfoTable(cell string, component string, name string, creationTimestamp long,
+define table K8sPodInfoTable(instance string, kind string, component string, name string, creationTimestamp long,
                              lastKnownAliveTimestamp long, nodeName string);
 
-define stream K8sComponentPodStream(cell string, component string, name string, creationTimestamp long,
+define stream K8sComponentPodStream(instance string, kind string, component string, name string, creationTimestamp long,
                                     lastKnownAliveTimestamp long, nodeName string, status string, action string);
 
 -- Collecting Pod info from different sources
 -- This collects Pod Info from the K8s watch as well as periodically by scraping K8s API Server
 
 from K8sScrapeTrigger#k8sClient:getComponentPods()
-select cell, component, podName as name, creationTimestamp, triggered_time as lastKnownAliveTimestamp, nodeName,
+select instance, kind, component, podName as name, creationTimestamp, triggered_time as lastKnownAliveTimestamp, nodeName,
     "Running" as status, "" as action
 insert into K8sComponentPodStream;
 
 from K8sPodEventSourceStream
-select cell, component, podName as name, creationTimestamp, deletionTimestamp as lastKnownAliveTimestamp, nodeName,
+select instance, kind, component, podName as name, creationTimestamp, deletionTimestamp as lastKnownAliveTimestamp, nodeName,
     status, action
 insert into K8sComponentPodStream;
 
 -- Inserting Pod info to the K8sPodInfoTable
 
 from K8sComponentPodStream[action == "" or action == "DELETED"]
-select cell, component, name, creationTimestamp, lastKnownAliveTimestamp, nodeName
+select instance, kind, component, name, creationTimestamp, lastKnownAliveTimestamp, nodeName
 update or insert into K8sPodInfoTable
     set K8sPodInfoTable.lastKnownAliveTimestamp = lastKnownAliveTimestamp
-    on K8sPodInfoTable.cell == cell and K8sPodInfoTable.component == component and K8sPodInfoTable.name == name;
+    on K8sPodInfoTable.instance == instance and K8sPodInfoTable.component == component and K8sPodInfoTable.name == name;
 
 from K8sComponentPodStream[action == "CREATED"]
-select cell, component, name, creationTimestamp, creationTimestamp as lastKnownAliveTimestamp, nodeName
+select instance, kind, component, name, creationTimestamp, creationTimestamp as lastKnownAliveTimestamp, nodeName
 update or insert into K8sPodInfoTable
     set K8sPodInfoTable.creationTimestamp = creationTimestamp, K8sPodInfoTable.nodeName = nodeName,
         K8sPodInfoTable.lastKnownAliveTimestamp = lastKnownAliveTimestamp
-    on K8sPodInfoTable.cell == cell and K8sPodInfoTable.component == component and K8sPodInfoTable.name == name;
+    on K8sPodInfoTable.instance == instance and K8sPodInfoTable.component == component and K8sPodInfoTable.name == name;
 
 from K8sComponentPodStream[action == "MODIFIED" or action == "ERROR"]
-select cell, component, name, creationTimestamp, time:timestampInMilliseconds() as lastKnownAliveTimestamp, nodeName
+select instance, kind, component, name, creationTimestamp, time:timestampInMilliseconds() as lastKnownAliveTimestamp, nodeName
 update or insert into K8sPodInfoTable
     set K8sPodInfoTable.lastKnownAliveTimestamp = lastKnownAliveTimestamp
-    on K8sPodInfoTable.cell == cell and K8sPodInfoTable.component == component and K8sPodInfoTable.name == name;
+    on K8sPodInfoTable.instance == instance and K8sPodInfoTable.component == component and K8sPodInfoTable.name == name;
 
 -- Inserting the Pod Info events to the In Memory Sink to be read by the other Siddhi Apps
 
