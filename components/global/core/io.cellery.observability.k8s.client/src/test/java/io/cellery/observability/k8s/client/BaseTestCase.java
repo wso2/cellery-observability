@@ -18,127 +18,157 @@
 
 package io.cellery.observability.k8s.client;
 
+import io.cellery.observability.k8s.client.crds.Cell;
+import io.cellery.observability.k8s.client.crds.CellImpl;
+import io.cellery.observability.k8s.client.crds.CellSpec;
+import io.cellery.observability.k8s.client.crds.Composite;
+import io.cellery.observability.k8s.client.crds.CompositeImpl;
+import io.cellery.observability.k8s.client.crds.CompositeSpec;
+import io.cellery.observability.k8s.client.crds.model.GRPC;
+import io.cellery.observability.k8s.client.crds.model.GatewayTemplate;
+import io.cellery.observability.k8s.client.crds.model.GatewayTemplateSpec;
+import io.cellery.observability.k8s.client.crds.model.HTTP;
+import io.cellery.observability.k8s.client.crds.model.ServicesTemplate;
+import io.cellery.observability.k8s.client.crds.model.ServicesTemplateSpec;
+import io.cellery.observability.k8s.client.crds.model.TCP;
+import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.api.model.PodStatus;
 import io.fabric8.kubernetes.api.model.PodStatusBuilder;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceColumnDefinitionBuilder;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionBuilder;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionNamesBuilder;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
-import org.apache.log4j.Logger;
-import org.powermock.reflect.Whitebox;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * Base Test Case for K8s Clients.
- */
 public class BaseTestCase {
 
-    private static final Logger logger = Logger.getLogger(BaseTestCase.class.getName());
-
     protected static final String TEST_LABEL = "mesh-observability-test";
-    protected static final int WAIT_TIME = 50;
-    protected static final int TIMEOUT = 5000;
 
     protected static final String NODE_NAME = "node1";
     protected static final String CREATION_TIMESTAMP_STRING = "2019-04-30T13:21:22Z";
     protected final long creationTimestamp;
 
-    public BaseTestCase() throws Exception {
+    BaseTestCase() throws Exception {
         creationTimestamp = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
                 .parse(CREATION_TIMESTAMP_STRING).getTime();
     }
 
-    protected KubernetesClient k8sClient;
-    protected KubernetesServer k8sServer;
+    /**
+     * Generate a K8s Cell object.
+     * The returned Cell can be used as one of the returned Cells in K8s Mock Server in expectation mode.
+     *
+     * @param cellName The name of the Cell
+     * @param gatewayTemplate The gateway template to be used
+     * @param servicesTemplates The list of service templates
+     * @return The generated Cell
+     */
+    protected Cell generateCell(String cellName, GatewayTemplate gatewayTemplate,
+                              List<ServicesTemplate> servicesTemplates) {
+        CellSpec cellSpec = new CellSpec();
+        cellSpec.setGatewayTemplate(gatewayTemplate);
+        cellSpec.setServicesTemplates(servicesTemplates);
 
-    @BeforeMethod
-    public void initBaseTestCase() {
-        k8sServer = new KubernetesServer(true, false);
-        k8sServer.before();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Started K8s Mock Server");
-        }
-
-        k8sClient = k8sServer.getClient();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Initialized the K8s Client for the K8s Mock Server");
-        }
-        Whitebox.setInternalState(K8sClientHolder.class, "k8sClient", k8sClient);
-
-        k8sServer.expect()
-                .withPath("/apis/apiextensions.k8s.io/v1beta1/customresourcedefinitions/" + Constants.CELL_CRD_NAME)
-                .andReturn(200, new CustomResourceDefinitionBuilder()
-                        .withNewMetadata()
-                        .withNamespace(Constants.NAMESPACE)
-                        .withName(Constants.CELL_CRD_NAME)
-                        .endMetadata()
-                        .withNewSpec()
-                        .withGroup(Constants.CELL_CRD_GROUP)
-                        .withVersion(Constants.CELL_CRD_VERSION)
-                        .withScope("Namespaces")
-                        .withNames(new CustomResourceDefinitionNamesBuilder()
-                                .withKind(Constants.CELL_KIND)
-                                .withPlural("cells")
-                                .withSingular("cell")
-                                .build())
-                        .addToAdditionalPrinterColumns(new CustomResourceColumnDefinitionBuilder()
-                                .withName("Status")
-                                .withType("string")
-                                .withJSONPath(".status.status")
-                                .build())
-                        .addToAdditionalPrinterColumns(new CustomResourceColumnDefinitionBuilder()
-                                .withName("Gateway")
-                                .withType("string")
-                                .withDescription("Host name of the gateway")
-                                .withJSONPath(".status.gatewayHostname")
-                                .build())
-                        .addToAdditionalPrinterColumns(new CustomResourceColumnDefinitionBuilder()
-                                .withName("Services")
-                                .withType("integer")
-                                .withDescription("Number of services in this cell")
-                                .withJSONPath(".status.serviceCount")
-                                .build())
-                        .addToAdditionalPrinterColumns(new CustomResourceColumnDefinitionBuilder()
-                                .withName("Age")
-                                .withType("date")
-                                .withJSONPath(".metadata.creationTimestamp")
-                                .build())
-                        .endSpec()
-                        .build()
-                )
-                .always();
-    }
-
-    @AfterMethod
-    public void cleanupBaseTestCase() {
-        k8sClient.close();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Closed the K8s Client");
-        }
-        k8sServer.after();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Closed the K8s Mock Server");
-        }
+        CellImpl cell = new CellImpl();
+        cell.setMetadata(new ObjectMetaBuilder()
+                .withName(cellName)
+                .withCreationTimestamp(CREATION_TIMESTAMP_STRING)
+                .build());
+        cell.setSpec(cellSpec);
+        return cell;
     }
 
     /**
-     * Generate a Cellery Component K8s pod object.
+     * Generate a K8s Composite object.
+     * The returned Composite can be used as one of the returned Composites in K8s Mock Server in expectation mode.
+     *
+     * @param compositeName The name of the Composite
+     * @param servicesTemplates The list of service templates
+     * @return The generated Composite
+     */
+    protected Composite generateComposite(String compositeName,
+                                        List<ServicesTemplate> servicesTemplates) {
+        CompositeSpec compositeSpec = new CompositeSpec();
+        compositeSpec.setServicesTemplates(servicesTemplates);
+
+        CompositeImpl composite = new CompositeImpl();
+        composite.setMetadata(new ObjectMetaBuilder()
+                .withName(compositeName)
+                .withCreationTimestamp(CREATION_TIMESTAMP_STRING)
+                .build());
+        composite.setSpec(compositeSpec);
+        return composite;
+    }
+
+    /**
+     * Generate a K8s Gateway Template Object.
+     *
+     * @param type The type of Gateway used
+     * @param host The host added when used with a Web Ingress
+     * @param httpIngresses The HTTP ingresses used by the gateway
+     * @param tcpIngresses The TCP ingresses used by the gateway
+     * @param grpcIngresses The gRPC ingresses
+     * @return The generated Gateway Template
+     */
+    protected GatewayTemplate generateGatewayTemplate(String type, String host, List<HTTP> httpIngresses,
+                                                      List<TCP> tcpIngresses, List<GRPC> grpcIngresses) {
+        GatewayTemplateSpec gatewayTemplateSpec = new GatewayTemplateSpec();
+        gatewayTemplateSpec.setType(type);
+        gatewayTemplateSpec.setHost(host);
+        gatewayTemplateSpec.setTcp(tcpIngresses);
+        gatewayTemplateSpec.setHttp(httpIngresses);
+        gatewayTemplateSpec.setGrpc(grpcIngresses);
+
+        GatewayTemplate gatewayTemplate = new GatewayTemplate();
+        gatewayTemplate.setMetadata(new ObjectMetaBuilder()
+                .withCreationTimestamp(CREATION_TIMESTAMP_STRING)
+                .withName("gateway")
+                .build());
+        gatewayTemplate.setSpec(gatewayTemplateSpec);
+        return gatewayTemplate;
+    }
+
+    /**
+     * Generate a K8s Service Template Object.
+     *
+     * @param serviceName The name of the service
+     * @param protocol    The protocol used by the service
+     * @return The generated Service Template
+     */
+    protected ServicesTemplate generateServicesTemplate(String serviceName, String protocol) {
+        ServicesTemplateSpec servicesTemplateSpec = new ServicesTemplateSpec();
+        servicesTemplateSpec.setContainer(new ContainerBuilder()
+                .withName("test-container")
+                .withNewImage("busybox")
+                .withNewImagePullPolicy("IfNotPresent")
+                .withCommand("tail", "-f", "/dev/null")
+                .build());
+        servicesTemplateSpec.setProtocol(protocol);
+        servicesTemplateSpec.setReplicas(10);
+        servicesTemplateSpec.setServiceAccountName("cellery-service-account");
+        servicesTemplateSpec.setServicePort(9000);
+
+        ServicesTemplate servicesTemplate = new ServicesTemplate();
+        servicesTemplate.setMetadata(new ObjectMetaBuilder()
+                .withName(serviceName)
+                .withCreationTimestamp(CREATION_TIMESTAMP_STRING)
+                .build());
+        servicesTemplate.setSpec(servicesTemplateSpec);
+        return servicesTemplate;
+    }
+
+    /**
+     * Generate a Cellery Cell Component K8s pod object.
      * The returned pod can be used as one of the returned pods in K8s Mock Server in expectation mode.
      *
      * @param cell      The Cell the Pod belongs to
      * @param component The component of the Cell the pod belongs to
      * @return The generated pod
      */
-    protected Pod generateCelleryComponentPod(String cell, String component) {
+    protected Pod generateCelleryCellComponentPod(String cell, String component) {
         String podName = cell + "--" + component;
 
         Map<String, String> labels = new HashMap<>();
@@ -152,13 +182,13 @@ public class BaseTestCase {
     }
 
     /**
-     * Generate a Cellery Gateway K8s pod object.
+     * Generate a Cellery Cell Gateway K8s pod object.
      * The returned pod can be used as one of the returned pods in K8s Mock Server in expectation mode.
      *
      * @param cell The Cell the Pod belongs to
      * @return The generated pod
      */
-    protected Pod generateCelleryGatewayPod(String cell) {
+    protected Pod generateCelleryCellGatewayPod(String cell) {
         String podName = cell + "--gateway";
 
         Map<String, String> labels = new HashMap<>();
@@ -172,14 +202,35 @@ public class BaseTestCase {
     }
 
     /**
-     * Generate a Cellery Component K8s pod object with a failing state.
+     * Generate a Cellery Composite Component K8s pod object.
+     * The returned pod can be used as one of the returned pods in K8s Mock Server in expectation mode.
+     *
+     * @param composite The Composite the Pod belongs to
+     * @param component The component of the Composite the pod belongs to
+     * @return The generated pod
+     */
+    protected Pod generateCelleryCompositeComponentPod(String composite, String component) {
+        String podName = composite + "--" + component;
+
+        Map<String, String> labels = new HashMap<>();
+        labels.put(Constants.COMPOSITE_NAME_LABEL, composite);
+        labels.put(Constants.COMPONENT_NAME_LABEL, composite + "--" + component);
+
+        PodStatus podStatus = new PodStatusBuilder()
+                .withPhase("Running")
+                .build();
+        return generatePod(podName, labels, podStatus);
+    }
+
+    /**
+     * Generate a Cellery Cell Component K8s pod object with a failing state.
      * The returned pod can be used as one of the returned pods in K8s Mock Server in expectation mode.
      *
      * @param cell      The Cell the Pod belongs to
      * @param component The component of the Cell the pod belongs to
      * @return The generated pod
      */
-    protected Pod generateFailingCelleryComponentPod(String cell, String component) {
+    protected Pod generateFailingCelleryCellComponentPod(String cell, String component) {
         String podName = cell + "--" + component;
 
         Map<String, String> labels = new HashMap<>();
@@ -193,18 +244,39 @@ public class BaseTestCase {
     }
 
     /**
-     * Generate a Cellery Gateway K8s pod object with a failing state.
+     * Generate a Cellery Cell Gateway K8s pod object with a failing state.
      * The returned pod can be used as one of the returned pods in K8s Mock Server in expectation mode.
      *
      * @param cell      The Cell the Pod belongs to
      * @return The generated pod
      */
-    protected Pod generateFailingCelleryGatewayPod(String cell) {
+    protected Pod generateFailingCelleryCellGatewayPod(String cell) {
         String podName = cell + "--gateway";
 
         Map<String, String> labels = new HashMap<>();
         labels.put(Constants.CELL_NAME_LABEL, cell);
         labels.put(Constants.GATEWAY_NAME_LABEL, cell + "--gateway");
+
+        PodStatus podStatus = new PodStatusBuilder()
+                .withPhase("ErrImagePull")
+                .build();
+        return generatePod(podName, labels, podStatus);
+    }
+
+    /**
+     * Generate a Cellery Composite Component K8s pod object with a failing state.
+     * The returned pod can be used as one of the returned pods in K8s Mock Server in expectation mode.
+     *
+     * @param composite The Composite the Pod belongs to
+     * @param component The component of the Composite the pod belongs to
+     * @return The generated pod
+     */
+    protected Pod generateFailingCelleryCompositeComponentPod(String composite, String component) {
+        String podName = composite + "--" + component;
+
+        Map<String, String> labels = new HashMap<>();
+        labels.put(Constants.COMPOSITE_NAME_LABEL, composite);
+        labels.put(Constants.COMPONENT_NAME_LABEL, composite + "--" + component);
 
         PodStatus podStatus = new PodStatusBuilder()
                 .withPhase("ErrImagePull")
@@ -242,4 +314,5 @@ public class BaseTestCase {
                 .withStatus(status)
                 .build();
     }
+
 }
