@@ -16,59 +16,38 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds.model;
+package io.cellery.observability.k8s.client.crds.composite;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.cellery.observability.k8s.client.crds.service.ServicesTemplate;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 
+import java.util.List;
+
 /**
- * This is used to represent TCP Ingress Type.
+ * This represents the serializable class for composite spec.
  */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class TCP implements KubernetesResource {
+public class CompositeSpec implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("port")
-    private Integer port;
-    @JsonProperty("backendHost")
-    private String backendHost;
-    @JsonProperty("backendPort")
-    private Integer backendPort;
+    @JsonProperty("servicesTemplates")
+    private List<ServicesTemplate> servicesTemplates = null;
 
-    @JsonProperty("port")
-    public Integer getPort() {
-        return port;
+    @JsonProperty("servicesTemplates")
+    public List<ServicesTemplate> getServicesTemplates() {
+        return servicesTemplates;
     }
 
-    @JsonProperty("port")
-    public void setPort(Integer port) {
-        this.port = port;
-    }
-
-    @JsonProperty("backendHost")
-    public String getBackendHost() {
-        return backendHost;
-    }
-
-    @JsonProperty("backendHost")
-    public void setBackendHost(String backendHost) {
-        this.backendHost = backendHost;
-    }
-
-    @JsonProperty("backendPort")
-    public Integer getBackendPort() {
-        return backendPort;
-    }
-
-    @JsonProperty("backendPort")
-    public void setBackendPort(Integer backendPort) {
-        this.backendPort = backendPort;
+    @JsonProperty("servicesTemplates")
+    public void setServicesTemplates(List<ServicesTemplate> servicesTemplates) {
+        this.servicesTemplates = servicesTemplates;
     }
 
 }

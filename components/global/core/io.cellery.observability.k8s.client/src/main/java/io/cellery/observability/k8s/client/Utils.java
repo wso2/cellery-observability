@@ -18,10 +18,10 @@
 
 package io.cellery.observability.k8s.client;
 
-import io.cellery.observability.k8s.client.crds.Cell;
-import io.cellery.observability.k8s.client.crds.Composite;
-import io.cellery.observability.k8s.client.crds.model.GatewayTemplateSpec;
-import io.cellery.observability.k8s.client.crds.model.ServicesTemplate;
+import io.cellery.observability.k8s.client.crds.cell.Cell;
+import io.cellery.observability.k8s.client.crds.composite.Composite;
+import io.cellery.observability.k8s.client.crds.gateway.GatewayTemplateSpec;
+import io.cellery.observability.k8s.client.crds.service.ServicesTemplate;
 import io.fabric8.kubernetes.api.model.Pod;
 import org.apache.commons.lang3.StringUtils;
 

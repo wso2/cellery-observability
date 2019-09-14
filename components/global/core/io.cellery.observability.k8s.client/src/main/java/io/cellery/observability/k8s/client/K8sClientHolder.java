@@ -17,8 +17,8 @@
  */
 package io.cellery.observability.k8s.client;
 
-import io.cellery.observability.k8s.client.crds.CellImpl;
-import io.cellery.observability.k8s.client.crds.CompositeImpl;
+import io.cellery.observability.k8s.client.crds.cell.CellImpl;
+import io.cellery.observability.k8s.client.crds.composite.CompositeImpl;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;

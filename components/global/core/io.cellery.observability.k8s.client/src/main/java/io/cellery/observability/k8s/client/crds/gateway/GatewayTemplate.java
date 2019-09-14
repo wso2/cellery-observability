@@ -16,59 +16,48 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds.model;
+package io.cellery.observability.k8s.client.crds.gateway;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
 
 /**
- * This is used to represent TCP Ingress_Type
- */
+ * This represents the serializable class for GatewayTemplate.
+ * */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class GRPC implements KubernetesResource {
+public class GatewayTemplate implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("port")
-    private Integer port;
-    @JsonProperty("backendHost")
-    private String backendHost;
-    @JsonProperty("backendPort")
-    private Integer backendPort;
+    @JsonProperty("metadata")
+    private ObjectMeta metadata;
+    @JsonProperty("spec")
+    private GatewayTemplateSpec spec;
 
-    @JsonProperty("port")
-    public Integer getPort() {
-        return port;
+    @JsonProperty("metadata")
+    public ObjectMeta getMetadata() {
+        return metadata;
     }
 
-    @JsonProperty("port")
-    public void setPort(Integer port) {
-        this.port = port;
+    @JsonProperty("metadata")
+    public void setMetadata(ObjectMeta metadata) {
+        this.metadata = metadata;
     }
 
-    @JsonProperty("backendHost")
-    public String getBackendHost() {
-        return backendHost;
+    @JsonProperty("spec")
+    public GatewayTemplateSpec getSpec() {
+        return spec;
     }
 
-    @JsonProperty("backendHost")
-    public void setBackendHost(String backendHost) {
-        this.backendHost = backendHost;
-    }
-
-    @JsonProperty("backendPort")
-    public Integer getBackendPort() {
-        return backendPort;
-    }
-
-    @JsonProperty("backendPort")
-    public void setBackendPort(Integer backendPort) {
-        this.backendPort = backendPort;
+    @JsonProperty("spec")
+    public void setSpec(GatewayTemplateSpec spec) {
+        this.spec = spec;
     }
 
 }

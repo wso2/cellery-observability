@@ -16,16 +16,16 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds;
+package io.cellery.observability.k8s.client.crds.cell;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
 /**
- * This interface represents certain methods to be implemented in a Composite.
+ * This interface represents certain methods to be implemented in a Cell.
  */
-public interface Composite extends HasMetadata {
+public interface Cell extends HasMetadata {
 
-    CompositeSpec getSpec();
+    CellSpec getSpec();
 
     String getKind();
 
