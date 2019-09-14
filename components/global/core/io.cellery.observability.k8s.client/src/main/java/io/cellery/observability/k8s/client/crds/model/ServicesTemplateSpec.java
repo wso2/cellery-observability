@@ -18,31 +18,19 @@
 
 package io.cellery.observability.k8s.client.crds.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * This represents the serializable class for ServicesTemplate spec in cell yaml.
  * */
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-        "autoscaling",
-        "container",
-        "protocol",
-        "replicas",
-        "serviceAccountName",
-        "servicePort"
-})
 @JsonDeserialize
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ServicesTemplateSpec implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
@@ -59,8 +47,6 @@ public class ServicesTemplateSpec implements KubernetesResource {
     private String serviceAccountName;
     @JsonProperty("servicePort")
     private Integer servicePort;
-    @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<>();
 
     @JsonProperty("autoscaling")
     public Object getAutoscaling() {
@@ -120,16 +106,6 @@ public class ServicesTemplateSpec implements KubernetesResource {
     @JsonProperty("servicePort")
     public void setServicePort(Integer servicePort) {
         this.servicePort = servicePort;
-    }
-
-    @JsonAnyGetter
-    public Map<String, Object> getAdditionalProperties() {
-        return this.additionalProperties;
-    }
-
-    @JsonAnySetter
-    public void setAdditionalProperty(String name, Object value) {
-        this.additionalProperties.put(name, value);
     }
 
 }

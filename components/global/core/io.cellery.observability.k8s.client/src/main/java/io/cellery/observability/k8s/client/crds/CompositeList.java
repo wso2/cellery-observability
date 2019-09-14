@@ -18,31 +18,13 @@
 
 package io.cellery.observability.k8s.client.crds;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.fabric8.kubernetes.client.CustomResource;
+import io.fabric8.kubernetes.client.CustomResourceList;
 
 /**
- * This class implements the Event Source which can be used to listen for k8s cell changes.
+ * This class represents the List resource for Cellery composites.
  */
-@JsonDeserialize
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class CellImpl extends CustomResource implements Cell {
+public class CompositeList extends CustomResourceList<CompositeImpl> {
 
     private static final long serialVersionUID = 1L;
-
-    @JsonProperty("spec")
-    private CellSpec spec;
-
-    public CellSpec getSpec() {
-        return spec;
-    }
-
-    public void setSpec(CellSpec spec) {
-        this.spec = spec;
-    }
 
 }
