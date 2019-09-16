@@ -109,7 +109,7 @@ public class DistributedTracingAPI {
             }
 
             Object[][] traceIdResults = siddhiStoreQueryTemplates.builder()
-                    .setArg(SiddhiStoreQueryTemplates.Params.CELL, cell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, cell)
                     .setArg(SiddhiStoreQueryTemplates.Params.SERVICE_NAME, serviceName)
                     .setArg(SiddhiStoreQueryTemplates.Params.OPERATION_NAME, operationName)
                     .setArg(SiddhiStoreQueryTemplates.Params.MIN_DURATION, minDuration)

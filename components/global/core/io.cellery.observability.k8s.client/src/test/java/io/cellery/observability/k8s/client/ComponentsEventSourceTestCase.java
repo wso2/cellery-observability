@@ -571,7 +571,7 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
         String inStreamDefinition = "@App:name(\"test-siddhi-app\")\n" +
                 "@source(type=\"k8s-components\", @map(type=\"keyvalue\", " +
                 "fail.on.missing.attribute=\"true\"))\n" +
-                "define stream K8sComponentPodsStream (instance string, kind string, component string, " +
+                "define stream K8sComponentPodsStream (instance string, instanceKind string, component string, " +
                 "creationTimestamp long, ingressTypes string, action string);";
         String query = "@info(name = \"query\")\n" +
                 "from K8sComponentPodsStream\n" +

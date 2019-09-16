@@ -220,9 +220,9 @@ public class TracingEventSource extends Source {
                     attributes.put(Constants.ATTRIBUTE_TRACE_ID, span.getTraceId());
                     attributes.put(Constants.ATTRIBUTE_SPAN_ID, span.getId());
                     attributes.put(Constants.ATTRIBUTE_PARENT_ID, span.getParentId());
-                    attributes.put(Constants.ATTRIBUTE_NAME, span.getName());
+                    attributes.put(Constants.ATTRIBUTE_OPERATION_NAME, span.getName());
                     attributes.put(Constants.ATTRIBUTE_SERVICE_NAME, span.getServiceName());
-                    attributes.put(Constants.ATTRIBUTE_KIND, span.getKind());
+                    attributes.put(Constants.ATTRIBUTE_SPAN_KIND, span.getKind());
                     attributes.put(Constants.ATTRIBUTE_TIMESTAMP, span.getTimestamp() / 1000);
                     attributes.put(Constants.ATTRIBUTE_DURATION, span.getDuration() / 1000);
                     attributes.put(Constants.ATTRIBUTE_TAGS, gson.toJson(span.getTags()));

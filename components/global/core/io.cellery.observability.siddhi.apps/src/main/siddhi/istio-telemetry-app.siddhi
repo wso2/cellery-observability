@@ -51,18 +51,20 @@ define stream TelemetryStream(sourceUID string, sourceIP string, sourceLabels st
                               quotaCacheHit bool, contextReporterLocal bool);
 
 @source(type="inMemory", topic="k8s-component-pods", @map(type="passThrough"))
-define stream K8sComponentPodsInMemorySink(instance string, kind string, component string, name string, creationTimestamp long,
-                                           lastKnownAliveTimestamp long, nodeName string, status string, action string);
+define stream K8sComponentPodsInMemorySink(instance string, component string, podName string, instanceKind string,
+                                           creationTimestamp long, lastKnownAliveTimestamp long, nodeName string,
+                                           status string, action string);
 
 @sink(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
-define stream TelemetryInMemorySink(sourceNamespace string, sourceCell string, sourceComponent string,
-                                    sourcePod string, destinationNamespace string, destinationCell string,
+define stream TelemetryInMemorySink(sourceNamespace string, sourceInstance string, sourceInstanceKind string,
+                                    sourceComponent string, sourcePod string, destinationNamespace string,
+                                    destinationInstance string, destinationInstanceKind string,
                                     destinationComponent string, destinationPod string, contextReporterKind string,
                                     requestHeadersMap object, requestPath string, requestMethod string,
                                     requestSizeBytes long, responseCode long, responseDurationNanoSec int,
                                     responseSizeBytes long);
 
-define window K8sComponentPodInfoWindow(podName string, cell string, component string) unique:time(podName, 11 minutes);
+define window K8sComponentPodInfoWindow(podName string, instance string, instanceKind string, component string) unique:time(podName, 11 minutes);
 
 define function extractFromUID[javascript] return string {
     var uid = data[0];
@@ -82,7 +84,7 @@ define function extractFromUID[javascript] return string {
 };
 
 from K8sComponentPodsInMemorySink
-select name as podName, instance as cell, component
+select podName, instance, instanceKind, component
 insert into K8sComponentPodInfoWindow;
 
 from TelemetryStream[(not sourceUID is null) and (not destinationUID is null)]
@@ -124,11 +126,13 @@ insert into ProcessedTelemetryStream;
 from ProcessedTelemetryStream[sourcePod == "global-gateway"]
 select
     sourceNamespace,
-    "" as sourceCell,
+    "" as sourceInstance,
+    "" as sourceInstanceKind,
     sourcePod as sourceComponent,
     "" as sourcePod,
     destinationNamespace,
-    "" as destinationCell,
+    "" as destinationInstance,
+    "" as destinationInstanceKind,
     sourcePod as destinationComponent,
     "" as destinationPod,
     contextReporterKind,
@@ -149,7 +153,8 @@ from NonGlobalGatewayProcessedTelemetryStream as T inner join K8sComponentPodInf
     on T.sourcePod == K.podName
 select
     sourceNamespace,
-    K.cell as sourceCell,
+    K.instance as sourceInstance,
+    K.instanceKind as sourceInstanceKind,
     K.component as sourceComponent,
     sourcePod,
     destinationNamespace,
@@ -162,17 +167,19 @@ select
     responseCode,
     responseDurationNanoSec,
     responseSizeBytes
-insert into SourceCellExtractedTelemetryStream;
+insert into SourceInstanceExtractedTelemetryStream;
 
-from SourceCellExtractedTelemetryStream as T inner join K8sComponentPodInfoWindow as K
+from SourceInstanceExtractedTelemetryStream as T inner join K8sComponentPodInfoWindow as K
     on T.destinationPod == K.podName
 select
     sourceNamespace,
-    sourceCell,
+    sourceInstance,
+    sourceInstanceKind,
     sourceComponent,
     sourcePod,
     destinationNamespace,
-    K.cell as destinationCell,
+    K.instance as destinationInstance,
+    K.instanceKind as destinationInstanceKind,
     K.component as destinationComponent,
     destinationPod,
     contextReporterKind,

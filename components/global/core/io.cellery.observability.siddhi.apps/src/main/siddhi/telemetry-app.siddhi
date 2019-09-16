@@ -20,24 +20,28 @@
 @App:description("Cellery Telemetry app for processing and storing http requests")
 
 @source(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
-define stream TelemetryStreamIn(sourceNamespace string, sourceCell string, sourceComponent string,
-                                sourcePod string, destinationNamespace string, destinationCell string,
+define stream TelemetryStreamIn(sourceNamespace string, sourceInstance string, sourceInstanceKind string,
+                                sourceComponent string, sourcePod string, destinationNamespace string,
+                                destinationInstance string, destinationInstanceKind string,
                                 destinationComponent string, destinationPod string, contextReporterKind string,
                                 requestHeadersMap object, requestPath string, requestMethod string,
                                 requestSizeBytes long, responseCode long, responseDurationNanoSec int,
                                 responseSizeBytes long);
 
-define stream ProcessedRequestsStream(sourceCell string, sourceComponent string, destinationCell string,
+define stream ProcessedRequestsStream(sourceInstance string, sourceInstanceKind string, sourceComponent string,
+                                      destinationInstance string, destinationInstanceKind string,
                                       destinationComponent string, httpResponseGroup string,
                                       responseTimeMilliSec double, requestSizeBytes long, responseSizeBytes long);
 
-@store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB", field.length="sourceCell:253, sourceComponent:253, destinationCell:253, destinationComponent: 253, httpResponseGroup:3")
+@store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB", field.length="sourceInstance:253, sourceInstanceKind:9, sourceComponent:253, destinationInstance:253, destinationInstanceKind:9, destinationComponent: 253, httpResponseGroup:3")
 @purge(enable="false")
 define aggregation RequestAggregation from ProcessedRequestsStream
 select
-    sourceCell,
+    sourceInstance,
+    sourceInstanceKind,
     sourceComponent,
-    destinationCell,
+    destinationInstance,
+    destinationInstanceKind,
     destinationComponent,
     httpResponseGroup,
     sum(responseTimeMilliSec) as totalResponseTimeMilliSec,
@@ -45,7 +49,7 @@ select
     sum(responseSizeBytes) as totalResponseSizeBytes,
     count() as requestCount
 group by
-    sourceCell, sourceComponent, destinationCell, destinationComponent, httpResponseGroup
+    sourceInstance, sourceComponent, destinationInstance, destinationComponent, httpResponseGroup
 aggregate every sec...year;
 
 --
@@ -54,9 +58,11 @@ aggregate every sec...year;
 
 from TelemetryStreamIn
 select
-    sourceCell,
+    sourceInstance,
+    sourceInstanceKind,
     sourceComponent,
-    destinationCell,
+    destinationInstance,
+    destinationInstanceKind,
     destinationComponent,
     contextReporterKind,
     cast(map:get(requestHeadersMap, "x-request-id"), "string") as requestId,
@@ -70,9 +76,11 @@ from every(e1=ProcessedTelemetryStream) ->
     not ProcessedTelemetryStream[e1.requestId == e2.requestId] for 1 minute
     or e2=ProcessedTelemetryStream[e1.requestId == e2.requestId] within 1 minute
 select
-    e1.sourceCell,
+    e1.sourceInstance,
+    e1.sourceInstanceKind,
     e1.sourceComponent,
-    e1.destinationCell,
+    e1.destinationInstance,
+    e1.destinationInstanceKind,
     e1.destinationComponent,
     ifThenElse(e1.httpResponseGroup is null, e2.httpResponseGroup, e1.httpResponseGroup) as httpResponseGroup,
     ifThenElse(e1.responseTimeMilliSec is null, e2.responseTimeMilliSec, e1.responseTimeMilliSec) as responseTimeMilliSec,

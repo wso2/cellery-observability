@@ -55,7 +55,7 @@ public class Constants {
      */
     public static class Attribute {
         public static final String INSTANCE = "instance";
-        public static final String KIND = "kind";
+        public static final String INSTANCE_KIND = "instanceKind";
         public static final String ACTION = "action";
         public static final String COMPONENT = "component";
         public static final String CREATION_TIMESTAMP = "creationTimestamp";

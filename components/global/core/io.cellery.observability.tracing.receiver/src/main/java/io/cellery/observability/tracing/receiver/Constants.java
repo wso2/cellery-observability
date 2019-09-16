@@ -37,26 +37,12 @@ public class Constants {
     public static final String ATTRIBUTE_TRACE_ID = "traceId";
     public static final String ATTRIBUTE_SPAN_ID = "id";
     public static final String ATTRIBUTE_PARENT_ID = "parentId";
-    public static final String ATTRIBUTE_NAME = "name";
+    public static final String ATTRIBUTE_OPERATION_NAME = "operationName";
     public static final String ATTRIBUTE_SERVICE_NAME = "serviceName";
-    public static final String ATTRIBUTE_KIND = "kind";
+    public static final String ATTRIBUTE_SPAN_KIND = "spanKind";
     public static final String ATTRIBUTE_TIMESTAMP = "timestamp";
     public static final String ATTRIBUTE_DURATION = "duration";
     public static final String ATTRIBUTE_TAGS = "tags";
-
-    // Span kinds
-    public static final String CLIENT_SPAN_KIND = "CLIENT";
-    public static final String SERVER_SPAN_KIND = "SERVER";
-    public static final String PRODUCER_SPAN_KIND = "PRODUCER";
-    public static final String CONSUMER_SPAN_KIND = "CONSUMER";
-
-    // Thrift span annotation values
-    public static final String THRIFT_SPAN_ANNOTATION_VALUE_CLIENT_SEND = "cs";
-    public static final String THRIFT_SPAN_ANNOTATION_VALUE_CLIENT_RECEIVE = "cr";
-    public static final String THRIFT_SPAN_ANNOTATION_VALUE_SERVER_SEND = "ss";
-    public static final String THRIFT_SPAN_ANNOTATION_VALUE_SERVER_RECEIVE = "sr";
-    public static final String THRIFT_SPAN_ANNOTATION_VALUE_PRODUCER_SEND = "ms";
-    public static final String THRIFT_SPAN_ANNOTATION_VALUE_CONSUMER_RECEIVER = "wr";
 
     private Constants() {   // Prevent initialization
     }

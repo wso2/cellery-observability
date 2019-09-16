@@ -49,7 +49,7 @@ public class KubernetesAPI {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_PODS_FOR_COMPONENT.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
-                    .setArg(SiddhiStoreQueryTemplates.Params.CELL, cell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, cell)
                     .setArg(SiddhiStoreQueryTemplates.Params.COMPONENT, component)
                     .build()
                     .execute();
@@ -102,7 +102,7 @@ public class KubernetesAPI {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_COMPONENTS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
-                    .setArg(SiddhiStoreQueryTemplates.Params.CELL, cell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, cell)
                     .setArg(SiddhiStoreQueryTemplates.Params.COMPONENT, component)
                     .build()
                     .execute();

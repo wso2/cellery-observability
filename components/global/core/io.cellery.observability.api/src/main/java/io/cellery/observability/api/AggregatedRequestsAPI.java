@@ -77,8 +77,8 @@ public class AggregatedRequestsAPI {
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
-                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_CELL, sourceCell)
-                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_CELL, destinationCell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_INSTANCE, sourceCell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_INSTANCE, destinationCell)
                     .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
                             includeIntraCell
                                     ? "true"
@@ -130,7 +130,7 @@ public class AggregatedRequestsAPI {
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
-                    .setArg(SiddhiStoreQueryTemplates.Params.CELL, cellName)
+                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, cellName)
                     .build()
                     .execute();
             return Response.ok().entity(results).build();
@@ -161,9 +161,9 @@ public class AggregatedRequestsAPI {
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
-                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_CELL, sourceCell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_INSTANCE, sourceCell)
                     .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_COMPONENT, sourceComponent)
-                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_CELL, destinationCell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_INSTANCE, destinationCell)
                     .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_COMPONENT, destinationComponent)
                     .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
                             includeIntraCell

@@ -117,8 +117,8 @@ public class ComponentsEventSource extends Source {
                             for (Map.Entry<String, List<String>> entry : componentIngressTypes.entrySet()) {
                                 Map<String, Object> attributes = new HashMap<>();
                                 attributes.put(Constants.Attribute.INSTANCE, cell.getMetadata().getName());
-                                attributes.put(Constants.Attribute.KIND, Constants.CELL_KIND);
                                 attributes.put(Constants.Attribute.COMPONENT, entry.getKey());
+                                attributes.put(Constants.Attribute.INSTANCE_KIND, Constants.CELL_KIND);
                                 attributes.put(Constants.Attribute.CREATION_TIMESTAMP, creationTimestamp);
                                 attributes.put(Constants.Attribute.INGRESS_TYPES,
                                         StringUtils.join(entry.getValue(), ","));
@@ -162,8 +162,8 @@ public class ComponentsEventSource extends Source {
                             for (Map.Entry<String, List<String>> entry : componentIngressTypes.entrySet()) {
                                 Map<String, Object> attributes = new HashMap<>();
                                 attributes.put(Constants.Attribute.INSTANCE, composite.getMetadata().getName());
-                                attributes.put(Constants.Attribute.KIND, Constants.COMPOSITE_KIND);
                                 attributes.put(Constants.Attribute.COMPONENT, entry.getKey());
+                                attributes.put(Constants.Attribute.INSTANCE_KIND, Constants.COMPOSITE_KIND);
                                 attributes.put(Constants.Attribute.CREATION_TIMESTAMP, creationTimestamp);
                                 attributes.put(Constants.Attribute.INGRESS_TYPES,
                                         StringUtils.join(entry.getValue(), ","));

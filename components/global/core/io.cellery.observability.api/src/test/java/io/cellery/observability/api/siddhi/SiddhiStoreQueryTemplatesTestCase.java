@@ -30,7 +30,7 @@ import org.testng.annotations.Test;
 public class SiddhiStoreQueryTemplatesTestCase {
 
     @Test
-    public void testRequestAggregationCellsTemplate() {
+    public void testRequestAggregationInstancesTemplate() {
         final long queryStartTime = 13213213;
         final long queryEndTime = 973458743;
         final String timeGranularity = "minutes";
@@ -45,13 +45,13 @@ public class SiddhiStoreQueryTemplatesTestCase {
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
                 "per \"" + timeGranularity + "\"\n" +
-                "select sourceCell, destinationCell, httpResponseGroup, " +
+                "select sourceInstance, destinationInstance, httpResponseGroup, " +
                 "sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, sum(requestCount) as requestCount\n" +
-                "group by sourceCell, destinationCell, httpResponseGroup");
+                "group by sourceInstance, destinationInstance, httpResponseGroup");
     }
 
     @Test
-    public void testRequestAggregationCellsMetadataTemplate() {
+    public void testRequestAggregationInstancesMetadataTemplate() {
         final long queryStartTime = 345321523;
         final long queryEndTime = 386573257;
 
@@ -64,33 +64,33 @@ public class SiddhiStoreQueryTemplatesTestCase {
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
                 "per \"seconds\"\n" +
-                "select sourceCell, destinationCell\n" +
-                "group by sourceCell, destinationCell");
+                "select sourceInstance, destinationInstance\n" +
+                "group by sourceInstance, destinationInstance");
     }
 
     @Test
-    public void testRequestAggregationCellsMetricsTemplate() {
+    public void testRequestAggregationInstancesMetricsTemplate() {
         final long queryStartTime = 6784356;
         final long queryEndTime = 83465265;
         final String timeGranularity = "seconds";
-        final String sourceCell = "pet-fe";
-        final String destinationCell = "pet-be";
-        final String condition = "sourceCell != destinationCell";
+        final String sourceInstance = "pet-fe";
+        final String destinationInstance = "pet-be";
+        final String condition = "sourceInstance != destinationInstance";
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELLS_METRICS.builder()
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
                 .setArg(Params.QUERY_END_TIME, queryEndTime)
                 .setArg(Params.TIME_GRANULARITY, timeGranularity)
-                .setArg(Params.SOURCE_CELL, sourceCell)
-                .setArg(Params.DESTINATION_CELL, destinationCell)
+                .setArg(Params.SOURCE_INSTANCE, sourceInstance)
+                .setArg(Params.DESTINATION_INSTANCE, destinationInstance)
                 .setArg(Params.CONDITION, condition)
                 .build();
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
-                "on (\"" + sourceCell + "\" == \"\" or sourceCell == \"" + sourceCell + "\") and " +
-                "(\"" + destinationCell + "\" == \"\" or destinationCell == \"" + destinationCell + "\") " +
-                "and (sourceCell != destinationCell)\n" +
+                "on (\"" + sourceInstance + "\" == \"\" or sourceInstance == \"" + sourceInstance + "\") and " +
+                "(\"" + destinationInstance + "\" == \"\" or destinationInstance == \"" + destinationInstance + "\") " +
+                "and (sourceInstance != destinationInstance)\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
                 "per \"" + timeGranularity + "\"\n" +
                 "select AGG_TIMESTAMP, httpResponseGroup, " +
@@ -101,27 +101,29 @@ public class SiddhiStoreQueryTemplatesTestCase {
     }
 
     @Test
-    public void testRequestAggregationCellComponentsTemplate() {
+    public void testRequestAggregationInstanceComponentsTemplate() {
         final long queryStartTime = 6784356;
         final long queryEndTime = 83465265;
         final String timeGranularity = "hours";
-        final String cell = "pet-be";
+        final String instance = "pet-be";
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELL_COMPONENTS.builder()
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
                 .setArg(Params.QUERY_END_TIME, queryEndTime)
                 .setArg(Params.TIME_GRANULARITY, timeGranularity)
-                .setArg(Params.CELL, cell)
+                .setArg(Params.INSTANCE, instance)
                 .build();
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
-                "on sourceCell == \"" + cell + "\" or destinationCell == \"" + cell + "\"\n" +
+                "on sourceInstance == \"" + instance + "\" or destinationInstance == \"" + instance + "\"\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
                 "per \"" + timeGranularity + "\"\n" +
-                "select sourceCell, sourceComponent, destinationCell, destinationComponent, httpResponseGroup, " +
-                "sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, sum(requestCount) as requestCount\n" +
-                "group by sourceCell, sourceComponent, destinationCell, destinationComponent, httpResponseGroup");
+                "select sourceInstance, sourceComponent, destinationInstance, destinationComponent, " +
+                "httpResponseGroup, sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, " +
+                "sum(requestCount) as requestCount\n" +
+                "group by sourceInstance, sourceComponent, destinationInstance, destinationComponent, " +
+                "httpResponseGroup");
     }
 
     @Test
@@ -138,8 +140,8 @@ public class SiddhiStoreQueryTemplatesTestCase {
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
                 "per \"seconds\"\n" +
-                "select sourceCell, sourceComponent, destinationCell, destinationComponent\n" +
-                "group by sourceCell, sourceComponent, destinationCell, destinationComponent");
+                "select sourceInstance, sourceComponent, destinationInstance, destinationComponent\n" +
+                "group by sourceInstance, sourceComponent, destinationInstance, destinationComponent");
     }
 
     @Test
@@ -147,28 +149,29 @@ public class SiddhiStoreQueryTemplatesTestCase {
         final long queryStartTime = 54362342;
         final long queryEndTime = 63452342;
         final String timeGranularity = "seconds";
-        final String sourceCell = "pet-fe";
+        final String sourceInstance = "pet-fe";
         final String sourceComponent = "portal";
-        final String destinationCell = "pet-be";
+        final String destinationInstance = "pet-be";
         final String destinationComponent = "controller";
-        final String condition = "sourceCell != destinationCell";
+        final String condition = "sourceInstance != destinationInstance";
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_COMPONENTS_METRICS.builder()
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
                 .setArg(Params.QUERY_END_TIME, queryEndTime)
                 .setArg(Params.TIME_GRANULARITY, timeGranularity)
-                .setArg(Params.SOURCE_CELL, sourceCell)
+                .setArg(Params.SOURCE_INSTANCE, sourceInstance)
                 .setArg(Params.SOURCE_COMPONENT, sourceComponent)
-                .setArg(Params.DESTINATION_CELL, destinationCell)
+                .setArg(Params.DESTINATION_INSTANCE, destinationInstance)
                 .setArg(Params.DESTINATION_COMPONENT, destinationComponent)
                 .setArg(Params.CONDITION, condition)
                 .build();
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
-                "on (\"" + sourceCell + "\" == \"\" or sourceCell == \"" + sourceCell + "\") " +
+                "on (\"" + sourceInstance + "\" == \"\" or sourceInstance == \"" + sourceInstance + "\") " +
                 "and (\"" + sourceComponent + "\" == \"\" or sourceComponent == \"" + sourceComponent + "\") " +
-                "and (\"" + destinationCell + "\" == \"\" or destinationCell == \"" + destinationCell + "\")\n" +
+                "and (\"" + destinationInstance + "\" == \"\" " +
+                "or destinationInstance == \"" + destinationInstance + "\")\n" +
                 "and (\"" + destinationComponent + "\" == \"\" or " +
                 "destinationComponent == \"" + destinationComponent + "\") and (" + condition + ")\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
@@ -194,15 +197,15 @@ public class SiddhiStoreQueryTemplatesTestCase {
         Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
                 "on (" + queryStartTime + "L == -1 or startTime >= " + queryStartTime + "L) " +
                 "and (" + queryEndTime + "L == -1 or startTime <= " + queryEndTime + "L)\n" +
-                "select cell, serviceName, operationName\n" +
-                "group by cell, serviceName, operationName");
+                "select instance, serviceName, operationName\n" +
+                "group by instance, serviceName, operationName");
     }
 
     @Test
     public void testDistributedTracingSearchGetTraceIdsTemplate() {
         final long queryStartTime = 234235234;
         final long queryEndTime = 234234124;
-        final String cell = "pet-be";
+        final String instance = "pet-be";
         final String serviceName = "customers";
         final String operationName = "GET /customer/john";
         final long minDuration = 232;
@@ -210,7 +213,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_TRACE_IDS.builder()
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
                 .setArg(Params.QUERY_END_TIME, queryEndTime)
-                .setArg(Params.CELL, cell)
+                .setArg(Params.INSTANCE, instance)
                 .setArg(Params.SERVICE_NAME, serviceName)
                 .setArg(Params.OPERATION_NAME, operationName)
                 .setArg(Params.MIN_DURATION, minDuration)
@@ -218,24 +221,24 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
-                "on (\"" + cell + "\" == \"\" or cell == \"" + cell + "\") and (\"" + serviceName + "\" == \"\" " +
-                "or serviceName == \"" + serviceName + "\") and (\"" + operationName + "\" == \"\" " +
-                "or operationName == \"" + operationName + "\") and (" + minDuration + "L == -1 " +
-                "or duration >= " + minDuration + "L)\n" +
+                "on (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
+                "and (\"" + serviceName + "\" == \"\" or serviceName == \"" + serviceName + "\") " +
+                "and (\"" + operationName + "\" == \"\" or operationName == \"" + operationName + "\") " +
+                "and (" + minDuration + "L == -1 or duration >= " + minDuration + "L)\n" +
                 "select traceId\n" +
                 "group by traceId");
     }
 
     @Test
     public void testDistributedTracingSearchGetTraceIdsWithTagsTemplate() {
-        final String cell = "pet-be";
+        final String instance = "pet-be";
         final String serviceName = "orders";
         final String operationName = "GET /orders/1";
         final long minDuration = 4353;
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates
                 .DISTRIBUTED_TRACING_SEARCH_GET_TRACE_IDS_WITH_TAGS.builder()
-                .setArg(Params.CELL, cell)
+                .setArg(Params.INSTANCE, instance)
                 .setArg(Params.SERVICE_NAME, serviceName)
                 .setArg(Params.OPERATION_NAME, operationName)
                 .setArg(Params.MIN_DURATION, minDuration)
@@ -243,7 +246,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
-                "on (\"pet-be\" == \"\" or cell == \"pet-be\") and " +
+                "on (\"pet-be\" == \"\" or instance == \"pet-be\") and " +
                 "(\"orders\" == \"\" or serviceName == \"orders\") and " +
                 "(\"GET /orders/1\" == \"\" or operationName == \"GET /orders/1\") and " +
                 "(4353L == -1 or duration >= 4353L)\n" +
@@ -270,13 +273,13 @@ public class SiddhiStoreQueryTemplatesTestCase {
                 "on parentId is null and (traceId=\"342fsd23423\" or traceId=\"4ger435f324\") and " +
                 "(4323453L == -1 or duration <= 4323453L) and (21234322L == -1 or startTime >= 21234322L) " +
                 "and (243423L == -1 or startTime <= 243423L)\n" +
-                "select traceId, cell, serviceName, " +
+                "select traceId, instance, serviceName, " +
                 "operationName, startTime, duration\n" +
                 "order by startTime desc");
     }
 
     @Test
-    public void testDistributedTracingSearchGetMultipleCellServiceCountsTemplate() {
+    public void testDistributedTracingSearchGetMultipleInstanceServiceCountsTemplate() {
         final String condition = "traceId=\"wtg345feg\" or traceId=\"54gdf245g\"";
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates
@@ -287,8 +290,8 @@ public class SiddhiStoreQueryTemplatesTestCase {
 
         Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
                 "on " + condition + "\n" +
-                "select traceId, cell, serviceName, count() as count\n" +
-                "group by traceId, cell, serviceName\n" +
+                "select traceId, instance, serviceName, count() as count\n" +
+                "group by traceId, instance, serviceName\n" +
                 "order by startTime desc");
     }
 
@@ -303,7 +306,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
 
         Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
                 "on traceId == \"" + traceId + "\"\n" +
-                "select traceId, spanId, parentId, namespace, cell, serviceName, pod, operationName, kind, " +
+                "select traceId, spanId, parentId, namespace, instance, serviceName, pod, operationName, spanKind, " +
                 "startTime, duration, tags");
     }
 
@@ -311,43 +314,43 @@ public class SiddhiStoreQueryTemplatesTestCase {
     public void testK8sGetPodsForComponentTemplate() {
         final long queryStartTime = 21234322;
         final long queryEndTime = 243423;
-        final String cell = "pet-be";
+        final String instance = "pet-be";
         final String component = "catalog";
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.K8S_GET_PODS_FOR_COMPONENT.builder()
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
                 .setArg(Params.QUERY_END_TIME, queryEndTime)
-                .setArg(Params.CELL, cell)
+                .setArg(Params.INSTANCE, instance)
                 .setArg(Params.COMPONENT, component)
                 .build();
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from K8sPodInfoTable\n" +
-                "on (\"" + cell + "\" == \"\" or cell == \"" + cell + "\") and (\"" + component + "\" == \"\" or " +
-                "component == \"catalog\") and ((creationTimestamp >= 21234322L and " +
-                "creationTimestamp <= 243423L) or (lastKnownAliveTimestamp >= 21234322L and " +
-                "lastKnownAliveTimestamp <= 243423L) or (creationTimestamp <= 21234322L and " +
-                "lastKnownAliveTimestamp >= 243423L))\n" +
-                "select cell, component, name, creationTimestamp, lastKnownAliveTimestamp, nodeName");
+                "on (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
+                "and (\"" + component + "\" == \"\" or component == \"catalog\") " +
+                "and ((creationTimestamp >= 21234322L and creationTimestamp <= 243423L) " +
+                "or (lastKnownAliveTimestamp >= 21234322L and lastKnownAliveTimestamp <= 243423L) " +
+                "or (creationTimestamp <= 21234322L and lastKnownAliveTimestamp >= 243423L))\n" +
+                "select instance, component, name, creationTimestamp, lastKnownAliveTimestamp, nodeName");
     }
 
     @Test
     public void testK8sGetComponentsTemplate() {
         final long queryStartTime = 21234322;
         final long queryEndTime = 243423;
-        final String cell = "pet-be";
+        final String instance = "pet-be";
         final String component = "catalog";
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.K8S_GET_COMPONENTS.builder()
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
                 .setArg(Params.QUERY_END_TIME, queryEndTime)
-                .setArg(Params.CELL, cell)
+                .setArg(Params.INSTANCE, instance)
                 .setArg(Params.COMPONENT, component)
                 .build();
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from K8sComponentInfoTable\n" +
-                "on (\"" + cell + "\" == \"\" or cell == \"" + cell + "\") " +
+                "on (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
                 "and (\"" + component + "\" == \"\" or component == \"" + component + "\") " +
                 "and ((creationTimestamp >= " + queryStartTime + "L " +
                 "and creationTimestamp <= " + queryEndTime + "L) " +
@@ -356,6 +359,6 @@ public class SiddhiStoreQueryTemplatesTestCase {
                 "or (creationTimestamp <= " + queryStartTime + "L " +
                 "and (lastKnownActiveTimestamp >= " + queryEndTime + "L " +
                 "or lastKnownActiveTimestamp == 0L)))\n" +
-                "select cell, component, ingressTypes");
+                "select instance, component, ingressTypes");
     }
 }

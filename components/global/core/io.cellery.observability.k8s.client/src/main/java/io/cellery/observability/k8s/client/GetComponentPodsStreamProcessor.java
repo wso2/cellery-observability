@@ -80,9 +80,9 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
 
         List<Attribute> appendedAttributes = new ArrayList<>();
         appendedAttributes.add(new Attribute(Constants.Attribute.INSTANCE, Attribute.Type.STRING));
-        appendedAttributes.add(new Attribute(Constants.Attribute.KIND, Attribute.Type.STRING));
         appendedAttributes.add(new Attribute(Constants.Attribute.COMPONENT, Attribute.Type.STRING));
         appendedAttributes.add(new Attribute(Constants.Attribute.POD_NAME, Attribute.Type.STRING));
+        appendedAttributes.add(new Attribute(Constants.Attribute.INSTANCE_KIND, Attribute.Type.STRING));
         appendedAttributes.add(new Attribute(Constants.Attribute.CREATION_TIMESTAMP, Attribute.Type.LONG));
         appendedAttributes.add(new Attribute(Constants.Attribute.NODE_NAME, Attribute.Type.STRING));
         return appendedAttributes;
@@ -176,17 +176,17 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
         if (componentPodList != null) {
             for (Pod pod : componentPodList.getItems()) {
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Added event - pod " + pod.getMetadata().getName() + " belonging to \"" + kind
-                            + "\" " + pod.getMetadata().getLabels().get(instanceNameLabel) + " of type " +
+                    logger.debug("Added event - pod " + pod.getMetadata().getName() + " belonging to " + kind
+                            + " " + pod.getMetadata().getLabels().get(instanceNameLabel) + " of type " +
                             (Constants.COMPONENT_NAME_LABEL.equals(componentNameLabel) ? "component" : "gateway") +
                             " to the event");
                 }
 
                 Object[] newData = new Object[6];
                 newData[0] = pod.getMetadata().getLabels().getOrDefault(instanceNameLabel, "");
-                newData[1] = kind;
-                newData[2] = Utils.getComponentName(pod);
-                newData[3] = pod.getMetadata().getName();
+                newData[1] = Utils.getComponentName(pod);
+                newData[2] = pod.getMetadata().getName();
+                newData[3] = kind;
                 newData[4] = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
                         .parse(pod.getMetadata().getCreationTimestamp()).getTime();
                 newData[5] = pod.getSpec().getNodeName();
