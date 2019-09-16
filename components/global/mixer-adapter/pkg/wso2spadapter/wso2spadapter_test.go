@@ -1,7 +1,28 @@
+/*
+ * Copyright (c) ${year} WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *   software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ *  under the License.
+ *
+ */
+
 package wso2spadapter
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"testing"
@@ -19,7 +40,7 @@ import (
 
 const defaultAdapterPort string = "38355"
 
-type DummyServerResponseInfoError struct {
+type DummyServerResponse struct {
 	response bool
 	err      error
 }
@@ -71,11 +92,11 @@ var (
 	}
 )
 
-func (dummyServerResponseInfoError DummyServerResponseInfoError) sendMetrics(attributeMap map[string]interface{}, logger *zap.SugaredLogger, httpClient *http.Client) bool {
-	if dummyServerResponseInfoError.err != nil {
+func (response DummyServerResponse) publishMetrics(attributeMap map[string]interface{}, logger *zap.SugaredLogger, httpClient *http.Client, spServerUrl string) bool {
+	if response.err != nil {
 		return false
 	}
-	return dummyServerResponseInfoError.response
+	return response.response
 }
 
 func TestNewWso2SpAdapter(t *testing.T) {
@@ -83,8 +104,7 @@ func TestNewWso2SpAdapter(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
-	defer logger.Sync()
-	adapter, err := NewWso2SpAdapter(defaultAdapterPort, logger, &http.Client{}, DummyServerResponseInfoError{}, nil)
+	adapter, err := New(defaultAdapterPort, logger, &http.Client{}, DummyServerResponse{}, nil, "")
 	wantStr := "[::]:38355"
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %s", err.Error())
@@ -93,7 +113,12 @@ func TestNewWso2SpAdapter(t *testing.T) {
 		t.Error("Adapter is nil")
 	} else {
 		if adapter.Addr() == wantStr {
-			adapter.Close()
+			defer func() {
+				err := adapter.Close()
+				if err != nil {
+					log.Fatalf("Error closing adapter: %s", err.Error())
+				}
+			}()
 			t.Log("Success, expected address is received")
 		} else {
 			t.Error("Fail, Expected address is not received")
@@ -113,10 +138,10 @@ func TestWso2SpAdapter_HandleMetric(t *testing.T) {
 	}
 
 	wso2SpAdapter := &Wso2SpAdapter{
-		listener:          listener,
-		logger:            logger,
-		httpClient:        &http.Client{},
-		responseInfoError: DummyServerResponseInfoError{},
+		listener:   listener,
+		logger:     logger,
+		httpClient: &http.Client{},
+		publisher:  DummyServerResponse{},
 	}
 
 	var sampleInstances []*metric.InstanceMsg
@@ -136,7 +161,7 @@ func TestWso2SpAdapter_HandleMetric(t *testing.T) {
 		AdapterConfig: anyType,
 	}
 
-	_, err = wso2SpAdapter.HandleMetric(nil, &sampleMetricRequest)
+	_, err = wso2SpAdapter.HandleMetric(context.TODO(), &sampleMetricRequest)
 
 	if err != nil {
 		t.Errorf("Metric could not be handled : %s", err.Error())

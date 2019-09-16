@@ -20,4 +20,6 @@ FROM scratch
 
 COPY ./target/mixer-adapter /mixer-adapter
 
+ENV SP_SERVER_URL "http://wso2sp-worker.cellery-system.svc.cluster.local:9091"
+
 ENTRYPOINT ["/mixer-adapter"]

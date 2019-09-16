@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) ${year} WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *   software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ *  under the License.
+ *
+ */
+
 package e2e
 
 import (
@@ -8,7 +27,7 @@ import (
 	"strings"
 	"testing"
 
-	adapter_integration "istio.io/istio/mixer/pkg/adapter/test"
+	adapterIntegration "istio.io/istio/mixer/pkg/adapter/test"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/wso2spadapter"
@@ -17,7 +36,7 @@ import (
 const defaultAdapterPort string = "38355"
 
 func TestReport(t *testing.T) {
-	adptCrBytes, err := ioutil.ReadFile("./testdata/sample-wso2spadapter.yaml")
+	adapterBytes, err := ioutil.ReadFile("./testdata/sample-wso2spadapter.yaml")
 	if err != nil {
 		t.Fatalf("could not read file: %v", err)
 	}
@@ -42,12 +61,12 @@ func TestReport(t *testing.T) {
 
 	logger, err := logging.NewLogger()
 
-	adapter_integration.RunTest(
+	adapterIntegration.RunTest(
 		t,
 		nil,
-		adapter_integration.Scenario{
+		adapterIntegration.Scenario{
 			Setup: func() (ctx interface{}, err error) {
-				pServer, err := wso2spadapter.NewWso2SpAdapter(defaultAdapterPort, logger, &http.Client{}, wso2spadapter.SpServerResponseInfoError{}, "", "", "")
+				pServer, err := wso2spadapter.New(defaultAdapterPort, logger, &http.Client{}, wso2spadapter.ServerResponse{}, nil, "")
 				if err != nil {
 					return nil, err
 				}
@@ -59,11 +78,16 @@ func TestReport(t *testing.T) {
 			},
 			Teardown: func(ctx interface{}) {
 				s := ctx.(wso2spadapter.Server)
-				s.Close()
+				defer func() {
+					err := s.Close()
+					if err != nil {
+						logger.Warn("Could not close the server")
+					}
+				}()
 			},
-			ParallelCalls: []adapter_integration.Call{
+			ParallelCalls: []adapterIntegration.Call{
 				{
-					CallKind: adapter_integration.REPORT,
+					CallKind: adapterIntegration.REPORT,
 					Attrs:    map[string]interface{}{"request.size": int64(555)},
 				},
 			},
@@ -92,7 +116,7 @@ func TestReport(t *testing.T) {
 				return []string{
 					// CRs for built-in templates (metric is what we need for this test)
 					// are automatically added by the integration test framework.
-					string(adptCrBytes),
+					string(adapterBytes),
 					strings.Replace(operatorCfg, "{ADDRESS}", s.Addr(), 1),
 				}, nil
 			},
