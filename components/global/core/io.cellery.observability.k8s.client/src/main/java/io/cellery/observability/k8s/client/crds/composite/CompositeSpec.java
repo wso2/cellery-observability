@@ -16,33 +16,38 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds;
+package io.cellery.observability.k8s.client.crds.composite;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.fabric8.kubernetes.client.CustomResource;
+import io.cellery.observability.k8s.client.crds.service.ServicesTemplate;
+import io.fabric8.kubernetes.api.model.KubernetesResource;
 
-import javax.validation.Valid;
+import java.util.List;
 
 /**
- * This class implements the Event Source which can be used to listen for k8s cell changes.
+ * This represents the serializable class for composite spec.
  */
-
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CellImpl extends CustomResource implements Cell {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class CompositeSpec implements KubernetesResource {
 
-    @JsonProperty("spec")
-    @Valid
-    private CellSpec spec;
     private static final long serialVersionUID = 1L;
 
-    public CellSpec getSpec() {
-        return spec;
+    @JsonProperty("servicesTemplates")
+    private List<ServicesTemplate> servicesTemplates = null;
+
+    @JsonProperty("servicesTemplates")
+    public List<ServicesTemplate> getServicesTemplates() {
+        return servicesTemplates;
     }
 
-    public void setSpec(CellSpec spec) {
-        this.spec = spec;
+    @JsonProperty("servicesTemplates")
+    public void setServicesTemplates(List<ServicesTemplate> servicesTemplates) {
+        this.servicesTemplates = servicesTemplates;
     }
+
 }

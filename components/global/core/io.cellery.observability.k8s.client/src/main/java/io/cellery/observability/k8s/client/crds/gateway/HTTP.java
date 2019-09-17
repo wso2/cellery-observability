@@ -16,31 +16,20 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds.model;
+package io.cellery.observability.k8s.client.crds.gateway;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * This represents the serializable class for HTTP in cell yaml.
  * */
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-        "authenticate",
-        "backend",
-        "context",
-        "definitions",
-        "global"
-})
 @JsonDeserialize
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class HTTP implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
@@ -55,8 +44,6 @@ public class HTTP implements KubernetesResource {
     private Object definitions;
     @JsonProperty("global")
     private Boolean global;
-    @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
     @JsonProperty("authenticate")
     public Boolean getAuthenticate() {
@@ -108,13 +95,4 @@ public class HTTP implements KubernetesResource {
         this.global = global;
     }
 
-    @JsonAnyGetter
-    public Map<String, Object> getAdditionalProperties() {
-        return this.additionalProperties;
-    }
-
-    @JsonAnySetter
-    public void setAdditionalProperty(String name, Object value) {
-        this.additionalProperties.put(name, value);
-    }
 }

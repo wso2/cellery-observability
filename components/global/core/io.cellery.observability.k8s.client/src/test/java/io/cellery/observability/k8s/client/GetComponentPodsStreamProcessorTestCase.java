@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Test Cases for Get Component Pods Stream Processor.
  */
-public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
+public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtensionTestCase {
 
     private static final Logger logger = Logger.getLogger(GetComponentPodsStreamProcessorTestCase.class.getName());
     private static final String INPUT_STREAM = "inputStream";
@@ -71,88 +71,127 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     @Test
     public void testGetPods() throws Exception {
         initializeSiddhiAppRuntime();
-        expectGetComponentPods(
-                generateCelleryComponentPod("pet-be", "test-a"),
-                generateCelleryComponentPod("pet-be", "test-b"),
-                generateCelleryComponentPod("pet-fe", "test-a")
+        expectGetCellComponentPods(
+                generateCelleryCellComponentPod("pet-be", "test-a"),
+                generateCelleryCellComponentPod("pet-be", "test-b"),
+                generateCelleryCellComponentPod("pet-fe", "test-a")
         );
-        expectGetGatewayPods(generateCelleryGatewayPod("pet-fe"));
+        expectGetCellGatewayPods(generateCelleryCellGatewayPod("pet-fe"));
+        expectGetCompositeComponentPods(
+                generateCelleryCompositeComponentPod("employee-comp", "employee"),
+                generateCelleryCompositeComponentPod("employee-comp", "salary")
+        );
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-01"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 4, eventCount, TIMEOUT);
-        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
-        Assert.assertEquals(eventCount.get(), 4);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 7, eventCount, TIMEOUT);
+        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 3);
+        Assert.assertEquals(eventCount.get(), 6);
         for (Event event : receivedEvents) {
             Object[] data = event.getData();
-            Assert.assertEquals(data.length, 6);
+            Assert.assertEquals(data.length, 7);
             Assert.assertEquals(data[0], "event-01");
-            if ("pet-be--test-a".equals(data[3])) {
-                validatePodData("pet-be", "test-a", data);
-            } else if ("pet-be--test-b".equals(data[3])) {
-                validatePodData("pet-be", "test-b", data);
-            } else if ("pet-fe--test-a".equals(data[3])) {
-                validatePodData("pet-fe", "test-a", data);
-            } else if ("pet-fe--gateway".equals(data[3])) {
-                validatePodData("pet-fe", "gateway", data);
+            if ("pet-be--test-a".equals(data[4])) {
+                validatePodData("pet-be", "Cell", "test-a", data);
+            } else if ("pet-be--test-b".equals(data[4])) {
+                validatePodData("pet-be", "Cell", "test-b", data);
+            } else if ("pet-fe--test-a".equals(data[4])) {
+                validatePodData("pet-fe", "Cell", "test-a", data);
+            } else if ("pet-fe--gateway".equals(data[4])) {
+                validatePodData("pet-fe", "Cell", "gateway", data);
+            } else if ("employee-comp--employee".equals(data[4])) {
+                validatePodData("employee-comp", "Composite", "employee", data);
+            } else if ("employee-comp--salary".equals(data[4])) {
+                validatePodData("employee-comp", "Composite", "salary", data);
             } else {
-                Assert.fail("Received unexpect pod " + data[3]);
+                Assert.fail("Received unexpect pod " + data[4]);
             }
         }
     }
 
     @Test
-    public void testGetPodsWithOnlyComponents() throws Exception {
+    public void testGetPodsWithOnlyCellComponents() throws Exception {
         initializeSiddhiAppRuntime();
-        expectGetComponentPods(
-                generateCelleryComponentPod("pet-be", "test-a"),
-                generateCelleryComponentPod("pet-be", "test-b")
+        expectGetCellComponentPods(
+                generateCelleryCellComponentPod("pet-be", "test-a"),
+                generateCelleryCellComponentPod("pet-be", "test-b")
         );
-        expectGetGatewayPods();
+        expectGetCellGatewayPods();
+        expectGetCompositeComponentPods();
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-02"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
-        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 3, eventCount, TIMEOUT);
+        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 3);
         Assert.assertEquals(eventCount.get(), 2);
         for (Event event : receivedEvents) {
             Object[] data = event.getData();
-            Assert.assertEquals(data.length, 6);
+            Assert.assertEquals(data.length, 7);
             Assert.assertEquals(data[0], "event-02");
-            if ("pet-be--test-a".equals(data[3])) {
-                validatePodData("pet-be", "test-a", data);
-            } else if ("pet-be--test-b".equals(data[3])) {
-                validatePodData("pet-be", "test-b", data);
+            if ("pet-be--test-a".equals(data[4])) {
+                validatePodData("pet-be", "Cell", "test-a", data);
+            } else if ("pet-be--test-b".equals(data[4])) {
+                validatePodData("pet-be", "Cell", "test-b", data);
             } else {
-                Assert.fail("Received unexpect pod " + data[3]);
+                Assert.fail("Received unexpect pod " + data[4]);
             }
         }
     }
 
     @Test
-    public void testGetPodsWithOnlyGateways() throws Exception {
+    public void testGetPodsWithOnlyCellGateways() throws Exception {
         initializeSiddhiAppRuntime();
-        expectGetComponentPods();
-        expectGetGatewayPods(
-                generateCelleryGatewayPod("pet-be"),
-                generateCelleryGatewayPod("pet-fe")
+        expectGetCellComponentPods();
+        expectGetCellGatewayPods(
+                generateCelleryCellGatewayPod("pet-be"),
+                generateCelleryCellGatewayPod("pet-fe")
         );
+        expectGetCompositeComponentPods();
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-03"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
-        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 3, eventCount, TIMEOUT);
+        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 3);
         Assert.assertEquals(eventCount.get(), 2);
         for (Event event : receivedEvents) {
             Object[] data = event.getData();
-            Assert.assertEquals(data.length, 6);
+            Assert.assertEquals(data.length, 7);
             Assert.assertEquals(data[0], "event-03");
-            if ("pet-be--gateway".equals(data[3])) {
-                validatePodData("pet-be", "gateway", data);
-            } else if ("pet-fe--gateway".equals(data[3])) {
-                validatePodData("pet-fe", "gateway", data);
+            if ("pet-be--gateway".equals(data[4])) {
+                validatePodData("pet-be", "Cell", "gateway", data);
+            } else if ("pet-fe--gateway".equals(data[4])) {
+                validatePodData("pet-fe", "Cell", "gateway", data);
             } else {
-                Assert.fail("Received unexpect pod " + data[3]);
+                Assert.fail("Received unexpect pod " + data[4]);
+            }
+        }
+    }
+
+    @Test
+    public void testGetPodsWithOnlyComponentComponents() throws Exception {
+        initializeSiddhiAppRuntime();
+        expectGetCellComponentPods();
+        expectGetCellGatewayPods();
+        expectGetCompositeComponentPods(
+                generateCelleryCompositeComponentPod("stock-comp", "stock"),
+                generateCelleryCompositeComponentPod("hr-comp", "hr")
+        );
+
+        InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
+        inputHandler.send(new Object[]{"event-02"});
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 3, eventCount, TIMEOUT);
+        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 3);
+        Assert.assertEquals(eventCount.get(), 2);
+        for (Event event : receivedEvents) {
+            Object[] data = event.getData();
+            Assert.assertEquals(data.length, 7);
+            Assert.assertEquals(data[0], "event-02");
+            if ("hr-comp--hr".equals(data[4])) {
+                validatePodData("hr-comp", "Composite", "hr", data);
+            } else if ("stock-comp--stock".equals(data[4])) {
+                validatePodData("stock-comp", "Composite", "stock", data);
+            } else {
+                Assert.fail("Received unexpect pod " + data[4]);
             }
         }
     }
@@ -160,13 +199,14 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     @Test
     public void testWithNoPods() throws Exception {
         initializeSiddhiAppRuntime();
-        expectGetComponentPods();
-        expectGetGatewayPods();
+        expectGetCellComponentPods();
+        expectGetCellGatewayPods();
+        expectGetCompositeComponentPods();
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-04"});
         SiddhiTestHelper.waitForEvents(WAIT_TIME, 1, eventCount, TIMEOUT);
-        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
+        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 3);
         Assert.assertEquals(eventCount.get(), 0);
     }
 
@@ -174,10 +214,9 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     public void testWithApiServerDown() throws Exception {
         initializeSiddhiAppRuntime();
 
-        expectGetComponentPods(
-                generateCelleryComponentPod("pet-be-inst", "test-e"),
-                generateCelleryComponentPod("pet-fe-inst", "test-f")
-        );
+        expectGetCellComponentPods(generateCelleryCellComponentPod("pet-be-inst", "test-e"));
+        expectGetCellGatewayPods(generateCelleryCellGatewayPod("pet-fe"));
+        expectGetCompositeComponentPods(generateCelleryCompositeComponentPod("hr-comp", "hr"));
 
         String originalMaster = k8sClient.getConfiguration().getMasterUrl();
         k8sClient.getConfiguration().setMasterUrl("https://localhost");
@@ -191,34 +230,51 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
         k8sClient.getConfiguration().setMasterUrl(originalMaster);
 
         inputHandler.send(new Object[]{"event-05"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
-        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
-        Assert.assertEquals(eventCount.get(), 2);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 4, eventCount, TIMEOUT);
+        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 3);
+        Assert.assertEquals(eventCount.get(), 3);
+        for (Event event : receivedEvents) {
+            Object[] data = event.getData();
+            Assert.assertEquals(data.length, 7);
+            Assert.assertEquals(data[0], "event-05");
+            if ("pet-be-inst--test-e".equals(data[4])) {
+                validatePodData("pet-be-inst", "Cell", "test-e", data);
+            } else if ("hr-comp--hr".equals(data[4])) {
+                validatePodData("hr-comp", "Composite", "hr", data);
+            } else if ("pet-fe--gateway".equals(data[4])) {
+                validatePodData("pet-fe", "Cell", "gateway", data);
+            } else {
+                Assert.fail("Received unexpect pod " + data[4]);
+            }
+        }
     }
 
     @Test
     public void testPersistence() throws Exception {
         initializeSiddhiAppRuntime();
-        expectGetComponentPods(generateCelleryComponentPod("pet-be", "test-a"));
+        expectGetCellComponentPods(generateCelleryCellComponentPod("pet-be", "test-a"));
+        expectGetCellGatewayPods(generateCelleryCellGatewayPod("pet-fe"));
         siddhiAppRuntime.persist();
         siddhiAppRuntime.restoreLastRevision();
-        expectGetGatewayPods(generateCelleryGatewayPod("pet-fe"));
+        expectGetCompositeComponentPods(generateCelleryCompositeComponentPod("stock-comp", "stock"));
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-06"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
-        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
-        Assert.assertEquals(eventCount.get(), 2);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 4, eventCount, TIMEOUT);
+        Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 3);
+        Assert.assertEquals(eventCount.get(), 3);
         for (Event event : receivedEvents) {
             Object[] data = event.getData();
-            Assert.assertEquals(data.length, 6);
+            Assert.assertEquals(data.length, 7);
             Assert.assertEquals(data[0], "event-06");
-            if ("pet-be--test-a".equals(data[3])) {
-                validatePodData("pet-be", "test-a", data);
-            } else if ("pet-fe--gateway".equals(data[3])) {
-                validatePodData("pet-fe", "gateway", data);
+            if ("pet-be--test-a".equals(data[4])) {
+                validatePodData("pet-be", "Cell", "test-a", data);
+            } else if ("pet-fe--gateway".equals(data[4])) {
+                validatePodData("pet-fe", "Cell", "gateway", data);
+            } else if ("stock-comp--stock".equals(data[4])) {
+                validatePodData("stock-comp", "Composite", "stock", data);
             } else {
-                Assert.fail("Received unexpect pod " + data[3]);
+                Assert.fail("Received unexpect pod " + data[4]);
             }
         }
     }
@@ -226,12 +282,15 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     @Test
     public void testTimestampParseFailure() throws Exception {
         initializeSiddhiAppRuntime();
-        Pod componentPod = generateCelleryComponentPod("pet-be", "test-a");
-        componentPod.getMetadata().setCreationTimestamp("invalid-date-1");
-        expectGetComponentPods(componentPod);
-        Pod gatewayPod = generateCelleryGatewayPod("pet-fe");
-        gatewayPod.getMetadata().setCreationTimestamp("invalid-date-2");
-        expectGetGatewayPods(gatewayPod);
+        Pod cellComponentPod = generateCelleryCellComponentPod("pet-be", "test-a");
+        cellComponentPod.getMetadata().setCreationTimestamp("invalid-date-1");
+        expectGetCellComponentPods(cellComponentPod);
+        Pod cellGatewayPod = generateCelleryCellGatewayPod("pet-fe");
+        cellGatewayPod.getMetadata().setCreationTimestamp("invalid-date-3");
+        expectGetCellGatewayPods(cellGatewayPod);
+        Pod compositeComponentPod = generateCelleryCellComponentPod("employee-comp", "employee");
+        compositeComponentPod.getMetadata().setCreationTimestamp("invalid-date-2");
+        expectGetCompositeComponentPods(compositeComponentPod);
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-07"});
@@ -261,7 +320,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
                 "define stream " + INPUT_STREAM + " (inputValue string);";
         String query = "@info(name = \"query\")\n" +
                 "from inputStream#k8sClient:getComponentPods()\n" +
-                "select *\n" +
+                "select inputValue, instance, kind, component, podName, creationTimestamp, nodeName\n" +
                 "insert into outputStream;";
         SiddhiManager siddhiManager = new SiddhiManager();
         siddhiManager.setPersistenceStore(new InMemoryPersistenceStore());
@@ -287,33 +346,44 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseTestCase {
     /**
      * Validate the data from a pod event.
      *
-     * @param cell      The cell the pod belonged to
+     * @param instance  The cell the pod belonged to
+     * @param kind      The kind of the instance
      * @param component The component the pod belonged to
      * @param data      The pod event data
      */
-    private void validatePodData(String cell, String component, Object[] data) {
-        Assert.assertEquals(data[1], cell);
-        Assert.assertEquals(data[2], component);
-        Assert.assertEquals(data[4], creationTimestamp);
-        Assert.assertEquals(data[5], NODE_NAME);
+    private void validatePodData(String instance, String kind, String component, Object[] data) {
+        Assert.assertEquals(data[1], instance);
+        Assert.assertEquals(data[2], kind);
+        Assert.assertEquals(data[3], component);
+        Assert.assertEquals(data[5], creationTimestamp);
+        Assert.assertEquals(data[6], NODE_NAME);
     }
 
     /**
-     * Expect a get component pods call to Mock K8s Server.
+     * Expect a get cell component pods call to Mock K8s Server.
      *
      * @param returnPods The pods to be returned
      */
-    private void expectGetComponentPods(Pod... returnPods) throws Exception {
+    private void expectGetCellComponentPods(Pod... returnPods) throws Exception {
         expectGetPods(Constants.CELL_NAME_LABEL + "," + Constants.COMPONENT_NAME_LABEL, returnPods);
     }
 
     /**
-     * Expect a get gateway pods call to Mock K8s Server.
+     * Expect a get cell gateway pods call to Mock K8s Server.
      *
      * @param returnPods The pods to be returned
      */
-    private void expectGetGatewayPods(Pod... returnPods) throws Exception {
+    private void expectGetCellGatewayPods(Pod... returnPods) throws Exception {
         expectGetPods(Constants.GATEWAY_NAME_LABEL + "," + Constants.CELL_NAME_LABEL, returnPods);
+    }
+
+    /**
+     * Expect a get composite component pods call to Mock K8s Server.
+     *
+     * @param returnPods The pods to be returned
+     */
+    private void expectGetCompositeComponentPods(Pod... returnPods) throws Exception {
+        expectGetPods(Constants.COMPOSITE_NAME_LABEL + "," + Constants.COMPONENT_NAME_LABEL, returnPods);
     }
 
     /**

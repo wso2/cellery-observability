@@ -18,11 +18,17 @@
 
 package io.cellery.observability.k8s.client;
 
+import io.cellery.observability.k8s.client.crds.cell.CellImpl;
+import io.cellery.observability.k8s.client.crds.composite.CompositeImpl;
+import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.apache.log4j.Logger;
 import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.util.Map;
 
 /**
  * K8s Client test case.
@@ -33,7 +39,16 @@ public class K8sClientHolderTestCase {
     @Test
     public void testGetK8sClient() {
         Whitebox.setInternalState(K8sClientHolder.class, "k8sClient", (KubernetesClient) null);
-        Assert.assertNotNull(K8sClientHolder.getK8sClient());
+        KubernetesClient k8sClient = K8sClientHolder.getK8sClient();
+
+        Map<String, Class<? extends KubernetesResource>> registeredCrds =
+                Whitebox.getInternalState(KubernetesDeserializer.class, "MAP");
+        Class<? extends KubernetesResource> cellCrd = registeredCrds.get("mesh.cellery.io/v1alpha1#Cell");
+        Class<? extends KubernetesResource> compositeCrd = registeredCrds.get("mesh.cellery.io/v1alpha1#Composite");
+
+        Assert.assertNotNull(k8sClient);
+        Assert.assertEquals(cellCrd, CellImpl.class);
+        Assert.assertEquals(compositeCrd, CompositeImpl.class);
     }
 
     @Test

@@ -16,13 +16,18 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds;
+package io.cellery.observability.k8s.client.crds.composite;
 
-import io.fabric8.kubernetes.client.CustomResourceList;
+import io.fabric8.kubernetes.api.builder.Function;
+import io.fabric8.kubernetes.client.CustomResourceDoneable;
 
 /**
- * This class represents the List resource for Cellery cells.
+ * This class represents Doneable resource for Cellery composites.
  */
-public class CellList extends CustomResourceList<CellImpl> {
-    private static final long serialVersionUID = 1L;
+public class DoneableComposite extends CustomResourceDoneable<CompositeImpl> {
+
+    public DoneableComposite(CompositeImpl resource, Function<CompositeImpl, CompositeImpl> function) {
+        super(resource, function);
+    }
+
 }

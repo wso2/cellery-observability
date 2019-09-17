@@ -17,7 +17,8 @@
  */
 package io.cellery.observability.k8s.client;
 
-import io.cellery.observability.k8s.client.crds.CellImpl;
+import io.cellery.observability.k8s.client.crds.cell.CellImpl;
+import io.cellery.observability.k8s.client.crds.composite.CompositeImpl;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
@@ -42,10 +43,12 @@ class K8sClientHolder {
                 logger.debug("Created API server client");
             }
 
-            // Register the custom resource kind cell to Kubernetes deserializer to perform deserialization
-            // of cell objects.
-            KubernetesDeserializer.registerCustomKind(Constants.CELL_CRD_GROUP + "/"
+            // Register the Cellery custom resource kinds to Kubernetes deserializer to perform deserialization
+            // of Cellery objects.
+            KubernetesDeserializer.registerCustomKind(Constants.CELLERY_CRD_GROUP + "/"
                     + Constants.CELL_CRD_VERSION, Constants.CELL_KIND, CellImpl.class);
+            KubernetesDeserializer.registerCustomKind(Constants.CELLERY_CRD_GROUP + "/"
+                    + Constants.COMPOSITE_CRD_VERSION, Constants.COMPOSITE_KIND, CompositeImpl.class);
         }
         return k8sClient;
     }

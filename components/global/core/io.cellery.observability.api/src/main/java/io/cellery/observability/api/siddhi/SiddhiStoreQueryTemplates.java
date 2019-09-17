@@ -111,7 +111,7 @@ public enum SiddhiStoreQueryTemplates {
             "select traceId, tags"
     ),
     DISTRIBUTED_TRACING_SEARCH_GET_ROOT_SPAN_METADATA("from DistributedTracingTable\n" +
-            "on traceId == spanId and (${" + Params.CONDITION + "}) " +
+            "on parentId is null and (${" + Params.CONDITION + "}) " +
             "and (${" + Params.MAX_DURATION + "}L == -1 or duration <= ${" + Params.MAX_DURATION + "}L) " +
             "and (${" + Params.QUERY_START_TIME + "}L == -1 or startTime >= ${" + Params.QUERY_START_TIME + "}L) " +
             "and (${" + Params.QUERY_END_TIME + "}L == -1 or startTime <= ${" + Params.QUERY_END_TIME + "}L)\n" +

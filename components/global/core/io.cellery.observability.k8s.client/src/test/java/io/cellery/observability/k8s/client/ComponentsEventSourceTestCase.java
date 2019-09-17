@@ -18,20 +18,11 @@
 
 package io.cellery.observability.k8s.client;
 
-import io.cellery.observability.k8s.client.crds.Cell;
-import io.cellery.observability.k8s.client.crds.CellImpl;
-import io.cellery.observability.k8s.client.crds.CellSpec;
-import io.cellery.observability.k8s.client.crds.model.GRPC;
-import io.cellery.observability.k8s.client.crds.model.GatewayTemplate;
-import io.cellery.observability.k8s.client.crds.model.GatewayTemplateSpec;
-import io.cellery.observability.k8s.client.crds.model.HTTP;
-import io.cellery.observability.k8s.client.crds.model.STSTemplate;
-import io.cellery.observability.k8s.client.crds.model.STSTemplateSpec;
-import io.cellery.observability.k8s.client.crds.model.ServicesTemplate;
-import io.cellery.observability.k8s.client.crds.model.ServicesTemplateSpec;
-import io.cellery.observability.k8s.client.crds.model.TCP;
-import io.fabric8.kubernetes.api.model.ContainerBuilder;
-import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.cellery.observability.k8s.client.crds.cell.Cell;
+import io.cellery.observability.k8s.client.crds.composite.Composite;
+import io.cellery.observability.k8s.client.crds.gateway.GRPC;
+import io.cellery.observability.k8s.client.crds.gateway.HTTP;
+import io.cellery.observability.k8s.client.crds.gateway.TCP;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.WatchEvent;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -63,7 +54,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Test case for Component Event Source.
  */
-public class ComponentsEventSourceTestCase extends BaseTestCase {
+public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
 
     private static final Logger logger = Logger.getLogger(ComponentsEventSourceTestCase.class.getName());
 
@@ -71,8 +62,10 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
     private SiddhiAppRuntime siddhiAppRuntime;
     private List<Event> receivedEvents;
 
-    private static final String WATCH_CELL_URL = "/apis/" + Constants.CELL_CRD_GROUP + "/"
+    private static final String WATCH_CELL_URL = "/apis/" + Constants.CELLERY_CRD_GROUP + "/"
             + Constants.CELL_CRD_VERSION + "/cells?watch=true";
+    private static final String WATCH_COMPOSITE_URL = "/apis/" + Constants.CELLERY_CRD_GROUP + "/"
+            + Constants.COMPOSITE_CRD_VERSION + "/composites?watch=true";
 
     public ComponentsEventSourceTestCase() throws Exception {
         super();
@@ -100,7 +93,7 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
         Cell cellA = generateCell("cell-a",
                 generateGatewayTemplate("Envoy", "pet-store.com", Collections.singletonList(cellAHttpIngressA),
                         null, null),
-                Collections.singletonList(generateServicesTemplate("portal")));
+                Collections.singletonList(generateServicesTemplate("portal", "HTTP")));
         cellA.getMetadata().setCreationTimestamp(null);
 
         TCP cellBTcpIngressA = new TCP();
@@ -109,7 +102,8 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
         cellBTcpIngressA.setPort(7000);
         Cell cellB = generateCell("cell-b",
                 generateGatewayTemplate("Envoy", null, null, Collections.singletonList(cellBTcpIngressA), null),
-                Arrays.asList(generateServicesTemplate("test-a"), generateServicesTemplate("test-b")));
+                Arrays.asList(generateServicesTemplate("test-a", "TCP"),
+                        generateServicesTemplate("test-b", "TCP")));
 
         HTTP cellCHttpIngressA = new HTTP();
         cellCHttpIngressA.setAuthenticate(true);
@@ -124,8 +118,10 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
         Cell cellC = generateCell("cell-c",
                 generateGatewayTemplate("MicroGateway", null, Arrays.asList(cellCHttpIngressA, cellCHttpIngressB),
                         null, null),
-                Arrays.asList(generateServicesTemplate("controller"), generateServicesTemplate("customers"),
-                        generateServicesTemplate("orders"), generateServicesTemplate("catalog")));
+                Arrays.asList(generateServicesTemplate("controller", "HTTP"),
+                        generateServicesTemplate("customers", "HTTP"),
+                        generateServicesTemplate("orders", "HTTP"),
+                        generateServicesTemplate("catalog", "HTTP")));
         cellC.getMetadata().setDeletionTimestamp(deletionTimestamp);
 
         GRPC cellDGrpcIngressA = new GRPC();
@@ -134,8 +130,21 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
         cellDGrpcIngressA.setBackendHost("test-component");
         Cell cellD = generateCell("cell-d",
                 generateGatewayTemplate("Envoy", null, null, null, Collections.singletonList(cellDGrpcIngressA)),
-                Arrays.asList(generateServicesTemplate("test-component"),
-                        generateServicesTemplate("test-component-alt")));
+                Arrays.asList(generateServicesTemplate("test-component", "GRPC"),
+                        // Ingress can be lower case as well
+                        generateServicesTemplate("test-component-alt", "grpc")));
+
+        Composite compositeA = generateComposite("composite-a",
+                Arrays.asList(generateServicesTemplate("test-component-a", "GRPC"),
+                        generateServicesTemplate("test-component-alt", "HTTP")));
+
+        Composite compositeB = generateComposite("composite-b",
+                Arrays.asList(generateServicesTemplate("test-component-b", "HTTP"),
+                        generateServicesTemplate("test-component-alt", null)));
+
+        Composite compositeC = generateComposite("composite-c",
+                Arrays.asList(generateServicesTemplate("test-r", "TCP"),
+                        generateServicesTemplate("test-s", "GRPC")));
 
         k8sServer.expect()
                 .withPath(WATCH_CELL_URL)
@@ -151,57 +160,108 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
                 .andEmit(new WatchEvent(cellD, "ERROR"))
                 .done()
                 .once();
+        k8sServer.expect()
+                .withPath(WATCH_COMPOSITE_URL)
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(1320)
+                .andEmit(new WatchEvent(compositeA, "ADDED"))
+                .waitFor(503)
+                .andEmit(new WatchEvent(compositeB, "MODIFIED"))
+                .waitFor(923)
+                .andEmit(new WatchEvent(compositeC, "DELETED"))
+                .done()
+                .once();
         initializeSiddhiAppRuntime();
 
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 9, eventCount, TIMEOUT);
-        Assert.assertEquals(eventCount.get(), 9);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 16, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 15);
         for (Event receivedEvent : receivedEvents) {
             Object[] data = receivedEvent.getData();
-            Assert.assertEquals(data.length, 5);
+            Assert.assertEquals(data.length, 6);
             String[] ingressTypes;
-            if (StringUtils.isNotEmpty((String) data[3])) {
-                ingressTypes = ((String) data[3]).split(",");
+            if (StringUtils.isNotEmpty((String) data[4])) {
+                ingressTypes = ((String) data[4]).split(",");
             } else {
                 ingressTypes = new String[]{};
             }
-            if ("cell-a".equals(data[0]) && "portal".equals(data[1])) {
-                Assert.assertEquals(data[2], -1L);
-                Assert.assertEquals(data[4], "ADDED");
+            if ("cell-a".equals(data[0]) && "portal".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], -1L);
+                Assert.assertEquals(data[5], "ADDED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.WEB});
-            } else if ("cell-b".equals(data[0]) && "test-a".equals(data[1])) {
-                Assert.assertEquals(data[2], creationTimestamp);
-                Assert.assertEquals(data[4], "MODIFIED");
+            } else if ("cell-b".equals(data[0]) && "test-a".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "MODIFIED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.TCP});
-            } else if ("cell-b".equals(data[0]) && "test-b".equals(data[1])) {
-                Assert.assertEquals(data[2], creationTimestamp);
-                Assert.assertEquals(data[4], "MODIFIED");
+            } else if ("cell-b".equals(data[0]) && "test-b".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "MODIFIED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
-            } else if ("cell-c".equals(data[0]) && "controller".equals(data[1])) {
-                Assert.assertEquals(data[2], creationTimestamp);
-                Assert.assertEquals(data[4], "DELETED");
+            } else if ("cell-c".equals(data[0]) && "controller".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "DELETED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.HTTP});
-            } else if ("cell-c".equals(data[0]) && "customers".equals(data[1])) {
-                Assert.assertEquals(data[2], creationTimestamp);
-                Assert.assertEquals(data[4], "DELETED");
+            } else if ("cell-c".equals(data[0]) && "customers".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "DELETED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.HTTP});
-            } else if ("cell-c".equals(data[0]) && "orders".equals(data[1])) {
-                Assert.assertEquals(data[2], creationTimestamp);
-                Assert.assertEquals(data[4], "DELETED");
+            } else if ("cell-c".equals(data[0]) && "orders".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "DELETED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
-            } else if ("cell-c".equals(data[0]) && "catalog".equals(data[1])) {
-                Assert.assertEquals(data[2], creationTimestamp);
-                Assert.assertEquals(data[4], "DELETED");
+            } else if ("cell-c".equals(data[0]) && "catalog".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "DELETED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
-            } else if ("cell-d".equals(data[0]) && "test-component".equals(data[1])) {
-                Assert.assertEquals(data[2], creationTimestamp);
-                Assert.assertEquals(data[4], "ERROR");
+            } else if ("cell-d".equals(data[0]) && "test-component".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "ERROR");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.GRPC});
-            } else if ("cell-d".equals(data[0]) && "test-component-alt".equals(data[1])) {
-                Assert.assertEquals(data[2], creationTimestamp);
-                Assert.assertEquals(data[4], "ERROR");
+            } else if ("cell-d".equals(data[0]) && "test-component-alt".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "ERROR");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
+            } else if ("composite-a".equals(data[0]) && "test-component-a".equals(data[2])) {
+                Assert.assertEquals(data[1], "Composite");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "ADDED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.GRPC});
+            } else if ("composite-a".equals(data[0]) && "test-component-alt".equals(data[2])) {
+                Assert.assertEquals(data[1], "Composite");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "ADDED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.HTTP});
+            } else if ("composite-b".equals(data[0]) && "test-component-b".equals(data[2])) {
+                Assert.assertEquals(data[1], "Composite");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "MODIFIED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.HTTP});
+            } else if ("composite-b".equals(data[0]) && "test-component-alt".equals(data[2])) {
+                Assert.assertEquals(data[1], "Composite");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "MODIFIED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
+            } else if ("composite-c".equals(data[0]) && "test-r".equals(data[2])) {
+                Assert.assertEquals(data[1], "Composite");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "DELETED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.TCP});
+            } else if ("composite-c".equals(data[0]) && "test-s".equals(data[2])) {
+                Assert.assertEquals(data[1], "Composite");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "DELETED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.GRPC});
             } else {
-                Assert.fail("Received unexpect component " + data[1] + " from cell " + data[0]);
+                Assert.fail("Received unexpect component " + data[1] + " from " + data[1] + " " + data[0]);
             }
         }
     }
@@ -214,8 +274,13 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
         cellAHttpIngressA.setContext("/controller");
         cellAHttpIngressA.setGlobal(true);
         Cell cellA = generateCell("cell-a",
-                generateGatewayTemplate("MicroGateway", null, Collections.singletonList(cellAHttpIngressA), null, null),
-                Arrays.asList(generateServicesTemplate("controller"), generateServicesTemplate("customers")));
+                generateGatewayTemplate("MicroGateway", null, null, null, null),
+                Arrays.asList(generateServicesTemplate("controller", "HTTP"),
+                        generateServicesTemplate("customers", "GRPC")));
+
+        Composite compositeA = generateComposite("employee-comp",
+                Arrays.asList(generateServicesTemplate("salary-job", null),
+                        generateServicesTemplate("employee-job", null)));
 
         k8sServer.expect()
                 .withPath(WATCH_CELL_URL)
@@ -225,29 +290,49 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
                 .andEmit(new WatchEvent(cellA, "ADDED"))
                 .done()
                 .once();
+        k8sServer.expect()
+                .withPath(WATCH_COMPOSITE_URL)
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(451)
+                .andEmit(new WatchEvent(compositeA, "MODIFIED"))
+                .done()
+                .once();
         initializeSiddhiAppRuntime();
 
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 3, eventCount, TIMEOUT);
-        Assert.assertEquals(eventCount.get(), 2);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 5, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 4);
         for (Event receivedEvent : receivedEvents) {
             Object[] data = receivedEvent.getData();
-            Assert.assertEquals(data.length, 5);
+            Assert.assertEquals(data.length, 6);
             String[] ingressTypes;
-            if (StringUtils.isNotEmpty((String) data[3])) {
-                ingressTypes = ((String) data[3]).split(",");
+            if (StringUtils.isNotEmpty((String) data[4])) {
+                ingressTypes = ((String) data[4]).split(",");
             } else {
                 ingressTypes = new String[]{};
             }
-            if ("cell-a".equals(data[0]) && "controller".equals(data[1])) {
-                Assert.assertEquals(data[2], creationTimestamp);
-                Assert.assertEquals(data[4], "ADDED");
-                Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.HTTP});
-            } else if ("cell-a".equals(data[0]) && "customers".equals(data[1])) {
-                Assert.assertEquals(data[2], creationTimestamp);
-                Assert.assertEquals(data[4], "ADDED");
+            if ("cell-a".equals(data[0]) && "controller".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "ADDED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
+            } else if ("cell-a".equals(data[0]) && "customers".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "ADDED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
+            } else if ("employee-comp".equals(data[0]) && "employee-job".equals(data[2])) {
+                Assert.assertEquals(data[1], "Composite");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "MODIFIED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
+            } else if ("employee-comp".equals(data[0]) && "salary-job".equals(data[2])) {
+                Assert.assertEquals(data[1], "Composite");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "MODIFIED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
             } else {
-                Assert.fail("Received unexpect component " + data[1] + " from cell " + data[0]);
+                Assert.fail("Received unexpect component " + data[2] + " from " + data[1] + " " + data[0]);
             }
         }
     }
@@ -256,6 +341,12 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
     public void testComponentEventsWithNoComponents() throws Exception {
         k8sServer.expect()
                 .withPath(WATCH_CELL_URL)
+                .andUpgradeToWebSocket()
+                .open()
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(WATCH_COMPOSITE_URL)
                 .andUpgradeToWebSocket()
                 .open()
                 .done()
@@ -275,7 +366,12 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
         cellAHttpIngressA.setGlobal(true);
         Cell cellA = generateCell("cell-a",
                 generateGatewayTemplate("MicroGateway", null, Collections.singletonList(cellAHttpIngressA), null, null),
-                Arrays.asList(generateServicesTemplate("controller"), generateServicesTemplate("customers")));
+                Arrays.asList(generateServicesTemplate("controller", "HTTP"),
+                        generateServicesTemplate("customers", "HTTP")));
+
+        Composite compositeA = generateComposite("composite-a",
+                Arrays.asList(generateServicesTemplate("employee", "GRPC"),
+                        generateServicesTemplate("salary", "HTTP")));
 
         k8sServer.expect()
                 .withPath(WATCH_CELL_URL)
@@ -283,6 +379,14 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
                 .open()
                 .waitFor(195)
                 .andEmit(new WatchEvent(cellA, "ADDED"))
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(WATCH_COMPOSITE_URL)
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(723)
+                .andEmit(new WatchEvent(cellA, "MODIFIED"))
                 .done()
                 .once();
 
@@ -302,7 +406,12 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
         cellAHttpIngressA.setGlobal(true);
         Cell cellA = generateCell("cell-a",
                 generateGatewayTemplate("MicroGateway", null, Collections.singletonList(cellAHttpIngressA), null, null),
-                Arrays.asList(generateServicesTemplate("controller"), generateServicesTemplate("customers")));
+                Arrays.asList(generateServicesTemplate("controller", "HTTP"),
+                        generateServicesTemplate("customers", "HTTP")));
+
+        Composite compositeA = generateComposite("composite-a",
+                Arrays.asList(generateServicesTemplate("hr", "HTTP"),
+                        generateServicesTemplate("stock", "TCP")));
 
         k8sServer.expect()
                 .withPath(WATCH_CELL_URL)
@@ -312,31 +421,52 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
                 .andEmit(new WatchEvent(cellA, "ADDED"))
                 .done()
                 .once();
+        k8sServer.expect()
+                .withPath(WATCH_COMPOSITE_URL)
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(412)
+                .andEmit(new WatchEvent(compositeA, "DELETED"))
+                .done()
+                .once();
+
         initializeSiddhiAppRuntime();
         Thread.sleep(1200);
         siddhiAppRuntime.persist();
         Thread.sleep(100);
         siddhiAppRuntime.restoreLastRevision();
 
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
-        Assert.assertEquals(eventCount.get(), 2);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 5, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 4);
         for (Event receivedEvent : receivedEvents) {
             Object[] data = receivedEvent.getData();
-            Assert.assertEquals(data.length, 5);
+            Assert.assertEquals(data.length, 6);
             String[] ingressTypes;
-            if (StringUtils.isNotEmpty((String) data[3])) {
-                ingressTypes = ((String) data[3]).split(",");
+            if (StringUtils.isNotEmpty((String) data[4])) {
+                ingressTypes = ((String) data[4]).split(",");
             } else {
                 ingressTypes = new String[]{};
             }
-            if ("cell-a".equals(data[0]) && "controller".equals(data[1])) {
-                Assert.assertEquals(data[2], creationTimestamp);
-                Assert.assertEquals(data[4], "ADDED");
+            if ("cell-a".equals(data[0]) && "controller".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "ADDED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.HTTP});
-            } else if ("cell-a".equals(data[0]) && "customers".equals(data[1])) {
-                Assert.assertEquals(data[2], creationTimestamp);
-                Assert.assertEquals(data[4], "ADDED");
+            } else if ("cell-a".equals(data[0]) && "customers".equals(data[2])) {
+                Assert.assertEquals(data[1], "Cell");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "ADDED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
+            } else if ("composite-a".equals(data[0]) && "hr".equals(data[2])) {
+                Assert.assertEquals(data[1], "Composite");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "DELETED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.HTTP});
+            } else if ("composite-a".equals(data[0]) && "stock".equals(data[2])) {
+                Assert.assertEquals(data[1], "Composite");
+                Assert.assertEquals(data[3], creationTimestamp);
+                Assert.assertEquals(data[5], "DELETED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.TCP});
             } else {
                 Assert.fail("Received unexpect component " + data[1] + " from cell " + data[0]);
             }
@@ -352,8 +482,14 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
         cellAHttpIngressA.setGlobal(true);
         Cell cellA = generateCell("cell-a",
                 generateGatewayTemplate("MicroGateway", null, Collections.singletonList(cellAHttpIngressA), null, null),
-                Arrays.asList(generateServicesTemplate("controller"), generateServicesTemplate("customers")));
+                Arrays.asList(generateServicesTemplate("controller", "HTTP"),
+                        generateServicesTemplate("customers", "HTTP")));
         cellA.getMetadata().setCreationTimestamp("invalid-date-1");
+
+        Composite compositeA = generateComposite("composite-a",
+                Arrays.asList(generateServicesTemplate("tester", "GRPC"),
+                        generateServicesTemplate("test-store", "TCP")));
+        compositeA.getMetadata().setCreationTimestamp("invalid-date-2");
 
         k8sServer.expect()
                 .withPath(WATCH_CELL_URL)
@@ -361,6 +497,14 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
                 .open()
                 .waitFor(195)
                 .andEmit(new WatchEvent(cellA, "ADDED"))
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(WATCH_COMPOSITE_URL)
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(1212)
+                .andEmit(new WatchEvent(compositeA, "MODIFIED"))
                 .done()
                 .once();
         initializeSiddhiAppRuntime();
@@ -378,7 +522,12 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
         cellAHttpIngressA.setGlobal(true);
         Cell cellA = generateCell("cell-a",
                 generateGatewayTemplate("MicroGateway", null, Collections.singletonList(cellAHttpIngressA), null, null),
-                Arrays.asList(generateServicesTemplate("controller"), generateServicesTemplate("customers")));
+                Arrays.asList(generateServicesTemplate("controller", "HTTP"),
+                        generateServicesTemplate("customers", "HTTP")));
+
+        Composite compositeA = generateComposite("composite-a",
+                Arrays.asList(generateServicesTemplate("test-component", "TCP"),
+                        generateServicesTemplate("test-component-alt", null)));
 
         k8sServer.expect()
                 .withPath(WATCH_CELL_URL)
@@ -388,6 +537,14 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
                 .andEmit(new WatchEvent(cellA, "ADDED"))
                 .done()
                 .once();
+        k8sServer.expect()
+                .withPath(WATCH_COMPOSITE_URL)
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(971)
+                .andEmit(new WatchEvent(compositeA, "DELETED"))
+                .done()
+                .once();
         initializeSiddhiAppRuntime();
 
         SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
@@ -395,9 +552,12 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
             for (Source source : siddhiAppSources) {
                 if (source instanceof ComponentsEventSource) {
                     ComponentsEventSource componentsEventSource = (ComponentsEventSource) source;
-                    Watch cellWatch = Whitebox.getInternalState(componentsEventSource, "cellWatch");
-                    Watcher<Pod> podWatcher = Whitebox.getInternalState(cellWatch, "watcher");
-                    podWatcher.onClose(new KubernetesClientException("Mock Exception"));
+                    List<Watch> k8sWatches = Whitebox.getInternalState(componentsEventSource, "k8sWatches");
+
+                    for (Watch k8sWatch : k8sWatches) {
+                        Watcher<Pod> podWatcher = Whitebox.getInternalState(k8sWatch, "watcher");
+                        podWatcher.onClose(new KubernetesClientException("Mock Exception"));
+                    }
                 }
             }
         }
@@ -411,12 +571,12 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
         String inStreamDefinition = "@App:name(\"test-siddhi-app\")\n" +
                 "@source(type=\"k8s-components\", @map(type=\"keyvalue\", " +
                 "fail.on.missing.attribute=\"true\"))\n" +
-                "define stream k8sComponentPodsStream (cell String, component string, creationTimestamp long, " +
-                "ingressTypes string, action string);";
+                "define stream K8sComponentPodsStream (instance string, kind string, component string, " +
+                "creationTimestamp long, ingressTypes string, action string);";
         String query = "@info(name = \"query\")\n" +
-                "from k8sComponentPodsStream\n" +
+                "from K8sComponentPodsStream\n" +
                 "select *\n" +
-                "insert into outputStream;";
+                "insert into OutputStream;";
         SiddhiManager siddhiManager = new SiddhiManager();
         siddhiManager.setExtension("keyvalue", KeyValueSourceMapper.class);
         siddhiManager.setPersistenceStore(new InMemoryPersistenceStore());
@@ -437,93 +597,6 @@ public class ComponentsEventSourceTestCase extends BaseTestCase {
         if (logger.isDebugEnabled()) {
             logger.debug("EventPrinter Initialized Siddhi App Runtime");
         }
-    }
-
-    /**
-     * Generate a K8s Cell object.
-     * The returned pod can be used as one of the returned pods in K8s Mock Server in expectation mode.
-     *
-     * @param cellName The name of the Cell
-     * @param gatewayTemplate The gateway template to be used
-     * @param servicesTemplates The list of service templates
-     * @return The generated Cell
-     */
-    protected Cell generateCell(String cellName, GatewayTemplate gatewayTemplate,
-                                List<ServicesTemplate> servicesTemplates) {
-        STSTemplate stsTemplate = new STSTemplate();
-        stsTemplate.setMetadata(new ObjectMetaBuilder()
-                .withName("sts")
-                .withCreationTimestamp(CREATION_TIMESTAMP_STRING)
-                .build());
-        stsTemplate.setSpec(new STSTemplateSpec());
-
-        CellSpec cellSpec = new CellSpec();
-        cellSpec.setGatewayTemplate(gatewayTemplate);
-        cellSpec.setServicesTemplates(servicesTemplates);
-        cellSpec.setStsTemplate(stsTemplate);
-
-        CellImpl cell = new CellImpl();
-        cell.setMetadata(new ObjectMetaBuilder()
-                .withName(cellName)
-                .withCreationTimestamp(CREATION_TIMESTAMP_STRING)
-                .build());
-        cell.setSpec(cellSpec);
-        return cell;
-    }
-
-    /**
-     * Generate a K8s Gateway Template Object.
-     *
-     * @param type The type of Gateway used
-     * @param host The host added when used with a Web Ingress
-     * @param httpIngresses The HTTP ingresses used by the gateway
-     * @param tcpIngresses The TCP ingresses used by the gateway
-     * @param grpcIngresses The gRPC ingresses
-     * @return The generated Gateway Template
-     */
-    protected GatewayTemplate generateGatewayTemplate(String type, String host, List<HTTP> httpIngresses,
-                                                      List<TCP> tcpIngresses, List<GRPC> grpcIngresses) {
-        GatewayTemplateSpec gatewayTemplateSpec = new GatewayTemplateSpec();
-        gatewayTemplateSpec.setType(type);
-        gatewayTemplateSpec.setHost(host);
-        gatewayTemplateSpec.setTcp(tcpIngresses);
-        gatewayTemplateSpec.setHttp(httpIngresses);
-        gatewayTemplateSpec.setGrpc(grpcIngresses);
-
-        GatewayTemplate gatewayTemplate = new GatewayTemplate();
-        gatewayTemplate.setMetadata(new ObjectMetaBuilder()
-                .withCreationTimestamp(CREATION_TIMESTAMP_STRING)
-                .withName("gateway")
-                .build());
-        gatewayTemplate.setSpec(gatewayTemplateSpec);
-        return gatewayTemplate;
-    }
-
-    /**
-     * Generate a K8s Service Template Object.
-     *
-     * @param serviceName The name of the service
-     * @return The generated Service Template
-     */
-    protected ServicesTemplate generateServicesTemplate(String serviceName) {
-        ServicesTemplateSpec servicesTemplateSpec = new ServicesTemplateSpec();
-        servicesTemplateSpec.setContainer(new ContainerBuilder()
-                .withName("test-container")
-                .withNewImage("busybox")
-                .withNewImagePullPolicy("IfNotPresent")
-                .withCommand("tail", "-f", "/dev/null")
-                .build());
-        servicesTemplateSpec.setReplicas(10);
-        servicesTemplateSpec.setServiceAccountName("cellery-service-account");
-        servicesTemplateSpec.setServicePort(9000);
-
-        ServicesTemplate servicesTemplate = new ServicesTemplate();
-        servicesTemplate.setMetadata(new ObjectMetaBuilder()
-                .withName(serviceName)
-                .withCreationTimestamp(CREATION_TIMESTAMP_STRING)
-                .build());
-        servicesTemplate.setSpec(servicesTemplateSpec);
-        return servicesTemplate;
     }
 
 }

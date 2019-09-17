@@ -16,14 +16,15 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds;
+package io.cellery.observability.k8s.client.crds.composite;
 
-import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.client.CustomResourceList;
 
 /**
- * This interface represents certain methods to be implemented accordingly.
+ * This class represents the List resource for Cellery composites.
  */
-public interface Cell extends HasMetadata {
-    CellSpec getSpec();
-    String getKind();
+public class CompositeList extends CustomResourceList<Composite> {
+
+    private static final long serialVersionUID = 1L;
+
 }

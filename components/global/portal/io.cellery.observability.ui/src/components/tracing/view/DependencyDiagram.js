@@ -144,14 +144,19 @@ class DependencyDiagram extends React.Component {
             links.push(link);
         };
         rootSpan.walk((span, data) => {
+            const isFromSameComponent = (spanA, spanB) => ((!spanA.cell && !spanB.cell)
+                || (!(spanA.cell && !spanB.cell) && !(!spanA.cell && spanB.cell) && spanA.cell.name === spanB.cell.name))
+                && spanA.serviceName === spanB.serviceName;
             let linkSource = data;
             if (!Constants.System.SIDECAR_AUTH_FILTER_OPERATION_NAME_PATTERN.test(span.operationName)
                 && !Constants.System.ISTIO_MIXER_NAME_PATTERN.test(span.serviceName)) {
-                if (linkSource && span.kind === Constants.Span.Kind.SERVER) { // Ending link traversing
-                    addNodeIfNotPresent(span);
-                    addLink(linkSource, span);
-                    linkSource = null;
-                } else if (!linkSource && span.kind === Constants.Span.Kind.CLIENT) { // Starting link traversing
+                if (linkSource) {
+                    if (!isFromSameComponent(linkSource, span)) { // Ending link traversing
+                        addNodeIfNotPresent(span);
+                        addLink(linkSource, span);
+                        linkSource = null;
+                    }
+                } else { // Starting link traversing
                     addNodeIfNotPresent(span);
                     linkSource = span;
                 }

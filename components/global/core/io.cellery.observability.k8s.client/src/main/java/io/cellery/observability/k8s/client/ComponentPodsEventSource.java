@@ -52,8 +52,9 @@ import java.util.Map;
                 @Example(
                         syntax = "@source(type='k8s-component-pods', @map(type='keyvalue', " +
                                 "fail.on.missing.attribute='false'))\n" +
-                                "define stream K8sPodEvents (cell string, component string, name string, " +
-                                "creationTimestamp long, nodeName string, status string, action string)",
+                                "define stream K8sPodEvents (instance string, kind string, component string, " +
+                                "podName string, creationTimestamp long, deletionTimestamp long, nodeName string, " +
+                                "status string, action string)",
                         description = "This will listen for kubernetes pod events and emit events upon changes " +
                                 "to the pods"
                 )
@@ -70,7 +71,7 @@ public class ComponentPodsEventSource extends Source {
     @Override
     public void init(SourceEventListener sourceEventListener, OptionHolder optionHolder, String[] strings,
                      ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
-        this.k8sWatches = new ArrayList<>(2);
+        this.k8sWatches = new ArrayList<>(3);
         this.sourceEventListener = sourceEventListener;
     }
 
@@ -82,15 +83,25 @@ public class ComponentPodsEventSource extends Source {
             logger.debug("Retrieved API server client instance");
         }
 
-        // Pod watcher for Cellery components
-        Watch componentsWatch = k8sClient.pods()
+        // Pod watcher for Cellery Cell components
+        Watch cellComponentsWatch = k8sClient.pods()
                 .inNamespace(Constants.NAMESPACE)
                 .withLabel(Constants.CELL_NAME_LABEL)
                 .withLabel(Constants.COMPONENT_NAME_LABEL)
                 .watch(new PodWatcher(this.sourceEventListener, Constants.COMPONENT_NAME_LABEL));
-        k8sWatches.add(componentsWatch);
+        k8sWatches.add(cellComponentsWatch);
         if (logger.isDebugEnabled()) {
-            logger.debug("Created pod watcher for components");
+            logger.debug("Created pod watcher for Cell components");
+        }
+        // Pod watcher for Cellery Composite components
+        Watch compositeComponentsWatch = k8sClient.pods()
+                .inNamespace(Constants.NAMESPACE)
+                .withLabel(Constants.COMPOSITE_NAME_LABEL)
+                .withLabel(Constants.COMPONENT_NAME_LABEL)
+                .watch(new PodWatcher(this.sourceEventListener, Constants.COMPONENT_NAME_LABEL));
+        k8sWatches.add(compositeComponentsWatch);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Created pod watcher for Composite components");
         }
         // Pod watcher for Cellery cell gateways
         Watch gatewaysWatch = k8sClient.pods()
@@ -166,8 +177,21 @@ public class ComponentPodsEventSource extends Source {
         @Override
         public void eventReceived(Action action, Pod pod) {
             try {
+                String instance;
+                String kind;
+                if (pod.getMetadata().getLabels().containsKey(Constants.CELL_NAME_LABEL)) {
+                    instance = pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL);
+                    kind = Constants.CELL_KIND;
+                } else if (pod.getMetadata().getLabels().containsKey(Constants.COMPOSITE_NAME_LABEL)) {
+                    instance = pod.getMetadata().getLabels().get(Constants.COMPOSITE_NAME_LABEL);
+                    kind = Constants.COMPOSITE_KIND;
+                } else {
+                    instance = "";
+                    kind = "";
+                }
                 Map<String, Object> attributes = new HashMap<>();
-                attributes.put(Constants.Attribute.CELL, pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL));
+                attributes.put(Constants.Attribute.INSTANCE, instance);
+                attributes.put(Constants.Attribute.KIND, kind);
                 attributes.put(Constants.Attribute.COMPONENT, Utils.getComponentName(pod));
                 attributes.put(Constants.Attribute.POD_NAME, pod.getMetadata().getName());
                 attributes.put(Constants.Attribute.CREATION_TIMESTAMP, pod.getMetadata().getCreationTimestamp() == null

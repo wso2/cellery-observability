@@ -18,9 +18,17 @@
 
 package io.cellery.observability.k8s.client;
 
+import io.cellery.observability.k8s.client.crds.cell.Cell;
+import io.cellery.observability.k8s.client.crds.composite.Composite;
+import io.cellery.observability.k8s.client.crds.gateway.GatewayTemplateSpec;
+import io.cellery.observability.k8s.client.crds.service.ServicesTemplate;
 import io.fabric8.kubernetes.api.model.Pod;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -34,7 +42,7 @@ public class Utils {
      * @param pod The kubernetes pod of which the component name should be retrieved
      * @return The actual component name
      */
-    public static String getComponentName(Pod pod) {
+    static String getComponentName(Pod pod) {
         String fullyQualifiedName = null;
         Map<String, String> labels = pod.getMetadata().getLabels();
         if (labels.containsKey(Constants.COMPONENT_NAME_LABEL)) {
@@ -50,6 +58,78 @@ public class Utils {
             componentName = "";
         }
         return componentName;
+    }
+
+    /**
+     * Get the map of ingress types in each component in a Cell.
+     *
+     * @param cell The cell resource from Kubernetes
+     * @return The map of ingress types with the component name as the value
+     */
+    static Map<String, List<String>> getComponentIngressTypes(Cell cell) {
+        Map<String, List<String>> componentIngressTypes = new HashMap<>();
+        GatewayTemplateSpec gatewaySpec = cell.getSpec().getGatewayTemplate().getSpec();
+        for (ServicesTemplate serviceTemplate : cell.getSpec().getServicesTemplates()) {
+            List<String> ingressTypes = new ArrayList<>();
+            String componentName = serviceTemplate.getMetadata().getName();
+            if (gatewaySpec.getHttp() != null) {
+                boolean isHttp = gatewaySpec.getHttp().stream()
+                        .anyMatch(httpObj -> httpObj.getBackend().equals(componentName));
+                if (isHttp) {
+                    boolean isWebCell = StringUtils.isNotEmpty(gatewaySpec.getHost());
+                    // Check for Web ingresses
+                    if (isWebCell) {
+                        ingressTypes.add(Constants.IngressType.WEB);
+                    } else {
+                        ingressTypes.add(Constants.IngressType.HTTP);
+                    }
+                }
+            }
+            if (gatewaySpec.getTcp() != null) {
+                boolean isTcp = gatewaySpec.getTcp().stream()
+                        .anyMatch(tcpObject -> tcpObject.getBackendHost().equals(componentName));
+                if (isTcp) {
+                    ingressTypes.add(Constants.IngressType.TCP);
+                }
+            }
+            if (gatewaySpec.getGrpc() != null) {
+                boolean isGrpc = gatewaySpec.getGrpc().stream().anyMatch(grpcObject -> grpcObject.getBackendHost()
+                        .equals(componentName));
+                if (isGrpc) {
+                    ingressTypes.add(Constants.IngressType.GRPC);
+                }
+            }
+            componentIngressTypes.put(componentName, ingressTypes);
+        }
+        return componentIngressTypes;
+    }
+
+    /**
+     * Get the map of ingress types in each component in a Composite.
+     *
+     * @param composite The composite resource from Kubernetes
+     * @return The map of ingress types with the component name as the value
+     */
+    static Map<String, List<String>> getComponentIngressTypes(Composite composite) {
+        Map<String, List<String>> componentIngressTypes = new HashMap<>();
+        for (ServicesTemplate serviceTemplate : composite.getSpec().getServicesTemplates()) {
+            List<String> ingressTypes = new ArrayList<>();
+            String componentName = serviceTemplate.getMetadata().getName();
+            String protocol = serviceTemplate.getSpec().getProtocol();
+            if (protocol != null) {
+                String sanitizedProtocol = protocol.toUpperCase(Locale.US);
+                switch (sanitizedProtocol) {
+                    case Constants.IngressType.HTTP:
+                    case Constants.IngressType.TCP:
+                    case Constants.IngressType.GRPC:
+                        ingressTypes.add(sanitizedProtocol);
+                        break;
+                    default:
+                }
+            }
+            componentIngressTypes.put(componentName, ingressTypes);
+        }
+        return componentIngressTypes;
     }
 
     private Utils() {   // Prevent initialization

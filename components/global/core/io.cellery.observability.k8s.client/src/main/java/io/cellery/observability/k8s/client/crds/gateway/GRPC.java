@@ -16,31 +16,22 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds.model;
+package io.cellery.observability.k8s.client.crds.gateway;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * This is used to represent TCP Ingress_Type
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-        "port",
-        "backendHost",
-        "backendPort"
-})
 @JsonDeserialize
-public class TCP implements KubernetesResource {
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class GRPC implements KubernetesResource {
+
     private static final long serialVersionUID = 1L;
 
     @JsonProperty("port")
@@ -49,8 +40,6 @@ public class TCP implements KubernetesResource {
     private String backendHost;
     @JsonProperty("backendPort")
     private Integer backendPort;
-    @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
     @JsonProperty("port")
     public Integer getPort() {
@@ -80,16 +69,6 @@ public class TCP implements KubernetesResource {
     @JsonProperty("backendPort")
     public void setBackendPort(Integer backendPort) {
         this.backendPort = backendPort;
-    }
-
-    @JsonAnyGetter
-    public Map<String, Object> getAdditionalProperties() {
-        return this.additionalProperties;
-    }
-
-    @JsonAnySetter
-    public void setAdditionalProperty(String name, Object value) {
-        this.additionalProperties.put(name, value);
     }
 
 }
