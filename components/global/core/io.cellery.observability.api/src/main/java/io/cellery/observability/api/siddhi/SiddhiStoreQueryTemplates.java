@@ -129,8 +129,8 @@ public enum SiddhiStoreQueryTemplates {
     ),
     DISTRIBUTED_TRACING_GET_TRACE("from DistributedTracingTable\n" +
             "on traceId == \"${" + Params.TRACE_ID + "}\"\n" +
-            "select traceId, spanId, parentId, namespace, instance, serviceName, pod, operationName, spanKind, " +
-            "startTime, duration, tags"
+            "select traceId, spanId, parentId, namespace, instance, instanceKind, serviceName, pod, operationName, " +
+            "spanKind, startTime, duration, tags"
     ),
     K8S_GET_PODS_FOR_COMPONENT("from K8sPodInfoTable\n" +
             "on (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +

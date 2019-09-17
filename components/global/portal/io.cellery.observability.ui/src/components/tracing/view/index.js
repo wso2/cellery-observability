@@ -109,13 +109,14 @@ class View extends React.Component {
                 parentId: dataItem[2],
                 namespace: dataItem[3],
                 cell: dataItem[4],
-                serviceName: dataItem[5],
-                pod: dataItem[6],
-                operationName: dataItem[7],
-                kind: dataItem[8],
-                startTime: dataItem[9],
-                duration: dataItem[10],
-                tags: dataItem[11]
+                instanceKind: dataItem[5],
+                serviceName: dataItem[6],
+                pod: dataItem[7],
+                operationName: dataItem[8],
+                spanKind: dataItem[9],
+                startTime: dataItem[10],
+                duration: dataItem[11],
+                tags: dataItem[12]
             }));
 
             if (spans.length > 0) {
