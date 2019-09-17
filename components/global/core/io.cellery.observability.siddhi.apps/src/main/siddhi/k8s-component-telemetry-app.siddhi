@@ -27,13 +27,13 @@ define stream K8sComponentEventSourceStream(instance String, component string, i
 @PrimaryKey("instance","component")
 @purge(enable="false")
 define table K8sComponentInfoTable(instance string, component string, instanceKind string, creationTimestamp long,
-                                   lastKnownActiveTimestamp long, ingressTypes string);
+                                   lastKnownAliveTimestamp long, ingressTypes string);
 
 from K8sComponentEventSourceStream
-select instance, component, instanceKind, creationTimestamp, time:timestampInMilliseconds() as lastKnownActiveTimestamp, ingressTypes
+select instance, component, instanceKind, creationTimestamp, time:timestampInMilliseconds() as lastKnownAliveTimestamp, ingressTypes
 update or insert into K8sComponentInfoTable
     set K8sComponentInfoTable.instanceKind = instanceKind,
         K8sComponentInfoTable.creationTimestamp = creationTimestamp,
-        K8sComponentInfoTable.lastKnownActiveTimestamp = lastKnownActiveTimestamp,
+        K8sComponentInfoTable.lastKnownAliveTimestamp = lastKnownAliveTimestamp,
         K8sComponentInfoTable.ingressTypes = ingressTypes
     on K8sComponentInfoTable.instance == instance and K8sComponentInfoTable.component == component;

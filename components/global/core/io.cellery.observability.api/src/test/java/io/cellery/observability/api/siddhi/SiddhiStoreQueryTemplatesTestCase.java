@@ -45,8 +45,9 @@ public class SiddhiStoreQueryTemplatesTestCase {
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
                 "per \"" + timeGranularity + "\"\n" +
-                "select sourceInstance, destinationInstance, httpResponseGroup, " +
-                "sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, sum(requestCount) as requestCount\n" +
+                "select sourceInstance, sourceInstanceKind, destinationInstance, destinationInstanceKind, " +
+                "httpResponseGroup, sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, " +
+                "sum(requestCount) as requestCount\n" +
                 "group by sourceInstance, destinationInstance, httpResponseGroup");
     }
 

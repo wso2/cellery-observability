@@ -31,8 +31,8 @@ public enum SiddhiStoreQueryTemplates {
     REQUEST_AGGREGATION_CELLS("from RequestAggregation\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"${" + Params.TIME_GRANULARITY + "}\"\n" +
-            "select sourceInstance, destinationInstance, httpResponseGroup, " +
-            "sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, " +
+            "select sourceInstance, sourceInstanceKind, destinationInstance, destinationInstanceKind, " +
+            "httpResponseGroup, sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, " +
             "sum(requestCount) as requestCount\n" +
             "group by sourceInstance, destinationInstance, httpResponseGroup"
     ),

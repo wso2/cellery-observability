@@ -41,7 +41,7 @@ class CellList extends React.Component {
         super(props);
 
         this.state = {
-            cellInfo: [],
+            instanceInfo: [],
             isLoading: false
         };
     }
@@ -68,16 +68,18 @@ class CellList extends React.Component {
             },
             globalState
         ).then((data) => {
-            const cellInfo = data.map((dataItem) => ({
-                sourceCell: dataItem[0],
-                destinationCell: dataItem[1],
-                httpResponseGroup: dataItem[2],
-                totalResponseTimeMilliSec: dataItem[3],
-                requestCount: dataItem[4]
+            const instanceInfo = data.map((dataItem) => ({
+                sourceInstance: dataItem[0],
+                sourceInstanceKind: dataItem[1],
+                destinationInstance: dataItem[2],
+                destinationInstanceKind: dataItem[3],
+                httpResponseGroup: dataItem[4],
+                totalResponseTimeMilliSec: dataItem[5],
+                requestCount: dataItem[6]
             }));
 
             self.setState({
-                cellInfo: cellInfo
+                instanceInfo: instanceInfo
             });
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
@@ -102,7 +104,7 @@ class CellList extends React.Component {
 
     render = () => {
         const {classes, match} = this.props;
-        const {cellInfo, isLoading} = this.state;
+        const {instanceInfo, isLoading} = this.state;
         const columns = [
             {
                 name: "Health",
@@ -115,6 +117,9 @@ class CellList extends React.Component {
                 options: {
                     customBodyRender: (value) => <Link to={`${match.url}/${value}`}>{value}</Link>
                 }
+            },
+            {
+                name: "Kind"
             },
             {
                 name: "Inbound Error Rate",
@@ -144,9 +149,10 @@ class CellList extends React.Component {
 
         // Processing data to find the required values
         const dataTableMap = {};
-        const initializeDataTableMapEntryIfNotPresent = (cell) => {
-            if (!dataTableMap[cell]) {
-                dataTableMap[cell] = {
+        const initializeDataTableMapEntryIfNotPresent = (instance, instanceKind) => {
+            if (!dataTableMap[instance]) {
+                dataTableMap[instance] = {
+                    instanceKind: instanceKind,
                     inboundErrorCount: 0,
                     outboundErrorCount: 0,
                     requestCount: 0,
@@ -154,30 +160,37 @@ class CellList extends React.Component {
                 };
             }
         };
-        for (const cellDatum of cellInfo) {
-            initializeDataTableMapEntryIfNotPresent(cellDatum.sourceCell);
-            initializeDataTableMapEntryIfNotPresent(cellDatum.destinationCell);
+        for (const instanceDatum of instanceInfo) {
+            initializeDataTableMapEntryIfNotPresent(instanceDatum.sourceInstance, instanceDatum.sourceInstanceKind);
+            initializeDataTableMapEntryIfNotPresent(instanceDatum.destinationInstance,
+                instanceDatum.destinationInstanceKind);
 
-            if (cellDatum.httpResponseGroup === "5xx") {
-                dataTableMap[cellDatum.destinationCell].inboundErrorCount += cellDatum.requestCount;
-                dataTableMap[cellDatum.sourceCell].outboundErrorCount += cellDatum.requestCount;
+            if (instanceDatum.httpResponseGroup === "5xx") {
+                dataTableMap[instanceDatum.destinationInstance].inboundErrorCount += instanceDatum.requestCount;
+                dataTableMap[instanceDatum.sourceInstance].outboundErrorCount += instanceDatum.requestCount;
             }
-            dataTableMap[cellDatum.destinationCell].requestCount += cellDatum.requestCount;
-            dataTableMap[cellDatum.destinationCell].totalResponseTimeMilliSec += cellDatum.totalResponseTimeMilliSec;
+            dataTableMap[instanceDatum.destinationInstance].requestCount += instanceDatum.requestCount;
+            dataTableMap[instanceDatum.destinationInstance].totalResponseTimeMilliSec
+                += instanceDatum.totalResponseTimeMilliSec;
         }
 
         // Transforming the objects into 2D array accepted by the Table library
         const tableData = [];
-        for (const cell in dataTableMap) {
-            if (dataTableMap.hasOwnProperty(cell) && Boolean(cell)) {
-                const cellData = dataTableMap[cell];
+        for (const instance in dataTableMap) {
+            if (dataTableMap.hasOwnProperty(instance) && Boolean(instance)) {
+                const instanceData = dataTableMap[instance];
                 tableData.push([
-                    cellData.requestCount === 0 ? -1 : 1 - cellData.inboundErrorCount / cellData.requestCount,
-                    cell,
-                    cellData.requestCount === 0 ? 0 : cellData.inboundErrorCount / cellData.requestCount,
-                    cellData.requestCount === 0 ? 0 : cellData.outboundErrorCount / cellData.requestCount,
-                    cellData.requestCount === 0 ? 0 : cellData.totalResponseTimeMilliSec / cellData.requestCount,
-                    cellData.requestCount
+                    instanceData.requestCount === 0
+                        ? -1
+                        : 1 - instanceData.inboundErrorCount / instanceData.requestCount,
+                    instance,
+                    instanceData.instanceKind,
+                    instanceData.requestCount === 0 ? 0 : instanceData.inboundErrorCount / instanceData.requestCount,
+                    instanceData.requestCount === 0 ? 0 : instanceData.outboundErrorCount / instanceData.requestCount,
+                    instanceData.requestCount === 0
+                        ? 0
+                        : instanceData.totalResponseTimeMilliSec / instanceData.requestCount,
+                    instanceData.requestCount
                 ]);
             }
         }
