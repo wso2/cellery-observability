@@ -182,7 +182,7 @@ class CellDependencyView extends React.Component {
         }
         HttpUtils.callObservabilityAPI(
             {
-                url: `/dependency-model/cells/${cell}${HttpUtils.generateQueryParamString(search)}`,
+                url: `/dependency-model/instances/${cell}${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState

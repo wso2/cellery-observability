@@ -63,7 +63,7 @@ class CellList extends React.Component {
         }
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/cells${HttpUtils.generateQueryParamString(search)}`,
+                url: `/http-requests/instances${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState

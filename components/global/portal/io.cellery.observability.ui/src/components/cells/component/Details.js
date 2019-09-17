@@ -90,7 +90,7 @@ class Details extends React.Component {
         }
         const componentMetricPromise = HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/cells/components/metrics/${HttpUtils.generateQueryParamString(search)}`,
+                url: `/http-requests/instances/components/metrics/${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState
@@ -98,7 +98,7 @@ class Details extends React.Component {
         const generatedQueryParam = HttpUtils.generateQueryParamString(ingressQueryParams);
         const IngressDataPromise = HttpUtils.callObservabilityAPI(
             {
-                url: `/k8s/cells/${cell}/components/${component}${generatedQueryParam}`,
+                url: `/k8s/instances/${cell}/components/${component}${generatedQueryParam}`,
                 method: "GET"
             },
             globalState

@@ -192,7 +192,7 @@ class TracesList extends React.PureComponent {
                 search[key] = value;
             }
         };
-        addSearchParam("cell", cell);
+        addSearchParam("instance", cell);
         addSearchParam("serviceName", component);
         addSearchParam("operationName", operation);
         addSearchParam("tags", JSON.stringify(tags && Object.keys(tags).length > 0 ? tags : {}));

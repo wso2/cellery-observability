@@ -70,7 +70,7 @@ class ComponentList extends React.Component {
         }
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/cells/${cell}/components/${HttpUtils.generateQueryParamString(search)}`,
+                url: `/http-requests/instances/${cell}/components/${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState

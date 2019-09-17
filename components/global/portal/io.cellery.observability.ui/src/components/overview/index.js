@@ -262,7 +262,7 @@ class Overview extends React.Component {
         }
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/cells/${nodeId}/components${HttpUtils.generateQueryParamString(search)}`,
+                url: `/http-requests/instances/${nodeId}/components${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             this.props.globalState
@@ -424,7 +424,7 @@ class Overview extends React.Component {
         }
         HttpUtils.callObservabilityAPI(
             {
-                url: `/dependency-model/cells${HttpUtils.generateQueryParamString(search)}`,
+                url: `/dependency-model/instances${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState
@@ -498,7 +498,7 @@ class Overview extends React.Component {
         const self = this;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/k8s/cells${HttpUtils.generateQueryParamString(searchParams)}`,
+                url: `/k8s/instances${HttpUtils.generateQueryParamString(searchParams)}`,
                 method: "GET"
             },
             this.props.globalState).then(
@@ -600,7 +600,7 @@ class Overview extends React.Component {
         }
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/cells${HttpUtils.generateQueryParamString(search)}`,
+                url: `/http-requests/instances${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             this.props.globalState

@@ -67,7 +67,7 @@ public class DistributedTracingAPI {
     @GET
     @Path("/search")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response search(@DefaultValue("") @QueryParam("cell") String cell,
+    public Response search(@DefaultValue("") @QueryParam("instance") String instance,
                            @DefaultValue("") @QueryParam("serviceName") String serviceName,
                            @DefaultValue("") @QueryParam("operationName") String operationName,
                            @DefaultValue("-1") @QueryParam("minDuration") long minDuration,
@@ -109,7 +109,7 @@ public class DistributedTracingAPI {
             }
 
             Object[][] traceIdResults = siddhiStoreQueryTemplates.builder()
-                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, cell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instance)
                     .setArg(SiddhiStoreQueryTemplates.Params.SERVICE_NAME, serviceName)
                     .setArg(SiddhiStoreQueryTemplates.Params.OPERATION_NAME, operationName)
                     .setArg(SiddhiStoreQueryTemplates.Params.MIN_DURATION, minDuration)

@@ -130,7 +130,7 @@ class Metrics extends React.Component {
         }
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/cells/metadata${HttpUtils.generateQueryParamString(search)}`,
+                url: `/http-requests/instances/metadata${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState
@@ -190,7 +190,7 @@ class Metrics extends React.Component {
         }
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/cells/metrics${HttpUtils.generateQueryParamString(search)}`,
+                url: `/http-requests/instances/metrics${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState
