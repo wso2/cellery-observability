@@ -16,14 +16,12 @@
  * under the License.
  */
 
-package io.cellery.observability.api.exception.mapper;
+package io.cellery.observability.api.exception;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.cellery.observability.api.AggregatedRequestsAPI;
-import io.cellery.observability.api.exception.APIInvocationException;
-import io.cellery.observability.api.exception.InvalidParamException;
 import org.apache.log4j.Logger;
 
 import javax.ws.rs.core.HttpHeaders;
@@ -32,9 +30,11 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 
 /**
- * Exception Mapper for mapping Server Error Exceptions.
+ * Base exception mapper class capable of generating responses for exceptions.
+ *
+ * @param <E> The exception to be handled by the mapper
  */
-public class APIExceptionMapper implements ExceptionMapper {
+abstract class BaseExceptionMapper<E extends Throwable> implements ExceptionMapper<E> {
 
     private static final Logger log = Logger.getLogger(AggregatedRequestsAPI.class);
     private Gson gson = new Gson();
@@ -43,30 +43,29 @@ public class APIExceptionMapper implements ExceptionMapper {
     private static final String STATUS_ERROR = "Error";
     private static final String MESSAGE = "message";
 
-    @Override
-    public Response toResponse(Throwable throwable) {
-        Response.Status status;
-        String message;
+    private Response.Status defaultStatus;
 
-        if (throwable instanceof InvalidParamException) {
-            status = Response.Status.PRECONDITION_FAILED;
-            message = throwable.getMessage();
-        } else if (throwable instanceof APIInvocationException) {
-            status = Response.Status.INTERNAL_SERVER_ERROR;
-            message = throwable.getMessage();
-        } else {
-            status = Response.Status.INTERNAL_SERVER_ERROR;
-            message = "Unknown Error Occurred";
-        }
-        log.error("Error in Observability Portal API", throwable);
+    BaseExceptionMapper(Response.Status defaultStatus) {
+        this.defaultStatus = defaultStatus;
+    }
+
+    /**
+     * Generate a proper response for an exception.
+     *
+     * @param exception The exception to be handled
+     * @return Proper response for the exception
+     */
+    Response generateResponse(E exception) {
+        log.error("Error in Observability Portal API", exception);
 
         JsonObject errorResponseJsonObject = new JsonObject();
         errorResponseJsonObject.add(STATUS, new JsonPrimitive(STATUS_ERROR));
-        errorResponseJsonObject.add(MESSAGE, new JsonPrimitive(message));
+        errorResponseJsonObject.add(MESSAGE, new JsonPrimitive(exception.getMessage()));
 
-        return Response.status(status)
+        return Response.status(defaultStatus)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .entity(gson.toJson(errorResponseJsonObject))
                 .build();
     }
+
 }

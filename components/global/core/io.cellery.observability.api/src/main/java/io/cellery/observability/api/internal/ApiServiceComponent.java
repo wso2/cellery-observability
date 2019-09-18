@@ -24,7 +24,8 @@ import io.cellery.observability.api.KubernetesAPI;
 import io.cellery.observability.api.UserAuthenticationAPI;
 import io.cellery.observability.api.Utils;
 import io.cellery.observability.api.auth.OIDCOauthManager;
-import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
+import io.cellery.observability.api.exception.APIInvocationException;
+import io.cellery.observability.api.exception.InvalidParamException;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
@@ -75,11 +76,11 @@ public class ApiServiceComponent {
             // Starting the Siddhi Manager
             ServiceHolder.setSiddhiStoreQueryManager(new SiddhiStoreQueryManager());
 
-            // Deploying the microservices
+            // Deploying the micro-services
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
             ServiceHolder.setMicroservicesRunner(new MicroservicesRunner(DEFAULT_OBSERVABILITY_API_PORT + offset)
                     .addGlobalRequestInterceptor(new CORSInterceptor(), new AuthInterceptor())
-                    .addExceptionMapper(new APIExceptionMapper())
+                    .addExceptionMapper(new APIInvocationException.Mapper(), new InvalidParamException.Mapper())
                     .deploy(
                             new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
                             new KubernetesAPI(), new UserAuthenticationAPI()

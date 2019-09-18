@@ -29,7 +29,8 @@
             <class name="io.cellery.observability.api.auth.OIDCOauthManagerTestCase"/>
             <class name="io.cellery.observability.api.interceptor.CORSInterceptorTestCase"/>
             <class name="io.cellery.observability.api.interceptor.AuthInterceptorTestCase"/>
-            <class name="io.cellery.observability.api.exception.mapper.APIExceptionMapperTestCase"/>
+            <class name="io.cellery.observability.api.exception.APIInvocationExceptionTestCase"/>
+            <class name="io.cellery.observability.api.exception.InvalidParamExceptionTestCase"/>
         </classes>
     </test>
 </suite>
