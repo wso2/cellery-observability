@@ -21,12 +21,15 @@ import Grey from "@material-ui/core/colors/grey";
 import HttpUtils from "../../../utils/api/httpUtils";
 import {Link} from "react-router-dom";
 import Metrics from "./Metrics";
+import NotificationUtils from "../../../utils/common/notificationUtils";
 import Paper from "@material-ui/core/Paper/Paper";
 import React from "react";
+import StateHolder from "../../common/state/stateHolder";
 import Tab from "@material-ui/core/Tab";
 import Tabs from "@material-ui/core/Tabs";
 import Timeline from "@material-ui/icons/Timeline";
 import TopToolbar from "../../common/toptoolbar";
+import withGlobalState from "../../common/state";
 import {withStyles} from "@material-ui/core/styles";
 import * as PropTypes from "prop-types";
 
@@ -72,6 +75,8 @@ class Cell extends React.Component {
         const preSelectedTab = queryParams.tab ? this.tabs.indexOf(queryParams.tab) : null;
 
         this.state = {
+            isLoading: false,
+            instanceType: "",
             selectedTabIndex: (preSelectedTab && preSelectedTab !== -1 ? preSelectedTab : 0)
         };
     }
@@ -95,8 +100,51 @@ class Cell extends React.Component {
 
     handleOnUpdate = (isUserAction, startTime, endTime) => {
         if (this.tabContentRef.current && this.tabContentRef.current.update) {
+            this.loadInstanceInfo(isUserAction);
             this.tabContentRef.current.update(isUserAction, startTime, endTime);
         }
+    };
+
+    loadInstanceInfo = (isUserAction) => {
+        const self = this;
+        const {globalState, match} = self.props;
+        const cellName = match.params.cellName;
+
+        if (isUserAction) {
+            NotificationUtils.showLoadingOverlay("Loading Cell Information", globalState);
+            self.setState({
+                isLoading: true
+            });
+        }
+        HttpUtils.callObservabilityAPI(
+            {
+                url: `/instances/${cellName}`,
+                method: "GET"
+            },
+            globalState
+        ).then((data) => {
+            self.setState({
+                instanceType: data.instanceKind
+            });
+            if (isUserAction) {
+                NotificationUtils.hideLoadingOverlay(globalState);
+                self.setState({
+                    isLoading: false
+                });
+            }
+        }).catch(() => {
+            if (isUserAction) {
+                NotificationUtils.hideLoadingOverlay(globalState);
+                self.setState({
+                    isLoading: false
+                });
+                NotificationUtils.showNotification(
+                    "Failed to load cell information",
+                    NotificationUtils.Levels.ERROR,
+                    globalState
+                );
+            }
+        });
     };
 
     onFilterUpdate = (newFilter) => {
@@ -114,7 +162,7 @@ class Cell extends React.Component {
 
     render = () => {
         const {classes, location, match} = this.props;
-        const {selectedTabIndex} = this.state;
+        const {isLoading, instanceType, selectedTabIndex} = this.state;
 
         const cellName = match.params.cellName;
 
@@ -128,7 +176,8 @@ class Cell extends React.Component {
         };
         return (
             <React.Fragment>
-                <TopToolbar title={`${cellName}`} subTitle="- Cell" onUpdate={this.handleOnUpdate}/>
+                <TopToolbar title={`${cellName}`} subTitle={!isLoading && instanceType ? `- ${instanceType}` : null}
+                    onUpdate={this.handleOnUpdate}/>
                 <Paper className={classes.root}>
                     <div className={classes.tabBar}>
                         <Tabs value={selectedTabIndex} indicatorColor="primary"
@@ -163,7 +212,8 @@ Cell.propTypes = {
     }),
     location: PropTypes.shape({
         search: PropTypes.string.isRequired
-    }).isRequired
+    }).isRequired,
+    globalState: PropTypes.instanceOf(StateHolder)
 };
 
-export default withStyles(styles)(Cell);
+export default withStyles(styles)(withGlobalState(Cell));

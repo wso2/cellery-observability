@@ -143,16 +143,20 @@ public enum SiddhiStoreQueryTemplates {
             "and lastKnownAliveTimestamp >= ${" + Params.QUERY_END_TIME + "}L))\n" +
             "select instance, component, name, creationTimestamp, lastKnownAliveTimestamp, nodeName"
     ),
+    K8S_GET_INSTANCES("from K8sComponentInfoTable\n" +
+            "on (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
+            "select instance, instanceKind\n" +
+            "group by instance"
+    ),
     K8S_GET_COMPONENTS("from K8sComponentInfoTable\n" +
             "on (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
             "and (\"${" + Params.COMPONENT + "}\" == \"\" or component == \"${" + Params.COMPONENT + "}\") " +
             "and ((creationTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
             "and creationTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
-            "or (lastKnownActiveTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
-            "and lastKnownActiveTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
+            "or (lastKnownAliveTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
+            "and lastKnownAliveTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
             "or (creationTimestamp <= ${" + Params.QUERY_START_TIME + "}L " +
-            "and (lastKnownActiveTimestamp >= ${" + Params.QUERY_END_TIME + "}L or" +
-            " lastKnownActiveTimestamp == 0L)))\n" +
+            "and lastKnownAliveTimestamp >= ${" + Params.QUERY_END_TIME + "}L))\n" +
             "select instance, component, ingressTypes"
     );
 

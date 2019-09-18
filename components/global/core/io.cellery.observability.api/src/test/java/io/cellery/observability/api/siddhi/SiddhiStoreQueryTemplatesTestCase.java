@@ -307,8 +307,8 @@ public class SiddhiStoreQueryTemplatesTestCase {
 
         Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
                 "on traceId == \"" + traceId + "\"\n" +
-                "select traceId, spanId, parentId, namespace, instance, serviceName, pod, operationName, spanKind, " +
-                "startTime, duration, tags");
+                "select traceId, spanId, parentId, namespace, instance, instanceKind, serviceName, pod, " +
+                "operationName, spanKind, startTime, duration, tags");
     }
 
     @Test
@@ -336,6 +336,21 @@ public class SiddhiStoreQueryTemplatesTestCase {
     }
 
     @Test
+    public void testK8sGetInstancesTemplate() {
+        final String instance = "pet-be";
+
+        SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.K8S_GET_INSTANCES.builder()
+                .setArg(Params.INSTANCE, instance)
+                .build();
+        String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
+
+        Assert.assertEquals(resultantQuery, "from K8sComponentInfoTable\n" +
+                "on (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
+                "select instance, instanceKind\n" +
+                "group by instance");
+    }
+
+    @Test
     public void testK8sGetComponentsTemplate() {
         final long queryStartTime = 21234322;
         final long queryEndTime = 243423;
@@ -355,11 +370,10 @@ public class SiddhiStoreQueryTemplatesTestCase {
                 "and (\"" + component + "\" == \"\" or component == \"" + component + "\") " +
                 "and ((creationTimestamp >= " + queryStartTime + "L " +
                 "and creationTimestamp <= " + queryEndTime + "L) " +
-                "or (lastKnownActiveTimestamp >= " + queryStartTime + "L " +
-                "and lastKnownActiveTimestamp <= " + queryEndTime + "L) " +
+                "or (lastKnownAliveTimestamp >= " + queryStartTime + "L " +
+                "and lastKnownAliveTimestamp <= " + queryEndTime + "L) " +
                 "or (creationTimestamp <= " + queryStartTime + "L " +
-                "and (lastKnownActiveTimestamp >= " + queryEndTime + "L " +
-                "or lastKnownActiveTimestamp == 0L)))\n" +
+                "and lastKnownAliveTimestamp >= " + queryEndTime + "L))\n" +
                 "select instance, component, ingressTypes");
     }
 }
