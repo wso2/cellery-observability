@@ -1,20 +1,19 @@
 /*
- * Copyright (c) ${year} WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * WSO2 Inc. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License.
+ * in compliance with the License.
  * You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing,
- *   software distributed under the License is distributed on an
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *  KIND, either express or implied.  See the License for the
+ * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- *  under the License.
- *
+ * under the License.
  */
 
 package main
@@ -27,29 +26,26 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/wso2spadapter"
 )
 
 const (
-	defaultAdapterPort         string = "38355"
-	grpcAdapterCredentialPath  string = "GRPC_ADAPTER_CREDENTIAL"
-	grpcAdapterPrivateKeyPath  string = "GRPC_ADAPTER_PRIVATE_KEY"
-	grpcAdapterCertificatePath string = "GRPC_ADAPTER_CERTIFICATE"
-	spServerUrl                string = "SP_SERVER_URL"
+	defaultAdapterPort         int    = 38355
+	grpcAdapterCertificatePath string = "GRPC_ADAPTER_CERTIFICATE_PATH"
+	grpcAdapterPrivateKeyPath  string = "GRPC_ADAPTER_PRIVATE_KEY_PATH"
+	caCertificatePath          string = "CA_CERTIFICATE_PATH"
+	spServerUrlPath            string = "SP_SERVER_URL"
 )
 
 func main() {
 
 	port := defaultAdapterPort //Pre defined port for the adaptor. ToDo: Should get this as an environment variable
-
-	if len(os.Args) > 1 {
-		port = os.Args[1]
-	}
 
 	logger, err := logging.NewLogger()
 	if err != nil {
@@ -62,36 +58,42 @@ func main() {
 		}
 	}()
 
+	if len(os.Args) > 1 {
+		port, err = strconv.Atoi(os.Args[1])
+		if err != nil {
+			logger.Errorf("Could not convert the port number from string to int : %s", err.Error())
+		}
+	}
+
 	/* Mutual TLS feature to secure connection between workloads
 	   This is optional. */
-	credential := os.Getenv(grpcAdapterCredentialPath)   // adapter.crt //change the name
-	privateKey := os.Getenv(grpcAdapterPrivateKeyPath)   // adapter.key
-	certificate := os.Getenv(grpcAdapterCertificatePath) // ca.pem
-	spServerUrl := os.Getenv(spServerUrl)
+	adapterCertificate := os.Getenv(grpcAdapterCertificatePath) // adapter.crt //change the name
+	adapterprivateKey := os.Getenv(grpcAdapterPrivateKeyPath)   // adapter.key
+	caCertificate := os.Getenv(caCertificatePath)               // ca.pem
+	spServerUrl := os.Getenv(spServerUrlPath)
 
 	logger.Infof("Sp server url : %s", spServerUrl)
 
 	client := &http.Client{}
-	spServerResponse := wso2spadapter.ServerResponse{}
+	publisher := adapter.SPMetricsPublisher{}
 
 	var serverOption grpc.ServerOption = nil
 
-	if credential != "" {
-		serverOption, err = getServerTLSOption(credential, privateKey, certificate)
+	if adapterCertificate != "" {
+		serverOption, err = getServerTLSOption(adapterCertificate, adapterprivateKey, caCertificate)
 		if err != nil {
 			logger.Warn("Server option could not be fetched, Connection will not be encrypted")
 		}
 	}
 
-	adapter, err := wso2spadapter.New(port, logger, client, spServerResponse, serverOption, spServerUrl)
+	spAdapter, err := adapter.New(port, logger, client, publisher, serverOption, spServerUrl)
 	if err != nil {
-		logger.Error("unable to start server: ", err.Error())
-		os.Exit(-1)
+		logger.Fatal("unable to start server: ", err.Error())
 	}
 
 	shutdown := make(chan error, 1)
 	go func() {
-		adapter.Run(shutdown)
+		spAdapter.Run(shutdown)
 	}()
 	err = <-shutdown
 	if err != nil {
@@ -99,10 +101,10 @@ func main() {
 	}
 }
 
-func getServerTLSOption(credential, privateKey, caCertificate string) (grpc.ServerOption, error) {
+func getServerTLSOption(adapterCertificate, adapterPrivateKey, caCertificate string) (grpc.ServerOption, error) {
 	certificate, err := tls.LoadX509KeyPair(
-		credential,
-		privateKey,
+		adapterCertificate,
+		adapterPrivateKey,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load key cert pair")

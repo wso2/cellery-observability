@@ -1,20 +1,19 @@
 /*
- * Copyright (c) ${year} WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * WSO2 Inc. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License.
+ * in compliance with the License.
  * You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing,
- *   software distributed under the License is distributed on an
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *  KIND, either express or implied.  See the License for the
+ * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- *  under the License.
- *
+ * under the License.
  */
 
 package e2e
@@ -29,14 +28,14 @@ import (
 
 	adapterIntegration "istio.io/istio/mixer/pkg/adapter/test"
 
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/wso2spadapter"
 )
 
-const defaultAdapterPort string = "38355"
+const defaultAdapterPort int = 38355
 
 func TestReport(t *testing.T) {
-	adapterBytes, err := ioutil.ReadFile("./testdata/sample-wso2spadapter.yaml")
+	adapterBytes, err := ioutil.ReadFile("./testdata/sample-adapter.yaml")
 	if err != nil {
 		t.Fatalf("could not read file: %v", err)
 	}
@@ -66,7 +65,7 @@ func TestReport(t *testing.T) {
 		nil,
 		adapterIntegration.Scenario{
 			Setup: func() (ctx interface{}, err error) {
-				pServer, err := wso2spadapter.New(defaultAdapterPort, logger, &http.Client{}, wso2spadapter.ServerResponse{}, nil, "")
+				pServer, err := adapter.New(defaultAdapterPort, logger, &http.Client{}, adapter.SPMetricsPublisher{}, nil, "")
 				if err != nil {
 					return nil, err
 				}
@@ -77,7 +76,7 @@ func TestReport(t *testing.T) {
 				return pServer, nil
 			},
 			Teardown: func(ctx interface{}) {
-				s := ctx.(wso2spadapter.Server)
+				s := ctx.(adapter.Server)
 				defer func() {
 					err := s.Close()
 					if err != nil {
@@ -112,7 +111,7 @@ func TestReport(t *testing.T) {
 				return nil, nil
 			},
 			GetConfig: func(ctx interface{}) ([]string, error) {
-				s := ctx.(wso2spadapter.Server)
+				s := ctx.(adapter.Server)
 				return []string{
 					// CRs for built-in templates (metric is what we need for this test)
 					// are automatically added by the integration test framework.

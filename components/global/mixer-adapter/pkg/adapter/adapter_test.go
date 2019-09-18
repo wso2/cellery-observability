@@ -1,23 +1,22 @@
 /*
- * Copyright (c) ${year} WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * WSO2 Inc. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License.
+ * in compliance with the License.
  * You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing,
- *   software distributed under the License is distributed on an
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *  KIND, either express or implied.  See the License for the
+ * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- *  under the License.
- *
+ * under the License.
  */
 
-package wso2spadapter
+package adapter
 
 import (
 	"context"
@@ -27,10 +26,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gogo/protobuf/types"
-
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/config"
-
 	"go.uber.org/zap"
 	"istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/template/metric"
@@ -38,9 +33,9 @@ import (
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 )
 
-const defaultAdapterPort string = "38355"
+const defaultAdapterPort int = 38355
 
-type DummyServerResponse struct {
+type FakePublisher struct {
 	response bool
 	err      error
 }
@@ -92,19 +87,19 @@ var (
 	}
 )
 
-func (response DummyServerResponse) publishMetrics(attributeMap map[string]interface{}, logger *zap.SugaredLogger, httpClient *http.Client, spServerUrl string) bool {
+func (response FakePublisher) Publish(attributeMap map[string]interface{}, logger *zap.SugaredLogger, httpClient *http.Client, spServerUrl string) bool {
 	if response.err != nil {
 		return false
 	}
 	return response.response
 }
 
-func TestNewWso2SpAdapter(t *testing.T) {
+func TestNewAdapter(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
-	adapter, err := New(defaultAdapterPort, logger, &http.Client{}, DummyServerResponse{}, nil, "")
+	adapter, err := New(defaultAdapterPort, logger, &http.Client{}, FakePublisher{}, nil, "")
 	wantStr := "[::]:38355"
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %s", err.Error())
@@ -126,8 +121,8 @@ func TestNewWso2SpAdapter(t *testing.T) {
 	}
 }
 
-func TestWso2SpAdapter_HandleMetric(t *testing.T) {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", defaultAdapterPort))
+func TestAdapter_HandleMetric(t *testing.T) {
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", defaultAdapterPort))
 	if err != nil {
 		t.Errorf("Unable to listen on socket: %s", err.Error())
 	}
@@ -137,11 +132,11 @@ func TestWso2SpAdapter_HandleMetric(t *testing.T) {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 
-	wso2SpAdapter := &Wso2SpAdapter{
+	wso2SpAdapter := &Adapter{
 		listener:   listener,
 		logger:     logger,
 		httpClient: &http.Client{},
-		publisher:  DummyServerResponse{},
+		publisher:  FakePublisher{},
 	}
 
 	var sampleInstances []*metric.InstanceMsg
@@ -150,15 +145,8 @@ func TestWso2SpAdapter_HandleMetric(t *testing.T) {
 	sampleInstances = append(sampleInstances, sampleInstance3)
 	sampleInstances = append(sampleInstances, sampleInstance4)
 
-	anyType := &types.Any{}
-	configP := &config.Params{}
-	configP.FilePath = "out.txt"
-	data, err := configP.Marshal()
-	anyType.Value = data
-
 	sampleMetricRequest := metric.HandleMetricRequest{
-		Instances:     sampleInstances,
-		AdapterConfig: anyType,
+		Instances: sampleInstances,
 	}
 
 	_, err = wso2SpAdapter.HandleMetric(context.TODO(), &sampleMetricRequest)

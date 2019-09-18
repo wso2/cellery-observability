@@ -1,3 +1,21 @@
+/*
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 @App:name("telemetry-app")
 @App:description("Cellery Telemetry app for processing and storing http requests")
 
@@ -6,12 +24,12 @@ define stream TelemetryStreamIn(sourceNamespace string, sourceCell string, sourc
                                 sourcePod string, destinationNamespace string, destinationCell string,
                                 destinationComponent string, destinationPod string, contextReporterKind string,
                                 requestHeadersMap object, requestPath string, requestMethod string,
-                                requestSizeBytes int, responseCode int, responseDurationNanoSec int,
-                                responseSizeBytes int);
+                                requestSizeBytes long, responseCode long, responseDurationNanoSec int,
+                                responseSizeBytes long);
 
 define stream ProcessedRequestsStream(sourceCell string, sourceComponent string, destinationCell string,
                                       destinationComponent string, httpResponseGroup string,
-                                      responseTimeMilliSec double, requestSizeBytes int, responseSizeBytes int);
+                                      responseTimeMilliSec double, requestSizeBytes long, responseSizeBytes long);
 
 @store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB", field.length="sourceCell:253, sourceComponent:253, destinationCell:253, destinationComponent: 253, httpResponseGroup:3")
 @purge(enable="false")
@@ -44,8 +62,8 @@ select
     cast(map:get(requestHeadersMap, "x-request-id"), "string") as requestId,
     str:concat(convert(cast(responseCode, "int") / 100, "string"), "xx") as httpResponseGroup,
     convert(responseDurationNanoSec, "double") / 1000000 as responseTimeMilliSec,
-    ifThenElse(requestSizeBytes is null, 0, requestSizeBytes) as requestSizeBytes,
-    ifThenElse(responseSizeBytes is null, 0, responseSizeBytes) as responseSizeBytes
+    ifThenElse(requestSizeBytes is null, 0L, requestSizeBytes) as requestSizeBytes,
+    ifThenElse(responseSizeBytes is null, 0L, responseSizeBytes) as responseSizeBytes
 insert into ProcessedTelemetryStream;
 
 from every(e1=ProcessedTelemetryStream) ->

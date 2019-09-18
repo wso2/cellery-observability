@@ -1,26 +1,22 @@
 /*
- * Copyright (c) ${year} WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * WSO2 Inc. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License.
+ * in compliance with the License.
  * You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing,
- *   software distributed under the License is distributed on an
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *  KIND, either express or implied.  See the License for the
+ * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
- *  under the License.
- *
+ * under the License.
  */
 
 package io.cellery.observability.telemetry.receiver.internal;
-
-import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.SerializedName;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,81 +25,75 @@ import java.util.Map;
  * This is a POJO.
  */
 public class Metric {
-    @SerializedName("apiOperation") @Expose private String apiOperation;
-    @SerializedName("apiProtocol") @Expose private String apiProtocol;
-    @SerializedName("apiService") @Expose private String apiService;
-    @SerializedName("apiVersion") @Expose private String apiVersion;
-    @SerializedName("checkCasheHit") @Expose private Boolean checkCasheHit;
-    @SerializedName("checkErrorCode") @Expose private Integer checkErrorCode;
-    @SerializedName("checkErrorMessage") @Expose private String checkErrorMessage;
-    @SerializedName("connectionEvent") @Expose private String connectionEvent;
-    @SerializedName("connectionID") @Expose private String connectionID;
-    @SerializedName("connectionMTLS") @Expose private Boolean connectionMTLS;
-    @SerializedName("connectionReceivedBytes") @Expose private Integer connectionReceivedBytes;
-    @SerializedName("connectionReceivedBytesTotal") @Expose private Integer connectionReceivedBytesTotal;
-    @SerializedName("connectionRequestedServerName") @Expose private String connectionRequestedServerName;
-    @SerializedName("connectionSentBytes") @Expose private Integer connectionSentBytes;
-    @SerializedName("connectionSentBytesTotal") @Expose private Integer connectionSentBytesTotal;
-    @SerializedName("contextProtocol") @Expose private String contextProtocol;
-    @SerializedName("contextReporterKind") @Expose private String contextReporterKind;
-    @SerializedName("contextReporterLocal") @Expose private Boolean contextReporterLocal;
-    @SerializedName("contextReporterUID") @Expose private String contextReporterUID;
-    @SerializedName("destinationContainerName") @Expose private String destinationContainerName;
-    @SerializedName("destinationName") @Expose
+    private String apiOperation;
+    private String apiProtocol;
+    private String apiService;
+    private String apiVersion;
+    private Boolean checkCasheHit;
+    private Long checkErrorCode;
+    private String checkErrorMessage;
+    private String connectionEvent;
+    private String connectionID;
+    private Boolean connectionMTLS;
+    private Long connectionReceivedBytes;
+    private Long connectionReceivedBytesTotal;
+    private String connectionRequestedServerName;
+    private Long connectionSentBytes;
+    private Long connectionSentBytesTotal;
+    private String contextProtocol;
+    private String contextReporterKind;
+    private Boolean contextReporterLocal;
+    private String contextReporterUID;
+    private String destinationContainerName;
     private String destinationName;
-    @SerializedName("destinationNamespace") @Expose private String destinationNamespace;
-    @SerializedName("destinationOwner") @Expose
+    private String destinationNamespace;
     private String destinationOwner;
-    @SerializedName("destinationPort") @Expose private Integer destinationPort;
-    @SerializedName("destinationPrincipal") @Expose private String destinationPrincipal;
-    @SerializedName("destinationServiceHost") @Expose
+    private Long destinationPort;
+    private String destinationPrincipal;
     private String destinationServiceHost;
-    @SerializedName("destinationServiceName") @Expose
     private String destinationServiceName;
-    @SerializedName("destinationServiceNamespace") @Expose private String destinationServiceNamespace;
-    @SerializedName("destinationServiceUID") @Expose private String destinationServiceUID;
-    @SerializedName("destinationUID") @Expose private String destinationUID;
-    @SerializedName("destinationWorkload") @Expose private String destinationWorkload;
-    @SerializedName("destinationWorkloadNamespace") @Expose private String destinationWorkloadNamespace;
-    @SerializedName("destinationWorkloadUID") @Expose private String destinationWorkloadUID;
-    @SerializedName("quotaCacheHit") @Expose private Boolean quotaCacheHit;
-    @SerializedName("requestApiKey") @Expose private String requestApiKey;
-    @SerializedName("requestAuthAudiences") @Expose private String requestAuthAudiences;
-    @SerializedName("requestAuthPresenter") @Expose private String requestAuthPresenter;
-    @SerializedName("requestAuthPrincipal") @Expose private String requestAuthPrincipal;
-    @SerializedName("requestHost") @Expose
+    private String destinationServiceNamespace;
+    private String destinationServiceUID;
+    private String destinationUID;
+    private String destinationWorkload;
+    private String destinationWorkloadNamespace;
+    private String destinationWorkloadUID;
+    private Boolean quotaCacheHit;
+    private String requestApiKey;
+    private String requestAuthAudiences;
+    private String requestAuthPresenter;
+    private String requestAuthPrincipal;
     private String requestHost;
-    @SerializedName("requestID") @Expose private String requestID;
-    @SerializedName("requestMethod") @Expose private String requestMethod;
-    @SerializedName("requestPath") @Expose private String requestPath;
-    @SerializedName("requestReason") @Expose private String requestReason;
-    @SerializedName("requestReferer") @Expose private String requestReferer;
-    @SerializedName("requestScheme") @Expose private String requestScheme;
-    @SerializedName("requestSize") @Expose private Integer requestSize;
-    @SerializedName("requestTotalSize") @Expose private Integer requestTotalSize;
-    @SerializedName("requestUserAgent") @Expose
+    private String requestID;
+    private String requestMethod;
+    private String requestPath;
+    private String requestReason;
+    private String requestReferer;
+    private String requestScheme;
+    private Long requestSize;
+    private Long requestTotalSize;
     private String requestUserAgent;
-    @SerializedName("responseCode") @Expose private Integer responseCode;
-    @SerializedName("responseDurationNanoSec") @Expose private Integer responseDurationNanoSec;
-    @SerializedName("responseGrpcMessage") @Expose private String responseGrpcMessage;
-    @SerializedName("responseGrpcStatus") @Expose private String responseGrpcStatus;
-    @SerializedName("responseSize") @Expose private Integer responseSize;
-    @SerializedName("responseTotalSize") @Expose private Integer responseTotalSize;
-    @SerializedName("sourceLabelsApp") @Expose private String sourceLabelsApp;
-    @SerializedName("sourceLabelsCell") @Expose private String sourceLabelsCell;
-    @SerializedName("sourceLabelsCellGateway") @Expose private String sourceLabelsCellGateway;
-    @SerializedName("sourceLabelsCellSlash") @Expose private String sourceLabelsCellSlash;
-    @SerializedName("sourceLabelsPodTemplateHash") @Expose private String sourceLabelsPodTemplateHash;
-    @SerializedName("sourceLabelsSvc") @Expose private String sourceLabelsSvc;
-    @SerializedName("sourceLabelsVersion") @Expose private String sourceLabelsVersion;
-    @SerializedName("sourceName") @Expose private String sourceName;
-    @SerializedName("sourceNamespace") @Expose private String sourceNamespace;
-    @SerializedName("sourceOwner") @Expose private String sourceOwner;
-    @SerializedName("sourcePrincipal") @Expose private String sourcePrincipal;
-    @SerializedName("sourceUID") @Expose private String sourceUID;
-    @SerializedName("sourceWorkloadName") @Expose private String sourceWorkloadName;
-    @SerializedName("sourceWorkloadNamespace") @Expose private String sourceWorkloadNamespace;
-    @SerializedName("sourceWorkloadUID") @Expose private String sourceWorkloadUID;
+    private Long responseCode;
+    private Integer responseDurationNanoSec;
+    private String responseGrpcMessage;
+    private String responseGrpcStatus;
+    private Long responseSize;
+    private Long responseTotalSize;
+    private String sourceLabelsApp;
+    private String sourceLabelsCell;
+    private String sourceLabelsCellGateway;
+    private String sourceLabelsCellSlash;
+    private String sourceLabelsPodTemplateHash;
+    private String sourceLabelsSvc;
+    private String sourceLabelsVersion;
+    private String sourceName;
+    private String sourceNamespace;
+    private String sourceOwner;
+    private String sourcePrincipal;
+    private String sourceUID;
+    private String sourceWorkloadName;
+    private String sourceWorkloadNamespace;
+    private String sourceWorkloadUID;
 
     public String getApiOperation() {
         return apiOperation;
@@ -145,11 +135,11 @@ public class Metric {
         this.checkCasheHit = checkCasheHit;
     }
 
-    public Integer getCheckErrorCode() {
+    public Long getCheckErrorCode() {
         return checkErrorCode;
     }
 
-    public void setCheckErrorCode(Integer checkErrorCode) {
+    public void setCheckErrorCode(Long checkErrorCode) {
         this.checkErrorCode = checkErrorCode;
     }
 
@@ -185,19 +175,19 @@ public class Metric {
         this.connectionMTLS = connectionMTLS;
     }
 
-    public Integer getConnectionReceivedBytes() {
+    public Long getConnectionReceivedBytes() {
         return connectionReceivedBytes;
     }
 
-    public void setConnectionReceivedBytes(Integer connectionReceivedBytes) {
+    public void setConnectionReceivedBytes(Long connectionReceivedBytes) {
         this.connectionReceivedBytes = connectionReceivedBytes;
     }
 
-    public Integer getConnectionReceivedBytesTotal() {
+    public Long getConnectionReceivedBytesTotal() {
         return connectionReceivedBytesTotal;
     }
 
-    public void setConnectionReceivedBytesTotal(Integer connectionReceivedBytesTotal) {
+    public void setConnectionReceivedBytesTotal(Long connectionReceivedBytesTotal) {
         this.connectionReceivedBytesTotal = connectionReceivedBytesTotal;
     }
 
@@ -209,19 +199,19 @@ public class Metric {
         this.connectionRequestedServerName = connectionRequestedServerName;
     }
 
-    public Integer getConnectionSentBytes() {
+    public Long getConnectionSentBytes() {
         return connectionSentBytes;
     }
 
-    public void setConnectionSentBytes(Integer connectionSentBytes) {
+    public void setConnectionSentBytes(Long connectionSentBytes) {
         this.connectionSentBytes = connectionSentBytes;
     }
 
-    public Integer getConnectionSentBytesTotal() {
+    public Long getConnectionSentBytesTotal() {
         return connectionSentBytesTotal;
     }
 
-    public void setConnectionSentBytesTotal(Integer connectionSentBytesTotal) {
+    public void setConnectionSentBytesTotal(Long connectionSentBytesTotal) {
         this.connectionSentBytesTotal = connectionSentBytesTotal;
     }
 
@@ -289,11 +279,11 @@ public class Metric {
         this.destinationOwner = destinationOwner;
     }
 
-    public Integer getDestinationPort() {
+    public Long getDestinationPort() {
         return destinationPort;
     }
 
-    public void setDestinationPort(Integer destinationPort) {
+    public void setDestinationPort(Long destinationPort) {
         this.destinationPort = destinationPort;
     }
 
@@ -465,19 +455,19 @@ public class Metric {
         this.requestScheme = requestScheme;
     }
 
-    public Integer getRequestSize() {
+    public Long getRequestSize() {
         return requestSize;
     }
 
-    public void setRequestSize(Integer requestSize) {
+    public void setRequestSize(Long requestSize) {
         this.requestSize = requestSize;
     }
 
-    public Integer getRequestTotalSize() {
+    public Long getRequestTotalSize() {
         return requestTotalSize;
     }
 
-    public void setRequestTotalSize(Integer requestTotalSize) {
+    public void setRequestTotalSize(Long requestTotalSize) {
         this.requestTotalSize = requestTotalSize;
     }
 
@@ -489,11 +479,11 @@ public class Metric {
         this.requestUserAgent = requestUserAgent;
     }
 
-    public Integer getResponseCode() {
+    public Long getResponseCode() {
         return responseCode;
     }
 
-    public void setResponseCode(Integer responseCode) {
+    public void setResponseCode(Long responseCode) {
         this.responseCode = responseCode;
     }
 
@@ -521,19 +511,19 @@ public class Metric {
         this.responseGrpcStatus = responseGrpcStatus;
     }
 
-    public Integer getResponseSize() {
+    public Long getResponseSize() {
         return responseSize;
     }
 
-    public void setResponseSize(Integer responseSize) {
+    public void setResponseSize(Long responseSize) {
         this.responseSize = responseSize;
     }
 
-    public Integer getResponseTotalSize() {
+    public Long getResponseTotalSize() {
         return responseTotalSize;
     }
 
-    public void setResponseTotalSize(Integer responseTotalSize) {
+    public void setResponseTotalSize(Long responseTotalSize) {
         this.responseTotalSize = responseTotalSize;
     }
 
@@ -659,7 +649,6 @@ public class Metric {
 
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
-        //         map.put("sourceIP", this.sourceIP);
         map.put("sourceUID", this.sourceUID);
         map.put("sourceName", this.sourceName);
         map.put("sourceNamespace", this.sourceNamespace);
@@ -669,16 +658,13 @@ public class Metric {
         map.put("sourceWorkloadName", this.sourceWorkloadName);
         map.put("sourceWorkloadNamespace", this.sourceWorkloadNamespace);
         map.put("destinationUID", this.destinationUID);
-        //         map.put("destinationIP", this.destinationIP);
         map.put("destinationPort", this.destinationPort);
         map.put("destinationName", this.destinationName);
         map.put("destinationNamespace", this.destinationNamespace);
         map.put("destinationPrincipal", this.destinationPrincipal);
         map.put("destinationOwner", this.destinationOwner);
         map.put("destinationWorkloadUID", this.destinationWorkloadUID);
-        //         map.put("destinationWorkloadName", this.destinationWorkloadName);
         map.put("destinationWorkloadNamespace", this.destinationWorkloadNamespace);
-        //         map.put("destinationContainerImage", this.destinationContainerImage);
         map.put("destinationContainerName", this.destinationContainerName);
         map.put("destinationServiceHost", this.destinationServiceHost);
         map.put("destinationServiceUID", this.destinationServiceUID);
@@ -692,32 +678,20 @@ public class Metric {
         map.put("requestReferer", this.requestReferer);
         map.put("requestScheme", this.requestScheme);
         map.put("requestSize", this.requestSize);
-        //         map.put("requestTimeNanoSec", this.requestTimeNanoSec);
         map.put("requestTotalSize", this.requestTotalSize);
-        //         map.put("requestTimeSec", this.requestTimeSec);
-        //         map.put("requestTimeNanoSec", this.requestTimeNanoSec);
         map.put("requestUserAgent", this.requestUserAgent);
         map.put("responseSize", this.responseSize);
-        //         map.put("responseTimeSec", this.responseTimeSec);
-        //         map.put("responseTimeNanoSec", this.responseTimeNanoSec);
-        //         map.put("responseDurationSec", this.responseDurationSec);
         map.put("responseDurationNanoSec", this.responseDurationNanoSec);
         map.put("responseCode", this.responseCode);
-        //         map.put("responseGRPCStatus", this.responseGRPCStatus);
-        //         map.put("responseGRPCMessage", this.responseGRPCMessage);
         map.put("connectionID", this.connectionID);
         map.put("connectionEvent", this.connectionEvent);
         map.put("connectionReceivedBytes", this.connectionReceivedBytes);
         map.put("connectionReceivedBytesTotal", this.connectionReceivedBytesTotal);
         map.put("connectionSentBytes", this.connectionSentBytes);
         map.put("connectionSentBytesTotal", this.connectionSentBytesTotal);
-        //         map.put("connectionDurationSec", this.connectionDurationSec);
-        //         map.put("connectionDurationNanoSec", this.connectionDurationNanoSec);
         map.put("connectionMTLS", this.connectionMTLS);
         map.put("connectionRequestedServerName", this.connectionRequestedServerName);
         map.put("contextProtocol", this.contextProtocol);
-        //         map.put("contextTimeSec", this.contextTimeSec);
-        //         map.put("contextTimeNanoSec", this.contextTimeNanoSec);
         map.put("contextReporterKind", this.contextReporterKind);
         map.put("contextReporterUID", this.contextReporterUID);
         map.put("apiService", this.apiService);
@@ -727,11 +701,8 @@ public class Metric {
         map.put("requestAuthPrincipal", this.requestAuthPrincipal);
         map.put("requestAuthAudiences", this.requestAuthAudiences);
         map.put("requestAuthPresenter", this.requestAuthPresenter);
-        //         map.put("requestAuthClaims", this.requestAuthClaims);
-        //         map.put("requestAPIKey", this.requestAPIKey);
         map.put("checkErrorCode", this.checkErrorCode);
         map.put("checkErrorMessage", this.checkErrorMessage);
-        //         map.put("checkCacheHit", this.checkCacheHit);
         map.put("quotaCacheHit", this.quotaCacheHit);
         map.put("contextReporterLocal", this.contextReporterLocal);
         map.put("responseTotalSize", this.responseTotalSize);

@@ -1,3 +1,21 @@
+/*
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 @App:name("istio-telemetry-app")
 @App:description("This receives the attributes generally received by the Istio Mixer")
 
@@ -6,7 +24,7 @@ define stream TelemetryStream(sourceUID string, sourceIP string, sourceLabels st
                               sourceNamespace string, sourcePrincipal string, sourceOwner string,
                               sourceWorkloadUID string, sourceWorkloadName string,
                               sourceWorkloadNamespace string, destinationUID string, destinationIP string,
-                              destinationPort int, destinationLabels string, destinationName string,
+                              destinationPort long, destinationLabels string, destinationName string,
                               destinationNamespace string, destinationPrincipal string, destinationOwner string,
                               destinationWorkloadUID string, destinationWorkloadName string,
                               destinationWorkloadNamespace string, destinationContainerName string,
@@ -14,36 +32,35 @@ define stream TelemetryStream(sourceUID string, sourceIP string, sourceLabels st
                               destinationServiceUID string, destinationServiceName string,
                               destinationServiceNamespace string, requestHeaders string, requestID string,
                               requestPath string, requestHost string, requestMethod string, requestReason string,
-                              requestReferer string, requestScheme string, requestSize int,
-                              requestTotalSize int, requestTimeSec int, requestTimeNanoSec int,
-                              requestUserAgent string, responseHeaders string, responseSize int,
-                              responseTotalSize int, responseTimeSec int, responseTimeNanoSec int,
-                              responseDurationSec int, responseDurationNanoSec int, responseCode int,
+                              requestReferer string, requestScheme string, requestSize long,
+                              requestTotalSize long, requestTimeSec long, requestTimeNanoSec int,
+                              requestUserAgent string, responseHeaders string, responseSize long,
+                              responseTotalSize long, responseTimeSec long, responseTimeNanoSec int,
+                              responseDurationSec long, responseDurationNanoSec int, responseCode long,
                               responseGRPCStatus string, responseGRPCMessage string, connectionID string,
-                              connectionEvent string, connectionReceivedBytes int,
-                              connectionReceivedBytesTotal int, connectionSentBytes int,
-                              connectionSentBytesTotal int, connectionDurationSec int,
+                              connectionEvent string, connectionReceivedBytes long,
+                              connectionReceivedBytesTotal long, connectionSentBytes long,
+                              connectionSentBytesTotal long, connectionDurationSec long,
                               connectionDurationNanoSec int, connectionMTLS bool,
-                              connectionRequestedServerName string, contextProtocol string, contextTimeSec int,
+                              connectionRequestedServerName string, contextProtocol string, contextTimeSec long,
                               contextTimeNanoSec int, contextReporterKind string, contextReporterUID string,
                               apiService string, apiVersion string, apiOperation string, apiProtocol string,
                               requestAuthPrincipal string, requestAuthAudiences string,
                               requestAuthPresenter string, requestAuthClaims string, requestAPIKey string,
-                              checkErrorCode int, checkErrorMessage string, checkCacheHit bool,
+                              checkErrorCode long, checkErrorMessage string, checkCacheHit bool,
                               quotaCacheHit bool, contextReporterLocal bool);
 
-
 @source(type="inMemory", topic="k8s-component-pods", @map(type="passThrough"))
-define stream K8sComponentPodsInMemorySink(cell string, component string, name string, creationTimestamp int,
-                                           lastKnownAliveTimestamp int, nodeName string, status string, action string);
+define stream K8sComponentPodsInMemorySink(instance string, kind string, component string, name string, creationTimestamp long,
+                                           lastKnownAliveTimestamp long, nodeName string, status string, action string);
 
 @sink(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
 define stream TelemetryInMemorySink(sourceNamespace string, sourceCell string, sourceComponent string,
                                     sourcePod string, destinationNamespace string, destinationCell string,
                                     destinationComponent string, destinationPod string, contextReporterKind string,
                                     requestHeadersMap object, requestPath string, requestMethod string,
-                                    requestSizeBytes int, responseCode int, responseDurationNanoSec int,
-                                    responseSizeBytes int);
+                                    requestSizeBytes long, responseCode long, responseDurationNanoSec int,
+                                    responseSizeBytes long);
 
 define window K8sComponentPodInfoWindow(podName string, cell string, component string) unique:time(podName, 11 minutes);
 
@@ -65,11 +82,10 @@ define function extractFromUID[javascript] return string {
 };
 
 from K8sComponentPodsInMemorySink
-select name as podName, cell, component
+select name as podName, instance as cell, component
 insert into K8sComponentPodInfoWindow;
 
-from TelemetryStream
-[(not sourceUID is null) and (not destinationUID is null)]
+from TelemetryStream[(not sourceUID is null) and (not destinationUID is null)]
 select
     str:replaceFirst(sourceUID, "^kubernetes://", "") as sourceUID,
     str:replaceFirst(destinationUID, "^kubernetes://", "") as destinationUID,
