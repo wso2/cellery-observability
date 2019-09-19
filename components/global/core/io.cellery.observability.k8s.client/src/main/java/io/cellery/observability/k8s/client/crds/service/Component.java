@@ -26,19 +26,19 @@ import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 
 /**
- * This represents the serializable class for ServicesTemplate in cell yaml.
- * */
+ * This class implements the Component resource.
+ */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ServicesTemplate implements KubernetesResource {
+public class Component implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
     @JsonProperty("metadata")
     private ObjectMeta metadata;
     @JsonProperty("spec")
-    private ServicesTemplateSpec spec;
+    private ComponentSpec spec;
 
     @JsonProperty("metadata")
     public ObjectMeta getMetadata() {
@@ -51,12 +51,12 @@ public class ServicesTemplate implements KubernetesResource {
     }
 
     @JsonProperty("spec")
-    public ServicesTemplateSpec getSpec() {
+    public ComponentSpec getSpec() {
         return spec;
     }
 
     @JsonProperty("spec")
-    public void setSpec(ServicesTemplateSpec spec) {
+    public void setSpec(ComponentSpec spec) {
         this.spec = spec;
     }
 

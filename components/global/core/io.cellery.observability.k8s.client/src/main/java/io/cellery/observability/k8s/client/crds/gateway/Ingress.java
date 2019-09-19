@@ -24,27 +24,65 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 
+import java.util.List;
+
 /**
- * This class implements the TCP ingress.
- */
+ * This class implements the Ingress in Gateway.
+ * */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class TCP implements KubernetesResource {
+public class Ingress implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("destination")
-    private Destination destination;
+    @JsonProperty("extensions")
+    private Extensions extensions;
+    @JsonProperty("http")
+    private List<HTTP> http;
+    @JsonProperty("grpc")
+    private List<GRPC> grpc;
+    @JsonProperty("tcp")
+    private List<TCP> tcp;
 
-    @JsonProperty("destination")
-    public Destination getDestination() {
-        return destination;
+    @JsonProperty("extensions")
+    public Extensions getExtensions() {
+        return extensions;
     }
 
-    @JsonProperty("destination")
-    public void setDestination(Destination destination) {
-        this.destination = destination;
+    @JsonProperty("extensions")
+    public void setExtensions(Extensions extensions) {
+        this.extensions = extensions;
+    }
+
+    @JsonProperty("http")
+    public List<HTTP> getHttp() {
+        return http;
+    }
+
+    @JsonProperty("http")
+    public void setHttp(List<HTTP> http) {
+        this.http = http;
+    }
+
+    @JsonProperty("grpc")
+    public List<GRPC> getGrpc() {
+        return grpc;
+    }
+
+    @JsonProperty("grpc")
+    public void setGrpc(List<GRPC> grpc) {
+        this.grpc = grpc;
+    }
+
+    @JsonProperty("tcp")
+    public List<TCP> getTcp() {
+        return tcp;
+    }
+
+    @JsonProperty("tcp")
+    public void setTcp(List<TCP> tcp) {
+        this.tcp = tcp;
     }
 
 }

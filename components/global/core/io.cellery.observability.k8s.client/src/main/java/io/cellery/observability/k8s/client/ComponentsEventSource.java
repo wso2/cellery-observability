@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class implements the Event Source which can be used to listen for K8s component changes.
@@ -112,9 +113,9 @@ public class ComponentsEventSource extends Source {
                                     ? -1
                                     : new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US).parse(
                                             cell.getMetadata().getCreationTimestamp()).getTime();
-                            Map<String, List<String>> componentIngressTypes = Utils.getComponentIngressTypes(cell);
+                            Map<String, Set<String>> componentIngressTypes = Utils.getComponentIngressTypes(cell);
 
-                            for (Map.Entry<String, List<String>> entry : componentIngressTypes.entrySet()) {
+                            for (Map.Entry<String, Set<String>> entry : componentIngressTypes.entrySet()) {
                                 Map<String, Object> attributes = new HashMap<>();
                                 attributes.put(Constants.Attribute.INSTANCE, cell.getMetadata().getName());
                                 attributes.put(Constants.Attribute.COMPONENT, entry.getKey());
@@ -157,9 +158,9 @@ public class ComponentsEventSource extends Source {
                                     ? -1
                                     : new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US).parse(
                                     composite.getMetadata().getCreationTimestamp()).getTime();
-                            Map<String, List<String>> componentIngressTypes = Utils.getComponentIngressTypes(composite);
+                            Map<String, Set<String>> componentIngressTypes = Utils.getComponentIngressTypes(composite);
 
-                            for (Map.Entry<String, List<String>> entry : componentIngressTypes.entrySet()) {
+                            for (Map.Entry<String, Set<String>> entry : componentIngressTypes.entrySet()) {
                                 Map<String, Object> attributes = new HashMap<>();
                                 attributes.put(Constants.Attribute.INSTANCE, composite.getMetadata().getName());
                                 attributes.put(Constants.Attribute.COMPONENT, entry.getKey());

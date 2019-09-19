@@ -21,7 +21,7 @@ package io.cellery.observability.k8s.client.crds.composite;
 import io.fabric8.kubernetes.client.CustomResourceList;
 
 /**
- * This class represents the List resource for Cellery composites.
+ * This class implements the List resource for Composites.
  */
 public class CompositeList extends CustomResourceList<Composite> {
 

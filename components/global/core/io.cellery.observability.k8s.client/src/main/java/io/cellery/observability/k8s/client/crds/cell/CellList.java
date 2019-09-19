@@ -21,7 +21,7 @@ package io.cellery.observability.k8s.client.crds.cell;
 import io.fabric8.kubernetes.client.CustomResourceList;
 
 /**
- * This class represents the List resource for Cellery cells.
+ * This class implements the List resource for Cells.
  */
 public class CellList extends CustomResourceList<Cell> {
 

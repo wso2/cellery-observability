@@ -20,6 +20,7 @@ package io.cellery.observability.k8s.client;
 
 import io.cellery.observability.k8s.client.crds.cell.Cell;
 import io.cellery.observability.k8s.client.crds.composite.Composite;
+import io.cellery.observability.k8s.client.crds.gateway.Destination;
 import io.cellery.observability.k8s.client.crds.gateway.GRPC;
 import io.cellery.observability.k8s.client.crds.gateway.HTTP;
 import io.cellery.observability.k8s.client.crds.gateway.TCP;
@@ -85,38 +86,40 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
     @Test
     public void testComponentEvents() throws Exception {
         String deletionTimestamp = "2019-06-30T01:45:11Z";
+
+        Destination cellAHttpIngressADestination = new Destination();
+        cellAHttpIngressADestination.setHost("portal");
         HTTP cellAHttpIngressA = new HTTP();
-        cellAHttpIngressA.setGlobal(true);
-        cellAHttpIngressA.setContext("/");
-        cellAHttpIngressA.setBackend("portal");
-        cellAHttpIngressA.setAuthenticate(false);
+        cellAHttpIngressA.setDestination(cellAHttpIngressADestination);
+
         Cell cellA = generateCell("cell-a",
-                generateGatewayTemplate("Envoy", "pet-store.com", Collections.singletonList(cellAHttpIngressA),
+                generateGatewayTemplate("pet-store.com", Collections.singletonList(cellAHttpIngressA),
                         null, null),
                 Collections.singletonList(generateServicesTemplate("portal", "HTTP")));
         cellA.getMetadata().setCreationTimestamp(null);
 
+        Destination cellBTcpIngressADestination = new Destination();
+        cellBTcpIngressADestination.setHost("test-a");
         TCP cellBTcpIngressA = new TCP();
-        cellBTcpIngressA.setBackendHost("test-a");
-        cellBTcpIngressA.setBackendPort(8000);
-        cellBTcpIngressA.setPort(7000);
+        cellBTcpIngressA.setDestination(cellBTcpIngressADestination);
+
         Cell cellB = generateCell("cell-b",
-                generateGatewayTemplate("Envoy", null, null, Collections.singletonList(cellBTcpIngressA), null),
+                generateGatewayTemplate(null, null, Collections.singletonList(cellBTcpIngressA), null),
                 Arrays.asList(generateServicesTemplate("test-a", "TCP"),
                         generateServicesTemplate("test-b", "TCP")));
 
+        Destination cellCHttpIngressADestination = new Destination();
+        cellCHttpIngressADestination.setHost("controller");
         HTTP cellCHttpIngressA = new HTTP();
-        cellCHttpIngressA.setAuthenticate(true);
-        cellCHttpIngressA.setBackend("controller");
-        cellCHttpIngressA.setContext("/controller");
-        cellCHttpIngressA.setGlobal(true);
+        cellCHttpIngressA.setDestination(cellCHttpIngressADestination);
+
+        Destination cellCHttpIngressBDestination = new Destination();
+        cellCHttpIngressBDestination.setHost("customers");
         HTTP cellCHttpIngressB = new HTTP();
-        cellCHttpIngressB.setAuthenticate(true);
-        cellCHttpIngressB.setBackend("customers");
-        cellCHttpIngressB.setContext("/customers");
-        cellCHttpIngressB.setGlobal(false);
+        cellCHttpIngressB.setDestination(cellCHttpIngressBDestination);
+
         Cell cellC = generateCell("cell-c",
-                generateGatewayTemplate("MicroGateway", null, Arrays.asList(cellCHttpIngressA, cellCHttpIngressB),
+                generateGatewayTemplate(null, Arrays.asList(cellCHttpIngressA, cellCHttpIngressB),
                         null, null),
                 Arrays.asList(generateServicesTemplate("controller", "HTTP"),
                         generateServicesTemplate("customers", "HTTP"),
@@ -124,12 +127,13 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
                         generateServicesTemplate("catalog", "HTTP")));
         cellC.getMetadata().setDeletionTimestamp(deletionTimestamp);
 
+        Destination cellDGrpcIngressADestination = new Destination();
+        cellDGrpcIngressADestination.setHost("test-component");
         GRPC cellDGrpcIngressA = new GRPC();
-        cellDGrpcIngressA.setPort(10000);
-        cellDGrpcIngressA.setBackendPort(9000);
-        cellDGrpcIngressA.setBackendHost("test-component");
+        cellDGrpcIngressA.setDestination(cellDGrpcIngressADestination);
+
         Cell cellD = generateCell("cell-d",
-                generateGatewayTemplate("Envoy", null, null, null, Collections.singletonList(cellDGrpcIngressA)),
+                generateGatewayTemplate(null, null, null, Collections.singletonList(cellDGrpcIngressA)),
                 Arrays.asList(generateServicesTemplate("test-component", "GRPC"),
                         // Ingress can be lower case as well
                         generateServicesTemplate("test-component-alt", "grpc")));
@@ -268,13 +272,13 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
 
     @Test
     public void testComponentEventsWithNoIngresses() throws Exception {
+        Destination cellAHttpIngressADestination = new Destination();
+        cellAHttpIngressADestination.setHost("controller");
         HTTP cellAHttpIngressA = new HTTP();
-        cellAHttpIngressA.setAuthenticate(true);
-        cellAHttpIngressA.setBackend("controller");
-        cellAHttpIngressA.setContext("/controller");
-        cellAHttpIngressA.setGlobal(true);
+        cellAHttpIngressA.setDestination(cellAHttpIngressADestination);
+
         Cell cellA = generateCell("cell-a",
-                generateGatewayTemplate("MicroGateway", null, null, null, null),
+                generateGatewayTemplate(null, null, null, null),
                 Arrays.asList(generateServicesTemplate("controller", "HTTP"),
                         generateServicesTemplate("customers", "GRPC")));
 
@@ -359,13 +363,13 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
 
     @Test
     public void testPodEventsWithApiServerDown() throws Exception {
+        Destination cellAHttpIngressADestination = new Destination();
+        cellAHttpIngressADestination.setHost("controller");
         HTTP cellAHttpIngressA = new HTTP();
-        cellAHttpIngressA.setAuthenticate(true);
-        cellAHttpIngressA.setBackend("controller");
-        cellAHttpIngressA.setContext("/controller");
-        cellAHttpIngressA.setGlobal(true);
+        cellAHttpIngressA.setDestination(cellAHttpIngressADestination);
+
         Cell cellA = generateCell("cell-a",
-                generateGatewayTemplate("MicroGateway", null, Collections.singletonList(cellAHttpIngressA), null, null),
+                generateGatewayTemplate(null, Collections.singletonList(cellAHttpIngressA), null, null),
                 Arrays.asList(generateServicesTemplate("controller", "HTTP"),
                         generateServicesTemplate("customers", "HTTP")));
 
@@ -386,7 +390,7 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(723)
-                .andEmit(new WatchEvent(cellA, "MODIFIED"))
+                .andEmit(new WatchEvent(compositeA, "MODIFIED"))
                 .done()
                 .once();
 
@@ -399,13 +403,13 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
 
     @Test
     public void testPersistence() throws Exception {
+        Destination cellAHttpIngressADestination = new Destination();
+        cellAHttpIngressADestination.setHost("controller");
         HTTP cellAHttpIngressA = new HTTP();
-        cellAHttpIngressA.setAuthenticate(true);
-        cellAHttpIngressA.setBackend("controller");
-        cellAHttpIngressA.setContext("/controller");
-        cellAHttpIngressA.setGlobal(true);
+        cellAHttpIngressA.setDestination(cellAHttpIngressADestination);
+
         Cell cellA = generateCell("cell-a",
-                generateGatewayTemplate("MicroGateway", null, Collections.singletonList(cellAHttpIngressA), null, null),
+                generateGatewayTemplate(null, Collections.singletonList(cellAHttpIngressA), null, null),
                 Arrays.asList(generateServicesTemplate("controller", "HTTP"),
                         generateServicesTemplate("customers", "HTTP")));
 
@@ -475,13 +479,13 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
 
     @Test
     public void testTimestampParseFailure() throws Exception {
+        Destination cellAHttpIngressADestination = new Destination();
+        cellAHttpIngressADestination.setHost("controller");
         HTTP cellAHttpIngressA = new HTTP();
-        cellAHttpIngressA.setAuthenticate(true);
-        cellAHttpIngressA.setBackend("controller");
-        cellAHttpIngressA.setContext("/controller");
-        cellAHttpIngressA.setGlobal(true);
+        cellAHttpIngressA.setDestination(cellAHttpIngressADestination);
+
         Cell cellA = generateCell("cell-a",
-                generateGatewayTemplate("MicroGateway", null, Collections.singletonList(cellAHttpIngressA), null, null),
+                generateGatewayTemplate(null, Collections.singletonList(cellAHttpIngressA), null, null),
                 Arrays.asList(generateServicesTemplate("controller", "HTTP"),
                         generateServicesTemplate("customers", "HTTP")));
         cellA.getMetadata().setCreationTimestamp("invalid-date-1");
@@ -515,13 +519,13 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
 
     @Test
     public void testShutdownWithFailure() throws Exception {
+        Destination cellAHttpIngressADestination = new Destination();
+        cellAHttpIngressADestination.setHost("controller");
         HTTP cellAHttpIngressA = new HTTP();
-        cellAHttpIngressA.setAuthenticate(true);
-        cellAHttpIngressA.setBackend("controller");
-        cellAHttpIngressA.setContext("/controller");
-        cellAHttpIngressA.setGlobal(true);
+        cellAHttpIngressA.setDestination(cellAHttpIngressADestination);
+
         Cell cellA = generateCell("cell-a",
-                generateGatewayTemplate("MicroGateway", null, Collections.singletonList(cellAHttpIngressA), null, null),
+                generateGatewayTemplate(null, Collections.singletonList(cellAHttpIngressA), null, null),
                 Arrays.asList(generateServicesTemplate("controller", "HTTP"),
                         generateServicesTemplate("customers", "HTTP")));
 

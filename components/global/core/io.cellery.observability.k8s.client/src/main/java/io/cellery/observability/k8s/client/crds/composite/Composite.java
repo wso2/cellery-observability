@@ -21,7 +21,7 @@ package io.cellery.observability.k8s.client.crds.composite;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
 /**
- * This interface represents certain methods to be implemented in a Composite.
+ * This interface represents methods to be implemented in a Composite.
  */
 public interface Composite extends HasMetadata {
 

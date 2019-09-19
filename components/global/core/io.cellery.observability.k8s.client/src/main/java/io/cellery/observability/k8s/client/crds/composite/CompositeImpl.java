@@ -27,7 +27,7 @@ import io.fabric8.kubernetes.client.CustomResource;
 import javax.validation.Valid;
 
 /**
- * This class implements the Event Source which can be used to listen for k8s composite changes.
+ * This class implements the Composite resource.
  */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)

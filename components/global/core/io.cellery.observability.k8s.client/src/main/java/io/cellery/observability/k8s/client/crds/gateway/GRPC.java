@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 
 /**
- * This is used to represent TCP Ingress_Type
+ * This class implements the GRPC ingress.
  */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -34,41 +34,17 @@ public class GRPC implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("port")
-    private Integer port;
-    @JsonProperty("backendHost")
-    private String backendHost;
-    @JsonProperty("backendPort")
-    private Integer backendPort;
+    @JsonProperty("destination")
+    private Destination destination;
 
-    @JsonProperty("port")
-    public Integer getPort() {
-        return port;
+    @JsonProperty("destination")
+    public Destination getDestination() {
+        return destination;
     }
 
-    @JsonProperty("port")
-    public void setPort(Integer port) {
-        this.port = port;
-    }
-
-    @JsonProperty("backendHost")
-    public String getBackendHost() {
-        return backendHost;
-    }
-
-    @JsonProperty("backendHost")
-    public void setBackendHost(String backendHost) {
-        this.backendHost = backendHost;
-    }
-
-    @JsonProperty("backendPort")
-    public Integer getBackendPort() {
-        return backendPort;
-    }
-
-    @JsonProperty("backendPort")
-    public void setBackendPort(Integer backendPort) {
-        this.backendPort = backendPort;
+    @JsonProperty("destination")
+    public void setDestination(Destination destination) {
+        this.destination = destination;
     }
 
 }

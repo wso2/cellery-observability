@@ -23,7 +23,6 @@ import io.cellery.observability.k8s.client.crds.composite.CompositeImpl;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
-import org.apache.log4j.Logger;
 import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -35,7 +34,6 @@ import java.util.Map;
  */
 public class K8sClientHolderTestCase {
 
-    private static final Logger logger = Logger.getLogger(K8sClientHolderTestCase.class.getName());
     @Test
     public void testGetK8sClient() {
         Whitebox.setInternalState(K8sClientHolder.class, "k8sClient", (KubernetesClient) null);
