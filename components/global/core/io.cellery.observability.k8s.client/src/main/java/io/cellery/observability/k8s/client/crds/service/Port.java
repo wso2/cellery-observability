@@ -16,48 +16,35 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds.gateway;
+package io.cellery.observability.k8s.client.crds.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
 
 /**
- * This represents the serializable class for GatewayTemplate.
- * */
+ * This class implements a port in a Component.
+ */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class GatewayTemplate implements KubernetesResource {
+public class Port implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("metadata")
-    private ObjectMeta metadata;
-    @JsonProperty("spec")
-    private GatewayTemplateSpec spec;
+    @JsonProperty("protocol")
+    private String protocol;
 
-    @JsonProperty("metadata")
-    public ObjectMeta getMetadata() {
-        return metadata;
+    @JsonProperty("protocol")
+    public String getProtocol() {
+        return protocol;
     }
 
-    @JsonProperty("metadata")
-    public void setMetadata(ObjectMeta metadata) {
-        this.metadata = metadata;
-    }
-
-    @JsonProperty("spec")
-    public GatewayTemplateSpec getSpec() {
-        return spec;
-    }
-
-    @JsonProperty("spec")
-    public void setSpec(GatewayTemplateSpec spec) {
-        this.spec = spec;
+    @JsonProperty("protocol")
+    public void setProtocol(String protocol) {
+        this.protocol = protocol;
     }
 
 }

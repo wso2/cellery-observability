@@ -22,7 +22,7 @@ import io.fabric8.kubernetes.api.builder.Function;
 import io.fabric8.kubernetes.client.CustomResourceDoneable;
 
 /**
- * This class represents Doneable resource for Cellery composites.
+ * This class represents Doneable resource for Composites.
  */
 public class DoneableComposite extends CustomResourceDoneable<CompositeImpl> {
 

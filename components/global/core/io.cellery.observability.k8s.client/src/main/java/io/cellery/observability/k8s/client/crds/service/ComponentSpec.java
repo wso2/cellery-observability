@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.k8s.client.crds.gateway;
+package io.cellery.observability.k8s.client.crds.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -24,27 +24,29 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 
+import java.util.List;
+
 /**
- * This class implements the TCP ingress.
+ * This class implements the spec in Component.
  */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class TCP implements KubernetesResource {
+public class ComponentSpec implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("destination")
-    private Destination destination;
+    @JsonProperty("ports")
+    private List<Port> ports;
 
-    @JsonProperty("destination")
-    public Destination getDestination() {
-        return destination;
+    @JsonProperty("ports")
+    public List<Port> getPorts() {
+        return ports;
     }
 
-    @JsonProperty("destination")
-    public void setDestination(Destination destination) {
-        this.destination = destination;
+    @JsonProperty("ports")
+    public void setPorts(List<Port> ports) {
+        this.ports = ports;
     }
 
 }

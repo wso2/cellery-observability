@@ -25,26 +25,26 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 
 /**
- * This class implements the TCP ingress.
- */
+ * This class implements the spec in Gateway.
+ * */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class TCP implements KubernetesResource {
+public class GatewaySpec implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("destination")
-    private Destination destination;
+    @JsonProperty("ingress")
+    private Ingress ingress;
 
-    @JsonProperty("destination")
-    public Destination getDestination() {
-        return destination;
+    @JsonProperty("ingress")
+    public Ingress getIngress() {
+        return ingress;
     }
 
-    @JsonProperty("destination")
-    public void setDestination(Destination destination) {
-        this.destination = destination;
+    @JsonProperty("ingress")
+    public void setIngress(Ingress ingress) {
+        this.ingress = ingress;
     }
 
 }

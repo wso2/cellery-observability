@@ -23,28 +23,19 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-import java.util.List;
 
 /**
- * This represents the serializable class for GatewayTemplate spec in cell yaml.
+ * This class implements the Destination in Gateway Protocols.
  * */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class GatewayTemplateSpec implements KubernetesResource {
+public class Destination implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
     @JsonProperty("host")
     private String host;
-    @JsonProperty("http")
-    private List<HTTP> http = null;
-    @JsonProperty("tcp")
-    private List<TCP> tcp = null;
-    @JsonProperty("grpc")
-    private List<GRPC> grpc = null;
-    @JsonProperty("type")
-    private String type;
 
     @JsonProperty("host")
     public String getHost() {
@@ -54,46 +45,6 @@ public class GatewayTemplateSpec implements KubernetesResource {
     @JsonProperty("host")
     public void setHost(String host) {
         this.host = host;
-    }
-
-    @JsonProperty("http")
-    public List<HTTP> getHttp() {
-        return http;
-    }
-
-    @JsonProperty("http")
-    public void setHttp(List<HTTP> http) {
-        this.http = http;
-    }
-
-    @JsonProperty("tcp")
-    public List<TCP> getTcp() {
-        return tcp;
-    }
-
-    @JsonProperty("tcp")
-    public void setTcp(List<TCP> tcp) {
-        this.tcp = tcp;
-    }
-
-    @JsonProperty("grpc")
-    public List<GRPC> getGrpc() {
-        return grpc;
-    }
-
-    @JsonProperty("grpc")
-    public void setGrpc(List<GRPC> grpc) {
-        this.grpc = grpc;
-    }
-
-    @JsonProperty("type")
-    public String getType() {
-        return type;
-    }
-
-    @JsonProperty("type")
-    public void setType(String type) {
-        this.type = type;
     }
 
 }

@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.client.CustomResource;
 
 /**
- * This class implements the Event Source which can be used to listen for k8s cell changes.
+ * This class implements the Cell resource.
  */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)

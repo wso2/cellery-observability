@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.cellery.observability.k8s.client.crds.service.ServicesTemplate;
+import io.cellery.observability.k8s.client.crds.service.Component;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 
 import java.util.List;
@@ -37,17 +37,17 @@ public class CompositeSpec implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("servicesTemplates")
-    private List<ServicesTemplate> servicesTemplates = null;
+    @JsonProperty("components")
+    private List<Component> components;
 
-    @JsonProperty("servicesTemplates")
-    public List<ServicesTemplate> getServicesTemplates() {
-        return servicesTemplates;
+    @JsonProperty("components")
+    public List<Component> getComponents() {
+        return components;
     }
 
-    @JsonProperty("servicesTemplates")
-    public void setServicesTemplates(List<ServicesTemplate> servicesTemplates) {
-        this.servicesTemplates = servicesTemplates;
+    @JsonProperty("components")
+    public void setComponents(List<Component> components) {
+        this.components = components;
     }
 
 }

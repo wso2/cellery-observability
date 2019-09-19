@@ -22,13 +22,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.cellery.observability.k8s.client.crds.gateway.GatewayTemplate;
-import io.cellery.observability.k8s.client.crds.service.ServicesTemplate;
+import io.cellery.observability.k8s.client.crds.gateway.Gateway;
+import io.cellery.observability.k8s.client.crds.service.Component;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 import java.util.List;
 
 /**
- * This represents the serializable class for cell spec.
+ * This implements the spec in the Cell resource.
  */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -37,29 +37,29 @@ public class CellSpec implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("gatewayTemplate")
-    private GatewayTemplate gatewayTemplate;
-    @JsonProperty("servicesTemplates")
-    private List<ServicesTemplate> servicesTemplates = null;
+    @JsonProperty("gateway")
+    private Gateway gateway;
+    @JsonProperty("components")
+    private List<Component> components;
 
-    @JsonProperty("gatewayTemplate")
-    public GatewayTemplate getGatewayTemplate() {
-        return gatewayTemplate;
+    @JsonProperty("gateway")
+    public Gateway getGateway() {
+        return gateway;
     }
 
-    @JsonProperty("gatewayTemplate")
-    public void setGatewayTemplate(GatewayTemplate gatewayTemplate) {
-        this.gatewayTemplate = gatewayTemplate;
+    @JsonProperty("gateway")
+    public void setGateway(Gateway gateway) {
+        this.gateway = gateway;
     }
 
-    @JsonProperty("servicesTemplates")
-    public List<ServicesTemplate> getServicesTemplates() {
-        return servicesTemplates;
+    @JsonProperty("components")
+    public List<Component> getComponents() {
+        return components;
     }
 
-    @JsonProperty("servicesTemplates")
-    public void setServicesTemplates(List<ServicesTemplate> servicesTemplates) {
-        this.servicesTemplates = servicesTemplates;
+    @JsonProperty("components")
+    public void setComponents(List<Component> components) {
+        this.components = components;
     }
 
 }

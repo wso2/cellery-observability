@@ -24,14 +24,17 @@ import io.cellery.observability.k8s.client.crds.cell.CellSpec;
 import io.cellery.observability.k8s.client.crds.composite.Composite;
 import io.cellery.observability.k8s.client.crds.composite.CompositeImpl;
 import io.cellery.observability.k8s.client.crds.composite.CompositeSpec;
+import io.cellery.observability.k8s.client.crds.gateway.ClusterIngress;
+import io.cellery.observability.k8s.client.crds.gateway.Extensions;
 import io.cellery.observability.k8s.client.crds.gateway.GRPC;
-import io.cellery.observability.k8s.client.crds.gateway.GatewayTemplate;
-import io.cellery.observability.k8s.client.crds.gateway.GatewayTemplateSpec;
+import io.cellery.observability.k8s.client.crds.gateway.Gateway;
+import io.cellery.observability.k8s.client.crds.gateway.GatewaySpec;
 import io.cellery.observability.k8s.client.crds.gateway.HTTP;
+import io.cellery.observability.k8s.client.crds.gateway.Ingress;
 import io.cellery.observability.k8s.client.crds.gateway.TCP;
-import io.cellery.observability.k8s.client.crds.service.ServicesTemplate;
-import io.cellery.observability.k8s.client.crds.service.ServicesTemplateSpec;
-import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.cellery.observability.k8s.client.crds.service.Component;
+import io.cellery.observability.k8s.client.crds.service.ComponentSpec;
+import io.cellery.observability.k8s.client.crds.service.Port;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodBuilder;
@@ -39,18 +42,19 @@ import io.fabric8.kubernetes.api.model.PodStatus;
 import io.fabric8.kubernetes.api.model.PodStatusBuilder;
 
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class BaseTestCase {
+class BaseTestCase {
 
-    protected static final String TEST_LABEL = "mesh-observability-test";
+    private static final String TEST_LABEL = "mesh-observability-test";
 
-    protected static final String NODE_NAME = "node1";
-    protected static final String CREATION_TIMESTAMP_STRING = "2019-04-30T13:21:22Z";
-    protected final long creationTimestamp;
+    static final String NODE_NAME = "node1";
+    private static final String CREATION_TIMESTAMP_STRING = "2019-04-30T13:21:22Z";
+    final long creationTimestamp;
 
     BaseTestCase() throws Exception {
         creationTimestamp = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
@@ -62,15 +66,14 @@ public class BaseTestCase {
      * The returned Cell can be used as one of the returned Cells in K8s Mock Server in expectation mode.
      *
      * @param cellName The name of the Cell
-     * @param gatewayTemplate The gateway template to be used
-     * @param servicesTemplates The list of service templates
+     * @param gateway The gateway template to be used
+     * @param components The list of service templates
      * @return The generated Cell
      */
-    protected Cell generateCell(String cellName, GatewayTemplate gatewayTemplate,
-                              List<ServicesTemplate> servicesTemplates) {
+    Cell generateCell(String cellName, Gateway gateway, List<Component> components) {
         CellSpec cellSpec = new CellSpec();
-        cellSpec.setGatewayTemplate(gatewayTemplate);
-        cellSpec.setServicesTemplates(servicesTemplates);
+        cellSpec.setGateway(gateway);
+        cellSpec.setComponents(components);
 
         CellImpl cell = new CellImpl();
         cell.setMetadata(new ObjectMetaBuilder()
@@ -86,13 +89,12 @@ public class BaseTestCase {
      * The returned Composite can be used as one of the returned Composites in K8s Mock Server in expectation mode.
      *
      * @param compositeName The name of the Composite
-     * @param servicesTemplates The list of service templates
+     * @param components The list of service templates
      * @return The generated Composite
      */
-    protected Composite generateComposite(String compositeName,
-                                        List<ServicesTemplate> servicesTemplates) {
+    Composite generateComposite(String compositeName, List<Component> components) {
         CompositeSpec compositeSpec = new CompositeSpec();
-        compositeSpec.setServicesTemplates(servicesTemplates);
+        compositeSpec.setComponents(components);
 
         CompositeImpl composite = new CompositeImpl();
         composite.setMetadata(new ObjectMetaBuilder()
@@ -106,29 +108,31 @@ public class BaseTestCase {
     /**
      * Generate a K8s Gateway Template Object.
      *
-     * @param type The type of Gateway used
      * @param host The host added when used with a Web Ingress
      * @param httpIngresses The HTTP ingresses used by the gateway
      * @param tcpIngresses The TCP ingresses used by the gateway
      * @param grpcIngresses The gRPC ingresses
      * @return The generated Gateway Template
      */
-    protected GatewayTemplate generateGatewayTemplate(String type, String host, List<HTTP> httpIngresses,
-                                                      List<TCP> tcpIngresses, List<GRPC> grpcIngresses) {
-        GatewayTemplateSpec gatewayTemplateSpec = new GatewayTemplateSpec();
-        gatewayTemplateSpec.setType(type);
-        gatewayTemplateSpec.setHost(host);
-        gatewayTemplateSpec.setTcp(tcpIngresses);
-        gatewayTemplateSpec.setHttp(httpIngresses);
-        gatewayTemplateSpec.setGrpc(grpcIngresses);
+    Gateway generateGatewayTemplate(String host, List<HTTP> httpIngresses,
+                                    List<TCP> tcpIngresses, List<GRPC> grpcIngresses) {
+        ClusterIngress clusterIngress = new ClusterIngress();
+        clusterIngress.setHost(host);
+        Extensions gatewayExtensions = new Extensions();
+        gatewayExtensions.setClusterIngress(clusterIngress);
 
-        GatewayTemplate gatewayTemplate = new GatewayTemplate();
-        gatewayTemplate.setMetadata(new ObjectMetaBuilder()
-                .withCreationTimestamp(CREATION_TIMESTAMP_STRING)
-                .withName("gateway")
-                .build());
-        gatewayTemplate.setSpec(gatewayTemplateSpec);
-        return gatewayTemplate;
+        Ingress gatewayIngress = new Ingress();
+        gatewayIngress.setExtensions(gatewayExtensions);
+        gatewayIngress.setTcp(tcpIngresses);
+        gatewayIngress.setHttp(httpIngresses);
+        gatewayIngress.setGrpc(grpcIngresses);
+
+        GatewaySpec gatewaySpec = new GatewaySpec();
+        gatewaySpec.setIngress(gatewayIngress);
+
+        Gateway gateway = new Gateway();
+        gateway.setSpec(gatewaySpec);
+        return gateway;
     }
 
     /**
@@ -138,26 +142,20 @@ public class BaseTestCase {
      * @param protocol    The protocol used by the service
      * @return The generated Service Template
      */
-    protected ServicesTemplate generateServicesTemplate(String serviceName, String protocol) {
-        ServicesTemplateSpec servicesTemplateSpec = new ServicesTemplateSpec();
-        servicesTemplateSpec.setContainer(new ContainerBuilder()
-                .withName("test-container")
-                .withNewImage("busybox")
-                .withNewImagePullPolicy("IfNotPresent")
-                .withCommand("tail", "-f", "/dev/null")
-                .build());
-        servicesTemplateSpec.setProtocol(protocol);
-        servicesTemplateSpec.setReplicas(10);
-        servicesTemplateSpec.setServiceAccountName("cellery-service-account");
-        servicesTemplateSpec.setServicePort(9000);
+    Component generateServicesTemplate(String serviceName, String protocol) {
+        Port port = new Port();
+        port.setProtocol(protocol);
 
-        ServicesTemplate servicesTemplate = new ServicesTemplate();
-        servicesTemplate.setMetadata(new ObjectMetaBuilder()
+        ComponentSpec componentSpec = new ComponentSpec();
+        componentSpec.setPorts(Collections.singletonList(port));
+
+        Component component = new Component();
+        component.setMetadata(new ObjectMetaBuilder()
                 .withName(serviceName)
                 .withCreationTimestamp(CREATION_TIMESTAMP_STRING)
                 .build());
-        servicesTemplate.setSpec(servicesTemplateSpec);
-        return servicesTemplate;
+        component.setSpec(componentSpec);
+        return component;
     }
 
     /**
@@ -168,7 +166,7 @@ public class BaseTestCase {
      * @param component The component of the Cell the pod belongs to
      * @return The generated pod
      */
-    protected Pod generateCelleryCellComponentPod(String cell, String component) {
+    Pod generateCelleryCellComponentPod(String cell, String component) {
         String podName = cell + "--" + component;
 
         Map<String, String> labels = new HashMap<>();
@@ -188,7 +186,7 @@ public class BaseTestCase {
      * @param cell The Cell the Pod belongs to
      * @return The generated pod
      */
-    protected Pod generateCelleryCellGatewayPod(String cell) {
+    Pod generateCelleryCellGatewayPod(String cell) {
         String podName = cell + "--gateway";
 
         Map<String, String> labels = new HashMap<>();
@@ -209,7 +207,7 @@ public class BaseTestCase {
      * @param component The component of the Composite the pod belongs to
      * @return The generated pod
      */
-    protected Pod generateCelleryCompositeComponentPod(String composite, String component) {
+    Pod generateCelleryCompositeComponentPod(String composite, String component) {
         String podName = composite + "--" + component;
 
         Map<String, String> labels = new HashMap<>();
@@ -230,7 +228,7 @@ public class BaseTestCase {
      * @param component The component of the Cell the pod belongs to
      * @return The generated pod
      */
-    protected Pod generateFailingCelleryCellComponentPod(String cell, String component) {
+    Pod generateFailingCelleryCellComponentPod(String cell, String component) {
         String podName = cell + "--" + component;
 
         Map<String, String> labels = new HashMap<>();
@@ -250,7 +248,7 @@ public class BaseTestCase {
      * @param cell      The Cell the Pod belongs to
      * @return The generated pod
      */
-    protected Pod generateFailingCelleryCellGatewayPod(String cell) {
+    Pod generateFailingCelleryCellGatewayPod(String cell) {
         String podName = cell + "--gateway";
 
         Map<String, String> labels = new HashMap<>();
@@ -271,7 +269,7 @@ public class BaseTestCase {
      * @param component The component of the Composite the pod belongs to
      * @return The generated pod
      */
-    protected Pod generateFailingCelleryCompositeComponentPod(String composite, String component) {
+    Pod generateFailingCelleryCompositeComponentPod(String composite, String component) {
         String podName = composite + "--" + component;
 
         Map<String, String> labels = new HashMap<>();

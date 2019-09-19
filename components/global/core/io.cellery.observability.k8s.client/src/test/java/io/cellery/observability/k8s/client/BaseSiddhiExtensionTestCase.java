@@ -35,11 +35,11 @@ public class BaseSiddhiExtensionTestCase extends BaseTestCase {
 
     private static final Logger logger = Logger.getLogger(BaseSiddhiExtensionTestCase.class.getName());
 
-    protected static final int WAIT_TIME = 50;
-    protected static final int TIMEOUT = 5000;
+    static final int WAIT_TIME = 50;
+    static final int TIMEOUT = 5000;
 
-    protected KubernetesClient k8sClient;
-    protected KubernetesServer k8sServer;
+    KubernetesClient k8sClient;
+    KubernetesServer k8sServer;
 
     BaseSiddhiExtensionTestCase() throws Exception {
         super();

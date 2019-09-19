@@ -25,8 +25,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 
 /**
- * This represents the serializable class for HTTP in cell yaml.
- * */
+ * This class implements the HTTP ingress.
+ */
 @JsonDeserialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -34,65 +34,17 @@ public class HTTP implements KubernetesResource {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("authenticate")
-    private Boolean authenticate;
-    @JsonProperty("backend")
-    private String backend;
-    @JsonProperty("context")
-    private String context;
-    @JsonProperty("definitions")
-    private Object definitions;
-    @JsonProperty("global")
-    private Boolean global;
+    @JsonProperty("destination")
+    private Destination destination;
 
-    @JsonProperty("authenticate")
-    public Boolean getAuthenticate() {
-        return authenticate;
+    @JsonProperty("destination")
+    public Destination getDestination() {
+        return destination;
     }
 
-    @JsonProperty("authenticate")
-    public void setAuthenticate(Boolean authenticate) {
-        this.authenticate = authenticate;
-    }
-
-    @JsonProperty("backend")
-    public String getBackend() {
-        return backend;
-    }
-
-    @JsonProperty("backend")
-    public void setBackend(String backend) {
-        this.backend = backend;
-    }
-
-    @JsonProperty("context")
-    public String getContext() {
-        return context;
-    }
-
-    @JsonProperty("context")
-    public void setContext(String context) {
-        this.context = context;
-    }
-
-    @JsonProperty("definitions")
-    public Object getDefinitions() {
-        return definitions;
-    }
-
-    @JsonProperty("definitions")
-    public void setDefinitions(Object definitions) {
-        this.definitions = definitions;
-    }
-
-    @JsonProperty("global")
-    public Boolean getGlobal() {
-        return global;
-    }
-
-    @JsonProperty("global")
-    public void setGlobal(Boolean global) {
-        this.global = global;
+    @JsonProperty("destination")
+    public void setDestination(Destination destination) {
+        this.destination = destination;
     }
 
 }
