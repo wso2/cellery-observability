@@ -180,12 +180,15 @@ public class TracingEventSource extends Source {
 
         @Override
         public void handle(HttpExchange httpExchange) throws IOException {
-            InputStream inputStream = httpExchange.getRequestBody();
-            byte[] byteArray = IOUtils.toByteArray(inputStream);
-            String contentType = httpExchange.getRequestHeaders().getFirst(Constants.HTTP_CONTENT_TYPE_HEADER);
+            try (InputStream inputStream = httpExchange.getRequestBody()) {
+                byte[] byteArray = IOUtils.toByteArray(inputStream);
+                String contentType = httpExchange.getRequestHeaders().getFirst(Constants.HTTP_CONTENT_TYPE_HEADER);
 
-            handleEventReceive(byteArray, contentType);
-            httpExchange.sendResponseHeaders(200, 0);
+                handleEventReceive(byteArray, contentType);
+                httpExchange.sendResponseHeaders(200, -1);
+            } catch (IOException e) {
+                httpExchange.sendResponseHeaders(500, -1);
+            }
             httpExchange.close();
         }
 
