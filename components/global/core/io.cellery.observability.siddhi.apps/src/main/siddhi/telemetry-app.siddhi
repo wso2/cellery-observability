@@ -20,12 +20,12 @@
 @App:description("Cellery Telemetry app for processing and storing http requests")
 
 @source(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
-define stream TelemetryStreamIn(sourceNamespace string, sourceInstance string, sourceInstanceKind string,
-                                sourceComponent string, sourcePod string, destinationNamespace string,
-                                destinationInstance string, destinationInstanceKind string,
-                                destinationComponent string, destinationPod string, contextReporterKind string,
-                                requestHeadersMap object, requestPath string, requestMethod string,
-                                requestSizeBytes long, responseCode long, responseDurationNanoSec int,
+define stream TelemetryStreamIn(requestId string, traceId string, spanId string, sourceNamespace string,
+                                sourceInstance string, sourceInstanceKind string, sourceComponent string,
+                                sourcePod string, destinationNamespace string, destinationInstance string,
+                                destinationInstanceKind string, destinationComponent string, destinationPod string,
+                                contextReporterKind string, requestPath string, requestMethod string,
+                                requestSizeBytes long, responseCode long, responseDurationNanoSec long,
                                 responseSizeBytes long);
 
 define stream ProcessedRequestsStream(sourceInstance string, sourceInstanceKind string, sourceComponent string,
@@ -65,7 +65,7 @@ select
     destinationInstanceKind,
     destinationComponent,
     contextReporterKind,
-    cast(map:get(requestHeadersMap, "x-request-id"), "string") as requestId,
+    requestId,
     str:concat(convert(cast(responseCode, "int") / 100, "string"), "xx") as httpResponseGroup,
     convert(responseDurationNanoSec, "double") / 1000000 as responseTimeMilliSec,
     ifThenElse(requestSizeBytes is null, 0L, requestSizeBytes) as requestSizeBytes,

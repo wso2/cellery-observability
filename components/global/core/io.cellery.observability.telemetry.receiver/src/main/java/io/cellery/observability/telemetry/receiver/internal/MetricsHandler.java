@@ -48,8 +48,7 @@ public class MetricsHandler implements HttpHandler {
                 if (log.isDebugEnabled()) {
                     log.debug("Received a metric from the adapter : " + json);
                 }
-                Metric metric = gson.fromJson(json, Metric.class);
-                sourceEventListener.onEvent(metric.toMap(), new String[0]);
+                sourceEventListener.onEvent(json, new String[0]);
                 httpExchange.sendResponseHeaders(200, -1);
             } catch (IOException e) {
                 httpExchange.sendResponseHeaders(500, -1);

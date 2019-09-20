@@ -25,12 +25,12 @@ define stream ZipkinStreamIn(traceId string, id string, parentId string, operati
                              spanKind string, timestamp long, duration long, tags string);
 
 @source(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
-define stream TelemetryStreamIn(sourceNamespace string, sourceInstance string, sourceInstanceKind string,
-                                sourceComponent string, sourcePod string, destinationNamespace string,
-                                destinationInstance string, destinationInstanceKind string,
-                                destinationComponent string, destinationPod string, contextReporterKind string,
-                                requestHeadersMap object, requestPath string, requestMethod string,
-                                requestSizeBytes long, responseCode long, responseDurationNanoSec int,
+define stream TelemetryStreamIn(requestId string, traceId string, spanId string, sourceNamespace string,
+                                sourceInstance string, sourceInstanceKind string, sourceComponent string,
+                                sourcePod string, destinationNamespace string, destinationInstance string,
+                                destinationInstanceKind string, destinationComponent string, destinationPod string,
+                                contextReporterKind string, requestPath string, requestMethod string,
+                                requestSizeBytes long, responseCode long, responseDurationNanoSec long,
                                 responseSizeBytes long);
 
 @Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB", field.length="tags:8000")
@@ -45,7 +45,7 @@ define function extractFromServiceName[javascript] return string {
     var index = data[1];    // 1: instance, 2: service
 
     var cellGatewayMatches = /^src:\d+\.\d+\.\d+\.(.+)_\d+_\d+_\d+_.+$/.exec(serviceName);
-    var mircoserviceMatches = /^(.+)--(.+)\.(.+)$/.exec(serviceName);
+    var mircoserviceMatches = /^(.+)--(.+)--(.+)\.(.+)$/.exec(serviceName);
 
     var extractedData = "";
     if (cellGatewayMatches) {
@@ -59,6 +59,15 @@ define function extractFromServiceName[javascript] return string {
         }
     } else if (mircoserviceMatches) {
         extractedData = mircoserviceMatches[index];
+        if (index == 3) {
+            if (extractedData == "cell") {
+                extractedData = "Cell";
+            } else if (extractedData == "composite") {
+                extractedData = "Composite";
+            } else {
+                extractedData = "";
+            }
+        }
     }
 
     // Handling service names that does not match any of the regexes
@@ -77,9 +86,9 @@ select
     traceId,
     id as spanId,
     parentId,
-    extractFromServiceName(serviceName, 3) as namespace,
+    extractFromServiceName(serviceName, 4) as namespace,
     extractFromServiceName(serviceName, 1) as instance,
-    "" as instanceKind,
+    extractFromServiceName(serviceName, 3) as instanceKind,
     extractFromServiceName(serviceName, 2) as serviceName,
     "" as pod,
     operationName,
@@ -106,7 +115,8 @@ update or insert into DistributedTracingTable
 -- Extracting information for local service
 from TelemetryStreamIn
 select
-    requestHeadersMap,
+    traceId,
+    spanId,
     ifThenElse(contextReporterKind == "inbound", "SERVER", "CLIENT") as spanKind,
     ifThenElse(contextReporterKind == "inbound", destinationNamespace, sourceNamespace) as namespace,
     ifThenElse(contextReporterKind == "inbound", destinationInstance, sourceInstance) as instance,
@@ -118,7 +128,8 @@ insert into ProcessedTelemetryDataStream;
 -- Extracting information for remote service
 from TelemetryStreamIn
 select
-    requestHeadersMap,
+    traceId,
+    spanId,
     ifThenElse(contextReporterKind == "inbound", "CLIENT", "SERVER") as spanKind,
     ifThenElse(contextReporterKind == "inbound", sourceNamespace, destinationNamespace) as namespace,
     ifThenElse(contextReporterKind == "inbound", sourceInstance, destinationInstance) as instance,
@@ -129,8 +140,8 @@ insert into ProcessedTelemetryDataStream;
 
 from ProcessedTelemetryDataStream[(not serviceName is null) and (serviceName != "")]
 select
-    cast(map:get(requestHeadersMap, "x-b3-traceid"), "string") as traceId,
-    cast(map:get(requestHeadersMap, "x-b3-spanid"), "string") as spanId,
+    traceId,
+    spanId,
     "" as parentId,
     namespace,
     ifThenElse(instance is null, extractFromServiceName(serviceName, 1), instance) as instance,
