@@ -320,7 +320,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
                 "define stream " + INPUT_STREAM + " (inputValue string);";
         String query = "@info(name = \"query\")\n" +
                 "from inputStream#k8sClient:getComponentPods()\n" +
-                "select inputValue, instance, kind, component, podName, creationTimestamp, nodeName\n" +
+                "select inputValue, instance, instanceKind, component, podName, creationTimestamp, nodeName\n" +
                 "insert into outputStream;";
         SiddhiManager siddhiManager = new SiddhiManager();
         siddhiManager.setPersistenceStore(new InMemoryPersistenceStore());

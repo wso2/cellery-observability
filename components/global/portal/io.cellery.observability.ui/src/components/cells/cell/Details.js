@@ -87,13 +87,13 @@ class Details extends React.Component {
 
         const cellMetricsPromise = HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/cells/metrics/${HttpUtils.generateQueryParamString(search)}`,
+                url: `/http-requests/instances/metrics/${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             }, globalState);
 
         const ingressDataPromise = HttpUtils.callObservabilityAPI(
             {
-                url: `/k8s/cells/${cell}${HttpUtils.generateQueryParamString(ingressQueryParams)}`,
+                url: `/k8s/instances/${cell}${HttpUtils.generateQueryParamString(ingressQueryParams)}`,
                 method: "GET"
             }, this.props.globalState);
 

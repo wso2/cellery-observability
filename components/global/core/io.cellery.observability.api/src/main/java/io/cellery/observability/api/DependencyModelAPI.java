@@ -37,7 +37,7 @@ import javax.ws.rs.core.Response;
 public class DependencyModelAPI {
 
     @GET
-    @Path("/cells")
+    @Path("/instances")
     @Produces("application/json")
     public Response getCellOverview(@DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
                                     @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
@@ -51,36 +51,37 @@ public class DependencyModelAPI {
     }
 
     @GET
-    @Path("/cells/{cellName}")
+    @Path("/instances/{instanceName}")
     @Produces("application/json")
-    public Response getCellDependencyView(@PathParam("cellName") String cellName,
+    public Response getCellDependencyView(@PathParam("instanceName") String instanceName,
                                           @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
                                           @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
         try {
-            Model model = ServiceHolder.getModelManager().getDependencyModel(queryStartTime, queryEndTime, cellName);
+            Model model = ServiceHolder.getModelManager().getDependencyModel(queryStartTime, queryEndTime,
+                    instanceName);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
             throw new APIInvocationException("API Invocation error occurred while fetching the dependency model for " +
-                    "cell :" + cellName, e);
+                    "instance :" + instanceName, e);
         }
     }
 
     @GET
-    @Path("/cells/{cellName}/components/{componentName}")
+    @Path("/instances/{instanceName}/components/{componentName}")
     @Produces("application/json")
-    public Response getComponentDependencyView(@PathParam("cellName") String cellName,
+    public Response getComponentDependencyView(@PathParam("instanceName") String instanceName,
                                                @PathParam("componentName") String componentName,
                                                @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
                                                @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
         try {
-            Model model = ServiceHolder.getModelManager().getDependencyModel(queryStartTime, queryEndTime, cellName,
+            Model model = ServiceHolder.getModelManager().getDependencyModel(queryStartTime, queryEndTime, instanceName,
                     componentName);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
             throw new APIInvocationException("API Invocation error occurred while fetching the dependency model for " +
-                    "component: " + componentName + " in cell: " + cellName, e);
+                    "component: " + componentName + " in instance: " + instanceName, e);
         }
     }
 

@@ -21,28 +21,25 @@ package io.cellery.observability.api.exception;
 import javax.ws.rs.core.Response;
 
 /**
- * Exception thrown when invalid parameters (Query Params, Path Params, etc. are provided)
+ * Exception thrown when an unexpected error occurs.
  */
-public class InvalidParamException extends RuntimeException {
-    public InvalidParamException(String parameter, String expected, Exception e) {
-        super("Invalid parameter " + parameter + " provided. Expected " + expected, e);
-    }
+public class UnexpectedException extends Exception {
 
-    public InvalidParamException(String parameter, String expected) {
-        super("Invalid parameter " + parameter + " provided. Expected " + expected);
+    public UnexpectedException(String message) {
+        super(message);
     }
 
     /**
-     * Exception mapper for InvalidParamException.
+     * Exception mapper for UnexpectedException.
      */
-    public static class Mapper extends BaseExceptionMapper<InvalidParamException> {
+    public static class Mapper extends BaseExceptionMapper<UnexpectedException> {
 
         public Mapper() {
-            super(Response.Status.PRECONDITION_FAILED);
+            super(Response.Status.INTERNAL_SERVER_ERROR);
         }
 
         @Override
-        public Response toResponse(InvalidParamException exception) {
+        public Response toResponse(UnexpectedException exception) {
             return generateResponse(exception);
         }
     }

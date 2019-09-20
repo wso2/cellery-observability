@@ -141,14 +141,14 @@ class Metrics extends React.Component {
         }
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/cells/components/metadata${HttpUtils.generateQueryParamString(search)}`,
+                url: `/http-requests/instances/components/metadata${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState
         ).then((data) => {
             self.setState({
                 components: data
-                    .filter((datum) => (datum.cell !== cell || datum.component !== component))
+                    .filter((datum) => (datum.instance !== cell || datum.component !== component))
             });
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
@@ -211,7 +211,7 @@ class Metrics extends React.Component {
         }
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/cells/components/metrics${HttpUtils.generateQueryParamString(search)}`,
+                url: `/http-requests/instances/components/metrics${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState
@@ -257,25 +257,25 @@ class Metrics extends React.Component {
         components.forEach((componentDatum) => {
             // Validating whether at-least one relevant component in this cell exists
             let hasRelevantComponent = true;
-            if (Boolean(componentDatum.cell) && componentDatum.cell === cell) {
+            if (Boolean(componentDatum.instance) && componentDatum.instance === cell) {
                 const relevantComponents = components.find(
-                    (datum) => cell === datum.cell && datum.name !== component);
+                    (datum) => cell === datum.instance && datum.component !== component);
                 hasRelevantComponent = Boolean(relevantComponents);
             }
 
-            if (hasRelevantComponent && Boolean(componentDatum.cell)
-                    && !availableCells.includes(componentDatum.cell)) {
-                availableCells.push(componentDatum.cell);
+            if (hasRelevantComponent && Boolean(componentDatum.instance)
+                    && !availableCells.includes(componentDatum.instance)) {
+                availableCells.push(componentDatum.instance);
             }
         });
 
         const availableComponents = [];
         components.forEach((componentDatum) => {
-            if (Boolean(componentDatum.name) && Boolean(componentDatum.cell)
-                && (selectedCell === Constants.Dashboard.ALL_VALUE || componentDatum.cell === selectedCell)
-                && (componentDatum.cell !== cell || componentDatum.name !== component)
-                && !availableComponents.includes(componentDatum.name)) {
-                availableComponents.push(componentDatum.name);
+            if (Boolean(componentDatum.component) && Boolean(componentDatum.instance)
+                && (selectedCell === Constants.Dashboard.ALL_VALUE || componentDatum.instance === selectedCell)
+                && (componentDatum.instance !== cell || componentDatum.component !== component)
+                && !availableComponents.includes(componentDatum.component)) {
+                availableComponents.push(componentDatum.component);
             }
         });
 

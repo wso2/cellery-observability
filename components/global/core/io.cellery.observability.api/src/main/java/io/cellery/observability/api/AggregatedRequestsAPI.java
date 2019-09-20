@@ -41,7 +41,7 @@ import javax.ws.rs.core.Response;
 public class AggregatedRequestsAPI {
 
     @GET
-    @Path("/cells")
+    @Path("/instances")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getAggregatedRequestsForCells(@QueryParam("queryStartTime") long queryStartTime,
                                                   @QueryParam("queryEndTime") long queryEndTime,
@@ -57,12 +57,12 @@ public class AggregatedRequestsAPI {
             return Response.ok().entity(results).build();
         } catch (Throwable throwable) {
             throw new APIInvocationException("Unexpected error occurred while fetching the aggregated HTTP request " +
-                    "data for cells", throwable);
+                    "data for instances", throwable);
         }
     }
 
     @GET
-    @Path("/cells/metrics")
+    @Path("/instances/metrics")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMetricsForCells(@QueryParam("queryStartTime") long queryStartTime,
                                        @QueryParam("queryEndTime") long queryEndTime,
@@ -77,8 +77,8 @@ public class AggregatedRequestsAPI {
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
-                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_CELL, sourceCell)
-                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_CELL, destinationCell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_INSTANCE, sourceCell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_INSTANCE, destinationCell)
                     .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
                             includeIntraCell
                                     ? "true"
@@ -93,7 +93,7 @@ public class AggregatedRequestsAPI {
     }
 
     @GET
-    @Path("/cells/metadata")
+    @Path("/instances/metadata")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMetadataForCells(@QueryParam("queryStartTime") long queryStartTime,
                                         @QueryParam("queryEndTime") long queryEndTime) throws APIInvocationException {
@@ -104,22 +104,22 @@ public class AggregatedRequestsAPI {
                     .build()
                     .execute();
 
-            Set<String> cells = new HashSet<>();
+            Set<String> instances = new HashSet<>();
             for (Object[] result : results) {
-                cells.add((String) result[0]);
-                cells.add((String) result[1]);
+                instances.add((String) result[0]);
+                instances.add((String) result[1]);
             }
 
-            return Response.ok().entity(cells).build();
+            return Response.ok().entity(instances).build();
         } catch (Throwable throwable) {
             throw new APIInvocationException("API Invocation error occurred while fetching Cell metadata", throwable);
         }
     }
 
     @GET
-    @Path("/cells/{cellName}/components")
+    @Path("/instances/{instanceName}/components")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAggregatedRequestsForComponents(@PathParam("cellName") String cellName,
+    public Response getAggregatedRequestsForComponents(@PathParam("instanceName") String instanceName,
                                                        @QueryParam("queryStartTime") long queryStartTime,
                                                        @QueryParam("queryEndTime") long queryEndTime,
                                                        @DefaultValue("seconds")
@@ -130,18 +130,18 @@ public class AggregatedRequestsAPI {
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
-                    .setArg(SiddhiStoreQueryTemplates.Params.CELL, cellName)
+                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instanceName)
                     .build()
                     .execute();
             return Response.ok().entity(results).build();
         } catch (Throwable throwable) {
             throw new APIInvocationException("API Invocation error occurred while fetching the aggregated HTTP " +
-                    "requests for components in cell " + cellName, throwable);
+                    "requests for components in instance " + instanceName, throwable);
         }
     }
 
     @GET
-    @Path("/cells/components/metrics")
+    @Path("/instances/components/metrics")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMetricsForComponents(@QueryParam("queryStartTime") long queryStartTime,
                                             @QueryParam("queryEndTime") long queryEndTime,
@@ -161,9 +161,9 @@ public class AggregatedRequestsAPI {
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
-                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_CELL, sourceCell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_INSTANCE, sourceCell)
                     .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_COMPONENT, sourceComponent)
-                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_CELL, destinationCell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_INSTANCE, destinationCell)
                     .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_COMPONENT, destinationComponent)
                     .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
                             includeIntraCell
@@ -179,7 +179,7 @@ public class AggregatedRequestsAPI {
     }
 
     @GET
-    @Path("/cells/components/metadata")
+    @Path("/instances/components/metadata")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMetadataForComponents(@QueryParam("queryStartTime") long queryStartTime,
                                                 @QueryParam("queryEndTime") long queryEndTime)
@@ -195,8 +195,8 @@ public class AggregatedRequestsAPI {
             for (Object[] result : results) {
                 for (int i = 0; i < 2; i++) {
                     JsonObject component = new JsonObject();
-                    component.addProperty("cell", (String) result[i * 2]);
-                    component.addProperty("name", (String) result[i * 2 + 1]);
+                    component.addProperty("instance", (String) result[i * 2]);
+                    component.addProperty("component", (String) result[i * 2 + 1]);
                     components.add(component);
                 }
             }

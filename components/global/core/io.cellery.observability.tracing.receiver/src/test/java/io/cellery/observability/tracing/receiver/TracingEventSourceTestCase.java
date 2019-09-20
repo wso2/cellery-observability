@@ -75,8 +75,8 @@ public class TracingEventSourceTestCase {
                 "@source(type=\"tracing-receiver\", host=\"" + HOST + "\", " +
                 "port=\"" + PORT + "\", api.context=\"" + API_CONTEXT + "\", " +
                 "@map(type=\"keyvalue\", fail.on.missing.attribute=\"false\"))\n" +
-                "define stream zipkinStream (traceId string, id string, parentId string, name string, " +
-                "serviceName string, kind string, timestamp long, duration long, tags string);";
+                "define stream zipkinStream (traceId string, id string, parentId string, operationName string, " +
+                "serviceName string, spanKind string, timestamp long, duration long, tags string);";
         String query = "@info(name = \"query\")\n" +
                 "from zipkinStream\n" +
                 "select *\n" +

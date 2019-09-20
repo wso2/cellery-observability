@@ -212,10 +212,13 @@ public class TracingSynapseHandler extends AbstractSynapseHandler {
 
             if (axis2MessageContext != null) {
                 // Settings tags
-                int statusCode = (Integer) axis2MessageContext.getProperty(
+                Object statusCodeProperty = axis2MessageContext.getProperty(
                         Constants.AXIS2_MESSAGE_CONTEXT_PROPERTY_HTTP_STATUS_CODE);
-                addTag(span, Constants.TAG_KEY_HTTP_STATUS_CODE, statusCode);
-                addTag(span, Constants.TAG_KEY_ERROR, statusCode == 500);
+                if (statusCodeProperty instanceof Integer) {
+                    int statusCode = (Integer) statusCodeProperty;
+                    addTag(span, Constants.TAG_KEY_HTTP_STATUS_CODE, statusCode);
+                    addTag(span, Constants.TAG_KEY_ERROR, statusCode == 500);
+                }
             }
 
             span.finish();

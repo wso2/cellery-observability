@@ -19,7 +19,8 @@
 package io.cellery.observability.api;
 
 import io.cellery.observability.api.auth.OIDCOauthManager;
-import io.cellery.observability.api.exception.mapper.APIExceptionMapper;
+import io.cellery.observability.api.exception.APIInvocationException;
+import io.cellery.observability.api.exception.InvalidParamException;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.internal.ServiceHolder;
@@ -184,10 +185,10 @@ public class BaseAPITestCase {
     private void startAPIServer() {
         ServiceHolder.setMicroservicesRunner(new MicroservicesRunner(API_SERVER_PORT)
                 .addGlobalRequestInterceptor(new CORSInterceptor(), new AuthInterceptor())
-                .addExceptionMapper(new APIExceptionMapper())
+                .addExceptionMapper(new APIInvocationException.Mapper(), new InvalidParamException.Mapper())
                 .deploy(
                         new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
-                        new KubernetesAPI(), new UserAuthenticationAPI()
+                        new KubernetesAPI(), new UserAuthenticationAPI(), new InstanceAPI()
                 )
         );
         ServiceHolder.getMicroservicesRunner().start();

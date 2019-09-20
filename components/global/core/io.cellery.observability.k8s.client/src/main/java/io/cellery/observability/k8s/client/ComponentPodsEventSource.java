@@ -191,9 +191,9 @@ public class ComponentPodsEventSource extends Source {
                 }
                 Map<String, Object> attributes = new HashMap<>();
                 attributes.put(Constants.Attribute.INSTANCE, instance);
-                attributes.put(Constants.Attribute.KIND, kind);
                 attributes.put(Constants.Attribute.COMPONENT, Utils.getComponentName(pod));
                 attributes.put(Constants.Attribute.POD_NAME, pod.getMetadata().getName());
+                attributes.put(Constants.Attribute.INSTANCE_KIND, kind);
                 attributes.put(Constants.Attribute.CREATION_TIMESTAMP, pod.getMetadata().getCreationTimestamp() == null
                         ? -1
                         : new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US).parse(

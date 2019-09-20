@@ -21,27 +21,28 @@
 
 @source(type="tracing-receiver", host="0.0.0.0", port="9411", api.context="/api/v1/spans",
         @map(type="keyvalue", fail.on.missing.attribute="false"))
-define stream ZipkinStreamIn(traceId string, id string, parentId string, name string, serviceName string,
-                             kind string, timestamp long, duration long, tags string);
+define stream ZipkinStreamIn(traceId string, id string, parentId string, operationName string, serviceName string,
+                             spanKind string, timestamp long, duration long, tags string);
 
 @source(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
-define stream TelemetryStreamIn(sourceNamespace string, sourceCell string, sourceComponent string,
-                                sourcePod string, destinationNamespace string, destinationCell string,
+define stream TelemetryStreamIn(sourceNamespace string, sourceInstance string, sourceInstanceKind string,
+                                sourceComponent string, sourcePod string, destinationNamespace string,
+                                destinationInstance string, destinationInstanceKind string,
                                 destinationComponent string, destinationPod string, contextReporterKind string,
                                 requestHeadersMap object, requestPath string, requestMethod string,
                                 requestSizeBytes long, responseCode long, responseDurationNanoSec int,
                                 responseSizeBytes long);
 
 @Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB", field.length="tags:8000")
-@PrimaryKey("traceId", "spanId", "kind")
+@PrimaryKey("traceId", "spanId", "spanKind")
 @purge(enable="false")
-define table DistributedTracingTable(traceId string, spanId string, parentId string, namespace string, cell string,
-                                     serviceName string, pod string, operationName string, kind string,
-                                     startTime long, duration long, tags string);
+define table DistributedTracingTable(traceId string, spanId string, parentId string, namespace string, instance string,
+                                     instanceKind string, serviceName string, pod string, operationName string,
+                                     spanKind string, startTime long, duration long, tags string);
 
 define function extractFromServiceName[javascript] return string {
     var serviceName = data[0];
-    var index = data[1];    // 1: cell, 2: service
+    var index = data[1];    // 1: instance, 2: service
 
     var cellGatewayMatches = /^src:\d+\.\d+\.\d+\.(.+)_\d+_\d+_\d+_.+$/.exec(serviceName);
     var mircoserviceMatches = /^(.+)--(.+)\.(.+)$/.exec(serviceName);
@@ -53,6 +54,8 @@ define function extractFromServiceName[javascript] return string {
             extractedData = cell;
         } else if (index == 2) {
             extractedData = "gateway";
+        } else if (index == 3) {
+            extractedData = "cellery-system"
         }
     } else if (mircoserviceMatches) {
         extractedData = mircoserviceMatches[index];
@@ -75,24 +78,26 @@ select
     id as spanId,
     parentId,
     extractFromServiceName(serviceName, 3) as namespace,
-    extractFromServiceName(serviceName, 1) as cell,
+    extractFromServiceName(serviceName, 1) as instance,
+    "" as instanceKind,
     extractFromServiceName(serviceName, 2) as serviceName,
     "" as pod,
-    name as operationName,
-    kind,
+    operationName,
+    spanKind,
     timestamp as startTime,
     duration,
     tags
 insert into ProcessedZipkinStream;
 
-from ProcessedZipkinStream#observe:traceGroupWindow(60 sec,traceId)#observe:modelGenerator(cell, serviceName, operationName, spanId, parentId, kind, traceId, startTime)
-select *
+from ProcessedZipkinStream#observe:traceGroupWindow(60 sec,traceId)#observe:modelGenerator(instance, serviceName, operationName, spanId, parentId, spanKind, traceId, startTime)
 update or insert into DistributedTracingTable
-    set DistributedTracingTable.parentId = parentId, DistributedTracingTable.operationName = operationName,
-        DistributedTracingTable.startTime = startTime, DistributedTracingTable.duration = duration,
+    set DistributedTracingTable.parentId = parentId,
+        DistributedTracingTable.operationName = operationName,
+        DistributedTracingTable.startTime = startTime,
+        DistributedTracingTable.duration = duration,
         DistributedTracingTable.tags = tags
     on DistributedTracingTable.traceId == traceId and DistributedTracingTable.spanId == spanId
-        and DistributedTracingTable.kind == kind;
+        and DistributedTracingTable.spanKind == spanKind;
 
 --
 -- Filling additional data from Telemetry
@@ -102,9 +107,10 @@ update or insert into DistributedTracingTable
 from TelemetryStreamIn
 select
     requestHeadersMap,
-    ifThenElse(contextReporterKind == "inbound", "SERVER", "CLIENT") as kind,
+    ifThenElse(contextReporterKind == "inbound", "SERVER", "CLIENT") as spanKind,
     ifThenElse(contextReporterKind == "inbound", destinationNamespace, sourceNamespace) as namespace,
-    ifThenElse(contextReporterKind == "inbound", destinationCell, sourceCell) as cell,
+    ifThenElse(contextReporterKind == "inbound", destinationInstance, sourceInstance) as instance,
+    ifThenElse(contextReporterKind == "inbound", destinationInstanceKind, sourceInstanceKind) as instanceKind,
     ifThenElse(contextReporterKind == "inbound", destinationComponent, sourceComponent) as serviceName,
     ifThenElse(contextReporterKind == "inbound", destinationPod, sourcePod) as pod
 insert into ProcessedTelemetryDataStream;
@@ -113,9 +119,10 @@ insert into ProcessedTelemetryDataStream;
 from TelemetryStreamIn
 select
     requestHeadersMap,
-    ifThenElse(contextReporterKind == "inbound", "CLIENT", "SERVER") as kind,
+    ifThenElse(contextReporterKind == "inbound", "CLIENT", "SERVER") as spanKind,
     ifThenElse(contextReporterKind == "inbound", sourceNamespace, destinationNamespace) as namespace,
-    ifThenElse(contextReporterKind == "inbound", sourceCell, destinationCell) as cell,
+    ifThenElse(contextReporterKind == "inbound", sourceInstance, destinationInstance) as instance,
+    ifThenElse(contextReporterKind == "inbound", sourceInstanceKind, destinationInstanceKind) as instanceKind,
     ifThenElse(contextReporterKind == "inbound", sourceComponent, destinationComponent) as serviceName,
     ifThenElse(contextReporterKind == "inbound", sourcePod, destinationPod) as pod
 insert into ProcessedTelemetryDataStream;
@@ -126,29 +133,31 @@ select
     cast(map:get(requestHeadersMap, "x-b3-spanid"), "string") as spanId,
     "" as parentId,
     namespace,
-    ifThenElse(cell is null, extractFromServiceName(serviceName, 1), cell) as cell,
+    ifThenElse(instance is null, extractFromServiceName(serviceName, 1), instance) as instance,
+    instanceKind,
     extractFromServiceName(serviceName, 2) as serviceName,
     pod,
     "" as operationName,
-    kind,
+    spanKind,
     0L as startTime,
     0L as duration,
     "{}" as tags
 insert into ExtractedTelemetryDataStream;
 
 from every(e1=ExtractedTelemetryDataStream) ->
-    not ExtractedTelemetryDataStream[e1.traceId == e2.traceId and e1.spanId == e2.spanId and e1.kind == e2.kind] for 1 minute
-    or e2=ExtractedTelemetryDataStream[e1.traceId == e2.traceId and e1.spanId == e2.spanId and e1.kind == e2.kind] within 1 minute
+    not ExtractedTelemetryDataStream[e1.traceId == e2.traceId and e1.spanId == e2.spanId and e1.spanKind == e2.spanKind] for 1 minute
+    or e2=ExtractedTelemetryDataStream[e1.traceId == e2.traceId and e1.spanId == e2.spanId and e1.spanKind == e2.spanKind] within 1 minute
 select
     e1.traceId,
     e1.spanId,
     e1.parentId,
     ifThenElse(e1.namespace is null, e2.namespace, e1.namespace) as namespace,
-    ifThenElse(e1.cell is null, e2.cell, e1.cell) as cell,
+    ifThenElse(e1.instance is null, e2.instance, e1.instance) as instance,
+    ifThenElse(e1.instanceKind is null, e2.instanceKind, e1.instanceKind) as instanceKind,
     ifThenElse(e1.serviceName is null, e2.serviceName, e1.serviceName) as serviceName,
     ifThenElse(e1.pod is null, e2.pod, e1.pod) as pod,
     e1.operationName,
-    e1.kind,
+    e1.spanKind,
     e1.startTime,
     e1.duration,
     e1.tags
@@ -156,7 +165,10 @@ insert into UniqueTelemetryDataStream;
 
 from UniqueTelemetryDataStream[(not traceId is null) and (not spanId is null)]
 update or insert into DistributedTracingTable
-    set DistributedTracingTable.namespace = namespace, DistributedTracingTable.cell = cell,
-        DistributedTracingTable.serviceName = serviceName, DistributedTracingTable.pod = pod
+    set DistributedTracingTable.namespace = namespace,
+        DistributedTracingTable.instance = instance,
+        DistributedTracingTable.serviceName = serviceName,
+        DistributedTracingTable.instanceKind = instanceKind,
+        DistributedTracingTable.pod = pod
     on DistributedTracingTable.traceId == traceId and DistributedTracingTable.spanId == spanId
-        and DistributedTracingTable.kind == kind;
+        and DistributedTracingTable.spanKind == spanKind;

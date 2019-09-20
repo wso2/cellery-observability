@@ -184,7 +184,10 @@ public class ModelManager {
                 dependedNodes.add(Utils.getNode(model.getNodes(), new Node(edge.getTarget())));
             }
         }
-        dependedNodes.add(Utils.getNode(model.getNodes(), new Node(cell)));
+        Node cellNode = Utils.getNode(model.getNodes(), new Node(cell));
+        if (cellNode != null) {
+            dependedNodes.add(cellNode);
+        }
         return new Model(dependedNodes, dependedEdges);
     }
 

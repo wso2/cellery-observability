@@ -65,7 +65,7 @@ class K8sPodsList extends React.Component {
         const search = {
             queryStartTime: queryStartTime.valueOf(),
             queryEndTime: queryEndTime.valueOf(),
-            cell: cell,
+            instance: cell,
             component: component
         };
 

@@ -18,6 +18,8 @@
 
 package io.cellery.observability.api.exception;
 
+import javax.ws.rs.core.Response;
+
 /**
  * Internal generic error in the API.
  */
@@ -25,5 +27,20 @@ public class APIInvocationException extends Exception {
 
     public APIInvocationException(String message, Throwable e) {
         super(message, e);
+    }
+
+    /**
+     * Exception mapper for APIInvocationException.
+     */
+    public static class Mapper extends BaseExceptionMapper<APIInvocationException> {
+
+        public Mapper() {
+            super(Response.Status.INTERNAL_SERVER_ERROR);
+        }
+
+        @Override
+        public Response toResponse(APIInvocationException exception) {
+            return generateResponse(exception);
+        }
     }
 }

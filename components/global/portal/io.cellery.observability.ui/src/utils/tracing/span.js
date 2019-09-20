@@ -47,6 +47,7 @@ class Span {
         };
         addTagFromSpanData("k8s.pod", "pod");
         addTagFromSpanData("k8s.namespace", "namespace");
+        addTagFromSpanData("cellery.instance.kind", "instanceKind");
 
         /** @type {string} **/
         this.componentType = "";

@@ -42,14 +42,14 @@ public class KubernetesAPI {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getK8sPods(@QueryParam("queryStartTime") long queryStartTime,
                                @QueryParam("queryEndTime") long queryEndTime,
-                               @DefaultValue("") @QueryParam("cell") String cell,
+                               @DefaultValue("") @QueryParam("instance") String instance,
                                @DefaultValue("") @QueryParam("component") String component)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_PODS_FOR_COMPONENT.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
-                    .setArg(SiddhiStoreQueryTemplates.Params.CELL, cell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instance)
                     .setArg(SiddhiStoreQueryTemplates.Params.COMPONENT, component)
                     .build()
                     .execute();
@@ -61,7 +61,7 @@ public class KubernetesAPI {
     }
 
     @GET
-    @Path("/cells")
+    @Path("/instances")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getAllCellsInfo(@QueryParam("queryStartTime") long queryStartTime,
                                     @QueryParam("queryEndTime") long queryEndTime)
@@ -70,24 +70,24 @@ public class KubernetesAPI {
     }
 
     @GET
-    @Path("/cells/{cellName}")
+    @Path("/instances/{instanceName}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getCellInfo(@QueryParam("queryStartTime") long queryStartTime,
                                 @QueryParam("queryEndTime") long queryEndTime,
-                                @PathParam("cellName") String cell)
+                                @PathParam("instanceName") String instance)
             throws APIInvocationException {
-        return getCellsAndComponentsInfo(queryStartTime, queryEndTime, cell, "");
+        return getCellsAndComponentsInfo(queryStartTime, queryEndTime, instance, "");
     }
 
     @GET
-    @Path("/cells/{cellName}/components/{componentName}")
+    @Path("/instances/{instanceName}/components/{componentName}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getComponentInfo(@QueryParam("queryStartTime") long queryStartTime,
                                      @QueryParam("queryEndTime") long queryEndTime,
-                                     @PathParam("cellName") String cell,
+                                     @PathParam("instanceName") String instance,
                                      @PathParam("componentName") String component)
             throws APIInvocationException {
-        return getCellsAndComponentsInfo(queryStartTime, queryEndTime, cell, component);
+        return getCellsAndComponentsInfo(queryStartTime, queryEndTime, instance, component);
     }
 
     @OPTIONS
@@ -96,13 +96,14 @@ public class KubernetesAPI {
         return Response.ok().build();
     }
 
-    private Response getCellsAndComponentsInfo(long queryStartTime, long queryEndTime, String cell, String component)
+    private Response getCellsAndComponentsInfo(long queryStartTime, long queryEndTime, String instance,
+                                               String component)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_COMPONENTS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
-                    .setArg(SiddhiStoreQueryTemplates.Params.CELL, cell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instance)
                     .setArg(SiddhiStoreQueryTemplates.Params.COMPONENT, component)
                     .build()
                     .execute();
