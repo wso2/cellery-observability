@@ -35,6 +35,10 @@ const Constants = {
             CONSUMER: "CONSUMER"
         }
     },
+    InstanceKind: {
+        CELL: "Cell",
+        COMPOSITE: "Composite"
+    },
     Cell: {
         GATEWAY_NAME_PATTERN: /^gateway$/,
         COMPONENT_NAME_PATTERN: /^(.+)--(.+)$/

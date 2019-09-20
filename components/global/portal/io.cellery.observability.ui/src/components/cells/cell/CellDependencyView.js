@@ -16,6 +16,7 @@
 
 /* eslint max-len: ["off"] */
 
+import Constants from "../../../utils/constants";
 import DependencyGraph from "../../common/DependencyGraph";
 import Divider from "@material-ui/core/Divider";
 import ErrorBoundary from "../../common/error/ErrorBoundary";
@@ -178,7 +179,7 @@ class CellDependencyView extends React.Component {
         };
 
         if (isUserAction) {
-            NotificationUtils.showLoadingOverlay("Loading Cell Dependency Graph", globalState);
+            NotificationUtils.showLoadingOverlay("Loading Instance Dependency Graph", globalState);
         }
         HttpUtils.callObservabilityAPI(
             {
@@ -200,7 +201,7 @@ class CellDependencyView extends React.Component {
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 NotificationUtils.showNotification(
-                    "Failed to load cell dependency view",
+                    "Failed to load instance dependency view",
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );
@@ -208,38 +209,84 @@ class CellDependencyView extends React.Component {
         });
     };
 
-    onClickCell = (nodeId) => {
+    onClickInstance = (nodeId) => {
         const {history} = this.props;
-        const cell = nodeId.split(":")[0];
-        history.push(`/cells/${cell}`);
+        const instance = nodeId.split(":")[0];
+        history.push(`/instances/${instance}`);
     };
 
     render = () => {
         const {classes, cell, colorGenerator} = this.props;
         const dependedNodeCount = this.state.data.nodes.length;
 
-        const viewGenerator = (nodeId, opacity) => {
+        const viewGenerator = (nodeId, opacity, instanceKind) => {
             const color = ColorGenerator.shadeColor(colorGenerator.getColor(nodeId), opacity);
             const outlineColor = ColorGenerator.shadeColor(color, -0.08);
 
-            const cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
-                + `<path fill="${color}"  stroke="${(cell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
-                + "</svg>";
+            let instanceView;
+            if (instanceKind === Constants.InstanceKind.CELL) {
+                instanceView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
+                    + `<path fill="${color}"  stroke="${(cell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                    + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
+                    + "</svg>";
+            }
 
-            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cellView)}`;
+            if (instanceKind === Constants.InstanceKind.COMPOSITE) {
+                instanceView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
+                    + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
+                    + `<circle cx="6.4" cy="6.7" r="6.1" fill="${color}"  stroke="${(cell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" stroke-dasharray="1.9772,0.9886" stroke-width="0.5px"/>`
+                    + "</svg>";
+            }
+
+            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(instanceView)}`;
         };
 
-        const dataNodes = this.state.data.nodes;
+        // TODO: Add property instanceKind and remove dummy data
+        const dataNodes = [
+            {
+                id: "pet-fe-1",
+                components: [
+                    "portal",
+                    "gateway"
+                ],
+                edges: [
+                    "gateway##portal"
+                ],
+                instanceKind: "Composite"
+            },
+            {
+                id: "pet-be-1",
+                components: [
+                    "controller",
+                    "catalog",
+                    "gateway",
+                    "customers",
+                    "orders"
+                ],
+                edges: [
+                    "controller##catalog",
+                    "gateway##controller",
+                    "controller##customers",
+                    "controller##orders"
+                ],
+                instanceKind: "Cell"
+            }
+        ];
+
+        /*
+         *TODO: Uncomment when dummy data is removed
+         *const dataNodes = this.state.data.nodes;
+         */
         const dataEdges = this.state.data.edges;
+
 
         let view;
         if (dependedNodeCount > 1) {
             view = (
                 <ErrorBoundary title={"Unable to Render"} description={"Unable to Render due to Invalid Data"}>
                     <div className={classes.dependencyGraph}>
-                        <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges} selectedCell={cell}
-                            onClickNode={this.onClickCell} viewGenerator={viewGenerator} graphType="dependency" />
+                        <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges} selectedInstance={cell}
+                            onClickNode={this.onClickInstance} viewGenerator={viewGenerator} graphType="dependency" />
                     </div>
                 </ErrorBoundary>
             );

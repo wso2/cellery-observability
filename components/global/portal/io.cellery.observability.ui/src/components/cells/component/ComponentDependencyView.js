@@ -17,6 +17,7 @@
 /* eslint max-len: ["off"] */
 
 import ComponentDependencyGraph from "./ComponentDependencyGraph";
+import Constants from "../../../utils/constants";
 import Divider from "@material-ui/core/Divider";
 import ErrorBoundary from "../../common/error/ErrorBoundary";
 import HttpUtils from "../../../utils/api/httpUtils";
@@ -81,7 +82,8 @@ class ComponentDependencyView extends React.Component {
             currentTimeRange: {
                 startTime: props.globalState.get(StateHolder.GLOBAL_FILTER).startTime,
                 endTime: props.globalState.get(StateHolder.GLOBAL_FILTER).endTime
-            }
+            },
+            selectedInstanceKind: null
         };
     }
 
@@ -192,45 +194,102 @@ class ComponentDependencyView extends React.Component {
             const nodes = [];
             const edges = [];
 
-            data.nodes.forEach((node) => {
-                if (cell === node.id.split(":")[0]) {
-                    if (node.id.split(":")[1] === ComponentDependencyGraph.NodeType.GATEWAY) {
-                        nodes.push({
-                            ...node,
-                            label: node.id.split(":")[1],
-                            group: "gateway"
+            // TODO: Add property instanceKind and remove dummy data
+            data.nodes = [
+                {
+                    id: "pet-be-1:orders",
+                    instanceKind: "Cell"
+                },
+                {
+                    id: "pet-be-1:customers",
+                    instanceKind: "Cell"
+                },
+                {
+                    id: "pet-be-1:gateway",
+                    instanceKind: "Cell"
+                },
+                {
+                    id: "pet-fe-1:gateway",
+                    instanceKind: "Cell"
+                },
+                {
+                    id: "pet-be-1:controller",
+                    instanceKind: "Cell"
+                },
+                {
+                    id: "pet-fe-1:portal",
+                    instanceKind: "Cell"
+                },
+                {
+                    id: "pet-be-1:catalog",
+                    instanceKind: "Cell"
+                }
+            ];
+
+            const selectedNode = `${cell}${ComponentDependencyGraph.CELL_COMPONENT_SEPARATOR}${component}`;
+
+            // Adding distinct nodes
+            const addNodeIfNotPresent = (nodeToBeAdded) => {
+                const existingNode = nodes.find((node) => nodeToBeAdded.id === node.id);
+                if (!existingNode) {
+                    nodes.push(nodeToBeAdded);
+                }
+            };
+
+            data.edges.forEach((edge, index) => {
+                const targetKind = data.nodes.find((node) => node.id === edge.target).instanceKind;
+                if (selectedNode === edge.source) {
+                    if (edge.source.split(":")[1] === ComponentDependencyGraph.NodeType.GATEWAY) {
+                        addNodeIfNotPresent({
+                            id: edge.source,
+                            label: edge.source.split(":")[1],
+                            group: ComponentDependencyGraph.NodeType.GATEWAY
                         });
                     } else {
-                        nodes.push({
-                            ...node,
-                            label: node.id.split(":")[1],
+                        addNodeIfNotPresent({
+                            id: edge.source,
+                            label: edge.source.split(":")[1],
                             group: ComponentDependencyGraph.NodeType.COMPONENT
                         });
                     }
-                } else if (node.id.split(":")[1] === ComponentDependencyGraph.NodeType.GATEWAY) {
-                    nodes.push({
-                        ...node,
-                        label: node.id.split(":")[0],
-                        group: ComponentDependencyGraph.NodeType.CELL
-                    });
-                }
-            });
 
-            data.edges.forEach((edge) => {
-                if ((cell === edge.source.split(":")[0] && cell === edge.target.split(":")[0])
-                    || (cell === edge.source.split(":")[0] && edge.target.split(":")[1] === "gateway")) {
+                    if (targetKind === Constants.InstanceKind.CELL) {
+                        if (edge.target.split(":")[1] === ComponentDependencyGraph.NodeType.GATEWAY) {
+                            addNodeIfNotPresent({
+                                id: edge.target,
+                                label: edge.target.split(":")[0],
+                                group: ComponentDependencyGraph.NodeType.CELL
+                            });
+                        } else {
+                            addNodeIfNotPresent({
+                                id: edge.target,
+                                label: edge.target.split(":")[1],
+                                group: ComponentDependencyGraph.NodeType.COMPONENT
+                            });
+                        }
+                    } else if (targetKind === Constants.InstanceKind.COMPOSITE) {
+                        addNodeIfNotPresent({
+                            id: edge.target,
+                            label: edge.target.split(":")[0],
+                            group: ComponentDependencyGraph.NodeType.COMPOSITE
+                        });
+                    }
+
                     edges.push({
                         ...edge
                     });
                 }
             });
 
+            const sourceKind = data.nodes.find((node) => node.id === selectedNode).instanceKind;
             self.setState({
                 data: {
                     nodes: nodes,
                     edges: edges
-                }
+                },
+                selectedInstanceKind: sourceKind
             });
+
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
             }
@@ -251,16 +310,17 @@ class ComponentDependencyView extends React.Component {
         const cell = nodeId.split(":")[0];
         const component = nodeId.split(":")[1];
         if (nodeType === ComponentDependencyGraph.NodeType.CELL) {
-            history.push(`/cells/${cell}`);
+            history.push(`/instances/${cell}`);
         } else {
-            history.push(`/cells/${cell}/components/${component}`);
+            history.push(`/instances/${cell}/components/${component}`);
         }
     };
 
     render = () => {
         const {classes, cell, component, colorGenerator} = this.props;
-        const dependedNodeCount = this.state.data.nodes.length;
-        const selectedNode = `${cell}:${component}`;
+        const {data, selectedInstanceKind} = this.state;
+        const dependedNodeCount = data.nodes.length;
+        const selectedNode = `${cell}${ComponentDependencyGraph.CELL_COMPONENT_SEPARATOR}${component}`;
 
 
         const viewGenerator = (group, nodeId, opacity) => {
@@ -269,9 +329,8 @@ class ComponentDependencyView extends React.Component {
             const componentColor = ColorGenerator.shadeColor("#999999", opacity);
 
             let cellView;
-
             if (group === ComponentDependencyGraph.NodeType.COMPONENT) {
-                cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
+                cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13" style="enable-background:new 0 0 13 13" xmlSpace="preserve">'
                     + `<path fill="${color}"  stroke="${(selectedNode === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
                     + 'stroke-width="0.5px" d="M13,7a6,6,0,0,1-6,6.06A6,6,0,0,1,1,7,6,6,0,0,1,7,.94,6,6,0,0,1,13,7Z" transform="translate(-0.79 -0.69)"/>'
                     + `<path fill="${componentColor}" stroke="#fff" stroke-width="0.1px" d="M4.37,5c-.19.11-.19.28,0,.39L6.76,6.82a.76.76,0,0,0,.69,0L9.64,5.45a.23.23,0,0,0,0-.42L7.45,3.7a.76.76,0,0,0-.69,0Z" transform="translate(-0.79 -0.69)"/>`
@@ -279,34 +338,50 @@ class ComponentDependencyView extends React.Component {
                     + '<text fill="#fff" font-size="1.63px" font-family="ArialMT, Arial" transform="translate(5.76 5.1) scale(0.98 1)">μ</text>'
                     + "</svg>";
             } else if (group === ComponentDependencyGraph.NodeType.GATEWAY) {
-                cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
+                cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13" style="enable-background:new 0 0 13 13" xmlSpace="preserve">'
                     + `<path fill="${color}"  stroke="${(selectedNode === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                    + 'stroke-width="0.5px" d="M13,7a6,6,0,0,1-6,6.06A6,6,0,0,1,1,7,6,6,0,0,1,7,.94,6,6,0,0,1,13,7Z" transform="translate(-0.79 -0.69)"/>'
-                    + `<path fill="${componentColor}" stroke="#fff" stroke-width="0.1px" d="M6.39,6.29v1L4.6,5.47a.14.14,0,0,1,0-.21L6.39,3.47v1a.15.15,0,0,0,.15.14H9.3a.15.15,0,0,1,.14.15V6a.15.15,0,0,1-.14.15H6.54A.15.15,0,0,0,6.39,6.29ZM7.46,7.85H4.7A.15.15,0,0,0,4.56,8V9.27a.15.15,0,0,0,.14.15H7.46a.15.15,0,0,1,.15.14v1L9.4,8.74a.14.14,0,0,0,0-.21L7.61,6.74v1A.15.15,0,0,1,7.46,7.85Z" transform="translate(-0.79 -0.69)"/>`
+                    + 'stroke-width="0.5px" d="M13,7a6,6,0,0,1-6,6.06A6,6,0,0,1,1,7,6,6,0,0,1,7,.94,6,6,0,0,1,13,7Z" transform="translate(-0.59 -0.49)"/>'
+                    + `<path fill="${componentColor}" stroke="#fff" stroke-width="0.1px" d="M6.39,6.29v1L4.6,5.47a.14.14,0,0,1,0-.21L6.39,3.47v1a.15.15,0,0,0,.15.14H9.3a.15.15,0,0,1,.14.15V6a.15.15,0,0,1-.14.15H6.54A.15.15,0,0,0,6.39,6.29ZM7.46,7.85H4.7A.15.15,0,0,0,4.56,8V9.27a.15.15,0,0,0,.14.15H7.46a.15.15,0,0,1,.15.14v1L9.4,8.74a.14.14,0,0,0,0-.21L7.61,6.74v1A.15.15,0,0,1,7.46,7.85Z" transform="translate(13.5 -0.49) rotate(90)"/>`
                     + "</svg>";
+            } else if (group === ComponentDependencyGraph.NodeType.COMPOSITE) {
+                if (nodeId === cell) {
+                    cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
+                        + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13" style="enable-background:new 0 0 13 13" xmlSpace="preserve">'
+                        + `<circle cx="6.4" cy="6.7" r="6.1" fill="none"  stroke="${outlineColor}" stroke-opacity="${1 - opacity}" stroke-dasharray="0.3986993968486786,0.3986993968486786" stroke-width="0.1px"/>`
+                        + "</svg>";
+                } else {
+                    cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
+                        + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13" style="enable-background:new 0 0 13 13" xmlSpace="preserve">'
+                        + `<circle cx="6.4" cy="6.7" r="6.1" fill="${color}"  stroke="${outlineColor}" stroke-opacity="${1 - opacity}" stroke-dasharray="1.9772,0.9886" stroke-width="0.5px"/>`
+                        + "</svg>";
+                }
+            } else if (nodeId === cell) {
+                cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
+                        + `<path fill="none"  stroke="${outlineColor}" stroke-opacity="${1 - opacity}" `
+                        + ' stroke-width="0.1px" d="M9,0.8H5C4.7,0.8,4.3,1,4,1.3L1.3,4C1,4.3,0.8,4.6,0.8,5v4c0,0.4,0.2,0.7,0.4,1L4,12.8c0.3,0.3,0.6,0.4,1,0.4H9c0.4,0,0.7-0.1,1-0.4l2.8-2.8c0.3-0.3,0.4-0.6,0.4-1V5c0-0.4-0.2-0.7-0.4-1L10,1.3C9.7,1,9.3,0.8,9,0.8z"/>'
+                        + "</svg>";
             } else {
                 cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
-                    + `<path fill="${color}"  stroke="${outlineColor}" stroke-opacity="${1 - opacity}" `
-                    + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
-                    + "</svg>";
+                        + `<path fill="${color}"  stroke="${outlineColor}" stroke-opacity="${1 - opacity}" `
+                        + ' stroke-width="0.5px" d="M9,0.8H5C4.7,0.8,4.3,1,4,1.3L1.3,4C1,4.3,0.8,4.6,0.8,5v4c0,0.4,0.2,0.7,0.4,1L4,12.8c0.3,0.3,0.6,0.4,1,0.4H9c0.4,0,0.7-0.1,1-0.4l2.8-2.8c0.3-0.3,0.4-0.6,0.4-1V5c0-0.4-0.2-0.7-0.4-1L10,1.3C9.7,1,9.3,0.8,9,0.8z"/>'
+                        + "</svg>";
             }
 
             return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cellView)}`;
         };
 
-        const dataNodes = this.state.data.nodes;
-        const dataEdges = this.state.data.edges;
         let view;
 
-        if (dependedNodeCount > 1) {
+        if (dependedNodeCount > 0) {
             view = (
                 <ErrorBoundary title={"Unable to Render"} description={"Unable to Render due to Invalid Data"}>
                     <div className={classes.dependencyGraph}>
                         <ComponentDependencyGraph
                             id="component-dependency-graph"
-                            nodeData={dataNodes} edgeData={dataEdges} selectedComponent={selectedNode}
+                            nodeData={data.nodes} edgeData={data.edges} selectedComponent={selectedNode}
                             onClickNode={this.onClickNode} viewGenerator={viewGenerator}
-                            graphType="dependency" cellColor={colorGenerator.getColor(cell)}/>
+                            graphType="dependency" cellColor={colorGenerator.getColor(cell)}
+                            selectedInstanceKind={selectedInstanceKind} instance={cell}/>
                     </div>
                 </ErrorBoundary>
             );
@@ -315,7 +390,7 @@ class ComponentDependencyView extends React.Component {
                 <div>
                     <InfoOutlined className={classes.infoIcon} color="action"/>
                     <Typography variant="subtitle2" color="textSecondary" className={classes.info}>
-                        {`"${component}"`} component in {`"${cell}"`} cell does not depend on any other Component
+                        {`"${component}"`} component in {`"${cell}"`} instance does not depend on any other Component
                     </Typography>
                 </div>
             );

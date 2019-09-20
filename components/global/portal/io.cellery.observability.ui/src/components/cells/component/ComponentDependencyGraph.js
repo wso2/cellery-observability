@@ -34,17 +34,16 @@ const styles = (theme) => ({
 class ComponentDependencyGraph extends React.Component {
 
     static NodeType = {
-        CELL: "cell",
+        CELL: "Cell",
+        COMPOSITE: "Composite",
         COMPONENT: "component",
         GATEWAY: "gateway"
     };
 
+    static CELL_COMPONENT_SEPARATOR = ":";
+
     static GRAPH_OPTIONS = {
         nodes: {
-            shapeProperties: {
-                borderRadius: 10
-            },
-            borderWidth: 1,
             size: 40,
             font: {
                 size: 15,
@@ -72,49 +71,20 @@ class ComponentDependencyGraph extends React.Component {
         autoResize: true,
         physics: {
             enabled: true,
-            barnesHut: {
-                gravitationalConstant: -1000,
-                centralGravity: 0.3,
-                springLength: 100,
-                springConstant: 0.04,
-                damping: 0.09,
-                avoidOverlap: 1
-            },
             forceAtlas2Based: {
-                gravitationalConstant: -50,
-                centralGravity: 0.01,
-                springConstant: 0.08,
-                springLength: 100,
-                damping: 0.4,
+                gravitationalConstant: -800,
+                centralGravity: 0.1,
                 avoidOverlap: 1
             },
-            repulsion: {
-                centralGravity: 1,
-                springLength: 0,
-                springConstant: 0,
-                nodeDistance: 0,
-                damping: 0.09
-            },
-            hierarchicalRepulsion: {
-                centralGravity: 0.0,
-                springLength: 100,
-                springConstant: 0.01,
-                nodeDistance: 120,
-                damping: 0.09
-            },
-            maxVelocity: 50,
-            minVelocity: 0.1,
             solver: "forceAtlas2Based",
             stabilization: {
                 enabled: true,
-                iterations: 1000,
-                updateInterval: 100,
-                onlyDynamicEdges: false,
+                iterations: 25,
                 fit: true
-            },
-            adaptiveTimestep: false
+            }
         },
         interaction: {
+            selectConnectedEdges: false,
             hover: true
         }
     };
@@ -137,7 +107,8 @@ class ComponentDependencyGraph extends React.Component {
     };
 
     draw = () => {
-        const {nodeData, edgeData, selectedComponent, viewGenerator, cellColor, onClickNode} = this.props;
+        const {nodeData, edgeData, selectedComponent, viewGenerator, onClickNode, selectedInstanceKind,
+            instance} = this.props;
         const dataNodes = [];
         const dataEdges = [];
 
@@ -185,66 +156,11 @@ class ComponentDependencyGraph extends React.Component {
             return Object.values(nodePositions);
         };
 
-        const drawPolygon = (ctx, pts, radius) => {
-            let points;
-            if (radius > 0) {
-                points = getRoundedPoints(pts, radius);
-            }
-            let i;
-            let pt;
-            const len = points.length;
-            for (i = 0; i < len; i++) {
-                pt = points[i];
-                if (i === 0) {
-                    ctx.beginPath();
-                    ctx.moveTo(pt[0], pt[1]);
-                } else {
-                    ctx.lineTo(pt[0], pt[1]);
-                }
-                if (radius > 0) {
-                    ctx.quadraticCurveTo(pt[2], pt[3], pt[4], pt[5]);
-                }
-            }
-            ctx.closePath();
-        };
-
-        const getRoundedPoints = (pts, radius) => {
-            let i1;
-            let i2;
-            let i3;
-            let nextPt;
-            let p1;
-            let p2;
-            let p3;
-            let prevPt;
-            const len = pts.length;
-
-            const res = new Array(len);
-            for (i2 = 0; i2 < len; i2++) {
-                i1 = i2 - 1;
-                i3 = i2 + 1;
-                if (i1 < 0) {
-                    i1 = len - 1;
-                }
-                if (i3 === len) {
-                    i3 = 0;
-                }
-                p1 = pts[i1];
-                p2 = pts[i2];
-                p3 = pts[i3];
-                prevPt = getRoundedPoint(p1[0], p1[1], p2[0], p2[1], radius, false);
-                nextPt = getRoundedPoint(p2[0], p2[1], p3[0], p3[1], radius, true);
-                res[i2] = [prevPt[0], prevPt[1], p2[0], p2[1], nextPt[0], nextPt[1]];
-            }
-            return res;
-        };
-
-        const getRoundedPoint = (x1, y1, x2, y2, radius, first) => {
-            const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-
-
-            const idx = first ? radius / total : (total - radius) / total;
-            return [x1 + (idx * (x2 - x1)), y1 + (idx * (y2 - y1))];
+        const findPoint = (x, y, angle, distance) => {
+            const result = {};
+            result.x = Math.round(Math.cos(angle * Math.PI / 180) * distance + x);
+            result.y = Math.round(Math.sin(angle * Math.PI / 180) * distance + y);
+            return result;
         };
 
         if (nodeData) {
@@ -288,9 +204,19 @@ class ComponentDependencyGraph extends React.Component {
         const groupNodesComponents = getGroupNodes(dataNodes, ComponentDependencyGraph.NodeType.COMPONENT);
         const groupNodesCells = getGroupNodes(dataNodes, ComponentDependencyGraph.NodeType.CELL);
         const groupNodesGateway = getGroupNodes(dataNodes, ComponentDependencyGraph.NodeType.GATEWAY);
+        const groupNodesComposites = getGroupNodes(dataNodes, ComponentDependencyGraph.NodeType.COMPOSITE);
 
         let nodes = new vis.DataSet(groupNodesComponents);
+        nodes.add({
+            id: instance,
+            label: instance,
+            shape: "image",
+            image: viewGenerator(selectedInstanceKind, instance, 0),
+            group: selectedInstanceKind
+        });
         nodes.add(groupNodesGateway);
+        nodes.add(groupNodesComposites);
+        nodes.add(groupNodesCells);
         const edges = new vis.DataSet(dataEdges);
 
         const graphData = {
@@ -300,88 +226,63 @@ class ComponentDependencyGraph extends React.Component {
 
         const network
             = new vis.Network(this.dependencyGraph.current, graphData, ComponentDependencyGraph.GRAPH_OPTIONS);
-        const spacing = 100;
         let allNodes;
+        const spacing = 150;
+        const updatedNodes = [];
 
         if (selectedComponent) {
             network.selectNodes([selectedComponent], false);
         }
 
         network.on("beforeDrawing", (ctx) => {
-            const centerPoint = getPolygonCentroid(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT));
-            const polygonRadius = getDistance(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT),
-                centerPoint);
-            const numberOfSides = 8;
-            const size = polygonRadius + spacing;
-            const Xcenter = centerPoint.x;
-            const Ycenter = centerPoint.y;
-            let curve = 0;
-
-            if (polygonRadius === 0) {
-                curve = 7;
-            } else {
-                curve = 12;
-            }
-
-            ctx.font = "16px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText(selectedComponent.split(":")[0], Xcenter, Ycenter + size + 10);
-
-            ctx.save();
-            ctx.translate(Xcenter, Ycenter); // Translate to center of shape
-            ctx.rotate(22.5 * Math.PI / 180); // Rotate 22.5 degrees.
-            ctx.translate(-Xcenter, -Ycenter);
-
-            const cornerPoints = [];
-            ctx.beginPath();
-            ctx.moveTo(Xcenter + size, Ycenter + size);
-            ctx.lineJoin = "round";
-            ctx.lineWidth = 3;
-
-
-            for (let i = 0; i <= numberOfSides; i += 1) {
-                ctx.lineTo(Xcenter + size * Math.cos(i * 2 * Math.PI / numberOfSides), Ycenter + size
-                    * Math.sin(i * 2 * Math.PI / numberOfSides));
-
-                if (i < numberOfSides) {
-                    cornerPoints.push([
-                        Xcenter + size * Math.cos(i * 2 * Math.PI / numberOfSides),
-                        Ycenter + size * Math.sin(i * 2 * Math.PI / numberOfSides)
-                    ]);
-                }
-            }
-
-            ctx.closePath();
-            drawPolygon(ctx, cornerPoints, curve);
-            ctx.strokeStyle = cellColor;
-            ctx.stroke();
-            ctx.restore();
-
-            // Placing gateway node
-            if (groupNodesGateway[0]) {
-                const x = centerPoint.x;
-                const y = centerPoint.y - size;
-                network.moveNode(groupNodesGateway[0].id, x, y);
-            }
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(-ctx.canvas.offsetWidth, -(ctx.canvas.offsetHeight + 20),
+                ctx.canvas.width, ctx.canvas.height);
         });
 
         network.on("stabilizationIterationsDone", () => {
-            network.setOptions({physics: false});
-            const centerPoint = getPolygonCentroid(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT));
-
-            let polygonRadius = getDistance(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT),
-                centerPoint);
-
-            polygonRadius += spacing * 2;
-            const d = 2 * Math.PI / groupNodesCells.length;
-            groupNodesCells.forEach((node, i) => {
-                nodes.add(node);
-                const x = polygonRadius * Math.cos(d * i);
-                const y = polygonRadius * Math.sin(d * i);
-                network.moveNode(node.id, x, y);
-            });
-
             allNodes = nodes.get({returnType: "Object"});
+
+            let centerPoint = getPolygonCentroid(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT));
+            const polygonRadius = getDistance(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT),
+                centerPoint);
+            const size = polygonRadius + spacing;
+
+            for (const nodeId in allNodes) {
+                if (allNodes[nodeId].group === ComponentDependencyGraph.NodeType.COMPONENT) {
+                    allNodes[nodeId].fixed = true;
+                    if (allNodes.hasOwnProperty(nodeId)) {
+                        updatedNodes.push(allNodes[nodeId]);
+                    }
+                }
+            }
+            centerPoint = getPolygonCentroid(getGroupNodePositions(ComponentDependencyGraph.NodeType.COMPONENT));
+
+            const focused = nodes.get(instance);
+            focused.size = size;
+            focused.fixed = true;
+            if (groupNodesComponents.length === 1) {
+                focused.mass = 5;
+            } else {
+                focused.mass = polygonRadius / 10;
+            }
+            network.moveNode(instance, centerPoint.x, centerPoint.y);
+            updatedNodes.push(focused);
+
+            // Placing gateway node
+            if (groupNodesGateway.length > 0) {
+                const gatewayNode = nodes.get(selectedComponent);
+                gatewayNode.fixed = true;
+                const gatewayPoint = findPoint(centerPoint.x, centerPoint.y, 90, size * Math.cos(180 / 8));
+
+                if (gatewayNode) {
+                    const x = gatewayPoint.x;
+                    const y = gatewayPoint.y;
+                    network.moveNode(gatewayNode.id, x, y);
+                    updatedNodes.push(gatewayNode);
+                }
+            }
+            nodes.update(updatedNodes);
         });
 
         const neighbourhoodHighlight = (params) => {
@@ -484,7 +385,8 @@ ComponentDependencyGraph.propTypes = {
     onClickNode: PropTypes.func,
     onClickGraph: PropTypes.func,
     viewGenerator: PropTypes.func,
-    cellColor: PropTypes.string
+    selectedInstanceKind: PropTypes.string,
+    instance: PropTypes.string
 };
 
 export default withStyles(styles)(ComponentDependencyGraph);
