@@ -1,27 +1,26 @@
 /*
- *  Copyright (c) ${year} WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
- *  WSO2 Inc. licenses this file to you under the Apache License,
- *  Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License.
- *  You may obtain a copy of the License at
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing,
- *  software distributed under the License is distributed on an
- *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *  KIND, either express or implied.  See the License for the
- *  specific language governing permissions and limitations
- *  under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  *
  */
 
 package io.cellery.observability.telemetry.receiver;
 
-import io.cellery.observability.telemetry.receiver.internal.TelemetryServiceImpl;
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
+import com.sun.net.httpserver.HttpServer;
+import io.cellery.observability.telemetry.receiver.internal.MetricsHandler;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
@@ -35,6 +34,7 @@ import org.wso2.siddhi.core.util.config.ConfigReader;
 import org.wso2.siddhi.core.util.transport.OptionHolder;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Map;
 
 /**
@@ -57,8 +57,8 @@ public class TelemetryEventSource extends Source {
     private static final Logger log = Logger.getLogger(TelemetryEventSource.class);
 
     private SourceEventListener sourceEventListener;
-    private Server server;
     private int port;
+    private HttpServer httpServer;
 
     @Override
     public void init(SourceEventListener sourceEventListener, OptionHolder optionHolder, String[] strings,
@@ -76,13 +76,14 @@ public class TelemetryEventSource extends Source {
     @Override
     public void connect(ConnectionCallback connectionCallback) throws ConnectionUnavailableException {
         try {
-            this.server = ServerBuilder.forPort(this.port)
-                    .addService(new TelemetryServiceImpl(this.sourceEventListener))
-                    .build()
-                    .start();
-            log.info("Telemetry GRPC Server started, listening on " + port);
+            httpServer = HttpServer.create(new InetSocketAddress(port), 0);
+            // ToDO : if possible, change this to a mapper
+            httpServer.createContext("/", new MetricsHandler(sourceEventListener));
+            httpServer.setExecutor(null); // creates a default executor
+            httpServer.start();
+            log.info("Http server started on port : " + port);
         } catch (IOException e) {
-            throw new ConnectionUnavailableException("Unable to start the Telemetry gRPC service on port: " + port, e);
+            throw new ConnectionUnavailableException("Unable to start the http server on port: " + port, e);
         }
     }
 
@@ -117,9 +118,9 @@ public class TelemetryEventSource extends Source {
     }
 
     private void stopServer() {
-        if (this.server != null && !this.server.isShutdown()) {
-            log.info("Shutting down telemetry service");
-            this.server.shutdown();
+        if (this.httpServer != null) {
+            log.info("Shutting down the http server");
+            this.httpServer.stop(0);
         }
     }
 }

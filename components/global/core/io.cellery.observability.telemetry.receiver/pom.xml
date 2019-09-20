@@ -35,6 +35,10 @@
             <artifactId>siddhi-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.sun.net.httpserver</groupId>
+            <artifactId>http</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
@@ -74,6 +78,10 @@
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty</artifactId>
         </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
 
         <!-- Test dependencies start here-->
         <dependency>
@@ -91,11 +99,6 @@
             <artifactId>netty-all</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <scope>test</scope>
-        </dependency>
         <!-- Test dependencies end here-->
     </dependencies>
 
@@ -105,9 +108,6 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${org.jacoco.version}</version>
-                <configuration>
-                    <excludes>**/io/cellery/observability/telemetry/receiver/generated/**</excludes>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>
@@ -151,8 +151,6 @@
     </build>
 
     <properties>
-        <maven.checkstyleplugin.excludes>**/generated/**</maven.checkstyleplugin.excludes>
-        <mavan.findbugsplugin.exclude.file>spotbugs-exclude.xml</mavan.findbugsplugin.exclude.file>
         <exp.package.version>3.6.1</exp.package.version>
         <grpc.version>1.15.0</grpc.version>
     </properties>

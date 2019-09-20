@@ -19,38 +19,112 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
+	"strconv"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
-
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/wso2spadapter"
 )
 
-const defaultAdapterPort string = "38355"
+const (
+	defaultAdapterPort         int    = 38355
+	grpcAdapterCertificatePath string = "GRPC_ADAPTER_CERTIFICATE_PATH"
+	grpcAdapterPrivateKeyPath  string = "GRPC_ADAPTER_PRIVATE_KEY_PATH"
+	caCertificatePath          string = "CA_CERTIFICATE_PATH"
+	spServerUrlPath            string = "SP_SERVER_URL"
+)
 
 func main() {
 
-	addr := defaultAdapterPort //Pre defined port for the adaptor. ToDo: Should get this as an environment variable
-
-	if len(os.Args) > 1 {
-		addr = os.Args[1]
-	}
+	port := defaultAdapterPort //Pre defined port for the adaptor. ToDo: Should get this as an environment variable
 
 	logger, err := logging.NewLogger()
 	if err != nil {
-		logger.Fatalf("Error building logger: ", err.Error())
+		log.Fatalf("Error building logger: %s", err.Error())
 	}
-	defer logger.Sync()
+	defer func() {
+		err := logger.Sync()
+		if err != nil {
+			log.Fatalf("Error syncing logger: %s", err.Error())
+		}
+	}()
 
-	adapter, err := wso2spadapter.NewWso2SpAdapter(addr, logger)
+	if len(os.Args) > 1 {
+		port, err = strconv.Atoi(os.Args[1])
+		if err != nil {
+			logger.Errorf("Could not convert the port number from string to int : %s", err.Error())
+		}
+	}
+
+	/* Mutual TLS feature to secure connection between workloads
+	   This is optional. */
+	adapterCertificate := os.Getenv(grpcAdapterCertificatePath) // adapter.crt //change the name
+	adapterprivateKey := os.Getenv(grpcAdapterPrivateKeyPath)   // adapter.key
+	caCertificate := os.Getenv(caCertificatePath)               // ca.pem
+	spServerUrl := os.Getenv(spServerUrlPath)
+
+	logger.Infof("Sp server url : %s", spServerUrl)
+
+	client := &http.Client{}
+	publisher := adapter.SPMetricsPublisher{}
+
+	var serverOption grpc.ServerOption = nil
+
+	if adapterCertificate != "" {
+		serverOption, err = getServerTLSOption(adapterCertificate, adapterprivateKey, caCertificate)
+		if err != nil {
+			logger.Warn("Server option could not be fetched, Connection will not be encrypted")
+		}
+	}
+
+	spAdapter, err := adapter.New(port, logger, client, publisher, serverOption, spServerUrl)
 	if err != nil {
-		logger.Error("unable to start server: ", err.Error())
-		os.Exit(-1)
+		logger.Fatal("unable to start server: ", err.Error())
 	}
 
 	shutdown := make(chan error, 1)
 	go func() {
-		adapter.Run(shutdown)
+		spAdapter.Run(shutdown)
 	}()
-	_ = <-shutdown
+	err = <-shutdown
+	if err != nil {
+		logger.Error(err.Error())
+	}
+}
+
+func getServerTLSOption(adapterCertificate, adapterPrivateKey, caCertificate string) (grpc.ServerOption, error) {
+	certificate, err := tls.LoadX509KeyPair(
+		adapterCertificate,
+		adapterPrivateKey,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load key cert pair")
+	}
+	certPool := x509.NewCertPool()
+	bytesArray, err := ioutil.ReadFile(caCertificate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read client ca cert: %s", err)
+	}
+
+	ok := certPool.AppendCertsFromPEM(bytesArray)
+	if !ok {
+		return nil, fmt.Errorf("failed to append client certs")
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{certificate},
+		ClientCAs:    certPool,
+	}
+	tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+
+	return grpc.Creds(credentials.NewTLS(tlsConfig)), nil
 }

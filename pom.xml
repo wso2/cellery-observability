@@ -290,6 +290,11 @@
                 <artifactId>gson</artifactId>
                 <version>${gson.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.sun.net.httpserver</groupId>
+                <artifactId>http</artifactId>
+                <version>${httpserver.version}</version>
+            </dependency>
             <!-- External dependencies end here -->
 
             <!--Orbit dependencies start here-->
@@ -617,6 +622,8 @@
         <maven.findbugsplugin.version>3.0.5</maven.findbugsplugin.version>
         <h2.database.version>1.4.191</h2.database.version>
         <io.netty.version>4.1.36.Final</io.netty.version>
+
+        <httpserver.version>20070405</httpserver.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
