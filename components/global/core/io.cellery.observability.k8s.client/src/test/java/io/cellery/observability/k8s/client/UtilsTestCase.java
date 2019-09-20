@@ -48,7 +48,7 @@ public class UtilsTestCase extends BaseTestCase {
     @Test
     public void testGetComponentNameWithComponentLabel() {
         Map<String, String> labels = new HashMap<>();
-        labels.put(Constants.COMPONENT_NAME_LABEL, "pet-fe--test-c");
+        labels.put(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL, "test-c");
         Pod pod = generatePod(labels);
 
         Assert.assertEquals(Utils.getComponentName(pod), "test-c");
@@ -57,7 +57,7 @@ public class UtilsTestCase extends BaseTestCase {
     @Test
     public void testGetComponentNameWithGatewayLabel() {
         Map<String, String> labels = new HashMap<>();
-        labels.put(Constants.GATEWAY_NAME_LABEL, "pet-fe--gateway");
+        labels.put(Constants.CELLERY_OBSERVABILITY_GATEWAY_NAME_LABEL, "gateway");
         Pod pod = generatePod(labels);
 
         Assert.assertEquals(Utils.getComponentName(pod), "gateway");
@@ -66,24 +66,6 @@ public class UtilsTestCase extends BaseTestCase {
     @Test
     public void testGetComponentNameWithNoLabels() {
         Pod pod = generatePod(new HashMap<>());
-
-        Assert.assertEquals(Utils.getComponentName(pod), "");
-    }
-
-    @Test
-    public void testGetComponentNameWithInvalidComponentLabel() {
-        Map<String, String> labels = new HashMap<>();
-        labels.put(Constants.COMPONENT_NAME_LABEL, "pet-fe");
-        Pod pod = generatePod(labels);
-
-        Assert.assertEquals(Utils.getComponentName(pod), "");
-    }
-
-    @Test
-    public void testGetComponentNameWithInvalidGatewayLabel() {
-        Map<String, String> labels = new HashMap<>();
-        labels.put(Constants.GATEWAY_NAME_LABEL, "pet-fe");
-        Pod pod = generatePod(labels);
 
         Assert.assertEquals(Utils.getComponentName(pod), "");
     }

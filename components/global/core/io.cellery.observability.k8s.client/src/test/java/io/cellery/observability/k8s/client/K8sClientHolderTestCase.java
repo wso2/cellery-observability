@@ -41,8 +41,10 @@ public class K8sClientHolderTestCase {
 
         Map<String, Class<? extends KubernetesResource>> registeredCrds =
                 Whitebox.getInternalState(KubernetesDeserializer.class, "MAP");
-        Class<? extends KubernetesResource> cellCrd = registeredCrds.get("mesh.cellery.io/v1alpha1#Cell");
-        Class<? extends KubernetesResource> compositeCrd = registeredCrds.get("mesh.cellery.io/v1alpha1#Composite");
+        Class<? extends KubernetesResource> cellCrd = registeredCrds.get(Constants.CELLERY_GROUP + "/" +
+                Constants.COMPOSITE_CRD_VERSION + "#" + Constants.CELL_KIND);
+        Class<? extends KubernetesResource> compositeCrd = registeredCrds.get(Constants.CELLERY_GROUP + "/" +
+                Constants.COMPOSITE_CRD_VERSION + "#" + Constants.COMPOSITE_KIND);
 
         Assert.assertNotNull(k8sClient);
         Assert.assertEquals(cellCrd, CellImpl.class);

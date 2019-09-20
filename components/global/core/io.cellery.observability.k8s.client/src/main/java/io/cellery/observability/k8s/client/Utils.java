@@ -44,21 +44,14 @@ public class Utils {
      * @return The actual component name
      */
     static String getComponentName(Pod pod) {
-        String fullyQualifiedName = null;
+        String componentName = null;
         Map<String, String> labels = pod.getMetadata().getLabels();
-        if (labels.containsKey(Constants.COMPONENT_NAME_LABEL)) {
-            fullyQualifiedName = labels.get(Constants.COMPONENT_NAME_LABEL);
-        } else if (labels.containsKey(Constants.GATEWAY_NAME_LABEL)) {
-            fullyQualifiedName = labels.get(Constants.GATEWAY_NAME_LABEL);
+        if (labels.containsKey(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL)) {
+            componentName = labels.get(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL);
+        } else if (labels.containsKey(Constants.CELLERY_OBSERVABILITY_GATEWAY_NAME_LABEL)) {
+            componentName = labels.get(Constants.CELLERY_OBSERVABILITY_GATEWAY_NAME_LABEL);
         }
-
-        String componentName;
-        if (StringUtils.isNotEmpty(fullyQualifiedName) && fullyQualifiedName.contains("--")) {
-            componentName = fullyQualifiedName.split("--")[1];
-        } else {
-            componentName = "";
-        }
-        return componentName;
+        return StringUtils.isNotEmpty(componentName) ? componentName : "";
     }
 
     /**

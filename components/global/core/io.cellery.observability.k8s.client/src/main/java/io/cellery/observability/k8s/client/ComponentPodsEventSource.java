@@ -86,29 +86,19 @@ public class ComponentPodsEventSource extends Source {
         // Pod watcher for Cellery Cell components
         Watch cellComponentsWatch = k8sClient.pods()
                 .inNamespace(Constants.NAMESPACE)
-                .withLabel(Constants.CELL_NAME_LABEL)
-                .withLabel(Constants.COMPONENT_NAME_LABEL)
-                .watch(new PodWatcher(this.sourceEventListener, Constants.COMPONENT_NAME_LABEL));
+                .withLabel(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL)
+                .withLabel(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL)
+                .watch(new PodWatcher(this.sourceEventListener, Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL));
         k8sWatches.add(cellComponentsWatch);
         if (logger.isDebugEnabled()) {
-            logger.debug("Created pod watcher for Cell components");
-        }
-        // Pod watcher for Cellery Composite components
-        Watch compositeComponentsWatch = k8sClient.pods()
-                .inNamespace(Constants.NAMESPACE)
-                .withLabel(Constants.COMPOSITE_NAME_LABEL)
-                .withLabel(Constants.COMPONENT_NAME_LABEL)
-                .watch(new PodWatcher(this.sourceEventListener, Constants.COMPONENT_NAME_LABEL));
-        k8sWatches.add(compositeComponentsWatch);
-        if (logger.isDebugEnabled()) {
-            logger.debug("Created pod watcher for Composite components");
+            logger.debug("Created pod watcher for components");
         }
         // Pod watcher for Cellery cell gateways
         Watch gatewaysWatch = k8sClient.pods()
                 .inNamespace(Constants.NAMESPACE)
-                .withLabel(Constants.CELL_NAME_LABEL)
-                .withLabel(Constants.GATEWAY_NAME_LABEL)
-                .watch(new PodWatcher(this.sourceEventListener, Constants.GATEWAY_NAME_LABEL));
+                .withLabel(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL)
+                .withLabel(Constants.CELLERY_OBSERVABILITY_GATEWAY_NAME_LABEL)
+                .watch(new PodWatcher(this.sourceEventListener, Constants.CELLERY_OBSERVABILITY_GATEWAY_NAME_LABEL));
         k8sWatches.add(gatewaysWatch);
         if (logger.isDebugEnabled()) {
             logger.debug("Created pod watcher for gateways");
@@ -177,23 +167,13 @@ public class ComponentPodsEventSource extends Source {
         @Override
         public void eventReceived(Action action, Pod pod) {
             try {
-                String instance;
-                String kind;
-                if (pod.getMetadata().getLabels().containsKey(Constants.CELL_NAME_LABEL)) {
-                    instance = pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL);
-                    kind = Constants.CELL_KIND;
-                } else if (pod.getMetadata().getLabels().containsKey(Constants.COMPOSITE_NAME_LABEL)) {
-                    instance = pod.getMetadata().getLabels().get(Constants.COMPOSITE_NAME_LABEL);
-                    kind = Constants.COMPOSITE_KIND;
-                } else {
-                    instance = "";
-                    kind = "";
-                }
                 Map<String, Object> attributes = new HashMap<>();
-                attributes.put(Constants.Attribute.INSTANCE, instance);
+                attributes.put(Constants.Attribute.INSTANCE, pod.getMetadata().getLabels().getOrDefault(
+                        Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, ""));
                 attributes.put(Constants.Attribute.COMPONENT, Utils.getComponentName(pod));
                 attributes.put(Constants.Attribute.POD_NAME, pod.getMetadata().getName());
-                attributes.put(Constants.Attribute.INSTANCE_KIND, kind);
+                attributes.put(Constants.Attribute.INSTANCE_KIND, pod.getMetadata().getLabels().getOrDefault(
+                        Constants.CELLERY_OBSERVABILITY_INSTANCE_KIND_LABEL, ""));
                 attributes.put(Constants.Attribute.CREATION_TIMESTAMP, pod.getMetadata().getCreationTimestamp() == null
                         ? -1
                         : new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US).parse(
@@ -210,9 +190,15 @@ public class ComponentPodsEventSource extends Source {
                 sourceEventListener.onEvent(attributes, new String[0]);
                 if (logger.isDebugEnabled()) {
                     logger.debug("Emitted event - pod " + pod.getMetadata().getName() + " with resource version " +
-                            pod.getMetadata().getCreationTimestamp() + " belonging to cell " +
-                            pod.getMetadata().getLabels().get(Constants.CELL_NAME_LABEL) + " of type " +
-                            (Constants.COMPONENT_NAME_LABEL.equals(componentNameLabel) ? "component" : "gateway"));
+                            pod.getMetadata().getResourceVersion() + " belonging to " +
+                            pod.getMetadata().getLabels().getOrDefault(
+                                    Constants.CELLERY_OBSERVABILITY_INSTANCE_KIND_LABEL, "") +
+                            " " +
+                            pod.getMetadata().getLabels().getOrDefault(
+                                    Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, "") +
+                            " of type " +
+                            (Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL.equals(componentNameLabel)
+                                    ? "component" : "gateway"));
                 }
             } catch (ParseException e) {
                 // This should not happen unless the K8s date-time format changed (eg:- K8s version upgrade)
@@ -225,12 +211,14 @@ public class ComponentPodsEventSource extends Source {
             if (cause == null) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Kubernetes " +
-                            (Constants.COMPONENT_NAME_LABEL.equals(componentNameLabel) ? "component" : "gateway") +
+                            (Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL.equals(componentNameLabel)
+                                    ? "component" : "gateway") +
                             " pod watcher closed successfully");
                 }
             } else {
                 logger.error("Kubernetes " +
-                        (Constants.COMPONENT_NAME_LABEL.equals(componentNameLabel) ? "component" : "gateway") +
+                        (Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL.equals(componentNameLabel)
+                                ? "component" : "gateway") +
                         " pod watcher closed with error", cause);
             }
         }

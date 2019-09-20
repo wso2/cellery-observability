@@ -23,19 +23,21 @@ package io.cellery.observability.k8s.client;
  */
 public class Constants {
 
-    public static final String CELLERY_CRD_GROUP = "mesh.cellery.io";
-    public static final String CELL_CRD_NAME = "cells." + CELLERY_CRD_GROUP;
-    public static final String CELL_CRD_VERSION = "v1alpha1";
+    public static final String CELLERY_GROUP = "mesh.cellery.io";
+    public static final String CELL_CRD_NAME = "cells." + CELLERY_GROUP;
+    public static final String CELL_CRD_VERSION = "v1alpha2";
     public static final String CELL_KIND = "Cell";
-    public static final String COMPOSITE_CRD_NAME = "composites." + CELLERY_CRD_GROUP;
-    public static final String COMPOSITE_CRD_VERSION = "v1alpha1";
+    public static final String COMPOSITE_CRD_NAME = "composites." + CELLERY_GROUP;
+    public static final String COMPOSITE_CRD_VERSION = "v1alpha2";
     public static final String COMPOSITE_KIND = "Composite";
 
     public static final String NAMESPACE = "default";
-    public static final String CELL_NAME_LABEL = CELLERY_CRD_GROUP + "/cell";
-    public static final String COMPOSITE_NAME_LABEL = CELLERY_CRD_GROUP + "/composite";
-    public static final String COMPONENT_NAME_LABEL = CELLERY_CRD_GROUP + "/service";
-    public static final String GATEWAY_NAME_LABEL = CELLERY_CRD_GROUP + "/gateway";
+    public static final String CELLERY_OBSERVABILITY_GROUP = "observability." + CELLERY_GROUP;
+    public static final String CELLERY_OBSERVABILITY_INSTANCE_LABEL = CELLERY_OBSERVABILITY_GROUP + "/instance";
+    public static final String CELLERY_OBSERVABILITY_INSTANCE_KIND_LABEL =
+            CELLERY_OBSERVABILITY_GROUP + "/instance-kind";
+    public static final String CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL = CELLERY_OBSERVABILITY_GROUP + "/component";
+    public static final String CELLERY_OBSERVABILITY_GATEWAY_NAME_LABEL = CELLERY_OBSERVABILITY_GROUP + "/gateway";
     public static final String STATUS_FIELD = "status.phase";
     public static final String STATUS_FIELD_RUNNING_VALUE = "Running";
     public static final String K8S_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";

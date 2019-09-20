@@ -63,9 +63,9 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
     private SiddhiAppRuntime siddhiAppRuntime;
     private List<Event> receivedEvents;
 
-    private static final String WATCH_CELL_URL = "/apis/" + Constants.CELLERY_CRD_GROUP + "/"
+    private static final String WATCH_CELL_URL = "/apis/" + Constants.CELLERY_GROUP + "/"
             + Constants.CELL_CRD_VERSION + "/cells?watch=true";
-    private static final String WATCH_COMPOSITE_URL = "/apis/" + Constants.CELLERY_CRD_GROUP + "/"
+    private static final String WATCH_COMPOSITE_URL = "/apis/" + Constants.CELLERY_GROUP + "/"
             + Constants.COMPOSITE_CRD_VERSION + "/composites?watch=true";
 
     public ComponentsEventSourceTestCase() throws Exception {

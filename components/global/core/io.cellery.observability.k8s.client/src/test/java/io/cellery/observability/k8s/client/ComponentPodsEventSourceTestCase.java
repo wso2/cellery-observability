@@ -87,7 +87,7 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
         podC.getMetadata().setDeletionTimestamp(deletionTimestamp);
 
         k8sServer.expect()
-                .withPath(getWatchCellComponentPodsUrl())
+                .withPath(getWatchComponentPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(1135)
@@ -98,28 +98,22 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
                 .andEmit(new WatchEvent(podB, "DELETED"))
                 .waitFor(21)
                 .andEmit(new WatchEvent(generateFailingCelleryCellComponentPod("pet-fe", "test-d"), "ERROR"))
-                .done()
-                .once();
-        k8sServer.expect()
-                .withPath(getWatchCellGatewayPodsUrl())
-                .andUpgradeToWebSocket()
-                .open()
-                .waitFor(2264)
-                .andEmit(new WatchEvent(generateCelleryCellGatewayPod("pet-fe"), "MODIFIED"))
-                .waitFor(53)
-                .andEmit(new WatchEvent(generateFailingCelleryCellGatewayPod("pet-be"), "ERROR"))
-                .done()
-                .once();
-        k8sServer.expect()
-                .withPath(getWatchCompositeComponentPodsUrl())
-                .andUpgradeToWebSocket()
-                .open()
                 .waitFor(2264)
                 .andEmit(new WatchEvent(generateCelleryCompositeComponentPod("employee-comp", "test-a"), "MODIFIED"))
                 .waitFor(53)
                 .andEmit(new WatchEvent(generateFailingCelleryCompositeComponentPod("stock-comp", "test-b"), "ERROR"))
                 .waitFor(1)
                 .andEmit(new WatchEvent(podC, "DELETED"))
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(getWatchGatewayPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(2264)
+                .andEmit(new WatchEvent(generateCelleryCellGatewayPod("pet-fe"), "MODIFIED"))
+                .waitFor(53)
+                .andEmit(new WatchEvent(generateFailingCelleryCellGatewayPod("pet-be"), "ERROR"))
                 .done()
                 .once();
         initializeSiddhiAppRuntime();
@@ -221,7 +215,7 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
     @Test
     public void testPodEventsWithOnlyCellComponents() throws Exception {
         k8sServer.expect()
-                .withPath(getWatchCellComponentPodsUrl())
+                .withPath(getWatchComponentPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(1135)
@@ -231,13 +225,7 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
                 .done()
                 .once();
         k8sServer.expect()
-                .withPath(getWatchCellGatewayPodsUrl())
-                .andUpgradeToWebSocket()
-                .open()
-                .done()
-                .once();
-        k8sServer.expect()
-                .withPath(getWatchCompositeComponentPodsUrl())
+                .withPath(getWatchGatewayPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .done()
@@ -271,25 +259,19 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
     @Test
     public void testPodEventsWithOnlyCellGateways() throws Exception {
         k8sServer.expect()
-                .withPath(getWatchCellComponentPodsUrl())
+                .withPath(getWatchComponentPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .done()
                 .once();
         k8sServer.expect()
-                .withPath(getWatchCellGatewayPodsUrl())
+                .withPath(getWatchGatewayPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(1436)
                 .andEmit(new WatchEvent(generateCelleryCellGatewayPod("pet-be"), "ADDED"))
                 .waitFor(3)
                 .andEmit(new WatchEvent(generateFailingCelleryCellGatewayPod("pet-fe"), "ERROR"))
-                .done()
-                .once();
-        k8sServer.expect()
-                .withPath(getWatchCompositeComponentPodsUrl())
-                .andUpgradeToWebSocket()
-                .open()
                 .done()
                 .once();
         initializeSiddhiAppRuntime();
@@ -321,25 +303,19 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
     @Test
     public void testPodEventsWithOnlyCompositeComponents() throws Exception {
         k8sServer.expect()
-                .withPath(getWatchCellComponentPodsUrl())
-                .andUpgradeToWebSocket()
-                .open()
-                .done()
-                .once();
-        k8sServer.expect()
-                .withPath(getWatchCellGatewayPodsUrl())
-                .andUpgradeToWebSocket()
-                .open()
-                .done()
-                .once();
-        k8sServer.expect()
-                .withPath(getWatchCompositeComponentPodsUrl())
+                .withPath(getWatchComponentPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(1135)
                 .andEmit(new WatchEvent(generateCelleryCompositeComponentPod("hr-comp", "test-a"), "ADDED"))
                 .waitFor(193)
                 .andEmit(new WatchEvent(generateCelleryCompositeComponentPod("stock-comp", "test-b"), "MODIFIED"))
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(getWatchGatewayPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
                 .done()
                 .once();
         initializeSiddhiAppRuntime();
@@ -371,19 +347,13 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
     @Test
     public void testPodEventsWithNoPods() throws Exception {
         k8sServer.expect()
-                .withPath(getWatchCellComponentPodsUrl())
+                .withPath(getWatchComponentPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .done()
                 .once();
         k8sServer.expect()
-                .withPath(getWatchCellGatewayPodsUrl())
-                .andUpgradeToWebSocket()
-                .open()
-                .done()
-                .once();
-        k8sServer.expect()
-                .withPath(getWatchCompositeComponentPodsUrl())
+                .withPath(getWatchGatewayPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .done()
@@ -397,27 +367,21 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
     @Test
     public void testPodEventsWithApiServerDown() throws Exception {
         k8sServer.expect()
-                .withPath(getWatchCellComponentPodsUrl())
+                .withPath(getWatchComponentPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(195)
                 .andEmit(new WatchEvent(generateFailingCelleryCellComponentPod("pet-be", "test-a"), "ERROR"))
+                .waitFor(123)
+                .andEmit(new WatchEvent(generateFailingCelleryCompositeComponentPod("hr-comp", "test-s"), "MODIFIED"))
                 .done()
                 .once();
         k8sServer.expect()
-                .withPath(getWatchCellGatewayPodsUrl())
+                .withPath(getWatchGatewayPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(123)
                 .andEmit(new WatchEvent(generateCelleryCellGatewayPod("pet-fe"), "MODIFIED"))
-                .done()
-                .once();
-        k8sServer.expect()
-                .withPath(getWatchCompositeComponentPodsUrl())
-                .andUpgradeToWebSocket()
-                .open()
-                .waitFor(123)
-                .andEmit(new WatchEvent(generateFailingCelleryCompositeComponentPod("hr-comp", "test-s"), "MODIFIED"))
                 .done()
                 .once();
 
@@ -431,27 +395,21 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
     @Test
     public void testPersistence() throws Exception {
         k8sServer.expect()
-                .withPath(getWatchCellComponentPodsUrl())
+                .withPath(getWatchComponentPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(1135)
                 .andEmit(new WatchEvent(generateCelleryCellComponentPod("pet-be", "test-a"), "ADDED"))
+                .waitFor(1135)
+                .andEmit(new WatchEvent(generateCelleryCompositeComponentPod("hr-comp", "test-g"), "MODIFIED"))
                 .done()
                 .once();
         k8sServer.expect()
-                .withPath(getWatchCellGatewayPodsUrl())
+                .withPath(getWatchGatewayPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(2264)
                 .andEmit(new WatchEvent(generateCelleryCellGatewayPod("pet-fe"), "MODIFIED"))
-                .done()
-                .once();
-        k8sServer.expect()
-                .withPath(getWatchCompositeComponentPodsUrl())
-                .andUpgradeToWebSocket()
-                .open()
-                .waitFor(1135)
-                .andEmit(new WatchEvent(generateCelleryCompositeComponentPod("hr-comp", "test-g"), "MODIFIED"))
                 .done()
                 .once();
 
@@ -501,27 +459,21 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
         compositeComponentPod.getMetadata().setCreationTimestamp("invalid-date-1");
 
         k8sServer.expect()
-                .withPath(getWatchCellComponentPodsUrl())
+                .withPath(getWatchComponentPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(1135)
                 .andEmit(new WatchEvent(cellComponentPod, "ADDED"))
+                .waitFor(1135)
+                .andEmit(new WatchEvent(compositeComponentPod, "DELETED"))
                 .done()
                 .once();
         k8sServer.expect()
-                .withPath(getWatchCellGatewayPodsUrl())
+                .withPath(getWatchGatewayPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(2264)
                 .andEmit(new WatchEvent(cellGatewayPod, "MODIFIED"))
-                .done()
-                .once();
-        k8sServer.expect()
-                .withPath(getWatchCompositeComponentPodsUrl())
-                .andUpgradeToWebSocket()
-                .open()
-                .waitFor(1135)
-                .andEmit(new WatchEvent(compositeComponentPod, "DELETED"))
                 .done()
                 .once();
         initializeSiddhiAppRuntime();
@@ -533,32 +485,26 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
     @Test
     public void testShutdownWithFailure() throws Exception {
         k8sServer.expect()
-                .withPath(getWatchCellComponentPodsUrl())
+                .withPath(getWatchComponentPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(1135)
                 .andEmit(new WatchEvent(generateCelleryCellComponentPod("pet-be", "test-a"), "ADDED"))
+                .waitFor(1135)
+                .andEmit(new WatchEvent(generateCelleryCompositeComponentPod("stock-comp", "test-f"), "ADDED"))
                 .done()
                 .once();
         k8sServer.expect()
-                .withPath(getWatchCellGatewayPodsUrl())
+                .withPath(getWatchGatewayPodsUrl())
                 .andUpgradeToWebSocket()
                 .open()
                 .waitFor(2264)
                 .andEmit(new WatchEvent(generateCelleryCellGatewayPod("pet-be"), "MODIFIED"))
                 .done()
                 .once();
-        k8sServer.expect()
-                .withPath(getWatchCompositeComponentPodsUrl())
-                .andUpgradeToWebSocket()
-                .open()
-                .waitFor(1135)
-                .andEmit(new WatchEvent(generateCelleryCompositeComponentPod("stock-comp", "test-f"), "ADDED"))
-                .done()
-                .once();
         initializeSiddhiAppRuntime();
 
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 2, eventCount, TIMEOUT);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 4, eventCount, TIMEOUT);
         for (List<Source> siddhiAppSources : siddhiAppRuntime.getSources()) {
             for (Source source : siddhiAppSources) {
                 if (source instanceof ComponentPodsEventSource) {
@@ -572,7 +518,7 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
                 }
             }
         }
-        Assert.assertEquals(eventCount.get(), 2);
+        Assert.assertEquals(eventCount.get(), 3);
     }
 
     /**
@@ -627,10 +573,11 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
      *
      * @return The watch component URL
      */
-    private String getWatchCellComponentPodsUrl() throws Exception {
+    private String getWatchComponentPodsUrl() throws Exception {
         return "/api/v1/namespaces/" + URLEncoder.encode(Constants.NAMESPACE, StandardCharsets.UTF_8.toString())
-                + "/pods?labelSelector=" + URLEncoder.encode(Constants.CELL_NAME_LABEL + ","
-                + Constants.COMPONENT_NAME_LABEL, StandardCharsets.UTF_8.toString()) + "&watch=true";
+                + "/pods?labelSelector=" + URLEncoder.encode(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL + ","
+                + Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, StandardCharsets.UTF_8.toString())
+                + "&watch=true";
     }
 
     /**
@@ -638,21 +585,11 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
      *
      * @return The watch component URL
      */
-    private String getWatchCellGatewayPodsUrl() throws Exception {
+    private String getWatchGatewayPodsUrl() throws Exception {
         return "/api/v1/namespaces/" + URLEncoder.encode(Constants.NAMESPACE, StandardCharsets.UTF_8.toString())
-                + "/pods?labelSelector=" + URLEncoder.encode(Constants.GATEWAY_NAME_LABEL + ","
-                + Constants.CELL_NAME_LABEL, StandardCharsets.UTF_8.toString()) + "&watch=true";
-    }
-
-    /**
-     * Get a watch component pods URL.
-     *
-     * @return The watch component URL
-     */
-    private String getWatchCompositeComponentPodsUrl() throws Exception {
-        return "/api/v1/namespaces/" + URLEncoder.encode(Constants.NAMESPACE, StandardCharsets.UTF_8.toString())
-                + "/pods?labelSelector=" + URLEncoder.encode(Constants.COMPOSITE_NAME_LABEL + ","
-                + Constants.COMPONENT_NAME_LABEL, StandardCharsets.UTF_8.toString()) + "&watch=true";
+                + "/pods?labelSelector=" + URLEncoder.encode(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL + ","
+                + Constants.CELLERY_OBSERVABILITY_GATEWAY_NAME_LABEL, StandardCharsets.UTF_8.toString())
+                + "&watch=true";
     }
 
 }
