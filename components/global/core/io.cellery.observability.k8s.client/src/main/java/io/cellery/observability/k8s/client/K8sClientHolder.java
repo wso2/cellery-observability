@@ -45,9 +45,9 @@ class K8sClientHolder {
 
             // Register the Cellery custom resource kinds to Kubernetes deserializer to perform deserialization
             // of Cellery objects.
-            KubernetesDeserializer.registerCustomKind(Constants.CELLERY_CRD_GROUP + "/"
+            KubernetesDeserializer.registerCustomKind(Constants.CELLERY_GROUP + "/"
                     + Constants.CELL_CRD_VERSION, Constants.CELL_KIND, CellImpl.class);
-            KubernetesDeserializer.registerCustomKind(Constants.CELLERY_CRD_GROUP + "/"
+            KubernetesDeserializer.registerCustomKind(Constants.CELLERY_GROUP + "/"
                     + Constants.COMPOSITE_CRD_VERSION, Constants.COMPOSITE_KIND, CompositeImpl.class);
         }
         return k8sClient;

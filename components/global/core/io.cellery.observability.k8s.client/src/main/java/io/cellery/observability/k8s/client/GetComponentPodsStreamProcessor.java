@@ -124,12 +124,10 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
         while (streamEventChunk.hasNext()) {
             StreamEvent incomingStreamEvent = streamEventChunk.next();
             try {
-                addComponentPods(outputStreamEventChunk, incomingStreamEvent, Constants.CELL_NAME_LABEL,
-                        Constants.COMPONENT_NAME_LABEL);
-                addComponentPods(outputStreamEventChunk, incomingStreamEvent, Constants.CELL_NAME_LABEL,
-                        Constants.GATEWAY_NAME_LABEL);
-                addComponentPods(outputStreamEventChunk, incomingStreamEvent, Constants.COMPOSITE_NAME_LABEL,
-                        Constants.COMPONENT_NAME_LABEL);
+                addComponentPods(outputStreamEventChunk, incomingStreamEvent,
+                        Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL);
+                addComponentPods(outputStreamEventChunk, incomingStreamEvent,
+                        Constants.CELLERY_OBSERVABILITY_GATEWAY_NAME_LABEL);
             } catch (ParseException e) {
                 // This should not happen unless the K8s date-time format changed (eg:- K8s version upgrade)
                 logger.error("Failed to parse K8s timestamp", e);
@@ -146,44 +144,39 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
      *
      * @param outputStreamEventChunk The output stream event chunk which will be sent to the next processor
      * @param incomingStreamEvent    The incoming stream event which will be cloned and used
-     * @param instanceNameLabel      The name of the label applied to store the instance name
      * @param componentNameLabel     The name of the label applied to store the component/gateway name
      */
     private void addComponentPods(ComplexEventChunk<StreamEvent> outputStreamEventChunk,
-                                  StreamEvent incomingStreamEvent, String instanceNameLabel,
-                                  String componentNameLabel) throws ParseException {
+                                  StreamEvent incomingStreamEvent, String componentNameLabel) throws ParseException {
         // Calling the K8s API Servers to fetch component pods
         PodList componentPodList = null;
         try {
             componentPodList = k8sClient.pods()
                     .inNamespace(Constants.NAMESPACE)
-                    .withLabel(instanceNameLabel)
+                    .withLabel(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL)
                     .withLabel(componentNameLabel)
                     .withField(Constants.STATUS_FIELD, Constants.STATUS_FIELD_RUNNING_VALUE)
                     .list();
         } catch (Throwable e) {
             logger.error("Failed to fetch current pods for components", e);
         }
-        String kind;
-        if (Constants.CELL_NAME_LABEL.equals(instanceNameLabel)) {
-            kind = Constants.CELL_KIND;
-        } else if (Constants.COMPOSITE_NAME_LABEL.equals(instanceNameLabel)) {
-            kind = Constants.COMPOSITE_KIND;
-        } else {
-            kind = "";
-        }
 
         if (componentPodList != null) {
             for (Pod pod : componentPodList.getItems()) {
+                String kind = pod.getMetadata().getLabels()
+                        .getOrDefault(Constants.CELLERY_OBSERVABILITY_INSTANCE_KIND_LABEL, "");
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Added event - pod " + pod.getMetadata().getName() + " belonging to " + kind
-                            + " " + pod.getMetadata().getLabels().get(instanceNameLabel) + " of type " +
-                            (Constants.COMPONENT_NAME_LABEL.equals(componentNameLabel) ? "component" : "gateway") +
-                            " to the event");
+                    logger.debug("Added event - pod " + pod.getMetadata().getName() + " belonging to " + kind + " " +
+                            pod.getMetadata().getLabels()
+                                    .getOrDefault(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, "") +
+                            " of type " +
+                            (Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL.equals(componentNameLabel)
+                                    ? "component" : "gateway") + " to the event");
                 }
 
                 Object[] newData = new Object[6];
-                newData[0] = pod.getMetadata().getLabels().getOrDefault(instanceNameLabel, "");
+                newData[0] = pod.getMetadata().getLabels().getOrDefault(
+                        Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, "");
                 newData[1] = Utils.getComponentName(pod);
                 newData[2] = pod.getMetadata().getName();
                 newData[3] = kind;

@@ -170,8 +170,9 @@ class BaseTestCase {
         String podName = cell + "--" + component;
 
         Map<String, String> labels = new HashMap<>();
-        labels.put(Constants.CELL_NAME_LABEL, cell);
-        labels.put(Constants.COMPONENT_NAME_LABEL, cell + "--" + component);
+        labels.put(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, cell);
+        labels.put(Constants.CELLERY_OBSERVABILITY_INSTANCE_KIND_LABEL, Constants.CELL_KIND);
+        labels.put(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL, component);
 
         PodStatus podStatus = new PodStatusBuilder()
                 .withPhase("Running")
@@ -190,8 +191,9 @@ class BaseTestCase {
         String podName = cell + "--gateway";
 
         Map<String, String> labels = new HashMap<>();
-        labels.put(Constants.CELL_NAME_LABEL, cell);
-        labels.put(Constants.GATEWAY_NAME_LABEL, cell + "--gateway");
+        labels.put(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, cell);
+        labels.put(Constants.CELLERY_OBSERVABILITY_INSTANCE_KIND_LABEL, Constants.CELL_KIND);
+        labels.put(Constants.CELLERY_OBSERVABILITY_GATEWAY_NAME_LABEL, "gateway");
 
         PodStatus podStatus = new PodStatusBuilder()
                 .withPhase("Running")
@@ -211,8 +213,9 @@ class BaseTestCase {
         String podName = composite + "--" + component;
 
         Map<String, String> labels = new HashMap<>();
-        labels.put(Constants.COMPOSITE_NAME_LABEL, composite);
-        labels.put(Constants.COMPONENT_NAME_LABEL, composite + "--" + component);
+        labels.put(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, composite);
+        labels.put(Constants.CELLERY_OBSERVABILITY_INSTANCE_KIND_LABEL, Constants.COMPOSITE_KIND);
+        labels.put(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL, component);
 
         PodStatus podStatus = new PodStatusBuilder()
                 .withPhase("Running")
@@ -232,8 +235,9 @@ class BaseTestCase {
         String podName = cell + "--" + component;
 
         Map<String, String> labels = new HashMap<>();
-        labels.put(Constants.CELL_NAME_LABEL, cell);
-        labels.put(Constants.COMPONENT_NAME_LABEL, cell + "--" + component);
+        labels.put(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, cell);
+        labels.put(Constants.CELLERY_OBSERVABILITY_INSTANCE_KIND_LABEL, Constants.CELL_KIND);
+        labels.put(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL, component);
 
         PodStatus podStatus = new PodStatusBuilder()
                 .withPhase("ErrImagePull")
@@ -252,8 +256,9 @@ class BaseTestCase {
         String podName = cell + "--gateway";
 
         Map<String, String> labels = new HashMap<>();
-        labels.put(Constants.CELL_NAME_LABEL, cell);
-        labels.put(Constants.GATEWAY_NAME_LABEL, cell + "--gateway");
+        labels.put(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, cell);
+        labels.put(Constants.CELLERY_OBSERVABILITY_INSTANCE_KIND_LABEL, Constants.CELL_KIND);
+        labels.put(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL, "gateway");
 
         PodStatus podStatus = new PodStatusBuilder()
                 .withPhase("ErrImagePull")
@@ -273,8 +278,9 @@ class BaseTestCase {
         String podName = composite + "--" + component;
 
         Map<String, String> labels = new HashMap<>();
-        labels.put(Constants.COMPOSITE_NAME_LABEL, composite);
-        labels.put(Constants.COMPONENT_NAME_LABEL, composite + "--" + component);
+        labels.put(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, composite);
+        labels.put(Constants.CELLERY_OBSERVABILITY_INSTANCE_KIND_LABEL, Constants.COMPOSITE_KIND);
+        labels.put(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL, component);
 
         PodStatus podStatus = new PodStatusBuilder()
                 .withPhase("ErrImagePull")
