@@ -22,6 +22,7 @@ import Button from "@material-ui/core/Button";
 import CellIcon from "../../icons/CellIcon";
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
+import CompositeIcon from "../../icons/CompositeIcon";
 import Constants from "../../utils/constants";
 import DependencyGraph from "../common/DependencyGraph";
 import Divider from "@material-ui/core/Divider";
@@ -210,7 +211,8 @@ class Overview extends React.Component {
                 cellStats: []
             },
             healthInfo: [],
-            selectedCell: null,
+            selectedInstance: null,
+            selectedInstanceKind: null,
             data: {
                 nodes: null,
                 edges: null
@@ -228,7 +230,7 @@ class Overview extends React.Component {
         const queryParams = HttpUtils.parseQueryParams(props.location.search);
         this.state = {
             ...JSON.parse(JSON.stringify(this.defaultState)),
-            selectedCell: queryParams.cell ? queryParams.cell : null,
+            selectedInstance: queryParams.cell ? queryParams.cell : null,
             isLoading: true
         };
     }
@@ -238,7 +240,7 @@ class Overview extends React.Component {
         return healthInfo.status;
     };
 
-    onClickCell = (nodeId, isUserAction) => {
+    onClickInstance = (nodeId, isUserAction) => {
         const {globalState, history, match, location} = this.props;
         const fromTime = QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).startTime);
         const toTime = QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).endTime);
@@ -267,11 +269,11 @@ class Overview extends React.Component {
             },
             this.props.globalState
         ).then((response) => {
-            const cell = this.state.data.nodes.find((element) => element.id === nodeId);
-            const componentHealth = this.getComponentHealth(cell, response);
+            const instance = this.state.data.nodes.find((element) => element.id === nodeId);
+            const componentHealth = this.getComponentHealth(instance, response);
             const componentHealthCount = this.getHealthCount(componentHealth);
             const statusCodeContent = this.getStatusCodeContent(nodeId, this.defaultState.request.cellStats);
-            const componentInfo = this.loadComponentsInfo(cell.components, componentHealth);
+            const componentInfo = this.loadComponentsInfo(instance.components, componentHealth);
             this.setState((prevState) => ({
                 summary: {
                     ...prevState.summary,
@@ -301,7 +303,8 @@ class Overview extends React.Component {
                 },
                 data: {...prevState.data},
                 listData: componentInfo,
-                selectedCell: cell.id,
+                selectedInstance: instance.id,
+                selectedInstanceKind: instance.instanceKind,
                 request: {
                     ...prevState.request,
                     statusCodes: statusCodeContent
@@ -323,16 +326,16 @@ class Overview extends React.Component {
         });
     };
 
-    getComponentHealth = (cell, responseCodeStats) => {
+    getComponentHealth = (instance, responseCodeStats) => {
         const {globalState} = this.props;
         const config = globalState.get(StateHolder.CONFIG);
         const healthInfo = [];
-        cell.components.forEach((component) => {
-            const total = this.getTotalComponentRequests(cell.id, component, responseCodeStats, "*");
+        instance.components.forEach((component) => {
+            const total = this.getTotalComponentRequests(instance.id, component, responseCodeStats, "*");
             if (total === 0) {
                 healthInfo.push({nodeId: component, status: Constants.Status.Unknown, percentage: -1});
             } else {
-                const error = this.getTotalComponentRequests(cell.id, component, responseCodeStats, "5xx");
+                const error = this.getTotalComponentRequests(instance.id, component, responseCodeStats, "5xx");
                 const successPercentage = 1 - (error / total);
 
                 if (successPercentage >= config.percentageRangeMinValue.warningThreshold) {
@@ -376,7 +379,8 @@ class Overview extends React.Component {
             ...prevState,
             summary: defaultState.summary,
             listData: this.loadCellInfo(defaultState.data.nodes),
-            selectedCell: null,
+            selectedInstance: null,
+            selectedInstanceKind: null,
             request: defaultState.request
         }));
     };
@@ -409,7 +413,7 @@ class Overview extends React.Component {
 
     callOverviewInfo = (isUserAction, fromTime, toTime) => {
         const {colorGenerator, globalState} = this.props;
-        const {selectedCell} = this.state;
+        const {selectedInstance} = this.state;
         const self = this;
 
         const search = {};
@@ -420,7 +424,7 @@ class Overview extends React.Component {
 
         this.getIngressesData(search);
         if (isUserAction) {
-            NotificationUtils.showLoadingOverlay("Loading Cell Dependencies", globalState);
+            NotificationUtils.showLoadingOverlay("Loading Instance Dependencies", globalState);
         }
         HttpUtils.callObservabilityAPI(
             {
@@ -477,15 +481,15 @@ class Overview extends React.Component {
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
             }
-            if (selectedCell) {
-                self.onClickCell(selectedCell, isUserAction);
+            if (selectedInstance) {
+                self.onClickInstance(selectedInstance, isUserAction);
             }
         }).catch((error) => {
             self.setState({error: error});
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 NotificationUtils.showNotification(
-                    "Failed to load Cell Dependencies",
+                    "Failed to load Instance Dependencies",
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );
@@ -519,7 +523,7 @@ class Overview extends React.Component {
                 });
             }).catch((error) => {
             NotificationUtils.showNotification(
-                "Failed to load cell ingress types",
+                "Failed to load instance ingress types",
                 NotificationUtils.Levels.ERROR,
                 this.props.globalState
             );
@@ -596,7 +600,7 @@ class Overview extends React.Component {
             timeGranularity: QueryUtils.getTimeGranularity(fromTime, toTime)
         };
         if (isUserAction) {
-            NotificationUtils.showLoadingOverlay("Loading Cell Metadata", globalState);
+            NotificationUtils.showLoadingOverlay("Loading Instance Metadata", globalState);
         }
         HttpUtils.callObservabilityAPI(
             {
@@ -626,7 +630,7 @@ class Overview extends React.Component {
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 NotificationUtils.showNotification(
-                    "Failed to load Cell Metadata",
+                    "Failed to load Instance Metadata",
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );
@@ -723,50 +727,86 @@ class Overview extends React.Component {
 
     render = () => {
         const {classes, theme, colorGenerator} = this.props;
-        const {open, selectedCell, legend, legendOpen, isLoading} = this.state;
+        const {open, selectedInstance, selectedInstanceKind, legend, legendOpen, isLoading} = this.state;
         const id = legendOpen ? "legend-popper" : null;
         const percentageVal = this.props.globalState.get(StateHolder.CONFIG).percentageRangeMinValue;
         const isDataAvailable = this.state.data.nodes && this.state.data.nodes.length > 0;
 
-        const viewGenerator = (nodeId, opacity) => {
+        const viewGenerator = (nodeId, opacity, instanceKind) => {
             const color = ColorGenerator.shadeColor(colorGenerator.getColor(nodeId), opacity);
             const outlineColor = ColorGenerator.shadeColor(color, -0.08);
             const errorColor = ColorGenerator.shadeColor(colorGenerator.getColor(ColorGenerator.ERROR), opacity);
             const warningColor = ColorGenerator.shadeColor(colorGenerator.getColor(ColorGenerator.WARNING), opacity);
             const state = this.getCellState(nodeId);
+            let instanceView;
 
-            const successCell = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
-                + `<path fill="${color}"  stroke="${(selectedCell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
-                + "</svg>";
+            if (instanceKind === Constants.InstanceKind.CELL) {
+                const successCell = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
+                    + `<path fill="${color}"  stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                    + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
+                    + "</svg>";
 
-            const errorCell = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
-                + `<path fill="${color}" stroke="${(selectedCell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/></g>'
-                + `<path fill="${errorColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
-                + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
-                + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
-                + "</svg>";
+                const errorCell = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
+                    + `<path fill="${color}" stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                    + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/></g>'
+                    + `<path fill="${errorColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
+                    + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
+                    + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
+                    + "</svg>";
 
-            const warningCell = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
-                + `<path fill="${color}" stroke="${(selectedCell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                + 'stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/></g>'
-                + `<path fill="${warningColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
-                + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
-                + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
-                + "</svg>";
+                const warningCell = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
+                    + `<path fill="${color}" stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                    + 'stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/></g>'
+                    + `<path fill="${warningColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
+                    + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
+                    + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
+                    + "</svg>";
 
-            let cellView;
-            if (state === Constants.Status.Success || state === Constants.Status.Unknown) {
-                // Not to show any indicators if it is success threshold or status is unknown
-                cellView = successCell;
-            } else if (state === Constants.Status.Warning) {
-                cellView = warningCell;
-            } else {
-                cellView = errorCell;
+                if (state === Constants.Status.Success || state === Constants.Status.Unknown) {
+                    // Not to show any indicators if it is success threshold or status is unknown
+                    instanceView = successCell;
+                } else if (state === Constants.Status.Warning) {
+                    instanceView = warningCell;
+                } else {
+                    instanceView = errorCell;
+                }
             }
 
-            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cellView)}`;
+            if (instanceKind === Constants.InstanceKind.COMPOSITE) {
+                const successComposite = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
+                    + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
+                    + `<circle cx="6.4" cy="6.7" r="6.1" fill="${color}"  stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" stroke-dasharray="1.9772,0.9886" stroke-width="0.5px"/>`
+                    + "</svg>";
+
+                const errorComposite = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
+                    + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
+                    + `<path cx="6.4" cy="6.7" r="6.1" fill="${color}" stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                    + ' stroke-width="0.5px" stroke-dasharray="1.9772,0.9886"/></g>'
+                    + `<path fill="${errorColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
+                    + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
+                    + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
+                    + "</svg>";
+
+                const warningComposite = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
+                    + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
+                    + `<path cx="6.4" cy="6.7" r="6.1" fill="${color}" stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                    + 'stroke-width="0.5px" stroke-dasharray="1.9772,0.9886"/></g>'
+                    + `<path fill="${warningColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
+                    + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
+                    + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
+                    + "</svg>";
+
+                if (state === Constants.Status.Success || state === Constants.Status.Unknown) {
+                    // Not to show any indicators if it is success threshold or status is unknown
+                    instanceView = successComposite;
+                } else if (state === Constants.Status.Warning) {
+                    instanceView = warningComposite;
+                } else {
+                    instanceView = errorComposite;
+                }
+            }
+
+            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(instanceView)}`;
         };
 
         const renderNodeLabel = (nodeId) => {
@@ -777,7 +817,42 @@ class Overview extends React.Component {
             return nodeId;
         };
 
-        const dataNodes = this.state.data.nodes;
+        // TODO: Add property instanceKind and remove dummy data
+        const dataNodes = [
+            {
+                id: "pet-fe-1",
+                components: [
+                    "portal",
+                    "gateway"
+                ],
+                edges: [
+                    "gateway##portal"
+                ],
+                instanceKind: "Composite"
+            },
+            {
+                id: "pet-be-1",
+                components: [
+                    "controller",
+                    "catalog",
+                    "gateway",
+                    "customers",
+                    "orders"
+                ],
+                edges: [
+                    "controller##catalog",
+                    "gateway##controller",
+                    "controller##customers",
+                    "controller##orders"
+                ],
+                instanceKind: "Cell"
+            }
+        ];
+
+        /*
+         *TODO: Uncomment when dummy data is removed
+         * const dataNodes = this.state.data.nodes;
+         */
         const dataEdges = this.state.data.edges;
 
         return (
@@ -798,8 +873,8 @@ class Overview extends React.Component {
                                                     <div className={classes.graphContainer}>
                                                         <div className={classes.diagram}>
                                                             <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges}
-                                                                onClickNode={(nodeId) => this.onClickCell(nodeId, true)} viewGenerator={viewGenerator}
-                                                                onClickGraph={this.onClickGraph} selectedCell={selectedCell} graphType="overview" renderNodeLabel={renderNodeLabel}
+                                                                onClickNode={(nodeId) => this.onClickInstance(nodeId, true)} viewGenerator={viewGenerator}
+                                                                onClickGraph={this.onClickGraph} selectedInstance={selectedInstance} graphType="overview" renderNodeLabel={renderNodeLabel}
                                                             />
                                                         </div>
                                                     </div>
@@ -810,7 +885,7 @@ class Overview extends React.Component {
                                                 </React.Fragment>
                                             )
                                             : (
-                                                <NotFound title={"No Cells Found"}
+                                                <NotFound title={"No Instances Found"}
                                                     description={"No Requests were sent within the selected time range"}
                                                 />
                                             )
@@ -823,7 +898,11 @@ class Overview extends React.Component {
                                                         <CellIcon className={classes.legendFirstEl} color="action"
                                                             fontSize="small"/>
                                                         <Typography color="inherit"
-                                                            className={classes.legendText}> Cell</Typography>
+                                                            className={classes.legendText}> {Constants.InstanceKind.CELL}</Typography>
+                                                        <CompositeIcon className={classes.legendIcon} color="action"
+                                                            fontSize="small"/>
+                                                        <Typography color="inherit"
+                                                            className={classes.legendText}> {Constants.InstanceKind.COMPOSITE}</Typography>
                                                         <ArrowRightAltSharp className={classes.legendIcon}
                                                             color="action"/>
                                                         <Typography color="inherit"
@@ -878,13 +957,14 @@ class Overview extends React.Component {
                                                         </IconButton>
                                                         <Typography color="textSecondary"
                                                             className={classes.sideBarHeading}>
-                                                            {selectedCell ? "Cell Details" : "Overview"}
+                                                            {selectedInstance ? "Cell Details" : "Overview"}
                                                         </Typography>
                                                     </div>
                                                     <Divider/>
                                                     <SidePanelContent summary={this.state.summary}
-                                                        request={this.state.request} selectedCell={selectedCell}
-                                                        open={this.state.open} listData={this.state.listData}/>
+                                                        request={this.state.request} selectedInstance={selectedInstance}
+                                                        open={this.state.open} listData={this.state.listData}
+                                                        selectedInstanceKind={selectedInstanceKind}/>
                                                 </Drawer>
                                             </React.Fragment>
 

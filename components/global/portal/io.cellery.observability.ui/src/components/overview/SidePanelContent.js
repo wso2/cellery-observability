@@ -15,6 +15,7 @@
  */
 
 /* eslint react/display-name: "off" */
+/* eslint max-lines: ["error", 600] */
 
 import "react-vis/dist/style.css";
 import "./index.css";
@@ -23,6 +24,8 @@ import CellIcon from "../../icons/CellIcon";
 import CellsIcon from "../../icons/CellsIcon";
 import CheckCircleOutline from "@material-ui/icons/CheckCircleOutline";
 import ComponentIcon from "../../icons/ComponentIcon";
+import CompositeIcon from "../../icons/CompositeIcon";
+import Constants from "../../utils/constants";
 import ErrorIcon from "@material-ui/icons/ErrorOutline";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import ExpansionPanel from "@material-ui/core/ExpansionPanel";
@@ -135,7 +138,8 @@ class SidePanelContent extends React.Component {
     }
 
     render = () => {
-        const {classes, summary, request, selectedCell, colorGenerator, listData} = this.props;
+        const {classes, summary, request, selectedInstance, selectedInstanceKind, colorGenerator, listData}
+            = this.props;
         const {trafficTooltip} = this.state;
         const options = {
             download: false,
@@ -159,7 +163,7 @@ class SidePanelContent extends React.Component {
                         const {cell, component} = datum;
                         return (
                             <Typography component={Link} className={classes.sidebarListTableText}
-                                to={`/cells/${cell}${component ? `/components/${component}` : ""}`}>
+                                to={`/instances/${cell}${component ? `/components/${component}` : ""}`}>
                                 {component ? component : cell}
                             </Typography>
                         );
@@ -189,14 +193,21 @@ class SidePanelContent extends React.Component {
             <div className={classes.drawerContent}>
                 <div className={classes.sidebarContainer}>
                     {
-                        selectedCell
+                        selectedInstance
                             ? (
                                 <div className={classes.cellNameContainer}>
-                                    <CellIcon className={classes.titleIcon} fontSize="small"/>
+                                    {
+                                        (selectedInstanceKind === Constants.InstanceKind.CELL)
+                                            ? (
+                                                <CellIcon className={classes.titleIcon} fontSize="small"/>
+                                            )
+                                            : <CompositeIcon className={classes.titleIcon} fontSize="small"/>
+                                    }
+
                                     <Typography color="inherit" className={classes.sideBarContentTitle}>
-                                        Cell:
+                                        {selectedInstanceKind}
                                     </Typography>
-                                    <Typography component={Link} to={`/cells/${selectedCell}`}
+                                    <Typography component={Link} to={`/instances/${selectedInstance}`}
                                         className={classes.cellName}>
                                         {summary.topic}
                                     </Typography>
@@ -406,12 +417,12 @@ class SidePanelContent extends React.Component {
                 </div>
                 <div className={classes.sidebarContainer}>
                     {
-                        selectedCell
+                        selectedInstance
                             ? <ComponentIcon className={classes.titleIcon} fontSize="small"/>
                             : <CellsIcon className={classes.titleIcon} fontSize="small"/>
                     }
                     <Typography color="inherit" className={classes.sideBarContentTitle}>
-                        {selectedCell ? "Components" : "Cells"} ({summary.content[0].value})
+                        {selectedInstance ? "Components" : "Instances"} ({summary.content[0].value})
                     </Typography>
                     <ExpansionPanel className={classes.panel}>
                         <ExpansionPanelSummary expandIcon={<ExpandMoreIcon/>} className={classes.expansionSum}>
@@ -464,13 +475,13 @@ class SidePanelContent extends React.Component {
                                     data={listData.map((datum) => [
                                         datum[0],
                                         {
-                                            cell: selectedCell ? selectedCell : datum[1],
-                                            component: selectedCell ? datum[1] : null
+                                            cell: selectedInstance ? selectedInstance : datum[1],
+                                            component: selectedInstance ? datum[1] : null
 
                                         },
                                         {
-                                            cell: selectedCell ? selectedCell : datum[2],
-                                            component: selectedCell ? datum[2] : null
+                                            cell: selectedInstance ? selectedInstance : datum[2],
+                                            component: selectedInstance ? datum[2] : null
                                         }
                                     ])}/>
                             </div>
@@ -488,7 +499,8 @@ SidePanelContent.propTypes = {
     colorGenerator: PropTypes.instanceOf(ColorGenerator).isRequired,
     summary: PropTypes.object.isRequired,
     request: PropTypes.object.isRequired,
-    selectedCell: PropTypes.string,
+    selectedInstance: PropTypes.string,
+    selectedInstanceKind: PropTypes.string,
     listData: PropTypes.arrayOf(PropTypes.any).isRequired
 };
 

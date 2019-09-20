@@ -182,7 +182,7 @@ class Details extends React.Component {
                     <TableRow>
                         <TableCell className={classes.tableCell}>
                             <Typography color="textSecondary">
-                                Cell
+                                Instance
                             </Typography>
                         </TableCell>
                         <TableCell className={classes.tableCell}>

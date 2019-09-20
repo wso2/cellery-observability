@@ -141,7 +141,7 @@ class DependencyGraph extends React.Component {
     };
 
     draw = () => {
-        const {nodeData, edgeData, onClickNode, onClickGraph, selectedCell,
+        const {nodeData, edgeData, onClickNode, onClickGraph, selectedInstance,
             viewGenerator, graphType, renderNodeLabel} = this.props;
         const dataNodes = [];
         const dataEdges = [];
@@ -159,7 +159,8 @@ class DependencyGraph extends React.Component {
                     font: {multi: true},
                     label: label,
                     shape: "image",
-                    image: viewGenerator(node.id, 0)
+                    kind: node.instanceKind,
+                    image: viewGenerator(node.id, 0, node.instanceKind)
                 });
             });
         }
@@ -206,8 +207,8 @@ class DependencyGraph extends React.Component {
             });
         }
 
-        if (selectedCell) {
-            network.selectNodes([selectedCell], false);
+        if (selectedInstance) {
+            network.selectNodes([selectedInstance], false);
         }
 
         const allNodes = nodes.get({returnType: "Object"});
@@ -221,7 +222,7 @@ class DependencyGraph extends React.Component {
                 // Gray out all nodes
                 for (const nodeId in allNodes) {
                     if (allNodes.hasOwnProperty(nodeId)) {
-                        allNodes[nodeId].image = viewGenerator(nodeId, 0.8);
+                        allNodes[nodeId].image = viewGenerator(nodeId, 0.8, allNodes[nodeId].kind);
                         if (allNodes[nodeId].hiddenLabel === undefined) {
                             allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
                             allNodes[nodeId].label = undefined;
@@ -231,7 +232,8 @@ class DependencyGraph extends React.Component {
 
                 // Set first degree nodes their color and label
                 for (let i = 0; i < connectedNodes.length; i++) {
-                    allNodes[connectedNodes[i]].image = viewGenerator(connectedNodes[i], 0);
+                    allNodes[connectedNodes[i]].image = viewGenerator(connectedNodes[i], 0,
+                        allNodes[connectedNodes[i]].kind);
                     if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
                         allNodes[connectedNodes[i]].label = allNodes[connectedNodes[i]].hiddenLabel;
                         allNodes[connectedNodes[i]].hiddenLabel = undefined;
@@ -239,7 +241,7 @@ class DependencyGraph extends React.Component {
                 }
 
                 // Set main node color and label
-                allNodes[selectedNode].image = viewGenerator(selectedNode, 0);
+                allNodes[selectedNode].image = viewGenerator(selectedNode, 0, allNodes[selectedNode].kind);
                 if (allNodes[selectedNode].hiddenLabel !== undefined) {
                     allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
                     allNodes[selectedNode].hiddenLabel = undefined;
@@ -260,7 +262,7 @@ class DependencyGraph extends React.Component {
         const blur = () => {
             for (const nodeId in allNodes) {
                 if (allNodes.hasOwnProperty(nodeId)) {
-                    allNodes[nodeId].image = viewGenerator(nodeId, 0);
+                    allNodes[nodeId].image = viewGenerator(nodeId, 0, allNodes[nodeId].kind);
                     if (allNodes[nodeId].hiddenLabel !== undefined) {
                         allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
                         allNodes[nodeId].hiddenLabel = undefined;
@@ -304,7 +306,7 @@ DependencyGraph.propTypes = {
     id: PropTypes.string.isRequired,
     nodeData: PropTypes.arrayOf(PropTypes.object),
     edgeData: PropTypes.arrayOf(PropTypes.object),
-    selectedCell: PropTypes.string,
+    selectedInstance: PropTypes.string,
     config: PropTypes.object,
     reloadGraph: PropTypes.bool,
     onClickNode: PropTypes.func,
