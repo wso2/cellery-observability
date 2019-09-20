@@ -70,14 +70,13 @@ public class TelemetryEventSource extends Source {
 
     @Override
     public Class[] getOutputEventClasses() {
-        return new Class[]{Map.class};
+        return new Class[]{String.class};
     }
 
     @Override
     public void connect(ConnectionCallback connectionCallback) throws ConnectionUnavailableException {
         try {
             httpServer = HttpServer.create(new InetSocketAddress(port), 0);
-            // ToDO : if possible, change this to a mapper
             httpServer.createContext("/", new MetricsHandler(sourceEventListener));
             httpServer.setExecutor(null); // creates a default executor
             httpServer.start();

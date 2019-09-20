@@ -70,7 +70,8 @@ public class Utils {
                 boolean isHttp = gatewayIngress.getHttp().stream()
                         .anyMatch(httpIngress -> httpIngress.getDestination().getHost().equals(componentName));
                 if (isHttp) {
-                    boolean isWebCell = gatewayIngress.getExtensions().getClusterIngress() != null
+                    boolean isWebCell = gatewayIngress.getExtensions() != null
+                            && gatewayIngress.getExtensions().getClusterIngress() != null
                             && StringUtils.isNotEmpty(gatewayIngress.getExtensions().getClusterIngress().getHost());
                     // Check for Web ingresses
                     if (isWebCell) {
