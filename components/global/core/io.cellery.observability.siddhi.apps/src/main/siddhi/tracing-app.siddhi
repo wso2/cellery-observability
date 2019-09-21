@@ -34,7 +34,7 @@ define stream TelemetryStreamIn(requestId string, traceId string, spanId string,
                                 responseSizeBytes long);
 
 @Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB", field.length="tags:8000")
-@PrimaryKey("traceId", "spanId", "spanKind")
+@PrimaryKey("traceId", "spanId")
 @purge(enable="false")
 define table DistributedTracingTable(traceId string, spanId string, parentId string, namespace string, instance string,
                                      instanceKind string, serviceName string, pod string, operationName string,
@@ -42,20 +42,19 @@ define table DistributedTracingTable(traceId string, spanId string, parentId str
 
 define function extractFromServiceName[javascript] return string {
     var serviceName = data[0];
-    var index = data[1];    // 1: instance, 2: service
+    var index = data[1];    // 1: instance, 2: service, 3: instanceKind, 4: namespace
 
-    var cellGatewayMatches = /^src:\d+\.\d+\.\d+\.(.+)_\d+_\d+_\d+_.+$/.exec(serviceName);
-    var mircoserviceMatches = /^(.+)--(.+)--(.+)\.(.+)$/.exec(serviceName);
+    var cellGatewayMatches = /^([a-z0-9]+(?:-[a-z0-9]+)*)--([a-z0-9]+(?:-[a-z0-9]+)*)\.(.+)$/.exec(serviceName);
+    var mircoserviceMatches = /^([a-z0-9]+(?:-[a-z0-9]+)*)--([a-z0-9]+(?:-[a-z0-9]+)*)--([a-z0-9]+(?:-[a-z0-9]+)*)\.(.+)$/.exec(serviceName);
 
     var extractedData = "";
     if (cellGatewayMatches) {
-        var cell = cellGatewayMatches[1];
-        if (index == 1) {
-            extractedData = cell;
-        } else if (index == 2) {
-            extractedData = "gateway";
-        } else if (index == 3) {
-            extractedData = "cellery-system"
+        if (index == 3) {
+            extractedData = "Cell";
+        } else if (index == 4) {
+            extractedData = cellGatewayMatches[3];
+        } else {
+            extractedData = cellGatewayMatches[index];
         }
     } else if (mircoserviceMatches) {
         extractedData = mircoserviceMatches[index];
@@ -101,12 +100,16 @@ insert into ProcessedZipkinStream;
 from ProcessedZipkinStream#observe:traceGroupWindow(60 sec,traceId)#observe:modelGenerator(instance, serviceName, operationName, spanId, parentId, spanKind, traceId, startTime)
 update or insert into DistributedTracingTable
     set DistributedTracingTable.parentId = parentId,
+        DistributedTracingTable.namespace = namespace,
+        DistributedTracingTable.instance = instance,
+        DistributedTracingTable.instanceKind = instanceKind,
+        DistributedTracingTable.serviceName = serviceName,
         DistributedTracingTable.operationName = operationName,
+        DistributedTracingTable.spanKind = spanKind,
         DistributedTracingTable.startTime = startTime,
         DistributedTracingTable.duration = duration,
         DistributedTracingTable.tags = tags
-    on DistributedTracingTable.traceId == traceId and DistributedTracingTable.spanId == spanId
-        and DistributedTracingTable.spanKind == spanKind;
+    on DistributedTracingTable.traceId == traceId and DistributedTracingTable.spanId == spanId;
 
 --
 -- Filling additional data from Telemetry
@@ -156,8 +159,8 @@ select
 insert into ExtractedTelemetryDataStream;
 
 from every(e1=ExtractedTelemetryDataStream) ->
-    not ExtractedTelemetryDataStream[e1.traceId == e2.traceId and e1.spanId == e2.spanId and e1.spanKind == e2.spanKind] for 1 minute
-    or e2=ExtractedTelemetryDataStream[e1.traceId == e2.traceId and e1.spanId == e2.spanId and e1.spanKind == e2.spanKind] within 1 minute
+    not ExtractedTelemetryDataStream[e1.traceId == e2.traceId and e1.spanId == e2.spanId] for 1 minute
+    or e2=ExtractedTelemetryDataStream[e1.traceId == e2.traceId and e1.spanId == e2.spanId] within 1 minute
 select
     e1.traceId,
     e1.spanId,
@@ -176,10 +179,5 @@ insert into UniqueTelemetryDataStream;
 
 from UniqueTelemetryDataStream[(not traceId is null) and (not spanId is null)]
 update or insert into DistributedTracingTable
-    set DistributedTracingTable.namespace = namespace,
-        DistributedTracingTable.instance = instance,
-        DistributedTracingTable.serviceName = serviceName,
-        DistributedTracingTable.instanceKind = instanceKind,
-        DistributedTracingTable.pod = pod
-    on DistributedTracingTable.traceId == traceId and DistributedTracingTable.spanId == spanId
-        and DistributedTracingTable.spanKind == spanKind;
+    set DistributedTracingTable.pod = pod
+    on DistributedTracingTable.traceId == traceId and DistributedTracingTable.spanId == spanId;

@@ -89,8 +89,8 @@ public enum SiddhiStoreQueryTemplates {
             "group by AGG_TIMESTAMP, httpResponseGroup"
     ),
     DISTRIBUTED_TRACING_METADATA("from DistributedTracingTable\n" +
-            "on (${" + Params.QUERY_START_TIME + "}L == -1 or startTime >= ${" + Params.QUERY_START_TIME + "}L) " +
-            "and (${" + Params.QUERY_END_TIME + "}L == -1 or startTime <= ${" + Params.QUERY_END_TIME + "}L)\n" +
+            "on (${" + Params.QUERY_START_TIME + "}L == -1L or startTime >= ${" + Params.QUERY_START_TIME + "}L) " +
+            "and (${" + Params.QUERY_END_TIME + "}L == -1L or startTime <= ${" + Params.QUERY_END_TIME + "}L)\n" +
             "select instance, serviceName, operationName\n" +
             "group by instance, serviceName, operationName"
     ),
@@ -100,7 +100,7 @@ public enum SiddhiStoreQueryTemplates {
             "serviceName == \"${" + Params.SERVICE_NAME + "}\") " +
             "and (\"${" + Params.OPERATION_NAME + "}\" == \"\" or " +
             "operationName == \"${" + Params.OPERATION_NAME + "}\") " +
-            "and (${" + Params.MIN_DURATION + "}L == -1 or duration >= ${" + Params.MIN_DURATION + "}L)\n" +
+            "and (${" + Params.MIN_DURATION + "}L == -1L or duration >= ${" + Params.MIN_DURATION + "}L)\n" +
             "select traceId\n" +
             "group by traceId"
     ),
@@ -110,14 +110,14 @@ public enum SiddhiStoreQueryTemplates {
             "serviceName == \"${" + Params.SERVICE_NAME + "}\") " +
             "and (\"${" + Params.OPERATION_NAME + "}\" == \"\" or " +
             "operationName == \"${" + Params.OPERATION_NAME + "}\") " +
-            "and (${" + Params.MIN_DURATION + "}L == -1 or duration >= ${" + Params.MIN_DURATION + "}L)\n" +
+            "and (${" + Params.MIN_DURATION + "}L == -1L or duration >= ${" + Params.MIN_DURATION + "}L)\n" +
             "select traceId, tags"
     ),
     DISTRIBUTED_TRACING_SEARCH_GET_ROOT_SPAN_METADATA("from DistributedTracingTable\n" +
             "on parentId is null and (${" + Params.CONDITION + "}) " +
-            "and (${" + Params.MAX_DURATION + "}L == -1 or duration <= ${" + Params.MAX_DURATION + "}L) " +
-            "and (${" + Params.QUERY_START_TIME + "}L == -1 or startTime >= ${" + Params.QUERY_START_TIME + "}L) " +
-            "and (${" + Params.QUERY_END_TIME + "}L == -1 or startTime <= ${" + Params.QUERY_END_TIME + "}L)\n" +
+            "and (${" + Params.MAX_DURATION + "}L == -1L or duration <= ${" + Params.MAX_DURATION + "}L) " +
+            "and (${" + Params.QUERY_START_TIME + "}L == -1L or startTime >= ${" + Params.QUERY_START_TIME + "}L) " +
+            "and (${" + Params.QUERY_END_TIME + "}L == -1L or startTime <= ${" + Params.QUERY_END_TIME + "}L)\n" +
             "select traceId, instance, serviceName, operationName, startTime, duration\n" +
             "order by startTime desc"
     ),
