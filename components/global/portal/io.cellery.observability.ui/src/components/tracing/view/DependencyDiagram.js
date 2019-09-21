@@ -154,7 +154,7 @@ class DependencyDiagram extends React.Component {
                     if (!isFromSameComponent(linkSource, span)) { // Ending link traversing
                         addNodeIfNotPresent(span);
                         addLink(linkSource, span);
-                        linkSource = null;
+                        linkSource = span;
                     }
                 } else { // Starting link traversing
                     addNodeIfNotPresent(span);

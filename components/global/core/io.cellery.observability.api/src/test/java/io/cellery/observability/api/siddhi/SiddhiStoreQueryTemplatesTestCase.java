@@ -196,8 +196,8 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
-                "on (" + queryStartTime + "L == -1 or startTime >= " + queryStartTime + "L) " +
-                "and (" + queryEndTime + "L == -1 or startTime <= " + queryEndTime + "L)\n" +
+                "on (" + queryStartTime + "L == -1L or startTime >= " + queryStartTime + "L) " +
+                "and (" + queryEndTime + "L == -1L or startTime <= " + queryEndTime + "L)\n" +
                 "select instance, serviceName, operationName\n" +
                 "group by instance, serviceName, operationName");
     }
@@ -225,7 +225,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
                 "on (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
                 "and (\"" + serviceName + "\" == \"\" or serviceName == \"" + serviceName + "\") " +
                 "and (\"" + operationName + "\" == \"\" or operationName == \"" + operationName + "\") " +
-                "and (" + minDuration + "L == -1 or duration >= " + minDuration + "L)\n" +
+                "and (" + minDuration + "L == -1L or duration >= " + minDuration + "L)\n" +
                 "select traceId\n" +
                 "group by traceId");
     }
@@ -250,7 +250,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
                 "on (\"pet-be\" == \"\" or instance == \"pet-be\") and " +
                 "(\"orders\" == \"\" or serviceName == \"orders\") and " +
                 "(\"GET /orders/1\" == \"\" or operationName == \"GET /orders/1\") and " +
-                "(4353L == -1 or duration >= 4353L)\n" +
+                "(4353L == -1L or duration >= 4353L)\n" +
                 "select traceId, tags");
     }
 
@@ -272,8 +272,8 @@ public class SiddhiStoreQueryTemplatesTestCase {
 
         Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
                 "on parentId is null and (traceId=\"342fsd23423\" or traceId=\"4ger435f324\") and " +
-                "(4323453L == -1 or duration <= 4323453L) and (21234322L == -1 or startTime >= 21234322L) " +
-                "and (243423L == -1 or startTime <= 243423L)\n" +
+                "(4323453L == -1L or duration <= 4323453L) and (21234322L == -1L or startTime >= 21234322L) " +
+                "and (243423L == -1L or startTime <= 243423L)\n" +
                 "select traceId, instance, serviceName, " +
                 "operationName, startTime, duration\n" +
                 "order by startTime desc");

@@ -368,7 +368,7 @@ class SequenceDiagram extends React.Component {
                             + `Call ${linkTargetActor} [${resolveCallingId(actionId)}] \n`);
                         linkTarget.actionId = actionId;
                         actionId += 1;
-                        linkSource = null;
+                        linkSource = span;
                     }
                 } else { // Starting link traversing
                     linkSource = span;
