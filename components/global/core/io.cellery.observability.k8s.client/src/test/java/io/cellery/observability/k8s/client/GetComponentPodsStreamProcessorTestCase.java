@@ -164,7 +164,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
     }
 
     @Test
-    public void testGetPodsWithOnlyComponentComponents() throws Exception {
+    public void testGetPodsWithOnlyCompositeComponents() throws Exception {
         initializeSiddhiAppRuntime();
         expectGetComponentPods(
                 generateCelleryCompositeComponentPod("stock-comp", "stock"),
@@ -344,7 +344,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
     /**
      * Validate the data from a pod event.
      *
-     * @param instance  The cell the pod belonged to
+     * @param instance  The instance the pod belonged to
      * @param kind      The kind of the instance
      * @param component The component the pod belonged to
      * @param data      The pod event data
@@ -358,7 +358,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
     }
 
     /**
-     * Expect a get cell component pods call to Mock K8s Server.
+     * Expect a get instance component pods call to Mock K8s Server.
      *
      * @param returnPods The pods to be returned
      */

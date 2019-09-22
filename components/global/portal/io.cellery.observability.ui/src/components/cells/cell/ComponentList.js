@@ -76,9 +76,9 @@ class ComponentList extends React.Component {
             globalState
         ).then((data) => {
             const componentInfo = data.map((dataItem) => ({
-                sourceCell: dataItem[0],
+                sourceInstance: dataItem[0],
                 sourceComponent: dataItem[1],
-                destinationCell: dataItem[2],
+                destinationInstance: dataItem[2],
                 destinationComponent: dataItem[3],
                 httpResponseGroup: dataItem[4],
                 totalResponseTimeMilliSec: dataItem[5],
@@ -167,7 +167,7 @@ class ComponentList extends React.Component {
             !Constants.System.GLOBAL_GATEWAY_NAME_PATTERN.test(component) && consideredCell === cell
         );
         for (const componentDatum of componentInfo) {
-            if (isComponentRelevant(componentDatum.sourceCell, componentDatum.sourceComponent)) {
+            if (isComponentRelevant(componentDatum.sourceInstance, componentDatum.sourceComponent)) {
                 initializeDataTableMapEntryIfNotPresent(componentDatum.sourceComponent);
 
                 if (componentDatum.httpResponseGroup === "5xx") {
@@ -175,7 +175,7 @@ class ComponentList extends React.Component {
                         += componentDatum.requestCount;
                 }
             }
-            if (isComponentRelevant(componentDatum.destinationCell, componentDatum.destinationComponent)) {
+            if (isComponentRelevant(componentDatum.destinationInstance, componentDatum.destinationComponent)) {
                 initializeDataTableMapEntryIfNotPresent(componentDatum.destinationComponent);
 
                 if (componentDatum.httpResponseGroup === "5xx") {

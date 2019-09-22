@@ -170,7 +170,7 @@ public class DistributedTracingAPI {
 
                 if (rootSpanResultIds.length > 0) {
                     spanCountResults =
-                            SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_MULTIPLE_CELL_SERVICE_COUNTS
+                            SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_MULTIPLE_INSTANCE_SERVICE_COUNTS
                                     .builder()
                                     .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
                                             Utils.generateSiddhiMatchConditionForMultipleValues("traceId",

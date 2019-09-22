@@ -28,7 +28,7 @@ public enum SiddhiStoreQueryTemplates {
      * Siddhi Store Queries Start Here
      */
 
-    REQUEST_AGGREGATION_CELLS("from RequestAggregation\n" +
+    REQUEST_AGGREGATION_INSTANCES("from RequestAggregation\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"${" + Params.TIME_GRANULARITY + "}\"\n" +
             "select sourceInstance, sourceInstanceKind, destinationInstance, destinationInstanceKind, " +
@@ -36,13 +36,13 @@ public enum SiddhiStoreQueryTemplates {
             "sum(requestCount) as requestCount\n" +
             "group by sourceInstance, destinationInstance, httpResponseGroup"
     ),
-    REQUEST_AGGREGATION_CELLS_METADATA("from RequestAggregation\n" +
+    REQUEST_AGGREGATION_INSTANCES_METADATA("from RequestAggregation\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"seconds\"\n" +
             "select sourceInstance, destinationInstance\n" +
             "group by sourceInstance, destinationInstance"
     ),
-    REQUEST_AGGREGATION_CELLS_METRICS("from RequestAggregation\n" +
+    REQUEST_AGGREGATION_INSTANCES_METRICS("from RequestAggregation\n" +
             "on (\"${" + Params.SOURCE_INSTANCE + "}\" == \"\" " +
             "or sourceInstance == \"${" + Params.SOURCE_INSTANCE + "}\") " +
             "and (\"${" + Params.DESTINATION_INSTANCE + "}\" == \"\" " +
@@ -55,7 +55,7 @@ public enum SiddhiStoreQueryTemplates {
             "sum(totalResponseSizeBytes) as totalResponseSizeBytes, sum(requestCount) as requestCount\n" +
             "group by AGG_TIMESTAMP, httpResponseGroup"
     ),
-    REQUEST_AGGREGATION_CELL_COMPONENTS("from RequestAggregation\n" +
+    REQUEST_AGGREGATION_INSTANCE_COMPONENTS("from RequestAggregation\n" +
             "on sourceInstance == \"${" + Params.INSTANCE + "}\" " +
             "or destinationInstance == \"${" + Params.INSTANCE + "}\"\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
@@ -121,7 +121,7 @@ public enum SiddhiStoreQueryTemplates {
             "select traceId, instance, serviceName, operationName, startTime, duration\n" +
             "order by startTime desc"
     ),
-    DISTRIBUTED_TRACING_SEARCH_GET_MULTIPLE_CELL_SERVICE_COUNTS("from DistributedTracingTable\n" +
+    DISTRIBUTED_TRACING_SEARCH_GET_MULTIPLE_INSTANCE_SERVICE_COUNTS("from DistributedTracingTable\n" +
             "on ${" + Params.CONDITION + "}\n" +
             "select traceId, instance, serviceName, count() as count\n" +
             "group by traceId, instance, serviceName\n" +
@@ -141,7 +141,7 @@ public enum SiddhiStoreQueryTemplates {
             "and lastKnownAliveTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
             "or (creationTimestamp <= ${" + Params.QUERY_START_TIME + "}L " +
             "and lastKnownAliveTimestamp >= ${" + Params.QUERY_END_TIME + "}L))\n" +
-            "select instance, component, name, creationTimestamp, lastKnownAliveTimestamp, nodeName"
+            "select instance, component, podName, creationTimestamp, lastKnownAliveTimestamp, nodeName"
     ),
     K8S_GET_INSTANCES("from K8sComponentInfoTable\n" +
             "on (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
