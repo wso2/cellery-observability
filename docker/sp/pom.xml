@@ -42,16 +42,8 @@
             <artifactId>opencensus-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.opencensus</groupId>
-            <artifactId>opencensus-contrib-grpc-metrics</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.cellery.observability</groupId>
             <artifactId>io.cellery.observability.tracing.receiver</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.api.grpc</groupId>
-            <artifactId>proto-google-common-protos</artifactId>
         </dependency>
         <dependency>
             <groupId>io.zipkin.zipkin2</groupId>
@@ -164,10 +156,9 @@
                             <includeScope>runtime</includeScope>
                             <outputDirectory>${project.build.directory}/files/lib</outputDirectory>
                             <excludeArtifactIds>
-                                opencensus-api, opencensus-contrib-grpc-metrics, proto-google-common-protos,
-                                okhttp-ws, okhttp, adal4j, logging-interceptor, org.apache.oltu.oauth2.client,
-                                org.apache.oltu.oauth2.common,httpclient, httpcore, jackson-databind, gson,
-                                kubernetes-model, kubernetes-client
+                                opencensus-api, okhttp-ws, okhttp, adal4j, logging-interceptor,
+                                org.apache.oltu.oauth2.client, org.apache.oltu.oauth2.common,httpclient,
+                                httpcore, jackson-databind, gson, kubernetes-model, kubernetes-client
                             </excludeArtifactIds>
                             <excludeTransitive>true</excludeTransitive>
                         </configuration>
@@ -188,7 +179,7 @@
                                 io.cellery.observability.model.generator, siddhi-io-http, siddhi-store-rdbms,
                                 io.cellery.observability.k8s.client, joda-time, zipkin, client-java,
                                 client-java-api, guava, commons-codec, commons-compress, commons-lang3,
-                                client-java-proto, bcpkix-jdk15on, bcprov-ext-jdk15on
+                                bcpkix-jdk15on, bcprov-ext-jdk15on
                             </excludeArtifactIds>
                             <excludeTransitive>true</excludeTransitive>
                         </configuration>
