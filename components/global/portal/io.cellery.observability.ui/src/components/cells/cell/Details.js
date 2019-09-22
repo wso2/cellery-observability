@@ -76,8 +76,8 @@ class Details extends React.Component {
         const search = {
             queryStartTime: queryStartTime.valueOf(),
             queryEndTime: queryEndTime.valueOf(),
-            destinationCell: cell,
-            includeIntraCell: true
+            destinationInstance: cell,
+            includeIntraInstance: true
         };
 
         const ingressQueryParams = {

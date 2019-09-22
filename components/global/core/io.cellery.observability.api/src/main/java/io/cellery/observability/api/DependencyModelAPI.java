@@ -39,23 +39,24 @@ public class DependencyModelAPI {
     @GET
     @Path("/instances")
     @Produces("application/json")
-    public Response getCellOverview(@DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
-                                    @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
+    public Response getInstanceOverview(@DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
+                                        @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
         try {
             Model model = ServiceHolder.getModelManager().getGraph(queryStartTime, queryEndTime);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
-            throw new APIInvocationException("Unexpected error occurred while fetching the Cell dependency model", e);
+            throw new APIInvocationException("Unexpected error occurred while fetching the Instance dependency model",
+                    e);
         }
     }
 
     @GET
     @Path("/instances/{instanceName}")
     @Produces("application/json")
-    public Response getCellDependencyView(@PathParam("instanceName") String instanceName,
-                                          @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
-                                          @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
+    public Response getInstanceDependencyView(@PathParam("instanceName") String instanceName,
+                                              @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
+                                              @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
         try {
             Model model = ServiceHolder.getModelManager().getDependencyModel(queryStartTime, queryEndTime,

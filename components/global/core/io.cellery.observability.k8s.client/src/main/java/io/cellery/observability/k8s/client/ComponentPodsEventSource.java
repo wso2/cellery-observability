@@ -83,13 +83,13 @@ public class ComponentPodsEventSource extends Source {
             logger.debug("Retrieved API server client instance");
         }
 
-        // Pod watcher for Cellery Cell components
-        Watch cellComponentsWatch = k8sClient.pods()
+        // Pod watcher for Cellery Instance components
+        Watch componentsWatch = k8sClient.pods()
                 .inNamespace(Constants.NAMESPACE)
                 .withLabel(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL)
                 .withLabel(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL)
                 .watch(new PodWatcher(this.sourceEventListener, Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL));
-        k8sWatches.add(cellComponentsWatch);
+        k8sWatches.add(componentsWatch);
         if (logger.isDebugEnabled()) {
             logger.debug("Created pod watcher for components");
         }

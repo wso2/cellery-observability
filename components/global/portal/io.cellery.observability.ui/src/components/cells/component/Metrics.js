@@ -179,13 +179,13 @@ class Metrics extends React.Component {
         const search = {
             queryStartTime: queryStartTime,
             queryEndTime: queryEndTime,
-            includeIntraCell: false
+            includeIntraInstance: false
         };
         if (selectedCell !== Constants.Dashboard.ALL_VALUE) {
             if (selectedType === Constants.Dashboard.INBOUND) {
-                search.sourceCell = selectedCell;
+                search.sourceInstance = selectedCell;
             } else {
-                search.destinationCell = selectedCell;
+                search.destinationInstance = selectedCell;
             }
         }
         if (selectedComponent !== Constants.Dashboard.ALL_VALUE) {
@@ -196,10 +196,10 @@ class Metrics extends React.Component {
             }
         }
         if (selectedType === Constants.Dashboard.INBOUND) {
-            search.destinationCell = cell;
+            search.destinationInstance = cell;
             search.destinationComponent = component;
         } else {
-            search.sourceCell = cell;
+            search.sourceInstance = cell;
             search.sourceComponent = component;
         }
 

@@ -43,12 +43,12 @@ public class AggregatedRequestsAPI {
     @GET
     @Path("/instances")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAggregatedRequestsForCells(@QueryParam("queryStartTime") long queryStartTime,
+    public Response getAggregatedRequestsForInstances(@QueryParam("queryStartTime") long queryStartTime,
                                                   @QueryParam("queryEndTime") long queryEndTime,
                                                   @DefaultValue("seconds") @QueryParam("timeGranularity")
                                                           String timeGranularity) throws APIInvocationException {
         try {
-            Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELLS.builder()
+            Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
@@ -64,25 +64,25 @@ public class AggregatedRequestsAPI {
     @GET
     @Path("/instances/metrics")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getMetricsForCells(@QueryParam("queryStartTime") long queryStartTime,
+    public Response getMetricsForInstances(@QueryParam("queryStartTime") long queryStartTime,
                                        @QueryParam("queryEndTime") long queryEndTime,
-                                       @DefaultValue("") @QueryParam("sourceCell") String sourceCell,
-                                       @DefaultValue("") @QueryParam("destinationCell") String destinationCell,
+                                       @DefaultValue("") @QueryParam("sourceInstance") String sourceInstance,
+                                       @DefaultValue("") @QueryParam("destinationInstance") String destinationInstance,
                                        @DefaultValue("seconds") @QueryParam("timeGranularity") String timeGranularity,
                                        @DefaultValue("false")
-                                       @QueryParam("includeIntraCell") boolean includeIntraCell)
+                                       @QueryParam("includeIntraInstance") boolean includeIntraInstance)
             throws APIInvocationException {
         try {
-            Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELLS_METRICS.builder()
+            Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES_METRICS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
-                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_INSTANCE, sourceCell)
-                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_INSTANCE, destinationCell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_INSTANCE, sourceInstance)
+                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_INSTANCE, destinationInstance)
                     .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
-                            includeIntraCell
+                            includeIntraInstance
                                     ? "true"
-                                    : "sourceCell != destinationCell")
+                                    : "sourceInstance != destinationInstance")
                     .build()
                     .execute();
             return Response.ok().entity(results).build();
@@ -95,10 +95,10 @@ public class AggregatedRequestsAPI {
     @GET
     @Path("/instances/metadata")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getMetadataForCells(@QueryParam("queryStartTime") long queryStartTime,
+    public Response getMetadataForInstances(@QueryParam("queryStartTime") long queryStartTime,
                                         @QueryParam("queryEndTime") long queryEndTime) throws APIInvocationException {
         try {
-            Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELLS_METADATA.builder()
+            Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES_METADATA.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .build()
@@ -112,7 +112,8 @@ public class AggregatedRequestsAPI {
 
             return Response.ok().entity(instances).build();
         } catch (Throwable throwable) {
-            throw new APIInvocationException("API Invocation error occurred while fetching Cell metadata", throwable);
+            throw new APIInvocationException("API Invocation error occurred while fetching Instance metadata",
+                    throwable);
         }
     }
 
@@ -126,7 +127,7 @@ public class AggregatedRequestsAPI {
                                                        @QueryParam("timeGranularity") String timeGranularity)
             throws APIInvocationException {
         try {
-            Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELL_COMPONENTS.builder()
+            Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCE_COMPONENTS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
@@ -145,30 +146,32 @@ public class AggregatedRequestsAPI {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMetricsForComponents(@QueryParam("queryStartTime") long queryStartTime,
                                             @QueryParam("queryEndTime") long queryEndTime,
-                                            @DefaultValue("") @QueryParam("sourceCell") String sourceCell,
+                                            @DefaultValue("") @QueryParam("sourceInstance") String sourceInstance,
                                             @DefaultValue("")
                                             @QueryParam("sourceComponent") String sourceComponent,
-                                            @DefaultValue("") @QueryParam("destinationCell") String destinationCell,
+                                            @DefaultValue("") @QueryParam("destinationInstance")
+                                                        String destinationInstance,
                                             @DefaultValue("")
                                             @QueryParam("destinationComponent") String destinationComponent,
                                             @DefaultValue("seconds")
                                             @QueryParam("timeGranularity") String timeGranularity,
                                             @DefaultValue("false")
-                                            @QueryParam("includeIntraCell") boolean includeIntraCell)
+                                            @QueryParam("includeIntraInstance") boolean includeIntraInstance)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_COMPONENTS_METRICS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
-                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_INSTANCE, sourceCell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_INSTANCE, sourceInstance)
                     .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_COMPONENT, sourceComponent)
-                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_INSTANCE, destinationCell)
+                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_INSTANCE, destinationInstance)
                     .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_COMPONENT, destinationComponent)
                     .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
-                            includeIntraCell
+                            includeIntraInstance
                                     ? "sourceComponent != destinationComponent"
-                                    : "sourceCell != destinationCell or sourceComponent != destinationComponent")
+                                    : "sourceInstance != destinationInstance " +
+                                    "or sourceComponent != destinationComponent")
                     .build()
                     .execute();
             return Response.ok().entity(results).build();

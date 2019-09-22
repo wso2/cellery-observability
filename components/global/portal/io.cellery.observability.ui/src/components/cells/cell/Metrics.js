@@ -167,19 +167,19 @@ class Metrics extends React.Component {
         const search = {
             queryStartTime: queryStartTime,
             queryEndTime: queryEndTime,
-            includeIntraCell: false
+            includeIntraInstance: false
         };
         if (selectedCell !== Constants.Dashboard.ALL_VALUE) {
             if (selectedType === Constants.Dashboard.INBOUND) {
-                search.sourceCell = selectedCell;
+                search.sourceInstance = selectedCell;
             } else {
-                search.destinationCell = selectedCell;
+                search.destinationInstance = selectedCell;
             }
         }
         if (selectedType === Constants.Dashboard.INBOUND) {
-            search.destinationCell = cell;
+            search.destinationInstance = cell;
         } else {
-            search.sourceCell = cell;
+            search.sourceInstance = cell;
         }
 
         if (isUserAction) {

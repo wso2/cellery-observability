@@ -35,7 +35,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         final long queryEndTime = 973458743;
         final String timeGranularity = "minutes";
 
-        SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELLS.builder()
+        SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES.builder()
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
                 .setArg(Params.QUERY_END_TIME, queryEndTime)
                 .setArg(Params.TIME_GRANULARITY, timeGranularity)
@@ -56,7 +56,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         final long queryStartTime = 345321523;
         final long queryEndTime = 386573257;
 
-        SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELLS_METADATA.builder()
+        SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES_METADATA.builder()
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
                 .setArg(Params.QUERY_END_TIME, queryEndTime)
                 .build();
@@ -78,7 +78,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         final String destinationInstance = "pet-be";
         final String condition = "sourceInstance != destinationInstance";
 
-        SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELLS_METRICS.builder()
+        SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES_METRICS.builder()
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
                 .setArg(Params.QUERY_END_TIME, queryEndTime)
                 .setArg(Params.TIME_GRANULARITY, timeGranularity)
@@ -108,7 +108,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         final String timeGranularity = "hours";
         final String instance = "pet-be";
 
-        SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_CELL_COMPONENTS.builder()
+        SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCE_COMPONENTS.builder()
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
                 .setArg(Params.QUERY_END_TIME, queryEndTime)
                 .setArg(Params.TIME_GRANULARITY, timeGranularity)
@@ -284,7 +284,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         final String condition = "traceId=\"wtg345feg\" or traceId=\"54gdf245g\"";
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates
-                .DISTRIBUTED_TRACING_SEARCH_GET_MULTIPLE_CELL_SERVICE_COUNTS.builder()
+                .DISTRIBUTED_TRACING_SEARCH_GET_MULTIPLE_INSTANCE_SERVICE_COUNTS.builder()
                 .setArg(Params.CONDITION, condition)
                 .build();
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
@@ -332,7 +332,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
                 "and ((creationTimestamp >= 21234322L and creationTimestamp <= 243423L) " +
                 "or (lastKnownAliveTimestamp >= 21234322L and lastKnownAliveTimestamp <= 243423L) " +
                 "or (creationTimestamp <= 21234322L and lastKnownAliveTimestamp >= 243423L))\n" +
-                "select instance, component, name, creationTimestamp, lastKnownAliveTimestamp, nodeName");
+                "select instance, component, podName, creationTimestamp, lastKnownAliveTimestamp, nodeName");
     }
 
     @Test
