@@ -46,18 +46,8 @@
             </dependency>
             <dependency>
                 <groupId>io.cellery.observability</groupId>
-                <artifactId>grpc</artifactId>
-                <version>${grpc.orbit.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.cellery.observability</groupId>
                 <artifactId>io.cellery.observability.telemetry.receiver</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.cellery.observability</groupId>
-                <artifactId>protobuf</artifactId>
-                <version>${protobuf.orbit.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.cellery.observability</groupId>
@@ -131,11 +121,6 @@
                 <version>${synapse.core.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.wso2.orbit.gogoproto-java</groupId>
-                <artifactId>gogoproto-java</artifactId>
-                <version>${gogo-proto.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.fabric8</groupId>
                 <artifactId>kubernetes-model</artifactId>
                 <version>${fabric8.kubernetes.version}</version>
@@ -159,26 +144,6 @@
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons.io.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-protobuf</artifactId>
-                <version>${grpc.protobuf.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.google.api.grpc</groupId>
-                <artifactId>proto-google-common-protos</artifactId>
-                <version>${proto.google.common.proto}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-stub</artifactId>
-                <version>${grpc.stub.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-protobuf-lite</artifactId>
-                <version>${grpc.protobuf.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.opentracing</groupId>
@@ -213,11 +178,6 @@
             <dependency>
                 <groupId>io.opencensus</groupId>
                 <artifactId>opencensus-api</artifactId>
-                <version>${opencensus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opencensus</groupId>
-                <artifactId>opencensus-contrib-grpc-metrics</artifactId>
                 <version>${opencensus.version}</version>
             </dependency>
             <dependency>
@@ -296,35 +256,6 @@
                 <version>${httpserver.version}</version>
             </dependency>
             <!-- External dependencies end here -->
-
-            <!--Orbit dependencies start here-->
-            <dependency>
-                <groupId>com.google.protobuf</groupId>
-                <artifactId>protobuf-java</artifactId>
-                <version>${protobuf.java.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-core</artifactId>
-                <version>${grpc.core}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-netty</artifactId>
-                <version>${grpc.netty}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.cellery.observability</groupId>
-                <artifactId>gogoproto-java</artifactId>
-                <version>${gogoproto.orbit.version}</version>
-            </dependency>
-            <!--Orbit dependencies end here-->
 
             <!-- Test dependencies start here -->
             <dependency>
@@ -572,7 +503,6 @@
         <httpclient.version>4.3.6</httpclient.version>
         <carbon.datasource.version>1.1.4</carbon.datasource.version>
         <msf4j.version>2.6.4</msf4j.version>
-        <gogo-proto.version>1.0.0.wso2v1</gogo-proto.version>
         <httpcore.version>4.4.11</httpcore.version>
         <oltu.oauth2.version>1.0.0</oltu.oauth2.version>
         <synapse.core.version>2.1.7-wso2v80</synapse.core.version>
@@ -582,12 +512,6 @@
         <commons.io.version>2.6</commons.io.version>
         <carbon.config.version>2.1.5</carbon.config.version>
         <logging.version>1.2</logging.version>
-        <protobuf.java.version>3.6.1</protobuf.java.version>
-        <proto.google.common.proto>1.12.0</proto.google.common.proto>
-        <grpc.protobuf.version>1.15.0</grpc.protobuf.version>
-        <grpc.core>1.15.0</grpc.core>
-        <grpc.netty>1.15.0</grpc.netty>
-        <grpc.stub.version>1.15.0</grpc.stub.version>
         <open.tracing.version>0.31.0</open.tracing.version>
         <brave.open.tracing.version>0.29.0</brave.open.tracing.version>
         <zipkin.version>2.11.6</zipkin.version>
@@ -601,9 +525,6 @@
         <commons.compress.version>1.18</commons.compress.version>
         <bouncy.castle.version>1.59</bouncy.castle.version>
         <opencensus.version>0.16.1</opencensus.version>
-        <protobuf.orbit.version>0.2.3-SNAPSHOT</protobuf.orbit.version>
-        <gogoproto.orbit.version>0.2.3-SNAPSHOT</gogoproto.orbit.version>
-        <grpc.orbit.version>0.2.3-SNAPSHOT</grpc.orbit.version>
         <gson.version>2.8.5</gson.version>
         <zipkin.sender.okhttp3.version>2.5.0</zipkin.sender.okhttp3.version>
 
