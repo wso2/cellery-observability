@@ -186,7 +186,7 @@ class Details extends React.Component {
                             </Typography>
                         </TableCell>
                         <TableCell className={classes.tableCell}>
-                            <Link to={`/cells/${cell}`}>{cell}</Link>
+                            <Link to={`/instances/${cell}`}>{cell}</Link>
                         </TableCell>
                     </TableRow>
                     <TableRow>

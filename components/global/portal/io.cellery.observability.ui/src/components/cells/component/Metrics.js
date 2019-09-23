@@ -318,7 +318,7 @@ class Metrics extends React.Component {
                                 </Select>
                             </FormControl>
                             <FormControl className={classes.formControl}>
-                                <InputLabel htmlFor="selected-cell">{targetSourcePrefix} Cell</InputLabel>
+                                <InputLabel htmlFor="selected-cell">{targetSourcePrefix} Instance</InputLabel>
                                 <Select value={selectedCell}
                                     onChange={this.getFilterChangeHandler("selectedCell")}
                                     inputProps={{

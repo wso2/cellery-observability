@@ -130,7 +130,7 @@ class Details extends React.Component {
                     isLoading: false
                 });
                 NotificationUtils.showNotification(
-                    "Failed to load cell information",
+                    "Failed to load instance information",
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );
