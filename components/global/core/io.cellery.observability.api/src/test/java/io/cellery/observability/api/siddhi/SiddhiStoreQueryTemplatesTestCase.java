@@ -204,8 +204,8 @@ public class SiddhiStoreQueryTemplatesTestCase {
 
     @Test
     public void testDistributedTracingSearchGetTraceIdsTemplate() {
-        final long queryStartTime = 234235234;
-        final long queryEndTime = 234234124;
+        final long queryStartTime = 243423;
+        final long queryEndTime = 21234322;
         final String instance = "pet-be";
         final String serviceName = "customers";
         final String operationName = "GET /customer/john";
@@ -247,17 +247,17 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
-                "on (\"pet-be\" == \"\" or instance == \"pet-be\") and " +
-                "(\"orders\" == \"\" or serviceName == \"orders\") and " +
-                "(\"GET /orders/1\" == \"\" or operationName == \"GET /orders/1\") and " +
-                "(4353L == -1L or duration >= 4353L)\n" +
+                "on (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") and " +
+                "(\"" + serviceName + "\" == \"\" or serviceName == \"" + serviceName + "\") and " +
+                "(\"" + operationName + "\" == \"\" or operationName == \"" + operationName + "\") and " +
+                "(" + minDuration + "L == -1L or duration >= " + minDuration + "L)\n" +
                 "select traceId, tags");
     }
 
     @Test
     public void testDistributedTracingSearchGetRootSpanMetadataTemplate() {
-        final long queryStartTime = 21234322;
-        final long queryEndTime = 243423;
+        final long queryStartTime = 243423;
+        final long queryEndTime = 21234322;
         final long maxDuration = 4323453;
         final String condition = "traceId=\"342fsd23423\" or traceId=\"4ger435f324\"";
 
@@ -271,9 +271,10 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
-                "on parentId is null and (traceId=\"342fsd23423\" or traceId=\"4ger435f324\") and " +
-                "(4323453L == -1L or duration <= 4323453L) and (21234322L == -1L or startTime >= 21234322L) " +
-                "and (243423L == -1L or startTime <= 243423L)\n" +
+                "on parentId is null and (" + condition + ") and " +
+                "(" + maxDuration + "L == -1L or duration <= " + maxDuration + "L) " +
+                "and (" + queryStartTime + "L == -1L or startTime >= " + queryStartTime + "L) " +
+                "and (" + queryEndTime + "L == -1L or startTime <= " + queryEndTime + "L)\n" +
                 "select traceId, instance, serviceName, " +
                 "operationName, startTime, duration\n" +
                 "order by startTime desc");
@@ -313,8 +314,8 @@ public class SiddhiStoreQueryTemplatesTestCase {
 
     @Test
     public void testK8sGetPodsForComponentTemplate() {
-        final long queryStartTime = 21234322;
-        final long queryEndTime = 243423;
+        final long queryStartTime = 243423;
+        final long queryEndTime = 21234322;
         final String instance = "pet-be";
         final String component = "catalog";
 
@@ -329,31 +330,46 @@ public class SiddhiStoreQueryTemplatesTestCase {
         Assert.assertEquals(resultantQuery, "from K8sPodInfoTable\n" +
                 "on (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
                 "and (\"" + component + "\" == \"\" or component == \"catalog\") " +
-                "and ((creationTimestamp >= 21234322L and creationTimestamp <= 243423L) " +
-                "or (lastKnownAliveTimestamp >= 21234322L and lastKnownAliveTimestamp <= 243423L) " +
-                "or (creationTimestamp <= 21234322L and lastKnownAliveTimestamp >= 243423L))\n" +
+                "and ((" + queryStartTime + "L == -1L and " + queryEndTime + "L == -1L) " +
+                "or ((creationTimestamp >= " + queryStartTime + "L " +
+                "and creationTimestamp <= " + queryEndTime + "L) " +
+                "or (lastKnownAliveTimestamp >= " + queryStartTime + "L " +
+                "and lastKnownAliveTimestamp <= " + queryEndTime + "L) " +
+                "or (creationTimestamp <= " + queryStartTime + "L " +
+                "and lastKnownAliveTimestamp >= " + queryEndTime + "L)))\n" +
                 "select instance, component, podName, creationTimestamp, lastKnownAliveTimestamp, nodeName");
     }
 
     @Test
     public void testK8sGetInstancesTemplate() {
         final String instance = "pet-be";
+        final long queryStartTime = 243423;
+        final long queryEndTime = 21234322;
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.K8S_GET_INSTANCES.builder()
                 .setArg(Params.INSTANCE, instance)
+                .setArg(Params.QUERY_START_TIME, queryStartTime)
+                .setArg(Params.QUERY_END_TIME, queryEndTime)
                 .build();
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from K8sComponentInfoTable\n" +
                 "on (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
+                "and ((" + queryStartTime + "L == -1L and " + queryEndTime + "L == -1L) " +
+                "or ((creationTimestamp >= " + queryStartTime + "L " +
+                "and creationTimestamp <= " + queryEndTime + "L) " +
+                "or (lastKnownAliveTimestamp >= " + queryStartTime + "L " +
+                "and lastKnownAliveTimestamp <= " + queryEndTime + "L) " +
+                "or (creationTimestamp <= " + queryStartTime + "L " +
+                "and lastKnownAliveTimestamp >= " + queryEndTime + "L)))\n" +
                 "select instance, instanceKind\n" +
                 "group by instance");
     }
 
     @Test
     public void testK8sGetComponentsTemplate() {
-        final long queryStartTime = 21234322;
-        final long queryEndTime = 243423;
+        final long queryStartTime = 243423;
+        final long queryEndTime = 21234322;
         final String instance = "pet-be";
         final String component = "catalog";
 
@@ -368,12 +384,14 @@ public class SiddhiStoreQueryTemplatesTestCase {
         Assert.assertEquals(resultantQuery, "from K8sComponentInfoTable\n" +
                 "on (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
                 "and (\"" + component + "\" == \"\" or component == \"" + component + "\") " +
-                "and ((creationTimestamp >= " + queryStartTime + "L " +
+                "and ((" + queryStartTime + "L == -1L and " + queryEndTime + "L == -1L) " +
+                "or ((creationTimestamp >= " + queryStartTime + "L " +
                 "and creationTimestamp <= " + queryEndTime + "L) " +
                 "or (lastKnownAliveTimestamp >= " + queryStartTime + "L " +
                 "and lastKnownAliveTimestamp <= " + queryEndTime + "L) " +
                 "or (creationTimestamp <= " + queryStartTime + "L " +
-                "and lastKnownAliveTimestamp >= " + queryEndTime + "L))\n" +
-                "select instance, component, ingressTypes");
+                "and lastKnownAliveTimestamp >= " + queryEndTime + "L)))\n" +
+                "select instance, component, instanceKind, ingressTypes\n" +
+                "group by instance, component");
     }
 }

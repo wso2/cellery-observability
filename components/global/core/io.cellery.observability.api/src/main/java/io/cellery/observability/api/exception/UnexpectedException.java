@@ -23,7 +23,7 @@ import javax.ws.rs.core.Response;
 /**
  * Exception thrown when an unexpected error occurs.
  */
-public class UnexpectedException extends Exception {
+public class UnexpectedException extends RuntimeException {
 
     public UnexpectedException(String message) {
         super(message);
