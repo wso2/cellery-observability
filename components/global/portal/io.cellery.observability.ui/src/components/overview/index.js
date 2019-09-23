@@ -505,23 +505,23 @@ class Overview extends React.Component {
                 url: `/k8s/instances${HttpUtils.generateQueryParamString(searchParams)}`,
                 method: "GET"
             },
-            this.props.globalState).then(
-            (response) => {
-                const cellNameSet = new Set();
-                for (let i = 0; i < response.length; i++) {
-                    const cellInfo = response[i];
-                    const obj = {
-                        cellName: cellInfo[0],
-                        component: cellInfo[1],
-                        ingressTypes: cellInfo[2]
-                    };
-                    cellNameSet.add(obj.cellName);
-                    ingressDataArray.push(obj);
-                }
-                self.setState({
-                    cellIngresses: self.getCellIngresses(ingressDataArray, cellNameSet)
-                });
-            }).catch((error) => {
+            this.props.globalState
+        ).then((response) => {
+            const cellNameSet = new Set();
+            for (let i = 0; i < response.length; i++) {
+                const cellInfo = response[i];
+                const obj = {
+                    cellName: cellInfo[0],
+                    component: cellInfo[1],
+                    ingressTypes: cellInfo[3]
+                };
+                cellNameSet.add(obj.cellName);
+                ingressDataArray.push(obj);
+            }
+            self.setState({
+                cellIngresses: self.getCellIngresses(ingressDataArray, cellNameSet)
+            });
+        }).catch((error) => {
             NotificationUtils.showNotification(
                 "Failed to load instance ingress types",
                 NotificationUtils.Levels.ERROR,
@@ -539,10 +539,12 @@ class Overview extends React.Component {
             jsonObj.cellName = singleCellName;
             jsonObj.ingressTypes = "";
             cellSpecificArray.forEach((specifiCell) => {
-                const ingressTypeArray = specifiCell.ingressTypes.split(",");
-                ingressTypeArray.forEach((ingressValue) => {
-                    set.add(ingressValue);
-                });
+                if (specifiCell.ingressTypes) {
+                    const ingressTypeArray = specifiCell.ingressTypes.split(",");
+                    ingressTypeArray.forEach((ingressValue) => {
+                        set.add(ingressValue);
+                    });
+                }
             });
             jsonObj.ingressTypes = Array.from(set).join(", ");
             cellIngressArray.push(jsonObj);
