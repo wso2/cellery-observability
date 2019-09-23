@@ -101,7 +101,7 @@ public class ModelGenerationExtension extends StreamProcessor {
                     List<SpanInfo> childNodes = spanCache.computeIfAbsent(parentId, k -> new ArrayList<>());
                     childNodes.add(spanInfo);
                     spanCache.putIfAbsent(parentId, childNodes);
-                    if (spanId.equalsIgnoreCase(traceId)) {
+                    if (spanId.equalsIgnoreCase(traceId) || parentId == null) {
                         rootSpans.add(spanInfo);
                     }
                     totalSpans++;
@@ -203,12 +203,7 @@ public class ModelGenerationExtension extends StreamProcessor {
         Set<SpanInfo> linkedChildren = new HashSet<>();
         if (childSpanInfoList != null) {
             Collections.sort(childSpanInfoList);
-            for (int i = 0; i < childSpanInfoList.size(); i++) {
-                SpanInfo childSpanInfo = childSpanInfoList.get(i);
-                if (childSpanInfo.getKind().equals(SpanInfo.Kind.CLIENT) && i + 1 < childSpanInfoList.size()
-                        && childSpanInfoList.get(i + 1).getKind().equals(SpanInfo.Kind.SERVER)) {
-                    continue;
-                }
+            for (SpanInfo childSpanInfo : childSpanInfoList) {
                 if (childSpanInfo.getCellName() != null && !childSpanInfo.getCellName().isEmpty() &&
                         !childSpanInfo.getOperationName().startsWith(Constants.IGNORE_OPERATION_NAME)) {
                     Node childNode = ServiceHolder.getModelManager().getOrGenerateNode(childSpanInfo.getCellName());
@@ -219,6 +214,8 @@ public class ModelGenerationExtension extends StreamProcessor {
                         ServiceHolder.getModelManager().addLink(cellParentNode, childNode, Utils.generateServiceName(
                                 parentSpanInfo.getComponentName(), childSpanInfo.getComponentName()));
                         linkedChildren.add(childSpanInfo);
+                    } else {
+                        goDepth(cellParentNode, childSpanInfo, spanInfoMap);
                     }
                 } else {
                     goDepth(cellParentNode, childSpanInfo, spanInfoMap);
