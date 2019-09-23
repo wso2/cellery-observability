@@ -47,7 +47,7 @@ public class Edge {
     }
 
     public boolean equals(Object object) {
-        return object != null && object instanceof Edge && edgeString.equalsIgnoreCase(((Edge) object).edgeString);
+        return object instanceof Edge && edgeString.equalsIgnoreCase(((Edge) object).getEdgeString());
     }
 
     public int hashCode() {

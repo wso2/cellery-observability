@@ -151,7 +151,7 @@ public class TraceGroupWindowProcessor extends StreamProcessor implements Schedu
     }
 
     protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor processor, StreamEventCloner
-            streamEventCloner, ComplexEventPopulater complexEventPopulater) {
+                           streamEventCloner, ComplexEventPopulater complexEventPopulater) {
         boolean isTimerEvent = false;
         synchronized (this) {
             while (streamEventChunk.hasNext()) {

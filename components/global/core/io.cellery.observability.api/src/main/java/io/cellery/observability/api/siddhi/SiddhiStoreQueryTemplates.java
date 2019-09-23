@@ -135,29 +135,39 @@ public enum SiddhiStoreQueryTemplates {
     K8S_GET_PODS_FOR_COMPONENT("from K8sPodInfoTable\n" +
             "on (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
             "and (\"${" + Params.COMPONENT + "}\" == \"\" or component == \"${" + Params.COMPONENT + "}\") " +
-            "and ((creationTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
+            "and ((${" + Params.QUERY_START_TIME + "}L == -1L and ${" + Params.QUERY_END_TIME + "}L == -1L) " +
+            "or ((creationTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
             "and creationTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
             "or (lastKnownAliveTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
             "and lastKnownAliveTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
             "or (creationTimestamp <= ${" + Params.QUERY_START_TIME + "}L " +
-            "and lastKnownAliveTimestamp >= ${" + Params.QUERY_END_TIME + "}L))\n" +
+            "and lastKnownAliveTimestamp >= ${" + Params.QUERY_END_TIME + "}L)))\n" +
             "select instance, component, podName, creationTimestamp, lastKnownAliveTimestamp, nodeName"
     ),
     K8S_GET_INSTANCES("from K8sComponentInfoTable\n" +
             "on (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
+            "and ((${" + Params.QUERY_START_TIME + "}L == -1L and ${" + Params.QUERY_END_TIME + "}L == -1L) " +
+            "or ((creationTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
+            "and creationTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
+            "or (lastKnownAliveTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
+            "and lastKnownAliveTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
+            "or (creationTimestamp <= ${" + Params.QUERY_START_TIME + "}L " +
+            "and lastKnownAliveTimestamp >= ${" + Params.QUERY_END_TIME + "}L)))\n" +
             "select instance, instanceKind\n" +
             "group by instance"
     ),
     K8S_GET_COMPONENTS("from K8sComponentInfoTable\n" +
             "on (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
             "and (\"${" + Params.COMPONENT + "}\" == \"\" or component == \"${" + Params.COMPONENT + "}\") " +
-            "and ((creationTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
+            "and ((${" + Params.QUERY_START_TIME + "}L == -1L and ${" + Params.QUERY_END_TIME + "}L == -1L) " +
+            "or ((creationTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
             "and creationTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
             "or (lastKnownAliveTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
             "and lastKnownAliveTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
             "or (creationTimestamp <= ${" + Params.QUERY_START_TIME + "}L " +
-            "and lastKnownAliveTimestamp >= ${" + Params.QUERY_END_TIME + "}L))\n" +
-            "select instance, component, ingressTypes"
+            "and lastKnownAliveTimestamp >= ${" + Params.QUERY_END_TIME + "}L)))\n" +
+            "select instance, component, instanceKind, ingressTypes\n" +
+            "group by instance, component"
     );
 
     /*

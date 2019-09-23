@@ -44,7 +44,7 @@ public class ModelServiceComponent {
             ServiceHolder.setModelManager(new ModelManager());
             bundleContext.registerService(ModelManager.class.getName(), ServiceHolder.getModelManager(), null);
         } catch (Throwable throwable) {
-            log.error("Error occured while activating the model generation bundle", throwable);
+            log.error("Error occurred while activating the model generation bundle", throwable);
             throw throwable;
         }
     }

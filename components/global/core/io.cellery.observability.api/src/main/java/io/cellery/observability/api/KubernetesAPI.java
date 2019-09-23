@@ -40,8 +40,8 @@ public class KubernetesAPI {
     @GET
     @Path("/pods")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getK8sPods(@QueryParam("queryStartTime") long queryStartTime,
-                               @QueryParam("queryEndTime") long queryEndTime,
+    public Response getK8sPods(@DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
+                               @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime,
                                @DefaultValue("") @QueryParam("instance") String instance,
                                @DefaultValue("") @QueryParam("component") String component)
             throws APIInvocationException {
@@ -63,8 +63,8 @@ public class KubernetesAPI {
     @GET
     @Path("/instances")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAllInstancesInfo(@QueryParam("queryStartTime") long queryStartTime,
-                                        @QueryParam("queryEndTime") long queryEndTime)
+    public Response getAllInstancesInfo(@DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
+                                        @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
         return getInstancesAndComponentsInfo(queryStartTime, queryEndTime, "", "");
     }
@@ -72,8 +72,8 @@ public class KubernetesAPI {
     @GET
     @Path("/instances/{instanceName}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getInstanceInfo(@QueryParam("queryStartTime") long queryStartTime,
-                                    @QueryParam("queryEndTime") long queryEndTime,
+    public Response getInstanceInfo(@DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
+                                    @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime,
                                     @PathParam("instanceName") String instance)
             throws APIInvocationException {
         return getInstancesAndComponentsInfo(queryStartTime, queryEndTime, instance, "");
@@ -82,8 +82,8 @@ public class KubernetesAPI {
     @GET
     @Path("/instances/{instanceName}/components/{componentName}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getComponentInfo(@QueryParam("queryStartTime") long queryStartTime,
-                                     @QueryParam("queryEndTime") long queryEndTime,
+    public Response getComponentInfo(@DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
+                                     @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime,
                                      @PathParam("instanceName") String instance,
                                      @PathParam("componentName") String component)
             throws APIInvocationException {

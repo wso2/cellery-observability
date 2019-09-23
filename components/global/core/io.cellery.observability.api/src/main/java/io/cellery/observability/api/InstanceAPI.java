@@ -20,15 +20,16 @@ package io.cellery.observability.api;
 
 import com.google.gson.JsonObject;
 import io.cellery.observability.api.exception.APIInvocationException;
-import io.cellery.observability.api.exception.InvalidParamException;
 import io.cellery.observability.api.exception.UnexpectedException;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryTemplates;
 
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.OPTIONS;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -39,18 +40,57 @@ import javax.ws.rs.core.Response;
 public class InstanceAPI {
 
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getInstancesList(@DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
+                                     @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
+            throws APIInvocationException {
+        try {
+            Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_INSTANCES.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, "")
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
+                    .build()
+                    .execute();
+            return Response.ok().entity(results).build();
+        } catch (Throwable e) {
+            throw new APIInvocationException("API Invocation error occurred while fetching Tracing metadata", e);
+        }
+    }
+
+    @GET
+    @Path("/{instanceName}/components")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getInstanceComponents(@PathParam("instanceName") String instanceName,
+                                          @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
+                                          @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
+            throws APIInvocationException {
+        try {
+            Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_COMPONENTS.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instanceName)
+                    .setArg(SiddhiStoreQueryTemplates.Params.COMPONENT, "")
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
+                    .build()
+                    .execute();
+            return Response.ok().entity(results).build();
+        } catch (Throwable e) {
+            throw new APIInvocationException("API Invocation error occurred while fetching Tracing metadata", e);
+        }
+    }
+
+    @GET
     @Path("/{instanceName}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getMetadata(@PathParam("instanceName") String instanceName)
+    public Response getInstance(@PathParam("instanceName") String instanceName,
+                                @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
+                                @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
-        if ("".equals(instanceName)) {
-            throw new InvalidParamException("instanceName", "non empty instance name");
-        }
-
         try {
             JsonObject instanceInfo = new JsonObject();
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_INSTANCES.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instanceName)
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .build()
                     .execute();
             Response response;
@@ -65,8 +105,18 @@ public class InstanceAPI {
             }
             return response;
         } catch (Throwable e) {
-            throw new APIInvocationException("API Invocation error occurred while fetching Tracing metadata", e);
+            if (e instanceof UnexpectedException) {
+                throw e;
+            } else {
+                throw new APIInvocationException("API Invocation error occurred while fetching Instance information",
+                        e);
+            }
         }
+    }
+
+    @OPTIONS
+    public Response getRootOptions() {
+        return Response.ok().build();
     }
 
     @OPTIONS
