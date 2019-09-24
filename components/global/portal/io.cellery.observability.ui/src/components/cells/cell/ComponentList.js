@@ -122,7 +122,7 @@ class ComponentList extends React.Component {
             {
                 name: "Component",
                 options: {
-                    customBodyRender: (value) => <Link to={`/cells/${cell}/components/${value}`}>{value}</Link>
+                    customBodyRender: (value) => <Link to={`/instances/${cell}/components/${value}`}>{value}</Link>
                 }
             },
             {
