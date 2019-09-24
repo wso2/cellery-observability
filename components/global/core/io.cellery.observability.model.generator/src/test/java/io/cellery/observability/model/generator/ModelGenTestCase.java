@@ -377,6 +377,8 @@ public class ModelGenTestCase {
                 for (int i = 0; i < objectData.length; i++) {
                     if (i == 6) {
                         eventData[i] = Long.parseLong(objectData[i]);
+                    } else if ("null".equals(objectData[i])) {
+                        eventData[i] = null;
                     } else {
                         eventData[i] = objectData[i];
                     }

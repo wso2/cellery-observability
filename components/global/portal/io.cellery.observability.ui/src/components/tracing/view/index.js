@@ -113,7 +113,7 @@ class View extends React.Component {
                 serviceName: dataItem[6],
                 pod: dataItem[7],
                 operationName: dataItem[8],
-                spanKind: dataItem[9],
+                kind: dataItem[9],
                 startTime: dataItem[10],
                 duration: dataItem[11],
                 tags: dataItem[12]
@@ -196,8 +196,11 @@ class View extends React.Component {
 
         return (
             <React.Fragment>
-                <TopToolbar title={(traceTree ? traceTree.serviceName : "Distributed Tracing")}
-                    subTitle={`${traceTree ? traceTree.operationName : ""}`}/>
+                <TopToolbar
+                    title={traceTree
+                        ? (traceTree.instance ? `${traceTree.instance}:` : "") + traceTree.serviceName
+                        : "Distributed Tracing"}
+                    subTitle={traceTree ? traceTree.operationName : ""}/>
                 <Paper className={classes.container}>
                     <Tabs value={selectedTabIndex} indicatorColor="primary"
                         onChange={this.handleTabChange} className={classes.tabs}>

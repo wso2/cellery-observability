@@ -55,7 +55,7 @@ class StatelessProtectedPortal extends React.Component {
                     <ErrorBoundary showNavigationButtons={true}>
                         <Switch>
                             <Route exact path="/" component={Overview}/>
-                            <Route path="/cells" component={Cells}/>
+                            <Route path="/instances" component={Cells}/>
                             <Route path="/tracing" component={Tracing}/>
                             <Route path="/*" render={(props) => <NotFound {...props} showNavigationButtons={true}/>}/>
                         </Switch>

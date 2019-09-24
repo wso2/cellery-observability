@@ -109,7 +109,7 @@ class Details extends React.Component {
             for (let i = 0; i < ingressData.length; i++) {
                 const responseData = ingressData[i];
                 self.setState({
-                    ingressTypes: responseData[2].split(",")
+                    ingressTypes: responseData[3].split(",")
                 });
             }
             if (isUserAction) {

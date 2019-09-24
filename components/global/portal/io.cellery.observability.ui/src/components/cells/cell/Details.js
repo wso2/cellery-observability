@@ -109,10 +109,12 @@ class Details extends React.Component {
             const ingressTypesSet = new Set();
             for (let i = 0; i < cellInfoData.length; i++) {
                 const ingressDatum = cellInfoData[i];
-                const ingressTypeArray = ingressDatum[2].split(",");
-                ingressTypeArray.forEach((ingressValue) => {
-                    ingressTypesSet.add(ingressValue);
-                });
+                if (ingressDatum[3]) {
+                    const ingressTypeArray = ingressDatum[3].split(",");
+                    ingressTypeArray.forEach((ingressValue) => {
+                        ingressTypesSet.add(ingressValue);
+                    });
+                }
             }
             self.setState({
                 ingressTypes: Array.from(ingressTypesSet)
