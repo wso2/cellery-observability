@@ -25,6 +25,7 @@ import java.util.Set;
  */
 public class Node implements Comparable {
     private String id;
+    private String instanceKind;
     private Set<String> components;
     private Set<String> edges;
 
@@ -32,14 +33,19 @@ public class Node implements Comparable {
         this(name, null);
     }
 
-    Node(String name, String tags) {
+    Node(String name, String instanceKind) {
         this.id = name;
+        this.instanceKind = instanceKind;
         this.components = new HashSet<>();
         this.edges = new HashSet<>();
     }
 
     public String getId() {
         return id;
+    }
+
+    public String getInstanceKind() {
+        return instanceKind;
     }
 
     public void addComponent(String component) {

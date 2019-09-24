@@ -24,6 +24,7 @@ import io.cellery.observability.model.generator.exception.ModelException;
 import io.cellery.observability.model.generator.internal.ServiceHolder;
 import io.cellery.observability.model.generator.model.Edge;
 import io.cellery.observability.model.generator.model.Model;
+import io.cellery.observability.model.generator.model.SpanInfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -100,12 +101,12 @@ public class ModelManager {
         return cachedNode;
     }
 
-    public Node getOrGenerateNode(String nodeName) {
-        Node cachedNode = nodeCache.get(nodeName);
+    public Node getOrGenerateNode(SpanInfo span) {
+        Node cachedNode = nodeCache.get(span.getCellName());
         if (cachedNode == null) {
             Set<Node> nodes = this.dependencyGraph.nodes();
             for (Node node : nodes) {
-                if (node.getId().equalsIgnoreCase(nodeName)) {
+                if (node.getId().equalsIgnoreCase(span.getCellName())) {
                     nodeCache.put(node.getId(), node);
                     return node;
                 }
@@ -113,9 +114,8 @@ public class ModelManager {
         } else {
             return cachedNode;
         }
-        return new Node(nodeName);
+        return new Node(span.getCellName(), span.getInstanceKind());
     }
-
 
     public void addNode(Node node) {
         this.dependencyGraph.addNode(node);
@@ -205,8 +205,7 @@ public class ModelManager {
                 String[] services = Utils.getServices(edgeServiceName);
                 if (edge.getSource().equalsIgnoreCase(cellName) && services[0].equalsIgnoreCase(serviceName)
                         && !services[1].equalsIgnoreCase(serviceName) && !edge.getTarget().equalsIgnoreCase(cellName)) {
-                    Node dependedCell = Utils.getNode(graph.getNodes(),
-                            new Node(edge.getTarget()));
+                    Node dependedCell = Utils.getNode(graph.getNodes(), new Node(edge.getTarget()));
                     if (dependedCell != null) {
                         Model dependentCellModel = getDependencyModel(dependedCell, services[1], traversedServices);
                         serviceModel.mergeModel(dependentCellModel,
@@ -227,7 +226,7 @@ public class ModelManager {
         Set<Edge> edges = new HashSet<>();
         String qualifiedServiceName = Utils.getQualifiedServiceName(cell.getId(), serviceName);
         if (!traversedServices.contains(qualifiedServiceName)) {
-            nodes.add(new Node(qualifiedServiceName));
+            nodes.add(new Node(qualifiedServiceName, cell.getInstanceKind()));
             traversedServices.add(qualifiedServiceName);
             for (String edge : cell.getEdges()) {
                 String[] sourceTarget = edge.split(Constants.LINK_SEPARATOR);
@@ -235,7 +234,7 @@ public class ModelManager {
                         !sourceTarget[0].trim().equalsIgnoreCase(sourceTarget[1])) {
                     String qualifiedTargetServiceName = Utils.getQualifiedServiceName(cell.getId(),
                             sourceTarget[1].trim());
-                    nodes.add(new Node(qualifiedTargetServiceName));
+                    nodes.add(new Node(qualifiedTargetServiceName, cell.getInstanceKind()));
                     edges.add(new Edge(Utils.generateEdgeName(qualifiedServiceName, qualifiedTargetServiceName,
                             "")));
                     Model nextLevelModel = getDependencyModel(cell, sourceTarget[1], traversedServices);

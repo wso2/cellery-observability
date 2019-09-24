@@ -67,6 +67,8 @@ define function extractFromServiceName[javascript] return string {
                 extractedData = "";
             }
         }
+    } else {
+        extractedData = "";
     }
 
     // Handling service names that does not match any of the regexes
@@ -97,7 +99,7 @@ select
     tags
 insert into ProcessedZipkinStream;
 
-from ProcessedZipkinStream#observe:traceGroupWindow(60 sec, traceId)#observe:modelGenerator(instance, serviceName, operationName, spanId, parentId, spanKind, traceId, startTime)
+from ProcessedZipkinStream#observe:traceGroupWindow(60 sec, traceId)#observe:modelGenerator(instance, instanceKind, serviceName, operationName, spanId, parentId, spanKind, traceId, startTime)
 update or insert into DistributedTracingTable
     set DistributedTracingTable.parentId = parentId,
         DistributedTracingTable.namespace = namespace,
