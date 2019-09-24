@@ -56,7 +56,7 @@ class CellList extends React.Component {
         };
 
         if (isUserAction) {
-            NotificationUtils.showLoadingOverlay("Loading Cell Info", globalState);
+            NotificationUtils.showLoadingOverlay("Loading Instance Info", globalState);
             self.setState({
                 isLoading: true
             });
@@ -94,7 +94,7 @@ class CellList extends React.Component {
                     isLoading: false
                 });
                 NotificationUtils.showNotification(
-                    "Failed to load cell information",
+                    "Failed to load instance information",
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );
@@ -109,42 +109,56 @@ class CellList extends React.Component {
             {
                 name: "Health",
                 options: {
+                    filter: false,
                     customBodyRender: (value) => <HealthIndicator value={value}/>
                 }
             },
             {
-                name: "Cell",
+                name: "Instance",
                 options: {
+                    filter: true,
                     customBodyRender: (value) => <Link to={`${match.url}/${value}`}>{value}</Link>
                 }
             },
             {
-                name: "Kind"
+                name: "Kind",
+                options: {
+                    filter: true
+                }
             },
             {
                 name: "Inbound Error Rate",
                 options: {
+                    filter: false,
+                    headerNoWrap: false,
                     customBodyRender: (value) => `${Math.round(value * 100)} %`
                 }
             },
             {
                 name: "Outbound Error Rate",
                 options: {
+                    filter: false,
+                    headerNoWrap: true,
                     customBodyRender: (value) => `${Math.round(value * 100)} %`
                 }
             },
             {
                 name: "Average Response Time (ms)",
                 options: {
+                    filter: false,
                     customBodyRender: (value) => (Math.round(value))
                 }
             },
             {
-                name: "Average Inbound Request Count (requests/s)"
+                name: "Average Inbound Request Count (requests/s)",
+                options: {
+                    filter: false
+                }
             }
         ];
         const options = {
-            filter: false
+            filter: true,
+            responsive: "stacked"
         };
 
         // Processing data to find the required values
@@ -197,7 +211,7 @@ class CellList extends React.Component {
 
         return (
             <React.Fragment>
-                <TopToolbar title={"Cells"} onUpdate={this.loadCellInfo}/>
+                <TopToolbar title={"Instances"} onUpdate={this.loadCellInfo}/>
                 {
                     isLoading
                         ? null
@@ -207,8 +221,8 @@ class CellList extends React.Component {
                                     tableData.length > 0
                                         ? <DataTable columns={columns} options={options} data={tableData}/>
                                         : (
-                                            <NotFound title={"No Cells Found"}
-                                                description={"No Requests between cells found in the selected "
+                                            <NotFound title={"No Instances Found"}
+                                                description={"No Requests between instances found in the selected "
                                                     + "time range"}/>
                                         )
                                 }

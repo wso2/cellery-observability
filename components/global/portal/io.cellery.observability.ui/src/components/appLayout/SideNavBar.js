@@ -99,7 +99,7 @@ class SideNavBar extends React.Component {
 
         const pages = [
             "/",
-            "/cells",
+            "/instances",
             "/tracing"
         ];
         let selectedIndex = 0;
@@ -142,9 +142,9 @@ class SideNavBar extends React.Component {
                                 classes={{primary: classNames({[classes.active]: selectedIndex === 0})}}/>
                         </ListItem>
                     </Tooltip>
-                    <Tooltip title="Cells" placement="right" disableFocusListener={isSideNavBarOpen}
+                    <Tooltip title="Instances" placement="right" disableFocusListener={isSideNavBarOpen}
                         disableHoverListener={isSideNavBarOpen} disableTouchListener={isSideNavBarOpen}>
-                        <ListItem index={1} button key="Cells"
+                        <ListItem index={1} button key="Instances"
                             className={classNames({[classes.active]: selectedIndex === 1})}
                             onClick={(event) => {
                                 this.handleNavItemClick(pages[1], event);
@@ -152,7 +152,7 @@ class SideNavBar extends React.Component {
                             <ListItemIcon className={classes.listIcon}>
                                 <CellsIcon className={classNames({[classes.active]: selectedIndex === 1})}/>
                             </ListItemIcon>
-                            <ListItemText primary="Cells"
+                            <ListItemText primary="Instances"
                                 classes={{primary: classNames({[classes.active]: selectedIndex === 1})}}/>
                         </ListItem></Tooltip>
                     <Tooltip title="Distributed Tracing" placement="right"

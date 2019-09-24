@@ -64,13 +64,13 @@ const styles = (theme) => ({
         display: "grid",
         top: 0,
         left: 0,
-        width: "100%",
         height: "100%",
         backgroundColor: "rgb(0, 0, 0, 0.5)"
     },
     progress: {
         textAlign: "center",
-        margin: "auto"
+        margin: "auto",
+        width: "100%"
     },
     progressIndicator: {
         margin: theme.spacing.unit * 2

@@ -133,8 +133,9 @@ class TraceSearch extends React.Component {
                                     <Grid container justify={"flex-start"} spacing={24}>
                                         <Grid item xs={3}>
                                             <FormControl className={classes.formControl} fullWidth={true}>
-                                                <InputLabel htmlFor="cell" shrink={true}>Cell</InputLabel>
-                                                <Select value={filter.cell} inputProps={{name: "cell", id: "cell"}}
+                                                <InputLabel htmlFor="instance" shrink={true}>Instance</InputLabel>
+                                                <Select value={filter.cell}
+                                                    inputProps={{name: "instance", id: "instance"}}
                                                     onChange={this.getChangeHandlerForString("cell")}>
                                                     <MenuItem key={Constants.Dashboard.ALL_VALUE}
                                                         value={Constants.Dashboard.ALL_VALUE}>
