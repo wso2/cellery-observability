@@ -241,44 +241,8 @@ class CellDependencyView extends React.Component {
             return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(instanceView)}`;
         };
 
-        // TODO: Add property instanceKind and remove dummy data
-        const dataNodes = [
-            {
-                id: "pet-fe-1",
-                components: [
-                    "portal",
-                    "gateway"
-                ],
-                edges: [
-                    "gateway##portal"
-                ],
-                instanceKind: "Composite"
-            },
-            {
-                id: "pet-be-1",
-                components: [
-                    "controller",
-                    "catalog",
-                    "gateway",
-                    "customers",
-                    "orders"
-                ],
-                edges: [
-                    "controller##catalog",
-                    "gateway##controller",
-                    "controller##customers",
-                    "controller##orders"
-                ],
-                instanceKind: "Cell"
-            }
-        ];
-
-        /*
-         *TODO: Uncomment when dummy data is removed
-         *const dataNodes = this.state.data.nodes;
-         */
+        const dataNodes = this.state.data.nodes;
         const dataEdges = this.state.data.edges;
-
 
         let view;
         if (dependedNodeCount > 1) {

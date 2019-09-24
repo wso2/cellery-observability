@@ -194,38 +194,6 @@ class ComponentDependencyView extends React.Component {
             const nodes = [];
             const edges = [];
 
-            // TODO: Add property instanceKind and remove dummy data
-            data.nodes = [
-                {
-                    id: "pet-be-1:orders",
-                    instanceKind: "Cell"
-                },
-                {
-                    id: "pet-be-1:customers",
-                    instanceKind: "Cell"
-                },
-                {
-                    id: "pet-be-1:gateway",
-                    instanceKind: "Cell"
-                },
-                {
-                    id: "pet-fe-1:gateway",
-                    instanceKind: "Cell"
-                },
-                {
-                    id: "pet-be-1:controller",
-                    instanceKind: "Cell"
-                },
-                {
-                    id: "pet-fe-1:portal",
-                    instanceKind: "Cell"
-                },
-                {
-                    id: "pet-be-1:catalog",
-                    instanceKind: "Cell"
-                }
-            ];
-
             const selectedNode = `${cell}${ComponentDependencyGraph.CELL_COMPONENT_SEPARATOR}${component}`;
 
             // Adding distinct nodes
