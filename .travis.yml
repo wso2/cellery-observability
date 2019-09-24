@@ -17,7 +17,7 @@ before_install:
   - export TRAVIS_BUILD_DIR=$HOME/gopath/src/github.com/cellery-io/mesh-observability
   - cd $HOME/gopath/src/github.com/cellery-io/mesh-observability
 script:
-  - make clean.mixer-adapter check-style.mixer-adapter build.mixer-adapter # TODO add test.mixer-adapter
+  - make clean.mixer-adapter check-style.mixer-adapter build.mixer-adapter test.mixer-adapter
   - mvn clean install -q
   - make docker
 after_success:
