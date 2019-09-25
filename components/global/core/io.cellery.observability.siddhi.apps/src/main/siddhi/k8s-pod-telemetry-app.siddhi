@@ -26,11 +26,6 @@ define stream K8sPodEventSourceStream(instance string, component string, podName
                                       creationTimestamp long, deletionTimestamp long, nodeName string, status string,
                                       action string);
 
-@sink(type="inMemory", topic="k8s-component-pods", @map(type="passThrough"))
-define stream K8sComponentPodsInMemorySink(instance string, component string, podName string, instanceKind string,
-                                           creationTimestamp long, lastKnownAliveTimestamp long, nodeName string,
-                                           status string, action string);
-
 @Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB")
 @PrimaryKey("instance", "component", "podName")
 @purge(enable="false")
@@ -74,8 +69,3 @@ update or insert into K8sPodInfoTable
         K8sPodInfoTable.lastKnownAliveTimestamp = lastKnownAliveTimestamp,
         K8sPodInfoTable.nodeName = nodeName
     on K8sPodInfoTable.instance == instance and K8sPodInfoTable.component == component and K8sPodInfoTable.podName == podName;
-
--- Inserting the Pod Info events to the In Memory Sink to be read by the other Siddhi Apps
-
-from K8sComponentPodStream
-insert into K8sComponentPodsInMemorySink

@@ -20,15 +20,12 @@
 @App:description("This receives the attributes generally received by the Istio Mixer")
 
 @source(type="telemetry-receiver", @map(type="json", fail.on.missing.attribute="false"))
-define stream TelemetryStream(requestID string, traceID string, spanID string, sourceUID string, destinationUID string,
+define stream TelemetryStream(requestID string, traceID string, spanID string, sourceUID string, sourceInstance string,
+                              sourceInstanceKind string, sourceComponent string, destinationUID string,
+                              destinationInstance string, destinationInstanceKind string, destinationComponent string,
                               contextReporterKind string, requestPath string, requestMethod string,
                               requestTotalSize long, responseCode long, responseDurationNanoSec long,
                               responseTotalSize long);
-
-@source(type="inMemory", topic="k8s-component-pods", @map(type="passThrough"))
-define stream K8sComponentPodsInMemorySink(instance string, component string, podName string, instanceKind string,
-                                           creationTimestamp long, lastKnownAliveTimestamp long, nodeName string,
-                                           status string, action string);
 
 @sink(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
 define stream TelemetryInMemorySink(requestId string, traceId string, spanId string, sourceNamespace string,
@@ -39,8 +36,6 @@ define stream TelemetryInMemorySink(requestId string, traceId string, spanId str
                                     requestSizeBytes long, responseCode long, responseDurationNanoSec long,
                                     responseSizeBytes long);
 
-define window K8sComponentPodInfoWindow(podName string, instance string, instanceKind string, component string) unique:time(podName, 11 minutes);
-
 define function extractFromUID[javascript] return string {
     var uid = data[0];
     var index = data[1];    // 1: pod, 2: namespace
@@ -50,17 +45,17 @@ define function extractFromUID[javascript] return string {
     var extractedData = "";
     if (matches) {
         extractedData = matches[index];
-    } else if (uid === "Synapse-PT-HttpComponents-NIO") {
+    } else if (uid === "unknown") {
+        extractedData = "";
+    } else {
         if (index === 1) {
-            extractedData = "global-gateway";
+            extractedData = uid;
+        } else {
+            extractedData = "";
         }
     }
     return extractedData;
 };
-
-from K8sComponentPodsInMemorySink
-select podName, instance, instanceKind, component
-insert into K8sComponentPodInfoWindow;
 
 from TelemetryStream[(not sourceUID is null) and (not destinationUID is null)]
 select
@@ -68,7 +63,13 @@ select
     traceID as traceId,
     spanID as spanId,
     str:replaceFirst(sourceUID, "^kubernetes://", "") as sourceUID,
+    sourceInstance,
+    sourceInstanceKind,
+    sourceComponent,
     str:replaceFirst(destinationUID, "^kubernetes://", "") as destinationUID,
+    destinationInstance,
+    destinationInstanceKind,
+    destinationComponent,
     contextReporterKind,
     requestPath,
     requestMethod,
@@ -88,86 +89,15 @@ select
     traceId,
     spanId,
     extractFromUID(sourceUID, 2) as sourceNamespace,
-    extractFromUID(sourceUID, 1) as sourcePod,
-    extractFromUID(destinationUID, 2) as destinationNamespace,
-    extractFromUID(destinationUID, 1) as destinationPod,
-    contextReporterKind,
-    requestPath,
-    requestMethod,
-    requestSizeBytes,
-    responseCode,
-    responseDurationNanoSec,
-    responseSizeBytes
-insert into ProcessedTelemetryStream;
-
--- Handling the special case of the global gateway
-
-from ProcessedTelemetryStream[sourcePod == "global-gateway"]
-select
-    requestId,
-    traceId,
-    spanId,
-    sourceNamespace,
-    "" as sourceInstance,
-    "" as sourceInstanceKind,
-    sourcePod as sourceComponent,
-    "" as sourcePod,
-    destinationNamespace,
-    "" as destinationInstance,
-    "" as destinationInstanceKind,
-    sourcePod as destinationComponent,
-    "" as destinationPod,
-    contextReporterKind,
-    requestPath,
-    requestMethod,
-    requestSizeBytes,
-    responseCode,
-    responseDurationNanoSec,
-    responseSizeBytes
-insert into TelemetryInMemorySink;
-
--- This is required since the filter processor is not a findable processor and therefore cannot be joined
-from ProcessedTelemetryStream[sourcePod != "global-gateway"]
-insert into NonGlobalGatewayProcessedTelemetryStream;
-
-from NonGlobalGatewayProcessedTelemetryStream as T inner join K8sComponentPodInfoWindow as K
-    on T.sourcePod == K.podName
-select
-    requestId,
-    traceId,
-    spanId,
-    sourceNamespace,
-    K.instance as sourceInstance,
-    K.instanceKind as sourceInstanceKind,
-    K.component as sourceComponent,
-    sourcePod,
-    destinationNamespace,
-    destinationPod,
-    contextReporterKind,
-    requestPath,
-    requestMethod,
-    requestSizeBytes,
-    responseCode,
-    responseDurationNanoSec,
-    responseSizeBytes
-insert into SourceInstanceExtractedTelemetryStream;
-
-from SourceInstanceExtractedTelemetryStream as T inner join K8sComponentPodInfoWindow as K
-    on T.destinationPod == K.podName
-select
-    requestId,
-    traceId,
-    spanId,
-    sourceNamespace,
     sourceInstance,
     sourceInstanceKind,
     sourceComponent,
-    sourcePod,
-    destinationNamespace,
-    K.instance as destinationInstance,
-    K.instanceKind as destinationInstanceKind,
-    K.component as destinationComponent,
-    destinationPod,
+    extractFromUID(sourceUID, 1) as sourcePod,
+    extractFromUID(destinationUID, 2) as destinationNamespace,
+    destinationInstance,
+    destinationInstanceKind,
+    destinationComponent,
+    extractFromUID(destinationUID, 1) as destinationPod,
     contextReporterKind,
     requestPath,
     requestMethod,
