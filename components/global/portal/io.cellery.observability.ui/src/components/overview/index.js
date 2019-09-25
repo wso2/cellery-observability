@@ -691,7 +691,7 @@ class Overview extends React.Component {
         let total = 0;
         stats.forEach((stat) => {
             if (stat[2] !== "") {
-                if (!cell || cell === stat[4]) {
+                if (!cell || cell === stat[2]) {
                     if (responseCode === "*") {
                         total += stat[6];
                     } else if (responseCode === stat[4]) {
