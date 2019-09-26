@@ -27,12 +27,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer"
 )
 
 const (
@@ -41,6 +43,8 @@ const (
 	grpcAdapterPrivateKeyPath  string = "GRPC_ADAPTER_PRIVATE_KEY_PATH"
 	caCertificatePath          string = "CA_CERTIFICATE_PATH"
 	spServerUrlPath            string = "SP_SERVER_URL"
+	waitingTimeSec             int    = 2
+	waitingSize                int    = 2
 )
 
 func main() {
@@ -66,7 +70,7 @@ func main() {
 	}
 
 	/* Mutual TLS feature to secure connection between workloads
-	   This is optional. */
+	This is optional. */
 	adapterCertificate := os.Getenv(grpcAdapterCertificatePath) // adapter.crt //change the name
 	adapterprivateKey := os.Getenv(grpcAdapterPrivateKeyPath)   // adapter.key
 	caCertificate := os.Getenv(caCertificatePath)               // ca.pem
@@ -95,6 +99,22 @@ func main() {
 	go func() {
 		spAdapter.Run(shutdown)
 	}()
+
+	buffer := make(chan string, 5)
+
+	mWriter := writer.New(waitingTimeSec, waitingSize, logger, buffer)
+	go func() {
+		mWriter.Run(shutdown)
+	}()
+
+	//ToDo : Delete these (only for testing)
+	buffer <- "1"
+	time.Sleep(5 * time.Second)
+	buffer <- "2"
+	buffer <- "3"
+	time.Sleep(2 * time.Second)
+	buffer <- "4"
+
 	err = <-shutdown
 	if err != nil {
 		logger.Error(err.Error())
