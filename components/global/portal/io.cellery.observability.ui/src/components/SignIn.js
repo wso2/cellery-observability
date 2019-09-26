@@ -73,14 +73,14 @@ class SignIn extends React.Component {
     render() {
         const {classes} = this.props;
         return (
-            <React.Fragment className={classes.progress}>
+            <div className={classes.progress}>
                 <div className={classes.centerDiv}>
                     <CircularProgress/>
                     <div>
                         Loading
                     </div>
                 </div>
-            </React.Fragment>
+            </div>
         );
     }
 

@@ -194,6 +194,7 @@ class ComponentDependencyView extends React.Component {
             const nodes = [];
             const edges = [];
 
+            // Get selected component
             const selectedNode = `${cell}${ComponentDependencyGraph.CELL_COMPONENT_SEPARATOR}${component}`;
 
             // Adding distinct nodes
@@ -206,7 +207,9 @@ class ComponentDependencyView extends React.Component {
 
             data.edges.forEach((edge, index) => {
                 const targetKind = data.nodes.find((node) => node.id === edge.target).instanceKind;
+                // Draw dependencies for the selected node
                 if (selectedNode === edge.source) {
+                    // If the selected node is gateway add gateway node or else add it as component
                     if (edge.source.split(":")[1] === ComponentDependencyGraph.NodeType.GATEWAY) {
                         addNodeIfNotPresent({
                             id: edge.source,
@@ -221,6 +224,7 @@ class ComponentDependencyView extends React.Component {
                         });
                     }
 
+                    // If the dependent node is a cell gateway node add cell node or else add it as component
                     if (targetKind === Constants.InstanceKind.CELL) {
                         if (edge.target.split(":")[1] === ComponentDependencyGraph.NodeType.GATEWAY) {
                             addNodeIfNotPresent({
@@ -235,18 +239,46 @@ class ComponentDependencyView extends React.Component {
                                 group: ComponentDependencyGraph.NodeType.COMPONENT
                             });
                         }
-                    } else if (targetKind === Constants.InstanceKind.COMPOSITE) {
-                        addNodeIfNotPresent({
-                            id: edge.target,
-                            label: edge.target.split(":")[0],
-                            group: ComponentDependencyGraph.NodeType.COMPOSITE
-                        });
-                    }
 
-                    edges.push({
-                        ...edge
+                    /*
+                     * If the dependent node is a composite and in the same cell add it as component or else add it
+                     * as composite
+                     */
+                    } else if (targetKind === Constants.InstanceKind.COMPOSITE) {
+                        if (edge.source.split(":")[0] === edge.target.split(":")[0]) {
+                            addNodeIfNotPresent({
+                                id: edge.target,
+                                label: edge.target.split(":")[1],
+                                group: ComponentDependencyGraph.NodeType.COMPONENT
+                            });
+                        } else {
+                            addNodeIfNotPresent({
+                                id: edge.target,
+                                label: edge.target.split(":")[0],
+                                group: ComponentDependencyGraph.NodeType.COMPOSITE
+                            });
+                        }
+                    }
+                }
+
+                // Add the other dependencies in the selected node
+                if ((edge.source.split(":")[0] === edge.target.split(":")[0]) && !(selectedNode === edge.source)) {
+                    addNodeIfNotPresent({
+                        id: edge.target,
+                        label: edge.target.split(":")[1],
+                        group: ComponentDependencyGraph.NodeType.COMPONENT
+                    });
+
+                    addNodeIfNotPresent({
+                        id: edge.source,
+                        label: edge.target.split(":")[1],
+                        group: ComponentDependencyGraph.NodeType.COMPONENT
                     });
                 }
+
+                edges.push({
+                    ...edge
+                });
             });
 
             const sourceKind = data.nodes.find((node) => node.id === selectedNode).instanceKind;

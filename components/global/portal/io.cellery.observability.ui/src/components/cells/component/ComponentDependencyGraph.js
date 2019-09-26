@@ -230,6 +230,8 @@ class ComponentDependencyGraph extends React.Component {
         const spacing = 150;
         const updatedNodes = [];
 
+        this.dependencyGraph.current.style.visibility = "hidden";
+
         if (selectedComponent) {
             network.selectNodes([selectedComponent], false);
         }
@@ -238,6 +240,21 @@ class ComponentDependencyGraph extends React.Component {
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(-ctx.canvas.offsetWidth, -(ctx.canvas.offsetHeight + 20),
                 ctx.canvas.width, ctx.canvas.height);
+        });
+
+        network.on("stabilized", () => {
+            const nodeIds = nodes.getIds();
+            network.fit({
+                nodes: nodeIds
+            });
+
+            window.onresize = () => {
+                network.fit({
+                    nodes: nodeIds
+                });
+            };
+
+            this.dependencyGraph.current.style.visibility = "visible";
         });
 
         network.on("stabilizationIterationsDone", () => {
