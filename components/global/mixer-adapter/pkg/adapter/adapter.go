@@ -39,6 +39,10 @@ import (
 	"istio.io/istio/mixer/template/metric"
 )
 
+const (
+	DefaultAdapterPort int = 38355
+)
+
 type (
 	// Server is basic server interface
 	Server interface {

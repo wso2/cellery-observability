@@ -19,13 +19,19 @@
 package writer
 
 import (
-	"fmt"
 	"io/ioutil"
 	"time"
 
 	"github.com/gofrs/flock"
 	"github.com/rs/xid"
 	"go.uber.org/zap"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
+)
+
+const (
+	WaitingTimeSec int = 2
+	WaitingSize    int = 2
 )
 
 type (
@@ -35,16 +41,18 @@ type (
 		logger         *zap.SugaredLogger
 		buffer         chan string
 		startTime      time.Time
+		directory      string
 	}
 )
 
-func New(waitingTimeSec int, waitingSize int, logger *zap.SugaredLogger, buffer chan string) Writer {
+func New(waitingTimeSec int, waitingSize int, logger *zap.SugaredLogger, buffer chan string, directory string) Writer {
 	writer := Writer{
 		waitingTimeSec,
 		waitingSize,
 		logger,
 		buffer,
 		time.Now(),
+		directory,
 	}
 	return writer
 }
@@ -54,11 +62,11 @@ func (writer *Writer) Run(shutdown chan error) {
 	for {
 		select {
 		case quit := <-shutdown:
-			writer.logger.Error(quit.Error())
+			writer.logger.Fatal(quit.Error())
 			return
 		default:
 			if writer.shouldWrite() {
-				writer.WriteToFile()
+				writer.writeToFile()
 			}
 		}
 	}
@@ -66,25 +74,23 @@ func (writer *Writer) Run(shutdown chan error) {
 
 func (writer *Writer) shouldWrite() bool {
 	if (len(writer.buffer) > 0) && (len(writer.buffer) >= writer.waitingSize || time.Since(writer.startTime) > time.Duration(writer.waitingTimeSec)*time.Second) {
-		writer.logger.Info(time.Since(writer.startTime))
+		writer.logger.Debugf("Time since the previous write : %s", time.Since(writer.startTime))
 		return true
 	} else {
 		return false
 	}
 }
 
-//ToDo : after writing reset timer
-
-func createFile() *flock.Flock {
+func (writer *Writer) createFile() *flock.Flock {
 	uuid := xid.New().String()
-	fileLock := flock.New("./" + uuid + ".txt")
+	fileLock := flock.New(writer.directory + uuid + ".txt")
 	return fileLock
 }
 
-func (writer *Writer) WriteToFile() bool {
-	fileLock := createFile()
-	writer.logger.Debug(fileLock.String())
-	locked, err := retry(5, 2*time.Second, "LOCK", func() (locked bool, err error) {
+func (writer *Writer) writeToFile() bool {
+	fileLock := writer.createFile()
+	writer.logger.Debugf("Created a new file : %s", fileLock.String())
+	locked, err := retrier.Retry(5, 2*time.Second, "LOCK", func() (locked interface{}, err error) {
 		locked, err = fileLock.TryLock()
 		return
 	})
@@ -103,16 +109,16 @@ func (writer *Writer) WriteToFile() bool {
 		}
 		str += "]"
 		bytes := []byte(str)
-		writer.logger.Debug(str)
-		_, err := retry(5, 2*time.Second, "LOCK", func() (locked bool, err error) {
+		writer.logger.Debugf("Content to write : %s", str)
+		_, err := retrier.Retry(5, 2*time.Second, "WRITE", func() (locked interface{}, err error) {
 			err = ioutil.WriteFile(fileLock.String(), bytes, 0644)
 			return
 		})
 		if err != nil {
 			writer.logger.Warnf("Could not write to the file, error: %s, missed metrics : %s", err.Error(), str)
 		}
-		if locked {
-			locked, err = retry(5, 2*time.Second, "UNLOCK", func() (locked bool, err error) {
+		if locked.(bool) {
+			locked, err = retrier.Retry(5, 2*time.Second, "UNLOCK", func() (locked interface{}, err error) {
 				err = fileLock.Unlock()
 				return
 			})
@@ -120,18 +126,4 @@ func (writer *Writer) WriteToFile() bool {
 		}
 		return true
 	}
-}
-
-func retry(attempts int, sleep time.Duration, action string, f func() (bool, error)) (locked bool, err error) {
-	for i := 0; ; i++ {
-		locked, err = f()
-		if err == nil {
-			return
-		}
-		if i >= (attempts - 1) {
-			break
-		}
-		time.Sleep(sleep)
-	}
-	return locked, fmt.Errorf("tried %d times to %s, last error: %s", attempts, action, err)
 }

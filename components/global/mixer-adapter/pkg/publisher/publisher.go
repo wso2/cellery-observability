@@ -19,12 +19,14 @@
 package publisher
 
 import (
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
-	"github.com/gofrs/flock"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/gofrs/flock"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
 
 	"go.uber.org/zap"
 )
@@ -64,7 +66,7 @@ func (publisher *Publisher) Run(shutdown chan error) {
 }
 
 func (publisher *Publisher) readDirectory() {
-	files, err := retrier.Retry(10, 1, "READ DIRECTORY", func() (files interface{}, err error){
+	files, err := retrier.Retry(10, 1, "READ DIRECTORY", func() (files interface{}, err error) {
 		files, err = filepath.Glob("./*.txt")
 		return
 	})
@@ -75,7 +77,9 @@ func (publisher *Publisher) readDirectory() {
 	for _, fname := range files.([]string) {
 		fileLock := flock.New(publisher.directory + fname)
 		locked, err := fileLock.TryLock()
-		if err != nil { continue }
+		if err != nil {
+			continue
+		}
 		if !locked {
 			publisher.logger.Debug("File is locked")
 			continue

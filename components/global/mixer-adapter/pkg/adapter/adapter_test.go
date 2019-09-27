@@ -33,8 +33,6 @@ import (
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 )
 
-const defaultAdapterPort int = 38355
-
 type FakePublisher struct {
 	response bool
 	err      error
@@ -99,7 +97,7 @@ func TestNewAdapter(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
-	adapter, err := New(defaultAdapterPort, logger, &http.Client{}, FakePublisher{}, nil, "")
+	adapter, err := New(DefaultAdapterPort, logger, &http.Client{}, FakePublisher{}, nil, "")
 	wantStr := "[::]:38355"
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %s", err.Error())
@@ -122,7 +120,7 @@ func TestNewAdapter(t *testing.T) {
 }
 
 func TestAdapter_HandleMetric(t *testing.T) {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", defaultAdapterPort))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", DefaultAdapterPort))
 	if err != nil {
 		t.Errorf("Unable to listen on socket: %s", err.Error())
 	}
