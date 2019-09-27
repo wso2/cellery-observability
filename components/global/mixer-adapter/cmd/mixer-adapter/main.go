@@ -108,12 +108,13 @@ func main() {
 	}()
 
 	//ToDo : Delete these (only for testing)
-	buffer <- "1"
+	testStr := "{\"contextReporterKind\":\"inbound\", \"destinationUID\":\"kubernetes://istio-policy-74d6c8b4d5-mmr49.istio-system\", \"requestID\":\"6e544e82-2a0c-4b83-abcc-0f62b89cdf3f\", \"requestMethod\":\"POST\", \"requestPath\":\"/istio.mixer.v1.Mixer/Check\", \"requestTotalSize\":\"2748\", \"responseCode\":\"200\", \"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":\"b55a0f7f20d36e49f8612bac4311791d\"}"
+	buffer <- testStr
 	time.Sleep(5 * time.Second)
-	buffer <- "2"
-	buffer <- "3"
+	buffer <- testStr
+	buffer <- testStr
 	time.Sleep(2 * time.Second)
-	buffer <- "4"
+	buffer <- testStr
 
 	err = <-shutdown
 	if err != nil {

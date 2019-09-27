@@ -20,6 +20,7 @@ package writer
 
 import (
 	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/gofrs/flock"
@@ -65,11 +66,14 @@ func (writer *Writer) Run(shutdown chan error) {
 
 func (writer *Writer) shouldWrite() bool {
 	if (len(writer.buffer) > 0) && (len(writer.buffer) >= writer.waitingSize || time.Since(writer.startTime) > time.Duration(writer.waitingTimeSec)*time.Second) {
+		writer.logger.Info(time.Since(writer.startTime))
 		return true
 	} else {
 		return false
 	}
 }
+
+//ToDo : after writing reset timer
 
 func createFile() *flock.Flock {
 	uuid := xid.New().String()
@@ -79,6 +83,7 @@ func createFile() *flock.Flock {
 
 func (writer *Writer) WriteToFile() bool {
 	fileLock := createFile()
+	writer.logger.Debug(fileLock.String())
 	locked, err := retry(5, 2*time.Second, "LOCK", func() (locked bool, err error) {
 		locked, err = fileLock.TryLock()
 		return
@@ -87,15 +92,31 @@ func (writer *Writer) WriteToFile() bool {
 		writer.logger.Warn(err.Error())
 		return false
 	} else {
+		str := "["
 		for i := 0; i < writer.waitingSize; i++ {
 			element := <-writer.buffer
-			writer.logger.Infof("Okay : %s", element)
+			if i == 0 {
+				str += element
+			} else {
+				str += "," + element
+			}
+		}
+		str += "]"
+		bytes := []byte(str)
+		writer.logger.Debug(str)
+		_, err := retry(5, 2*time.Second, "LOCK", func() (locked bool, err error) {
+			err = ioutil.WriteFile(fileLock.String(), bytes, 0644)
+			return
+		})
+		if err != nil {
+			writer.logger.Warnf("Could not write to the file, error: %s, missed metrics : %s", err.Error(), str)
 		}
 		if locked {
 			locked, err = retry(5, 2*time.Second, "UNLOCK", func() (locked bool, err error) {
 				err = fileLock.Unlock()
 				return
 			})
+			writer.startTime = time.Now()
 		}
 		return true
 	}
@@ -107,11 +128,9 @@ func retry(attempts int, sleep time.Duration, action string, f func() (bool, err
 		if err == nil {
 			return
 		}
-
 		if i >= (attempts - 1) {
 			break
 		}
-
 		time.Sleep(sleep)
 	}
 	return locked, fmt.Errorf("tried %d times to %s, last error: %s", attempts, action, err)
