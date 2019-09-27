@@ -44,11 +44,15 @@ const (
 	caCertificatePath          string = "CA_CERTIFICATE_PATH"
 	spServerUrlPath            string = "SP_SERVER_URL"
 	directory                  string = "DIRECTORY"
+	shouldPersist              string = "SHOULD_PERSIST"
+	waitingTimeSecEnv          string = "WAITING_TIME_SEC"
+	queueLengthEnv             string = "WAITING_SIZE"
+	tickerSecEnv               string = "TICKER_SEC"
 )
 
 func main() {
-
-	port := adapter.DefaultAdapterPort //Pre defined port for the adaptor. ToDo: Should get this as an environment variable
+	port := adapter.DefaultAdapterPort //Pre defined port for the adaptor.
+	persist := true
 
 	logger, err := logging.NewLogger()
 	if err != nil {
@@ -74,10 +78,25 @@ func main() {
 	adapterprivateKey := os.Getenv(grpcAdapterPrivateKeyPath)   // adapter.key
 	caCertificate := os.Getenv(caCertificatePath)               // ca.pem
 	spServerUrl := os.Getenv(spServerUrlPath)
-	Directory := os.Getenv(directory)
+	directory := os.Getenv(directory)
+
+	//waitingSec, _ := strconv.Atoi(os.Getenv(waitingTimeSecEnv))
+	//queueLength, _ := strconv.Atoi(os.Getenv(queueLengthEnv))
+	//tickerSec, _ := strconv.Atoi(os.Getenv(tickerSecEnv))
+	//TODO : remove above comments and delete below
+
+	waitingSec := 5
+	queueLength := 2
+	tickerSec := 10
+
+	persist, err = strconv.ParseBool(os.Getenv(shouldPersist)) // this should be a string contains a boolean, "true" or "false"
+	if err != nil {
+		logger.Warnf("Could not convert env of persisting : %s", err.Error())
+		persist = true
+	}
 
 	logger.Infof("Sp server url : %s", spServerUrl)
-	logger.Infof("Directory to store files : %s", Directory)
+	logger.Infof("Directory to store files : %s", directory)
 
 	client := &http.Client{}
 	spPublisher := adapter.SPMetricsPublisher{}
@@ -91,7 +110,9 @@ func main() {
 		}
 	}
 
-	spAdapter, err := adapter.New(port, logger, client, spPublisher, serverOption, spServerUrl)
+	buffer := make(chan string, queueLength*10)
+
+	spAdapter, err := adapter.New(port, logger, client, spPublisher, serverOption, spServerUrl, buffer, persist)
 	if err != nil {
 		logger.Fatal("unable to start server: ", err.Error())
 	}
@@ -101,29 +122,20 @@ func main() {
 		spAdapter.Run(shutdown)
 	}()
 
-	buffer := make(chan string, 5)
+	if persist {
 
-	mWriter := writer.New(writer.WaitingTimeSec, writer.WaitingSize, logger, buffer, Directory)
-	go func() {
-		mWriter.Run(shutdown)
-	}()
+		mWriter := writer.New(waitingSec, queueLength, logger, buffer, directory)
+		go func() {
+			mWriter.Run(shutdown)
+		}()
 
-	ticker := time.NewTicker(time.Duration(publisher.TickerSec) * time.Second)
+		ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
 
-	mPublisher := publisher.New(ticker, logger, "./")
-	go func() {
-		mPublisher.Run(shutdown)
-	}()
-
-	testStr := "{\"contextReporterKind\":\"inbound\", \"destinationUID\":\"kubernetes://istio-policy-74d6c8b4d5-mmr49.istio-system\", \"requestID\":\"6e544e82-2a0c-4b83-abcc-0f62b89cdf3f\", \"requestMethod\":\"POST\", \"requestPath\":\"/istio.mixer.v1.Mixer/Check\", \"requestTotalSize\":\"2748\", \"responseCode\":\"200\", \"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":\"b55a0f7f20d36e49f8612bac4311791d\"}"
-	buffer <- testStr
-	time.Sleep(5 * time.Second)
-	buffer <- testStr
-	buffer <- testStr
-	time.Sleep(2 * time.Second)
-	buffer <- testStr
-	time.Sleep(65 * time.Second)
-	shutdown <- fmt.Errorf("force shutdown")
+		mPublisher := publisher.New(ticker, logger, "./") //TODO : get this from env
+		go func() {
+			mPublisher.Run(shutdown)
+		}()
+	}
 
 	err = <-shutdown
 	if err != nil {

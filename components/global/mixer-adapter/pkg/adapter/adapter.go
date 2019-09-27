@@ -59,6 +59,8 @@ type (
 		httpClient  *http.Client
 		publisher   Publisher
 		spServerUrl string
+		buffer      chan string
+		persist     bool
 	}
 
 	/* This interface and the struct has been implemented to test the Publish() function */
@@ -76,15 +78,30 @@ func (adapter *Adapter) HandleMetric(ctx context.Context, r *metric.HandleMetric
 	for _, inst := range instances {
 		var attributesMap = decodeDimensions(inst.Dimensions)
 		adapter.logger.Debugf("received request : %s", attributesMap)
-		adapter.publisher.Publish(attributesMap, adapter.logger, adapter.httpClient, adapter.spServerUrl) // ToDO : get the boolean value from the function to check whether the metric is delivered or not
+		if adapter.persist {
+			adapter.writeToBuffer(attributesMap)
+		} else {
+			adapter.publisher.Publish(attributesMap, adapter.logger, adapter.httpClient, adapter.spServerUrl) // ToDO : get the boolean value from the function to check whether the metric is delivered or not
+		}
 	}
 
 	return &v1beta1.ReportResult{}, nil
 }
 
+func (adapter *Adapter) writeToBuffer(attributeMap map[string]interface{}) {
+	jsonValue, err := json.Marshal(attributeMap)
+	if err != nil {
+		return
+	}
+	adapter.buffer <- string(jsonValue)
+}
+
 // Send metrics to sp server
 func (publisher SPMetricsPublisher) Publish(attributeMap map[string]interface{}, logger *zap.SugaredLogger, httpClient *http.Client, spServerUrl string) bool {
-	jsonValue, _ := json.Marshal(attributeMap)
+	jsonValue, err := json.Marshal(attributeMap)
+	if err != nil {
+		return false
+	}
 	req, err := http.NewRequest("POST", spServerUrl, bytes.NewBuffer(jsonValue))
 	if req != nil {
 		req.Header.Set("Content-Type", "application/json")
@@ -158,7 +175,7 @@ func (adapter *Adapter) Close() error {
 }
 
 // New creates a new SP adapter that listens at provided port.
-func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, publisher Publisher, serverOption grpc.ServerOption, spServerUrl string) (Server, error) {
+func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, publisher Publisher, serverOption grpc.ServerOption, spServerUrl string, buffer chan string, persist bool) (Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", addr))
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on socket: %v", err)
@@ -170,6 +187,8 @@ func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, publisher
 		httpClient:  httpClient,
 		publisher:   publisher,
 		spServerUrl: spServerUrl,
+		buffer:      buffer,
+		persist:     persist,
 	}
 
 	logger.Info("listening on ", adapter.Addr())

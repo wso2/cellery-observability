@@ -97,7 +97,8 @@ func TestNewAdapter(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
-	adapter, err := New(DefaultAdapterPort, logger, &http.Client{}, FakePublisher{}, nil, "")
+	buffer := make(chan string, 100)
+	adapter, err := New(DefaultAdapterPort, logger, &http.Client{}, FakePublisher{}, nil, "", buffer, true)
 	wantStr := "[::]:38355"
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %s", err.Error())

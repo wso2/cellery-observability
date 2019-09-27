@@ -31,10 +31,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	TickerSec int = 20
-)
-
 type (
 	Publisher struct {
 		ticker    *time.Ticker
@@ -43,8 +39,8 @@ type (
 	}
 )
 
-func New(ticker *time.Ticker, logger *zap.SugaredLogger, directory string) Publisher {
-	publisher := Publisher{
+func New(ticker *time.Ticker, logger *zap.SugaredLogger, directory string) *Publisher {
+	publisher := &Publisher{
 		ticker,
 		logger,
 		directory,

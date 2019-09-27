@@ -29,11 +29,6 @@ import (
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
 )
 
-const (
-	WaitingTimeSec int = 2
-	WaitingSize    int = 2
-)
-
 type (
 	Writer struct {
 		waitingTimeSec int
@@ -45,8 +40,8 @@ type (
 	}
 )
 
-func New(waitingTimeSec int, waitingSize int, logger *zap.SugaredLogger, buffer chan string, directory string) Writer {
-	writer := Writer{
+func New(waitingTimeSec int, waitingSize int, logger *zap.SugaredLogger, buffer chan string, directory string) *Writer {
+	writer := &Writer{
 		waitingTimeSec,
 		waitingSize,
 		logger,
