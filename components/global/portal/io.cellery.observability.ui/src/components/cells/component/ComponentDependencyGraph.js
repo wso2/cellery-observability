@@ -92,6 +92,7 @@ class ComponentDependencyGraph extends React.Component {
     constructor(props) {
         super(props);
         this.dependencyGraph = React.createRef();
+        this.isInitializationDone = false;
     }
 
     componentDidMount = () => {
@@ -230,7 +231,9 @@ class ComponentDependencyGraph extends React.Component {
         const spacing = 150;
         const updatedNodes = [];
 
-        this.dependencyGraph.current.style.visibility = "hidden";
+        if (this.dependencyGraph !== null) {
+            this.dependencyGraph.current.style.visibility = "hidden";
+        }
 
         if (selectedComponent) {
             network.selectNodes([selectedComponent], false);
@@ -244,9 +247,12 @@ class ComponentDependencyGraph extends React.Component {
 
         network.on("stabilized", () => {
             const nodeIds = nodes.getIds();
-            network.fit({
-                nodes: nodeIds
-            });
+            if (!this.isInitializationDone) {
+                network.fit({
+                    nodes: nodeIds
+                });
+                this.isInitializationDone = true;
+            }
 
             window.onresize = () => {
                 network.fit({
@@ -254,7 +260,9 @@ class ComponentDependencyGraph extends React.Component {
                 });
             };
 
-            this.dependencyGraph.current.style.visibility = "visible";
+            if (this.dependencyGraph !== null) {
+                this.dependencyGraph.current.style.visibility = "visible";
+            }
         });
 
         network.on("stabilizationIterationsDone", () => {
