@@ -262,7 +262,7 @@ class ComponentDependencyView extends React.Component {
                 }
 
                 // Add the other dependencies in the selected node
-                if ((edge.source.split(":")[0] === edge.target.split(":")[0]) && !(selectedNode === edge.source)) {
+                if ((selectedNode.split(":")[0] === edge.target.split(":")[0]) && !(selectedNode === edge.source)) {
                     addNodeIfNotPresent({
                         id: edge.target,
                         label: edge.target.split(":")[1],
