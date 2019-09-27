@@ -268,12 +268,6 @@ class ComponentDependencyView extends React.Component {
                         label: edge.target.split(":")[1],
                         group: ComponentDependencyGraph.NodeType.COMPONENT
                     });
-
-                    addNodeIfNotPresent({
-                        id: edge.source,
-                        label: edge.target.split(":")[1],
-                        group: ComponentDependencyGraph.NodeType.COMPONENT
-                    });
                 }
 
                 edges.push({
@@ -309,7 +303,8 @@ class ComponentDependencyView extends React.Component {
         const {history} = this.props;
         const cell = nodeId.split(":")[0];
         const component = nodeId.split(":")[1];
-        if (nodeType === ComponentDependencyGraph.NodeType.CELL) {
+        if ((nodeType === ComponentDependencyGraph.NodeType.CELL)
+            || (nodeType === ComponentDependencyGraph.NodeType.COMPOSITE)) {
             history.push(`/instances/${cell}`);
         } else {
             history.push(`/instances/${cell}/components/${component}`);

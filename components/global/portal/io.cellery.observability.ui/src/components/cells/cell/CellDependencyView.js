@@ -259,7 +259,7 @@ class CellDependencyView extends React.Component {
                 <div>
                     <InfoOutlined className={classes.infoIcon} color="action"/>
                     <Typography variant="subtitle2" color="textSecondary" className={classes.info}>
-                        {`"${cell}"`} cell does not depend on any other Cell
+                        {`"${cell}"`} instance does not depend on any other Cell
                     </Typography>
                 </div>
             );
