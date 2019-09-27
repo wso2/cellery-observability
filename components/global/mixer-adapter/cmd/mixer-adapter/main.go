@@ -34,22 +34,21 @@ import (
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer"
 )
 
 const (
-	defaultAdapterPort         int    = 38355
 	grpcAdapterCertificatePath string = "GRPC_ADAPTER_CERTIFICATE_PATH"
 	grpcAdapterPrivateKeyPath  string = "GRPC_ADAPTER_PRIVATE_KEY_PATH"
 	caCertificatePath          string = "CA_CERTIFICATE_PATH"
 	spServerUrlPath            string = "SP_SERVER_URL"
-	waitingTimeSec             int    = 2
-	waitingSize                int    = 2
+	directory                  string = "DIRECTORY"
 )
 
 func main() {
 
-	port := defaultAdapterPort //Pre defined port for the adaptor. ToDo: Should get this as an environment variable
+	port := adapter.DefaultAdapterPort //Pre defined port for the adaptor. ToDo: Should get this as an environment variable
 
 	logger, err := logging.NewLogger()
 	if err != nil {
@@ -71,15 +70,17 @@ func main() {
 
 	/* Mutual TLS feature to secure connection between workloads
 	This is optional. */
-	adapterCertificate := os.Getenv(grpcAdapterCertificatePath) // adapter.crt //change the name
+	adapterCertificate := os.Getenv(grpcAdapterCertificatePath) // adapter.crt
 	adapterprivateKey := os.Getenv(grpcAdapterPrivateKeyPath)   // adapter.key
 	caCertificate := os.Getenv(caCertificatePath)               // ca.pem
 	spServerUrl := os.Getenv(spServerUrlPath)
+	Directory := os.Getenv(directory)
 
 	logger.Infof("Sp server url : %s", spServerUrl)
+	logger.Infof("Directory to store files : %s", Directory)
 
 	client := &http.Client{}
-	publisher := adapter.SPMetricsPublisher{}
+	spPublisher := adapter.SPMetricsPublisher{}
 
 	var serverOption grpc.ServerOption = nil
 
@@ -90,7 +91,7 @@ func main() {
 		}
 	}
 
-	spAdapter, err := adapter.New(port, logger, client, publisher, serverOption, spServerUrl)
+	spAdapter, err := adapter.New(port, logger, client, spPublisher, serverOption, spServerUrl)
 	if err != nil {
 		logger.Fatal("unable to start server: ", err.Error())
 	}
@@ -102,12 +103,18 @@ func main() {
 
 	buffer := make(chan string, 5)
 
-	mWriter := writer.New(waitingTimeSec, waitingSize, logger, buffer)
+	mWriter := writer.New(writer.WaitingTimeSec, writer.WaitingSize, logger, buffer, Directory)
 	go func() {
 		mWriter.Run(shutdown)
 	}()
 
-	//ToDo : Delete these (only for testing)
+	ticker := time.NewTicker(time.Duration(publisher.TickerSec) * time.Second)
+
+	mPublisher := publisher.New(ticker, logger, "./")
+	go func() {
+		mPublisher.Run(shutdown)
+	}()
+
 	testStr := "{\"contextReporterKind\":\"inbound\", \"destinationUID\":\"kubernetes://istio-policy-74d6c8b4d5-mmr49.istio-system\", \"requestID\":\"6e544e82-2a0c-4b83-abcc-0f62b89cdf3f\", \"requestMethod\":\"POST\", \"requestPath\":\"/istio.mixer.v1.Mixer/Check\", \"requestTotalSize\":\"2748\", \"responseCode\":\"200\", \"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":\"b55a0f7f20d36e49f8612bac4311791d\"}"
 	buffer <- testStr
 	time.Sleep(5 * time.Second)
@@ -115,10 +122,12 @@ func main() {
 	buffer <- testStr
 	time.Sleep(2 * time.Second)
 	buffer <- testStr
+	time.Sleep(65 * time.Second)
+	shutdown <- fmt.Errorf("force shutdown")
 
 	err = <-shutdown
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Fatal(err.Error())
 	}
 }
 
