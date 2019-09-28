@@ -19,7 +19,12 @@
 package publisher
 
 import (
+	"bytes"
+	"compress/gzip"
+	"io"
 	"io/ioutil"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -33,17 +38,21 @@ import (
 
 type (
 	Publisher struct {
-		ticker    *time.Ticker
-		logger    *zap.SugaredLogger
-		directory string
+		ticker      *time.Ticker
+		logger      *zap.SugaredLogger
+		directory   string
+		spServerUrl string
+		httpClient  *http.Client
 	}
 )
 
-func New(ticker *time.Ticker, logger *zap.SugaredLogger, directory string) *Publisher {
+func New(ticker *time.Ticker, logger *zap.SugaredLogger, directory string, spServerUrl string, httpClient *http.Client) *Publisher {
 	publisher := &Publisher{
 		ticker,
 		logger,
 		directory,
+		spServerUrl,
+		httpClient,
 	}
 	return publisher
 }
@@ -59,6 +68,93 @@ func (publisher *Publisher) Run(shutdown chan error) {
 			publisher.readDirectory()
 		}
 	}
+}
+
+//func (publisher *Publisher) readDirectory() {
+//	files, err := retrier.Retry(10, 1, "READ DIRECTORY", func() (files interface{}, err error) {
+//		files, err = filepath.Glob(publisher.directory + "*.gzip")
+//		return
+//	})
+//	if err != nil {
+//		publisher.logger.Warn(err.Error())
+//		return
+//	}
+//	publisher.logger.Debugf("Existing files : %s", files)
+//	for _, fname := range files.([]string) {
+//		fileLock := flock.New(fname)
+//		locked, err := fileLock.TryLock()
+//		if err != nil {
+//			publisher.logger.Warnf("Can't lock the file : %s", err.Error())
+//			continue
+//		}
+//		if !locked {
+//			publisher.logger.Debug("File is locked")
+//			continue
+//		}
+//
+//		statusCode := publisher.publish(fname, "gzip")
+//
+//		if statusCode == 200 {
+//			err = os.Remove(fname)
+//			if err != nil {
+//				publisher.logger.Warn(err.Error())
+//				continue
+//			}
+//		}
+//	}
+//}
+
+func (publisher *Publisher) publish(filename string, filetype string) int {
+
+	file, err := os.Open(filename)
+	if err != nil {
+		publisher.logger.Warn(err)
+	}
+
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			publisher.logger.Warnf("Could not close the file : %s", err.Error())
+		}
+	}()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	part, err := writer.CreateFormFile(filetype, filepath.Base(file.Name()))
+	if err != nil {
+		publisher.logger.Warn(err)
+	}
+
+	_, err = io.Copy(part, file)
+	if err != nil {
+		publisher.logger.Warn("Could not copy the multipart")
+	}
+
+	defer func() {
+		err = writer.Close()
+		if err != nil {
+			publisher.logger.Warn("Could not close the writer")
+		}
+	}()
+
+	request, err := http.NewRequest("POST", publisher.spServerUrl, body)
+
+	if err != nil {
+		publisher.logger.Warn(err)
+	}
+
+	request.Header.Add("Content-Type", writer.FormDataContentType())
+	client := &http.Client{}
+
+	response, err := client.Do(request)
+	if err != nil {
+		publisher.logger.Warn(err)
+	}
+
+	statusCode := response.StatusCode
+
+	return statusCode
 }
 
 func (publisher *Publisher) readDirectory() {
@@ -85,11 +181,43 @@ func (publisher *Publisher) readDirectory() {
 			publisher.logger.Warnf("Could not read the file : %s", err.Error())
 			continue
 		}
-		publisher.logger.Info(string(data))
+
+		var buf bytes.Buffer
+		g := gzip.NewWriter(&buf)
+		if _, err = g.Write(data); err != nil {
+			publisher.logger.Debug(err.Error())
+			continue
+		}
+		if err = g.Close(); err != nil {
+			publisher.logger.Debug(err.Error())
+			continue
+		}
+		req, err := http.NewRequest("POST", publisher.spServerUrl, &buf)
+
+		if err != nil {
+			publisher.logger.Debug(err.Error())
+			continue
+		}
+
+		client := &http.Client{}
+
+		req.Header.Set("Content-Type", "text/plain")
+		req.Header.Set("Content-Encoding", "gzip")
+		resp, err := client.Do(req)
+
+		if err != nil {
+			publisher.logger.Debug(err.Error())
+			continue
+		}
+
+		statusCode := resp.StatusCode
+
+		publisher.logger.Debug(statusCode)
+
 		err = os.Remove(publisher.directory + fname)
 		if err != nil {
 			publisher.logger.Warn(err.Error())
-			return
+			continue
 		}
 	}
 }
