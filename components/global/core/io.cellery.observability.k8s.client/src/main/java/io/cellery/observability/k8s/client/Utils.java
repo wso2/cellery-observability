@@ -62,40 +62,44 @@ public class Utils {
      */
     static Map<String, Set<String>> getComponentIngressTypes(Cell cell) {
         Map<String, Set<String>> componentIngressTypes = new HashMap<>();
-        Ingress gatewayIngress = cell.getSpec().getGateway().getSpec().getIngress();
-        for (Component component : cell.getSpec().getComponents()) {
-            Set<String> ingressTypes = new HashSet<>();
-            String componentName = component.getMetadata().getName();
-            if (gatewayIngress.getHttp() != null) {
-                boolean isHttp = gatewayIngress.getHttp().stream()
-                        .anyMatch(httpIngress -> httpIngress.getDestination().getHost().equals(componentName));
-                if (isHttp) {
-                    boolean isWebCell = gatewayIngress.getExtensions() != null
-                            && gatewayIngress.getExtensions().getClusterIngress() != null
-                            && StringUtils.isNotEmpty(gatewayIngress.getExtensions().getClusterIngress().getHost());
-                    // Check for Web ingresses
-                    if (isWebCell) {
-                        ingressTypes.add(Constants.IngressType.WEB);
-                    } else {
-                        ingressTypes.add(Constants.IngressType.HTTP);
+        if (cell.getSpec() != null && cell.getSpec().getComponents() != null && cell.getSpec().getGateway() != null
+                && cell.getSpec().getGateway().getSpec() != null
+                && cell.getSpec().getGateway().getSpec().getIngress() != null) {
+            Ingress gatewayIngress = cell.getSpec().getGateway().getSpec().getIngress();
+            for (Component component : cell.getSpec().getComponents()) {
+                Set<String> ingressTypes = new HashSet<>();
+                String componentName = component.getMetadata().getName();
+                if (gatewayIngress.getHttp() != null) {
+                    boolean isHttp = gatewayIngress.getHttp().stream()
+                            .anyMatch(httpIngress -> httpIngress.getDestination().getHost().equals(componentName));
+                    if (isHttp) {
+                        boolean isWebCell = gatewayIngress.getExtensions() != null
+                                && gatewayIngress.getExtensions().getClusterIngress() != null
+                                && StringUtils.isNotEmpty(gatewayIngress.getExtensions().getClusterIngress().getHost());
+                        // Check for Web ingresses
+                        if (isWebCell) {
+                            ingressTypes.add(Constants.IngressType.WEB);
+                        } else {
+                            ingressTypes.add(Constants.IngressType.HTTP);
+                        }
                     }
                 }
-            }
-            if (gatewayIngress.getTcp() != null) {
-                boolean isTcp = gatewayIngress.getTcp().stream()
-                        .anyMatch(tcpIngress -> tcpIngress.getDestination().getHost().equals(componentName));
-                if (isTcp) {
-                    ingressTypes.add(Constants.IngressType.TCP);
+                if (gatewayIngress.getTcp() != null) {
+                    boolean isTcp = gatewayIngress.getTcp().stream()
+                            .anyMatch(tcpIngress -> tcpIngress.getDestination().getHost().equals(componentName));
+                    if (isTcp) {
+                        ingressTypes.add(Constants.IngressType.TCP);
+                    }
                 }
-            }
-            if (gatewayIngress.getGrpc() != null) {
-                boolean isGrpc = gatewayIngress.getGrpc().stream()
-                        .anyMatch(grpcIngress -> grpcIngress.getDestination().getHost().equals(componentName));
-                if (isGrpc) {
-                    ingressTypes.add(Constants.IngressType.GRPC);
+                if (gatewayIngress.getGrpc() != null) {
+                    boolean isGrpc = gatewayIngress.getGrpc().stream()
+                            .anyMatch(grpcIngress -> grpcIngress.getDestination().getHost().equals(componentName));
+                    if (isGrpc) {
+                        ingressTypes.add(Constants.IngressType.GRPC);
+                    }
                 }
+                componentIngressTypes.put(componentName, ingressTypes);
             }
-            componentIngressTypes.put(componentName, ingressTypes);
         }
         return componentIngressTypes;
     }
@@ -108,24 +112,28 @@ public class Utils {
      */
     static Map<String, Set<String>> getComponentIngressTypes(Composite composite) {
         Map<String, Set<String>> componentIngressTypes = new HashMap<>();
-        for (Component component : composite.getSpec().getComponents()) {
-            Set<String> ingressTypes = new HashSet<>();
-            String componentName = component.getMetadata().getName();
-            for (Port port : component.getSpec().getPorts()) {
-                String protocol = port.getProtocol();
-                if (protocol != null) {
-                    String sanitizedProtocol = protocol.toUpperCase(Locale.US);
-                    switch (sanitizedProtocol) {
-                        case Constants.IngressType.HTTP:
-                        case Constants.IngressType.TCP:
-                        case Constants.IngressType.GRPC:
-                            ingressTypes.add(sanitizedProtocol);
-                            break;
-                        default:
+        if (composite.getSpec() != null && composite.getSpec().getComponents() != null) {
+            for (Component component : composite.getSpec().getComponents()) {
+                Set<String> ingressTypes = new HashSet<>();
+                String componentName = component.getMetadata().getName();
+                if (component.getSpec() != null && component.getSpec().getPorts() != null) {
+                    for (Port port : component.getSpec().getPorts()) {
+                        String protocol = port.getProtocol();
+                        if (protocol != null) {
+                            String sanitizedProtocol = protocol.toUpperCase(Locale.US);
+                            switch (sanitizedProtocol) {
+                                case Constants.IngressType.HTTP:
+                                case Constants.IngressType.TCP:
+                                case Constants.IngressType.GRPC:
+                                    ingressTypes.add(sanitizedProtocol);
+                                    break;
+                                default:
+                            }
+                        }
                     }
                 }
+                componentIngressTypes.put(componentName, ingressTypes);
             }
-            componentIngressTypes.put(componentName, ingressTypes);
         }
         return componentIngressTypes;
     }
