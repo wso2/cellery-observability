@@ -69,7 +69,7 @@ func (publisher *Publisher) Run(shutdown chan error) {
 }
 
 func (publisher *Publisher) readDirectory() {
-	files, err := retrier.Retry(10, 1, "READ DIRECTORY", func() (files interface{}, err error) {
+	files, err := retrier.Retry(5, 1, "READ DIRECTORY", func() (files interface{}, err error) {
 		files, err = filepath.Glob(publisher.directory + "/*.txt")
 		return
 	})
@@ -102,6 +102,12 @@ func (publisher *Publisher) publish(fname string) int {
 		return 500
 	}
 	data, err := ioutil.ReadFile(fname)
+
+	if data == nil || string(data) == "" {
+		publisher.unlock(fileLock)
+		return 200 // Just delete the empty file
+	}
+
 	if err != nil {
 		publisher.logger.Warnf("Could not read the file : %s", err.Error())
 		publisher.unlock(fileLock)

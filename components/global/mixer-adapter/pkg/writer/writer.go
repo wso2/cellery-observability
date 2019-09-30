@@ -92,36 +92,51 @@ func (writer *Writer) writeToFile() bool {
 	if err != nil {
 		writer.logger.Warn(err.Error())
 		return false
-	} else {
-		str := "["
-		for i := 0; i < writer.waitingSize; i++ {
-			element := <-writer.buffer
-			if element == "" {
-				continue
+	}
+	if !locked.(bool) {
+		writer.unlock(fileLock)
+		return false
+	}
+	str := "["
+	for i := 0; i < writer.waitingSize; i++ {
+		element := <-writer.buffer
+		if element == "" {
+			if len(writer.buffer) == 0 {
+				break
 			}
-			if i == 0 {
-				str += element
-			} else {
-				str += "," + element
-			}
+			continue
 		}
-		str += "]"
-		bytes := []byte(str)
-		writer.logger.Debugf("Content to write : %s", str)
-		_, err := retrier.Retry(5, 2*time.Second, "WRITE", func() (locked interface{}, err error) {
-			err = ioutil.WriteFile(fileLock.String(), bytes, 0644)
-			return
-		})
-		if err != nil {
-			writer.logger.Warnf("Could not write to the file, error: %s, missed metrics : %s", err.Error(), str)
+		if i == 0 {
+			str += element
+		} else {
+			str += "," + element
 		}
-		if locked.(bool) {
-			locked, err = retrier.Retry(5, 2*time.Second, "UNLOCK", func() (locked interface{}, err error) {
-				err = fileLock.Unlock()
-				return
-			})
-			writer.startTime = time.Now()
+		if len(writer.buffer) == 0 {
+			break
 		}
-		return true
+	}
+	str += "]"
+	bytes := []byte(str)
+	_, err = retrier.Retry(10, 2*time.Second, "WRITE", func() (locked interface{}, err error) {
+		err = ioutil.WriteFile(fileLock.String(), bytes, 0644)
+		return
+	})
+	if err != nil {
+		writer.logger.Warnf("Could not write to the file, error: %s, missed metrics : %s", err.Error(), str)
+	}
+
+	locked, err = retrier.Retry(10, 2*time.Second, "UNLOCK", func() (locked interface{}, err error) {
+		err = fileLock.Unlock()
+		return
+	})
+	writer.startTime = time.Now()
+
+	return true
+}
+
+func (writer *Writer) unlock(flock *flock.Flock) {
+	err := flock.Unlock()
+	if err != nil {
+		writer.logger.Warn("Could not unlock the file")
 	}
 }

@@ -50,10 +50,6 @@ const (
 	tickerSecEnv               string = "TICKER_SEC"
 )
 
-var (
-	testStr = "{\"contextReporterKind\":\"inbound\", \"destinationUID\":\"kubernetes://istio-policy-74d6c8b4d5-mmr49.istio-system\", \"requestID\":\"6e544e82-2a0c-4b83-abcc-0f62b89cdf3f\", \"requestMethod\":\"POST\", \"requestPath\":\"/istio.mixer.v1.Mixer/Check\", \"requestTotalSize\":\"2748\", \"responseCode\":\"200\", \"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":\"b55a0f7f20d36e49f8612bac4311791d\"}"
-)
-
 func main() {
 	port := adapter.DefaultAdapterPort //Pre defined port for the adaptor.
 	persist := true
@@ -76,23 +72,16 @@ func main() {
 		}
 	}
 
-	/* Mutual TLS feature to secure connection between workloads
-	This is optional. */
+	// Mutual TLS feature to secure connection between workloads. This is optional.
 	adapterCertificate := os.Getenv(grpcAdapterCertificatePath) // adapter.crt
 	adapterprivateKey := os.Getenv(grpcAdapterPrivateKeyPath)   // adapter.key
 	caCertificate := os.Getenv(caCertificatePath)               // ca.pem
 	spServerUrl := os.Getenv(spServerUrlPath)
-	//spServerUrl := "http://localhost:8500" //TODO: remove
 	directory := os.Getenv(directory)
 
-	//waitingSec, _ := strconv.Atoi(os.Getenv(waitingTimeSecEnv))
-	//queueLength, _ := strconv.Atoi(os.Getenv(queueLengthEnv))
-	//tickerSec, _ := strconv.Atoi(os.Getenv(tickerSecEnv))
-	////TODO : remove above comments and delete below
-
-	waitingSec := 5
-	queueLength := 2
-	tickerSec := 10
+	waitingSec, _ := strconv.Atoi(os.Getenv(waitingTimeSecEnv))
+	queueLength, _ := strconv.Atoi(os.Getenv(queueLengthEnv))
+	tickerSec, _ := strconv.Atoi(os.Getenv(tickerSecEnv))
 
 	persist, err = strconv.ParseBool(os.Getenv(shouldPersist)) // this should be a string contains a boolean, "true" or "false"
 	if err != nil {
@@ -142,16 +131,6 @@ func main() {
 			mPublisher.Run(shutdown)
 		}()
 	}
-
-	//buffer <- testStr
-	//time.Sleep(2 * time.Second)
-	//
-	//buffer <- testStr
-	//buffer <- testStr
-	//time.Sleep(2 * time.Second)
-	//
-	//buffer <- testStr
-	//time.Sleep(10 * time.Second)
 
 	err = <-shutdown
 	if err != nil {

@@ -54,12 +54,13 @@ public class MetricsHandler implements HttpHandler {
                     GZIPInputStream gis = new GZIPInputStream(httpExchange.getRequestBody());
                     BufferedReader bf = new BufferedReader(new InputStreamReader(gis, StandardCharsets.UTF_8));
                     String json = IOUtils.toString(bf);
-                    log.info(json);
+                    if (log.isDebugEnabled()) {
+                        log.debug("Received a metric from the adapter : " + json);
+                    }
                     JsonParser jsonParser = new JsonParser();
                     JsonArray jsonArray = (JsonArray) jsonParser.parse(json);
                     for (JsonElement jsonElement : jsonArray) {
                         JsonObject jsonObject = (JsonObject) jsonElement;
-                        log.info(jsonObject);
                         sourceEventListener.onEvent(jsonObject.toString(), new String[0]);
                         httpExchange.sendResponseHeaders(200, -1);
                     }
