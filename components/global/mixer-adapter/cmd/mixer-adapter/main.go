@@ -81,8 +81,8 @@ func main() {
 	adapterCertificate := os.Getenv(grpcAdapterCertificatePath) // adapter.crt
 	adapterprivateKey := os.Getenv(grpcAdapterPrivateKeyPath)   // adapter.key
 	caCertificate := os.Getenv(caCertificatePath)               // ca.pem
-	//spServerUrl := os.Getenv(spServerUrlPath)
-	spServerUrl := "http://localhost:8500" //TODO: remove
+	spServerUrl := os.Getenv(spServerUrlPath)
+	//spServerUrl := "http://localhost:8500" //TODO: remove
 	directory := os.Getenv(directory)
 
 	//waitingSec, _ := strconv.Atoi(os.Getenv(waitingTimeSecEnv))
@@ -143,15 +143,15 @@ func main() {
 		}()
 	}
 
-	buffer <- testStr
-	time.Sleep(2 * time.Second)
-
-	buffer <- testStr
-	buffer <- testStr
-	time.Sleep(2 * time.Second)
-
-	buffer <- testStr
-	time.Sleep(10 * time.Second)
+	//buffer <- testStr
+	//time.Sleep(2 * time.Second)
+	//
+	//buffer <- testStr
+	//buffer <- testStr
+	//time.Sleep(2 * time.Second)
+	//
+	//buffer <- testStr
+	//time.Sleep(10 * time.Second)
 
 	err = <-shutdown
 	if err != nil {

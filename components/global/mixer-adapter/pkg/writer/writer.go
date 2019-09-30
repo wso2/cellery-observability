@@ -96,6 +96,9 @@ func (writer *Writer) writeToFile() bool {
 		str := "["
 		for i := 0; i < writer.waitingSize; i++ {
 			element := <-writer.buffer
+			if element == "" {
+				continue
+			}
 			if i == 0 {
 				str += element
 			} else {
