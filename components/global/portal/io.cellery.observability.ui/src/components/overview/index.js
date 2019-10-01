@@ -782,7 +782,7 @@ class Overview extends React.Component {
 
                 const errorComposite = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
                     + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
-                    + `<path cx="6.4" cy="6.7" r="6.1" fill="${color}" stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                    + `<circle cx="6.4" cy="6.7" r="6.1" fill="${color}" stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
                     + ' stroke-width="0.5px" stroke-dasharray="1.9772,0.9886"/></g>'
                     + `<path fill="${errorColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
                     + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
@@ -791,7 +791,7 @@ class Overview extends React.Component {
 
                 const warningComposite = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
                     + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
-                    + `<path cx="6.4" cy="6.7" r="6.1" fill="${color}" stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
+                    + `<circle cx="6.4" cy="6.7" r="6.1" fill="${color}" stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
                     + 'stroke-width="0.5px" stroke-dasharray="1.9772,0.9886"/></g>'
                     + `<path fill="${warningColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
                     + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
@@ -813,7 +813,7 @@ class Overview extends React.Component {
 
         const renderNodeLabel = (nodeId) => {
             const cellInfoObj = this.state.cellIngresses.find((cellIngressDatum) => cellIngressDatum.cellName === nodeId);
-            if (cellInfoObj) {
+            if (cellInfoObj && cellInfoObj.ingressTypes) {
                 return `${nodeId}\n<b>(${cellInfoObj.ingressTypes})</b>`;
             }
             return nodeId;
