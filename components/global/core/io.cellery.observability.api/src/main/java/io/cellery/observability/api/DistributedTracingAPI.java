@@ -213,7 +213,7 @@ public class DistributedTracingAPI {
                 rootSpanResults = new Object[0][0];
             }
 
-            Map<String, Object> resultsMap = new HashMap<>(2);
+            Map<String, Object> resultsMap = new HashMap<>(3);
             resultsMap.put("spanCounts", spanCountResults);
             resultsMap.put("rootSpans", rootSpanResults);
             resultsMap.put("totalRootSpansCount", fullTraceIdList.size());
