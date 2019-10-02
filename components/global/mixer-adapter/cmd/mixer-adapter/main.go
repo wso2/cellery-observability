@@ -21,6 +21,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -29,13 +30,21 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
+	publisherdatabase "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher/database"
+	publisherfile "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher/file"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer"
+	writerdatabase "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer/database"
+	writerfile "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer/file"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const (
@@ -48,6 +57,8 @@ const (
 	waitingTimeSecEnv          string = "WAITING_TIME_SEC"
 	queueLengthEnv             string = "QUEUE_LENGTH"
 	tickerSecEnv               string = "TICKER_SEC"
+	vendorEnv                  string = "VENDOR"
+	dsnEnv                     string = "DSN"
 )
 
 func main() {
@@ -74,19 +85,28 @@ func main() {
 
 	// Mutual TLS feature to secure connection between workloads. This is optional.
 	adapterCertificate := os.Getenv(grpcAdapterCertificatePath) // adapter.crt
-	adapterprivateKey := os.Getenv(grpcAdapterPrivateKeyPath)   // adapter.key
+	adapterPrivateKey := os.Getenv(grpcAdapterPrivateKeyPath)   // adapter.key
 	caCertificate := os.Getenv(caCertificatePath)               // ca.pem
 	spServerUrl := os.Getenv(spServerUrlPath)
 	directory := os.Getenv(directory)
-
 	waitingSec, _ := strconv.Atoi(os.Getenv(waitingTimeSecEnv))
 	queueLength, _ := strconv.Atoi(os.Getenv(queueLengthEnv))
 	tickerSec, _ := strconv.Atoi(os.Getenv(tickerSecEnv))
+	vendor := os.Getenv(vendorEnv)
+	dsn := os.Getenv(dsnEnv)
+
+	//TODO: Remove below test data
+	//vendor = "mysql"
+	//dsn = "root:@/PERSISTENCE"
+	//waitingSec = 3
+	//tickerSec = 3
+	//queueLength = 2
+	//spServerUrl = "http://localhost:8500"
 
 	persist, err = strconv.ParseBool(os.Getenv(shouldPersist)) // this should be a string contains a boolean, "true" or "false"
 	if err != nil {
 		logger.Warnf("Could not convert env of persisting : %s", err.Error())
-		persist = true
+		persist = false
 	}
 
 	logger.Infof("Sp server url : %s", spServerUrl)
@@ -94,12 +114,11 @@ func main() {
 	logger.Infof("Should persist : %s", persist)
 
 	client := &http.Client{}
-	spPublisher := adapter.SPMetricsPublisher{}
 
 	var serverOption grpc.ServerOption = nil
 
 	if adapterCertificate != "" {
-		serverOption, err = getServerTLSOption(adapterCertificate, adapterprivateKey, caCertificate)
+		serverOption, err = getServerTLSOption(adapterCertificate, adapterPrivateKey, caCertificate)
 		if err != nil {
 			logger.Warn("Server option could not be fetched, Connection will not be encrypted")
 		}
@@ -107,28 +126,90 @@ func main() {
 
 	buffer := make(chan string, queueLength*10)
 
-	spAdapter, err := adapter.New(port, logger, client, spPublisher, serverOption, spServerUrl, buffer, persist)
+	var w writer.Writer
+	var p publisher.Publisher
+
+	shutdown := make(chan error, 1)
+
+	spAdapter, err := adapter.New(port, logger, client, serverOption, spServerUrl, buffer, persist)
 	if err != nil {
 		logger.Fatal("unable to start server: ", err.Error())
 	}
-
-	shutdown := make(chan error, 1)
 	go func() {
 		spAdapter.Run(shutdown)
 	}()
 
+	if (vendor != "") && (dsn != "") {
+
+		db, err := retrier.Retry(10, 2*time.Second, "CONNECT_SQL", func() (db interface{}, err error) {
+			db, err = sql.Open(vendor, dsn)
+			return db, err
+		})
+
+		if err != nil {
+			logger.Warnf("Could not connect to the MySQL database, enabling file persistence : %s", err.Error())
+		} else {
+
+			persist = false
+			logger.Infof("Successfully connected to the MySQL database, Disabling file persistence")
+
+			w = &writerdatabase.Writer{
+				WaitingTimeSec: waitingSec,
+				WaitingSize:    queueLength,
+				Logger:         logger,
+				Buffer:         buffer,
+				StartTime:      time.Now(),
+				Db:             db.(*sql.DB),
+			}
+
+			go func() {
+				w.Run(shutdown)
+			}()
+
+			ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
+
+			p = &publisherdatabase.Publisher{
+				Ticker:      ticker,
+				Logger:      logger,
+				SpServerUrl: spServerUrl,
+				HttpClient:  client,
+				Db:          db.(*sql.DB),
+			}
+
+			go func() {
+				p.Run(shutdown)
+			}()
+
+		}
+	}
+
 	if persist {
 
-		mWriter := writer.New(waitingSec, queueLength, logger, buffer, directory)
+		w = &writerfile.Writer{
+			WaitingTimeSec: waitingSec,
+			WaitingSize:    queueLength,
+			Logger:         logger,
+			Buffer:         buffer,
+			StartTime:      time.Now(),
+			Directory:      directory,
+		}
+
 		go func() {
-			mWriter.Run(shutdown)
+			w.Run(shutdown)
 		}()
 
 		ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
 
-		mPublisher := publisher.New(ticker, logger, directory, spServerUrl, client)
+		p = &publisherfile.Publisher{
+			Ticker:      ticker,
+			Logger:      logger,
+			SpServerUrl: spServerUrl,
+			Directory:   directory,
+			HttpClient:  client,
+		}
+
 		go func() {
-			mPublisher.Run(shutdown)
+			p.Run(shutdown)
 		}()
 	}
 

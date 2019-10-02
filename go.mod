@@ -3,6 +3,7 @@ module github.com/cellery-io/mesh-observability
 go 1.12
 
 require (
+	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gofrs/flock v0.7.1
 	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/rs/xid v1.2.1

@@ -19,8 +19,8 @@
 package io.cellery.observability.telemetry.receiver.internal;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+//import com.google.gson.JsonElement;
+//import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -41,6 +41,7 @@ public class MetricsHandler implements HttpHandler {
 
     private static final Logger log = Logger.getLogger(MetricsHandler.class);
     private SourceEventListener sourceEventListener;
+    private int num = 0;
 
     public MetricsHandler(SourceEventListener sourceEventListener) {
         this.sourceEventListener = sourceEventListener;
@@ -59,20 +60,31 @@ public class MetricsHandler implements HttpHandler {
                     }
                     JsonParser jsonParser = new JsonParser();
                     JsonArray jsonArray = (JsonArray) jsonParser.parse(json);
-                    for (JsonElement jsonElement : jsonArray) {
-                        JsonObject jsonObject = (JsonObject) jsonElement;
-                        sourceEventListener.onEvent(jsonObject.toString(), new String[0]);
-                        httpExchange.sendResponseHeaders(200, -1);
-                    }
+                    num += jsonArray.size();
+                    log.info("Count : " + num);
+                    sourceEventListener.onEvent(json, new String[0]);
+//                    JsonParser jsonParser = new JsonParser();
+//                    JsonArray jsonArray = (JsonArray) jsonParser.parse(json);
+//                    log.info("Received a metric from the adapter 2 : " + jsonArray.getAsString());
+//                    for (JsonElement jsonElement : jsonArray) {
+//                        JsonObject jsonObject = (JsonObject) jsonElement;
+//                        num += 1;
+//                        log.info("Count : " + num);
+//                        sourceEventListener.onEvent(jsonObject.toString(), new String[0]);
+//                    }
+                    httpExchange.sendResponseHeaders(200, -1);
                 } else {
                     String json = IOUtils.toString(httpExchange.getRequestBody());
                     if (log.isDebugEnabled()) {
                         log.debug("Received a metric from the adapter : " + json);
                     }
+                    num += 1;
+                    log.info("Count : " + num);
                     sourceEventListener.onEvent(json, new String[0]);
                     httpExchange.sendResponseHeaders(200, -1);
                 }
             } catch (IOException e) {
+                log.warn(e.getMessage());
                 httpExchange.sendResponseHeaders(500, -1);
             }
         } else {

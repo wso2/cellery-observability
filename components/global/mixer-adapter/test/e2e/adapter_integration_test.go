@@ -59,13 +59,14 @@ func TestReport(t *testing.T) {
 	}()
 
 	logger, err := logging.NewLogger()
+	buffer := make(chan string, 100)
 
 	adapterIntegration.RunTest(
 		t,
 		nil,
 		adapterIntegration.Scenario{
 			Setup: func() (ctx interface{}, err error) {
-				pServer, err := adapter.New(defaultAdapterPort, logger, &http.Client{}, adapter.SPMetricsPublisher{}, nil, "")
+				pServer, err := adapter.New(defaultAdapterPort, logger, &http.Client{}, adapter.SPMetricsPublisher{}, nil, "", buffer, false)
 				if err != nil {
 					return nil, err
 				}

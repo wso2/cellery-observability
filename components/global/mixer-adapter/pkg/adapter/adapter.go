@@ -28,9 +28,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
+	"time"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -57,19 +59,13 @@ type (
 		server      *grpc.Server
 		logger      *zap.SugaredLogger
 		httpClient  *http.Client
-		publisher   Publisher
 		spServerUrl string
 		buffer      chan string
 		persist     bool
 	}
-
-	/* This interface and the struct has been implemented to test the Publish() function */
-	Publisher interface {
-		Publish(attributeMap map[string]interface{}, logger *zap.SugaredLogger, httpClient *http.Client, spServerUrl string) bool
-	}
-
-	SPMetricsPublisher struct{}
 )
+
+var num = 0
 
 // Decode received metrics from the mixer
 func (adapter *Adapter) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) (*v1beta1.ReportResult, error) {
@@ -78,10 +74,22 @@ func (adapter *Adapter) HandleMetric(ctx context.Context, r *metric.HandleMetric
 	for _, inst := range instances {
 		var attributesMap = decodeDimensions(inst.Dimensions)
 		adapter.logger.Debugf("received request : %s", attributesMap)
+		num += 1
+		adapter.logger.Infof("Count : %d", num)
 		if adapter.persist {
 			adapter.writeToBuffer(attributesMap)
 		} else {
-			adapter.publisher.Publish(attributesMap, adapter.logger, adapter.httpClient, adapter.spServerUrl) // ToDO : get the boolean value from the function to check whether the metric is delivered or not
+			_, err := retrier.Retry(10, 2*time.Second, "SENDING_METRIC", func() (resp interface{}, err error) {
+				resp = adapter.Publish(attributesMap)
+				if resp.(int) != 200 {
+					return false, fmt.Errorf("could not sent the metric successfully")
+				}
+				return true, nil
+			})
+
+			if err != nil {
+				adapter.logger.Warnf("%s, lost metric : %s", err.Error(), attributesMap)
+			}
 		}
 	}
 
@@ -97,30 +105,30 @@ func (adapter *Adapter) writeToBuffer(attributeMap map[string]interface{}) {
 }
 
 // Send metrics to sp server
-func (publisher SPMetricsPublisher) Publish(attributeMap map[string]interface{}, logger *zap.SugaredLogger, httpClient *http.Client, spServerUrl string) bool {
+func (adapter *Adapter) Publish(attributeMap map[string]interface{}) int {
 	jsonValue, err := json.Marshal(attributeMap)
 	if err != nil {
-		return false
+		return 500
 	}
-	req, err := http.NewRequest("POST", spServerUrl, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequest("POST", adapter.spServerUrl, bytes.NewBuffer(jsonValue))
 	if req != nil {
 		req.Header.Set("Content-Type", "application/json")
-		resp, err := httpClient.Do(req)
+		resp, err := adapter.httpClient.Do(req)
 		if err != nil {
-			return false
+			return 500
 		}
 		defer func() {
 			err := resp.Body.Close()
 			if err != nil {
-				logger.Warn("Could not close the body")
+				adapter.logger.Warn("Could not close the body")
 			}
 		}()
-		body, _ := ioutil.ReadAll(resp.Body)
-		logger.Info("Received response from SP Worker : ", string(body))
-		return true // ToDo : return the boolean value considering the response
+
+		adapter.logger.Infof("Received status code from SP Worker : %d", resp.StatusCode)
+		return resp.StatusCode
 	} else {
-		logger.Warnf("Could not send request : %s", err)
-		return false
+		adapter.logger.Warnf("Could not send request : %s", err)
+		return 500
 	}
 }
 
@@ -175,7 +183,7 @@ func (adapter *Adapter) Close() error {
 }
 
 // New creates a new SP adapter that listens at provided port.
-func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, publisher Publisher, serverOption grpc.ServerOption, spServerUrl string, buffer chan string, persist bool) (Server, error) {
+func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, serverOption grpc.ServerOption, spServerUrl string, buffer chan string, persist bool) (Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", addr))
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on socket: %v", err)
@@ -185,7 +193,6 @@ func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, publisher
 		listener:    listener,
 		logger:      logger,
 		httpClient:  httpClient,
-		publisher:   publisher,
 		spServerUrl: spServerUrl,
 		buffer:      buffer,
 		persist:     persist,
