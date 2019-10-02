@@ -24,19 +24,14 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
-	"go.uber.org/zap"
 	"istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/template/metric"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 )
-
-type FakePublisher struct {
-	response bool
-	err      error
-}
 
 var (
 	sampleInstance1 = &metric.InstanceMsg{
@@ -85,20 +80,17 @@ var (
 	}
 )
 
-func (response FakePublisher) Publish(attributeMap map[string]interface{}, logger *zap.SugaredLogger, httpClient *http.Client, spServerUrl string) bool {
-	if response.err != nil {
-		return false
-	}
-	return response.response
-}
-
 func TestNewAdapter(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 	buffer := make(chan string, 100)
-	adapter, err := New(DefaultAdapterPort, logger, &http.Client{}, FakePublisher{}, nil, "", buffer, true)
+	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(200)
+	}))
+	defer func() { testServer.Close() }()
+	adapter, err := New(DefaultAdapterPort, logger, &http.Client{}, nil, testServer.URL, buffer, false)
 	wantStr := "[::]:38355"
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %s", err.Error())
@@ -120,7 +112,58 @@ func TestNewAdapter(t *testing.T) {
 	}
 }
 
-func TestAdapter_HandleMetric(t *testing.T) {
+func TestHandleMetricPersist(t *testing.T) {
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", DefaultAdapterPort))
+	if err != nil {
+		t.Errorf("Unable to listen on socket: %s", err.Error())
+	}
+
+	defer func() {
+		_ = listener.Close()
+	}()
+
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %s", err.Error())
+	}
+
+	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(200)
+	}))
+	defer func() { testServer.Close() }()
+
+	buffer := make(chan string, 100)
+
+	wso2SpAdapter := &Adapter{
+		listener:    listener,
+		logger:      logger,
+		httpClient:  &http.Client{},
+		spServerUrl: testServer.URL,
+		buffer:      buffer,
+		persist:     false,
+	}
+
+	var sampleInstances []*metric.InstanceMsg
+	sampleInstances = append(sampleInstances, sampleInstance1)
+	sampleInstances = append(sampleInstances, sampleInstance2)
+	sampleInstances = append(sampleInstances, sampleInstance3)
+	sampleInstances = append(sampleInstances, sampleInstance4)
+
+	sampleMetricRequest := metric.HandleMetricRequest{
+		Instances: sampleInstances,
+	}
+
+	_, err = wso2SpAdapter.HandleMetric(context.TODO(), &sampleMetricRequest)
+
+	if err != nil {
+		t.Errorf("Metric could not be handled : %s", err.Error())
+	} else {
+		t.Log("Successfully handled the metrics")
+	}
+
+}
+
+func TestHandleMetric(t *testing.T) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", DefaultAdapterPort))
 	if err != nil {
 		t.Errorf("Unable to listen on socket: %s", err.Error())
@@ -131,11 +174,20 @@ func TestAdapter_HandleMetric(t *testing.T) {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 
+	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(200)
+	}))
+	defer func() { testServer.Close() }()
+
+	buffer := make(chan string, 100)
+
 	wso2SpAdapter := &Adapter{
-		listener:   listener,
-		logger:     logger,
-		httpClient: &http.Client{},
-		publisher:  FakePublisher{},
+		listener:    listener,
+		logger:      logger,
+		httpClient:  &http.Client{},
+		spServerUrl: testServer.URL,
+		buffer:      buffer,
+		persist:     true,
 	}
 
 	var sampleInstances []*metric.InstanceMsg
