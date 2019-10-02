@@ -134,11 +134,18 @@ class TracesList extends React.PureComponent {
     };
 
     handleChangeRowsPerPage = (event) => {
+        const {page, searchResults} = this.state;
         const rowsPerPage = event.target.value;
+
+        const maxPageCount = searchResults.totalRootSpansCount / rowsPerPage;
+        const highestPossiblePage = Number.isInteger(maxPageCount) ? maxPageCount - 1 : Math.floor(maxPageCount);
+
+        const newPage = page < highestPossiblePage ? page : highestPossiblePage;
         this.setState({
-            rowsPerPage: rowsPerPage
+            rowsPerPage: rowsPerPage,
+            page: newPage
         });
-        this.loadTraces(true, rowsPerPage, null);
+        this.loadTraces(true, rowsPerPage, newPage);
     };
 
     handleChangePage = (event, page) => {
