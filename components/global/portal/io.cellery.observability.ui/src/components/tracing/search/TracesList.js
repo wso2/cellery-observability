@@ -113,13 +113,14 @@ class TracesList extends React.PureComponent {
         super(props);
 
         this.state = {
-            rowsPerPage: 5,
+            rowsPerPage: 10,
             page: 0,
             hasSearchCompleted: false,
             isLoading: false,
             searchResults: {
                 rootSpans: [],
-                spanCounts: []
+                spanCounts: [],
+                totalRootSpansCount: 0
             }
         };
     }
@@ -128,7 +129,7 @@ class TracesList extends React.PureComponent {
         const {loadTracesOnMount} = this.props;
 
         if (loadTracesOnMount) {
-            this.loadTraces(true);
+            this.loadTraces(true, null, null);
         }
     };
 
@@ -137,12 +138,14 @@ class TracesList extends React.PureComponent {
         this.setState({
             rowsPerPage: rowsPerPage
         });
+        this.loadTraces(true, rowsPerPage, null);
     };
 
     handleChangePage = (event, page) => {
         this.setState({
             page: page
         });
+        this.loadTraces(true, null, page);
     };
 
     /**
@@ -178,15 +181,23 @@ class TracesList extends React.PureComponent {
         return colorGenerator.getColor(colorKey);
     };
 
-    loadTraces = (isUserAction) => {
+    loadTraces = (isUserAction, rowsPerPageOverride = null, pageOverride = null) => {
         const self = this;
         const {globalState, filter, globalFilterOverrides} = self.props;
+        const {page, rowsPerPage} = this.state;
         const {
             cell, component, operation, tags, minDuration, minDurationMultiplier, maxDuration, maxDurationMultiplier
         } = filter;
 
         // Build search object
-        const search = {};
+        const rowsPerPageToBeUsed = rowsPerPageOverride || rowsPerPageOverride === 0
+            ? rowsPerPageOverride
+            : rowsPerPage;
+        const pageToBeUsed = pageOverride || pageOverride === 0 ? pageOverride : page;
+        const search = {
+            limit: rowsPerPageToBeUsed,
+            offset: rowsPerPageToBeUsed * pageToBeUsed
+        };
         const addSearchParam = (key, value) => {
             if (value && value !== Constants.Dashboard.ALL_VALUE) {
                 search[key] = value;
@@ -220,6 +231,8 @@ class TracesList extends React.PureComponent {
         ).then((data) => {
             self.setState((prevState) => ({
                 ...prevState,
+                rowsPerPage: rowsPerPageToBeUsed,
+                page: pageToBeUsed,
                 hasSearchCompleted: true,
                 searchResults: {
                     rootSpans: data.rootSpans.map((dataItem) => ({
@@ -235,7 +248,8 @@ class TracesList extends React.PureComponent {
                         cellName: dataItem[1],
                         serviceName: dataItem[2],
                         count: dataItem[3]
-                    }))
+                    })),
+                    totalRootSpansCount: data.totalRootSpansCount
                 }
             }));
             if (isUserAction) {
@@ -301,7 +315,7 @@ class TracesList extends React.PureComponent {
                                     )
                             }
                             {
-                                searchResultsArray.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                searchResultsArray
                                     .map((result) => (
                                         <Paper key={result.traceId} className={classes.trace}
                                             onClick={(event) => this.loadTracePage(event, result.traceId)}>
@@ -384,10 +398,10 @@ class TracesList extends React.PureComponent {
                                         </Paper>
                                     ))
                             }
-                            <TablePagination component="div" count={searchResultsArray.length} rowsPerPage={rowsPerPage}
-                                backIconButtonProps={{"aria-label": "Previous Page"}} page={page}
+                            <TablePagination count={searchResults.totalRootSpansCount} rowsPerPage={rowsPerPage}
+                                backIconButtonProps={{"aria-label": "Previous Page"}} component="div"
                                 labelRowsPerPage={"Traces Per Page"} onChangePage={this.handleChangePage}
-                                nextIconButtonProps={{"aria-label": "Next Page"}}
+                                nextIconButtonProps={{"aria-label": "Next Page"}} page={page}
                                 onChangeRowsPerPage={this.handleChangeRowsPerPage}/>
                         </React.Fragment>
                     )

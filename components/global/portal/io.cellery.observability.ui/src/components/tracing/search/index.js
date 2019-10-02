@@ -411,7 +411,7 @@ class TraceSearch extends React.Component {
 
     search = (isUserAction) => {
         if (this.tracesListRef.current && this.tracesListRef.current.loadTraces) {
-            this.tracesListRef.current.loadTraces(isUserAction);
+            this.tracesListRef.current.loadTraces(isUserAction, null, 0);
         }
     };
 

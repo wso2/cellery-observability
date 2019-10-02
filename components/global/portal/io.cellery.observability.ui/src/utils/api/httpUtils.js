@@ -61,7 +61,7 @@ class HttpUtils {
         let queryString = "";
         if (queryParams) {
             for (const [queryParamKey, queryParamValue] of Object.entries(queryParams)) {
-                if (!queryParamValue) {
+                if (queryParamValue === undefined || queryParamValue === null) {
                     continue;
                 }
 
