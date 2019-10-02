@@ -118,7 +118,10 @@ update or insert into DistributedTracingTable
 --
 
 -- Extracting information for local service
-from TelemetryStreamIn
+from TelemetryStreamIn[traceId != "" and spanId != ""]
+insert into FilteredTelemetryStreamIn;
+
+from FilteredTelemetryStreamIn
 select
     traceId,
     spanId,
@@ -131,7 +134,7 @@ select
 insert into ProcessedTelemetryDataStream;
 
 -- Extracting information for remote service
-from TelemetryStreamIn
+from FilteredTelemetryStreamIn
 select
     traceId,
     spanId,
