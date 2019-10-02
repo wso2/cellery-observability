@@ -26,10 +26,10 @@ import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.exception.InvalidParamException;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryTemplates;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.OPTIONS;
@@ -74,8 +74,14 @@ public class DistributedTracingAPI {
                            @DefaultValue("-1") @QueryParam("maxDuration") long maxDuration,
                            @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                            @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime,
-                           @DefaultValue("{}") @QueryParam("tags") String jsonEncodedTags)
+                           @DefaultValue("{}") @QueryParam("tags") String jsonEncodedTags,
+                           @DefaultValue("25") @QueryParam("limit") int limit,
+                           @DefaultValue("0") @QueryParam("offset") int offset)
             throws APIInvocationException {
+
+        if (limit > 100) {
+            throw new InvalidParamException("limit", "value less than or equal to 100");
+        }
         try {
             Map<String, String> queryTags = new HashMap<>();
             SiddhiStoreQueryTemplates siddhiStoreQueryTemplates;
@@ -116,35 +122,59 @@ public class DistributedTracingAPI {
                     .build()
                     .execute();
 
-            // Filtering based on tags
-            Set<String> traceIds = new HashSet<>();
-            for (Object[] traceIdResult : traceIdResults) {
-                String traceId = (String) traceIdResult[0];
+            List<String> fullTraceIdList = new ArrayList<>();
+            if (traceIdResults.length > 0) {
+                /*
+                 * The root span trace Ids list is fetched for validating whether the traces have roots as well as to
+                 * ensure that the query start time and end time matches properly
+                 */
+                Object[][] fullRootSpansResult
+                        = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_TRACE_IDS_WITH_VALID_ROOT_SPANS
+                            .builder()
+                            .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
+                            .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
+                            .build()
+                            .execute();
+                List<String> fullRootSpansList = new ArrayList<>(fullRootSpansResult.length);
+                for (Object[] rootSpanResultRow: fullRootSpansResult) {
+                    fullRootSpansList.add((String) rootSpanResultRow[0]);
+                }
 
-                if ("{}".equals(jsonEncodedTags)) {
-                    traceIds.add(traceId);
-                } else if (!traceIds.contains(traceId)) {   // To consider a traceId a single matching span is enough
-                    boolean isMatch = false;
-                    JsonElement parsedJsonElement = new JsonParser().parse((String) traceIdResult[1]);
-                    if (parsedJsonElement.isJsonObject()) {
-                        JsonObject traceTags = parsedJsonElement.getAsJsonObject();
-                        for (Map.Entry<String, String> queryTagEntry : queryTags.entrySet()) {
-                            String tagKey = queryTagEntry.getKey();
-                            String tagValue = queryTagEntry.getValue();
+                // Filtering based on tags
+                for (Object[] traceIdResult : traceIdResults) {
+                    String traceId = (String) traceIdResult[0];
 
-                            JsonElement traceTagValueJsonElement = traceTags.get(tagKey);
-                            if (traceTagValueJsonElement != null && traceTagValueJsonElement.isJsonPrimitive()
-                                    && tagValue.equals(traceTagValueJsonElement.getAsString())) {
-                                isMatch = true;
-                                break;
+                    if (fullRootSpansList.contains(traceId) && !fullTraceIdList.contains(traceId)) {
+                        if ("{}".equals(jsonEncodedTags)) {
+                            fullTraceIdList.add(traceId);
+                        } else {
+                            // To consider a traceId a single matching span is enough
+                            boolean isMatch = false;
+                            JsonElement parsedJsonElement = new JsonParser().parse((String) traceIdResult[1]);
+                            if (parsedJsonElement.isJsonObject()) {
+                                JsonObject traceTags = parsedJsonElement.getAsJsonObject();
+                                for (Map.Entry<String, String> queryTagEntry : queryTags.entrySet()) {
+                                    String tagKey = queryTagEntry.getKey();
+                                    String tagValue = queryTagEntry.getValue();
+
+                                    JsonElement traceTagValueJsonElement = traceTags.get(tagKey);
+                                    if (traceTagValueJsonElement != null && traceTagValueJsonElement.isJsonPrimitive()
+                                            && tagValue.equals(traceTagValueJsonElement.getAsString())) {
+                                        isMatch = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (isMatch) {
+                                fullTraceIdList.add(traceId);
                             }
                         }
                     }
-                    if (isMatch) {
-                        traceIds.add(traceId);
-                    }
                 }
             }
+
+            // Limiting the results
+            List<String> traceIds = fullTraceIdList.subList(offset, Math.min(offset + limit, fullTraceIdList.size()));
 
             Object[][] spanCountResults = null;
             Object[][] rootSpanResults = null;
@@ -156,9 +186,6 @@ public class DistributedTracingAPI {
                                 Utils.generateSiddhiMatchConditionForMultipleValues(
                                         "traceId", traceIds.toArray(new String[0]))
                         )
-                        .setArg(SiddhiStoreQueryTemplates.Params.MAX_DURATION, maxDuration)
-                        .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
-                        .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                         .build()
                         .execute();
 
@@ -186,9 +213,10 @@ public class DistributedTracingAPI {
                 rootSpanResults = new Object[0][0];
             }
 
-            Map<String, Object[][]> resultsMap = new HashMap<>(2);
+            Map<String, Object> resultsMap = new HashMap<>(2);
             resultsMap.put("spanCounts", spanCountResults);
             resultsMap.put("rootSpans", rootSpanResults);
+            resultsMap.put("totalRootSpansCount", fullTraceIdList.size());
 
             return Response.ok().entity(resultsMap).build();
         } catch (Throwable e) {

@@ -227,7 +227,8 @@ public class SiddhiStoreQueryTemplatesTestCase {
                 "and (\"" + operationName + "\" == \"\" or operationName == \"" + operationName + "\") " +
                 "and (" + minDuration + "L == -1L or duration >= " + minDuration + "L)\n" +
                 "select traceId\n" +
-                "group by traceId");
+                "group by traceId\n" +
+                "order by startTime desc");
     }
 
     @Test
@@ -251,32 +252,45 @@ public class SiddhiStoreQueryTemplatesTestCase {
                 "(\"" + serviceName + "\" == \"\" or serviceName == \"" + serviceName + "\") and " +
                 "(\"" + operationName + "\" == \"\" or operationName == \"" + operationName + "\") and " +
                 "(" + minDuration + "L == -1L or duration >= " + minDuration + "L)\n" +
-                "select traceId, tags");
+                "select traceId, tags\n" +
+                "order by startTime desc");
+    }
+
+    @Test
+    public void testDistributedTracingSearchGetTraceIdsWithValidRootSpans() {
+        final long queryStartTime = 243423;
+        final long queryEndTime = 21234322;
+
+        SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates
+                .DISTRIBUTED_TRACING_SEARCH_GET_TRACE_IDS_WITH_VALID_ROOT_SPANS.builder()
+                .setArg(Params.QUERY_START_TIME, queryStartTime)
+                .setArg(Params.QUERY_END_TIME, queryEndTime)
+                .build();
+        String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
+
+        Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
+                "on parentId is null " +
+                "and (" + queryStartTime + "L == -1L or startTime >= " + queryStartTime + "L) " +
+                "and (" + queryEndTime + "L == -1L or startTime <= " + queryEndTime + "L)\n" +
+                "select traceId\n" +
+                "group by traceId\n" +
+                "order by startTime desc");
     }
 
     @Test
     public void testDistributedTracingSearchGetRootSpanMetadataTemplate() {
-        final long queryStartTime = 243423;
-        final long queryEndTime = 21234322;
-        final long maxDuration = 4323453;
         final String condition = "traceId=\"342fsd23423\" or traceId=\"4ger435f324\"";
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates
                 .DISTRIBUTED_TRACING_SEARCH_GET_ROOT_SPAN_METADATA.builder()
-                .setArg(Params.QUERY_START_TIME, queryStartTime)
-                .setArg(Params.QUERY_END_TIME, queryEndTime)
-                .setArg(Params.MAX_DURATION, maxDuration)
                 .setArg(Params.CONDITION, condition)
                 .build();
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from DistributedTracingTable\n" +
-                "on parentId is null and (" + condition + ") and " +
-                "(" + maxDuration + "L == -1L or duration <= " + maxDuration + "L) " +
-                "and (" + queryStartTime + "L == -1L or startTime >= " + queryStartTime + "L) " +
-                "and (" + queryEndTime + "L == -1L or startTime <= " + queryEndTime + "L)\n" +
-                "select traceId, instance, serviceName, " +
-                "operationName, startTime, duration\n" +
+                "on parentId is null and (" + condition + ")\n" +
+                "select traceId, instance, serviceName, operationName, startTime, duration\n" +
+                "group by traceId\n" +
                 "order by startTime desc");
     }
 
