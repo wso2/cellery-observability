@@ -63,15 +63,6 @@ public class MetricsHandler implements HttpHandler {
                     num += jsonArray.size();
                     log.info("Count : " + num);
                     sourceEventListener.onEvent(json, new String[0]);
-//                    JsonParser jsonParser = new JsonParser();
-//                    JsonArray jsonArray = (JsonArray) jsonParser.parse(json);
-//                    log.info("Received a metric from the adapter 2 : " + jsonArray.getAsString());
-//                    for (JsonElement jsonElement : jsonArray) {
-//                        JsonObject jsonObject = (JsonObject) jsonElement;
-//                        num += 1;
-//                        log.info("Count : " + num);
-//                        sourceEventListener.onEvent(jsonObject.toString(), new String[0]);
-//                    }
                     httpExchange.sendResponseHeaders(200, -1);
                 } else {
                     String json = IOUtils.toString(httpExchange.getRequestBody());
