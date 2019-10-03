@@ -46,6 +46,7 @@ type (
 		Db          *sql.DB
 		SpServerUrl string
 		HttpClient  *http.Client
+		WaitingSize int
 	}
 
 	Transaction interface {
@@ -64,7 +65,7 @@ func (publisher *Publisher) Run(shutdown chan error) {
 			publisher.Logger.Fatal(quit.Error())
 			return
 		case _ = <-publisher.Ticker.C:
-			publisher.read()
+			publisher.execute()
 		}
 	}
 }
@@ -104,10 +105,25 @@ func (publisher *Publisher) doTransaction(fn func(Transaction) error) (err error
 	return err
 }
 
-func (publisher *Publisher) read() {
+func (publisher *Publisher) execute() {
+
+	run := make(chan bool, 1)
+	for {
+		select {
+		case _ = <-run:
+			return
+		default:
+			publisher.read(run)
+		}
+	}
+
+}
+
+func (publisher *Publisher) read(run chan bool) {
+
 	err := publisher.doTransaction(func(tx Transaction) error {
-		// insert a record into table1
-		rows, err := tx.Query("SELECT * FROM persistence")
+
+		rows, err := tx.Query("SELECT * FROM persistence LIMIT ?", publisher.WaitingSize)
 		if err != nil {
 			return err
 		}
@@ -131,8 +147,9 @@ func (publisher *Publisher) read() {
 		jsonArr := fmt.Sprintf("[%s]", strings.Join(jsons, ","))
 		idArr := fmt.Sprintf("(%s)", strings.Join(ids, ","))
 
-		publisher.Logger.Info(idArr)
-		publisher.Logger.Info(jsonArr)
+		if jsonArr == "[]" {
+			run <- false
+		}
 
 		_, err = tx.Exec("DELETE FROM persistence WHERE id IN" + idArr)
 		if err != nil {
