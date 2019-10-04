@@ -51,9 +51,7 @@ type (
 
 	Transaction interface {
 		Exec(query string, args ...interface{}) (sql.Result, error)
-		Prepare(query string) (*sql.Stmt, error)
 		Query(query string, args ...interface{}) (*sql.Rows, error)
-		QueryRow(query string, args ...interface{}) *sql.Row
 	}
 )
 
@@ -78,7 +76,6 @@ func (publisher *Publisher) doTransaction(fn func(Transaction) error) (err error
 
 	defer func() {
 		if p := recover(); p != nil {
-			// a panic occurred, rollback and repanic
 			_, err = retrier.Retry(10, 2*time.Second, "ROLLBACK", func() (locked interface{}, err error) {
 				err = tx.Rollback()
 				return
@@ -87,7 +84,6 @@ func (publisher *Publisher) doTransaction(fn func(Transaction) error) (err error
 				publisher.Logger.Warnf("Could not rollback the transaction : %s", err.Error())
 			}
 		} else if err != nil {
-			// something went wrong, rollback
 			_, err = retrier.Retry(10, 2*time.Second, "ROLLBACK", func() (locked interface{}, err error) {
 				err = tx.Rollback()
 				return
@@ -96,8 +92,10 @@ func (publisher *Publisher) doTransaction(fn func(Transaction) error) (err error
 				publisher.Logger.Warnf("Could not rollback the transaction : %s", err.Error())
 			}
 		} else {
-			// all good, commit
 			err = tx.Commit()
+			if err != nil {
+				publisher.Logger.Warnf("Could not commit : %s", err.Error())
+			}
 		}
 	}()
 

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package file
+package e2e
 
 import (
 	"os"
@@ -27,6 +27,8 @@ import (
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
+
+	writerfile "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer/file"
 )
 
 var (
@@ -41,11 +43,11 @@ func TestWriter(t *testing.T) {
 	}
 
 	shutdown := make(chan error, 1)
-	buffer := make(chan string, 20)
+	buffer := make(chan string, 5)
 
 	var w writer.Writer
 
-	w = &Writer{
+	w = &writerfile.Writer{
 		WaitingTimeSec: 10,
 		WaitingSize:    5,
 		Logger:         logger,
@@ -85,15 +87,8 @@ func TestWriter(t *testing.T) {
 	time.Sleep(30 * time.Second)
 
 	files, err := filepath.Glob("./*.txt")
-	i := 0
 	for _, fname := range files {
-		i++
 		err = os.Remove(fname)
 	}
 
-	if i == 4 {
-		t.Log("Testing passed")
-	}
-
 }
-

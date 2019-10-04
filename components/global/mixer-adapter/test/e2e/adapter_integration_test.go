@@ -66,7 +66,7 @@ func TestReport(t *testing.T) {
 		nil,
 		adapterIntegration.Scenario{
 			Setup: func() (ctx interface{}, err error) {
-				pServer, err := adapter.New(defaultAdapterPort, logger, &http.Client{}, adapter.SPMetricsPublisher{}, nil, "", buffer, false)
+				pServer, err := adapter.New(defaultAdapterPort, logger, &http.Client{}, nil, "", buffer, false)
 				if err != nil {
 					return nil, err
 				}

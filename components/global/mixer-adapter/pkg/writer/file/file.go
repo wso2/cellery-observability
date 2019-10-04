@@ -89,22 +89,8 @@ func (writer *Writer) write() bool {
 		writer.unlock(fileLock)
 		return false
 	}
-	var elements []string
-	for i := 0; i < writer.WaitingSize; i++ {
-		num += 1
-		writer.Logger.Infof("Writing count : %d", num)
-		element := <-writer.Buffer
-		if element == "" {
-			if len(writer.Buffer) == 0 {
-				break
-			}
-			continue
-		}
-		elements = append(elements, element)
-		if len(writer.Buffer) == 0 {
-			break
-		}
-	}
+
+	elements := writer.getElements()
 	str := fmt.Sprintf("[%s]", strings.Join(elements, ","))
 
 	bytes := []byte(str)
@@ -123,6 +109,26 @@ func (writer *Writer) write() bool {
 	writer.StartTime = time.Now()
 
 	return true
+}
+
+func (writer *Writer) getElements() []string {
+	var elements []string
+	for i := 0; i < writer.WaitingSize; i++ {
+		num += 1
+		writer.Logger.Infof("Writing count : %d", num)
+		element := <-writer.Buffer
+		if element == "" {
+			if len(writer.Buffer) == 0 {
+				break
+			}
+			continue
+		}
+		elements = append(elements, element)
+		if len(writer.Buffer) == 0 {
+			break
+		}
+	}
+	return elements
 }
 
 func (writer *Writer) unlock(flock *flock.Flock) {

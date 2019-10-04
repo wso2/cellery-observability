@@ -16,18 +16,17 @@
  * under the License.
  */
 
-package file
+package database
 
 import (
-	"bytes"
-	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
+	"github.com/DATA-DOG/go-sqlmock"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
 )
 
 var (
@@ -46,47 +45,77 @@ func NewTestClient(fn RoundTripFunc) *http.Client {
 	}
 }
 
-func TestPublisher(t *testing.T) {
+func TestPublisher_Run(t *testing.T) {
+
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 
-	_ = ioutil.WriteFile("test.txt", []byte(testStr), 0644)
-
 	shutdown := make(chan error, 1)
-	buffer := make(chan string, 5)
+	tickerSec := 3
+	queueLength := 2
 
-	var p publisher.Publisher
+	// Creates sqlmock database connection and a mock to manage expectations.
+	db, mock, err := sqlmock.New()
+
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	// Closes the database and prevents new queries from starting.
+	defer func() {
+		_ = db.Close()
+	}()
+
+	// Here we are creating rows in our mocked database.
+	rows := sqlmock.NewRows([]string{"id", "json"}).
+		AddRow(1, testStr).
+		AddRow(2, testStr)
+
+	// This is most important part in our test. Here, literally, we are altering SQL query from MenuByNameAndLanguage
+	// function and replacing result with our expected result.
+	mock.ExpectBegin()
+	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
+		WillReturnRows(rows)
+	mock.ExpectExec("^DELETE FROM persistence*").
+		WillReturnResult(sqlmock.NewResult(2, 2))
+	mock.ExpectCommit()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("^SELECT (.+) FROM persistence*").WillReturnRows(sqlmock.NewRows([]string{}))
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+
+	ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
 
 	client := NewTestClient(func(req *http.Request) *http.Response {
 		return &http.Response{
 			StatusCode: 200,
-			Body:       ioutil.NopCloser(bytes.NewBufferString("OK")),
 			Header:     make(http.Header),
 		}
 	})
 
-	ticker := time.NewTicker(time.Duration(2) * time.Second)
+	var p publisher.Publisher
+
 	p = &Publisher{
 		Ticker:      ticker,
 		Logger:      logger,
-		Directory:   "./",
 		SpServerUrl: "http://example.com",
 		HttpClient:  client,
+		Db:          db,
+		WaitingSize: queueLength,
 	}
 
-	go func() {
+	defer func() {
 		p.Run(shutdown)
 	}()
 
-	buffer <- testStr
-	time.Sleep(2 * time.Second)
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
 
-	buffer <- testStr
-	buffer <- testStr
-	time.Sleep(2 * time.Second)
-
-	buffer <- testStr
-	time.Sleep(10 * time.Second)
 }
