@@ -19,15 +19,14 @@
 
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 <suite name="Model generation tests">
-    <!-- TODO: Enable disabled test cases after updating the test data and remove the plugin tag in the pom.xml -->
     <test name="model-generation-tests" enabled="true" parallel="false">
         <classes>
-            <!--<class name="io.cellery.observability.model.generator.ModelGenTestCase"/>-->
+            <class name="io.cellery.observability.model.generator.ModelGenTestCase"/>
         </classes>
     </test>
     <test name="database-failure-tests" enabled="true" parallel="false">
         <classes>
-            <!--<class name="io.cellery.observability.model.generator.DatabaseFailureTestCase"/>-->
+            <class name="io.cellery.observability.model.generator.DatabaseFailureTestCase"/>
             <class name="io.cellery.observability.model.generator.TraceGroupWindowProcessorTestCase"/>
             <class name="io.cellery.observability.model.generator.ModelGenerationExtensionTestCase"/>
         </classes>
