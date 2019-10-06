@@ -82,6 +82,12 @@
                 <artifactId>siddhi-map-keyvalue</artifactId>
                 <version>${siddhi.map.keyvalue.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.wso2.extension.siddhi.script.js</groupId>
+                <artifactId>siddhi-script-js</artifactId>
+                <version>${siddhi.js.version}</version>
+                <scope>test</scope>
+            </dependency>
             <!-- Siddhi extensions end here -->
 
             <!-- External dependencies start here -->
@@ -289,12 +295,6 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>org.wso2.extension.siddhi.script.js</groupId>
-                <artifactId>siddhi-script-js</artifactId>
-                <version>${siddhi.js.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>${h2.database.version}</version>
@@ -306,7 +306,6 @@
                 <version>${io.netty.version}</version>
                 <scope>test</scope>
             </dependency>
-
             <!-- Test dependencies end here -->
         </dependencies>
     </dependencyManagement>
@@ -531,7 +530,7 @@
         <siddhi.version>4.1.38</siddhi.version>
         <siddhi.io.http.version>1.0.41</siddhi.io.http.version>
         <siddhi.store.rdbms.version>4.0.52</siddhi.store.rdbms.version>
-        <siddhi.map.keyvalue.version>1.1.0</siddhi.map.keyvalue.version>
+        <siddhi.map.keyvalue.version>1.0.17</siddhi.map.keyvalue.version>
         <siddhi.js.version>4.0.14</siddhi.js.version>
 
         <mockito.version>1.10.19</mockito.version>

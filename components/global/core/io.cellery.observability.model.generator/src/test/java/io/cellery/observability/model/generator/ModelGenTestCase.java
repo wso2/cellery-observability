@@ -17,6 +17,7 @@
  */
 package io.cellery.observability.model.generator;
 
+import com.google.gson.Gson;
 import io.cellery.observability.model.generator.exception.ModelException;
 import io.cellery.observability.model.generator.internal.ModelStoreManager;
 import io.cellery.observability.model.generator.internal.ServiceHolder;
@@ -69,9 +70,9 @@ public class ModelGenTestCase {
     private Set<Node> nodes = new HashSet<>();
     private Set<Edge> edges = new HashSet<>();
 
-    private final String hrInstance = "hr-1-0-0-e1991fe2";
-    private final String stockInstance = "stock-1-0-0-ae4d1965";
-    private final String employeeInstance = "employee-1-0-0-6cc39e16";
+    private final String hrInstance = "hr-e1991fe2";
+    private final String stockInstance = "stock-ae4d1965";
+    private final String employeeInstance = "employee-6cc39e16";
     private final String hr = "hr";
     private final String employee = "employee";
     private final String salary = "salary";
@@ -126,7 +127,7 @@ public class ModelGenTestCase {
     @Test(groups = "scenarios")
     public void testHelloWorldWebappWithInstanceName() throws Exception {
         long fromTime = System.currentTimeMillis();
-        generateModel("hello-world-webapp-name.csv");
+        generateModel("hello-world-webapp-name.json");
         String cellInstanceName = "hello-world-cell";
         this.nodes.add(new Node(cellInstanceName));
 
@@ -143,8 +144,8 @@ public class ModelGenTestCase {
 
     @Test(groups = "scenarios")
     public void testHelloWorldWebappWithUUID() throws Exception {
-        generateModel("hello-world-webapp-uuid.csv");
-        String cellInstanceName = "hello-world-cell-0-2-0-8d31dd02";
+        generateModel("hello-world-webapp-uuid.json");
+        String cellInstanceName = "hello-world-cell040ndog";
         this.nodes.add(new Node(cellInstanceName));
 
         Model model = ServiceHolder.getModelManager().getGraph(0, 0);
@@ -154,7 +155,7 @@ public class ModelGenTestCase {
 
     @Test(groups = "scenarios")
     public void testEmployeePortal() throws Exception {
-        generateModel("employee-portal.csv");
+        generateModel("employee-portal.json");
         HashSet<Node> nodes = new HashSet<>();
         HashSet<Edge> edges = new HashSet<>();
         nodes.add(new Node(hrInstance));
@@ -175,7 +176,7 @@ public class ModelGenTestCase {
 
     @Test(groups = "scenarios")
     public void testPetstore() throws Exception {
-        generateModel("pet-store-name.csv");
+        generateModel("pet-store-name.json");
         String petBe = "pet-be";
         String petFe = "pet-fe";
         HashSet<Node> nodes = new HashSet<>();
@@ -184,8 +185,6 @@ public class ModelGenTestCase {
         nodes.add(new Node(petFe));
         edges.add(new Edge(Utils.generateEdgeName(petFe, petBe,
                 Utils.generateServiceName("portal", GATEWAY_COMPONENT))));
-        edges.add(new Edge(Utils.generateEdgeName(petFe, petBe,
-                Utils.generateServiceName(GATEWAY_COMPONENT, GATEWAY_COMPONENT))));
         this.nodes.addAll(nodes);
         this.edges.addAll(edges);
 
@@ -197,8 +196,8 @@ public class ModelGenTestCase {
 
     @Test(groups = "scenarios")
     public void testHelloworldAPI() throws Exception {
-        generateModel("hello-world-api.csv");
-        String helloApiInstance = "hello-world-api-cell-0-2-0-614412b8";
+        generateModel("hello-world-api.json");
+        String helloApiInstance = "hello-world-api-cell04034pp";
         HashSet<Node> nodes = new HashSet<>();
         nodes.add(new Node(helloApiInstance));
         this.nodes.addAll(nodes);
@@ -369,23 +368,11 @@ public class ModelGenTestCase {
         String inputData = IOUtils.toString(
                 this.getClass().getResourceAsStream(File.separator + "events" + File.separator + fileName),
                 "UTF-8");
-        String[] newLines = inputData.split("\n");
-        for (String newLine : newLines) {
-            if (!newLine.isEmpty()) {
-                String[] objectData = newLine.split(",");
-                Object[] eventData = new Object[objectData.length];
-                for (int i = 0; i < objectData.length; i++) {
-                    if (i == 6) {
-                        eventData[i] = Long.parseLong(objectData[i]);
-                    } else if ("null".equals(objectData[i])) {
-                        eventData[i] = null;
-                    } else {
-                        eventData[i] = objectData[i];
-                    }
-
-                }
-                inputHandler.send(eventData);
-            }
+        Object[][] eventsData = new Gson().fromJson(inputData, Object[][].class);
+        for (Object[] eventData : eventsData) {
+            eventData[6] = ((Double) eventData[6]).longValue();
+            eventData[7] = ((Double) eventData[7]).longValue();
+            inputHandler.send(eventData);
         }
     }
 
