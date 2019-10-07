@@ -89,7 +89,7 @@ func TestNewAdapter(t *testing.T) {
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(200)
 	}))
-	defer func() { testServer.Close() }()
+	defer testServer.Close()
 	adapter, err := New(DefaultAdapterPort, logger, &http.Client{}, nil, testServer.URL, buffer, false)
 	wantStr := "[::]:38355"
 	if err != nil {

@@ -56,7 +56,7 @@ func (publisher *Publisher) Run(shutdown chan error) {
 			publisher.Logger.Fatal(quit.Error())
 			return
 		case _ = <-publisher.Ticker.C:
-			publisher.execute()
+			publisher.Execute()
 		}
 	}
 }
@@ -96,7 +96,7 @@ func (publisher *Publisher) doTransaction(fn func(Transaction) error) (err error
 	return err
 }
 
-func (publisher *Publisher) execute() {
+func (publisher *Publisher) Execute() {
 
 	run := make(chan bool, 1)
 	for {

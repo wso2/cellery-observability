@@ -16,33 +16,19 @@
  * under the License.
  */
 
-package database
+package e2e
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
+	databasepublisher "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher/database"
 )
-
-var (
-	testStr = "{\"contextReporterKind\":\"inbound\", \"destinationUID\":\"kubernetes://istio-policy-74d6c8b4d5-mmr49.istio-system\", \"requestID\":\"6e544e82-2a0c-4b83-abcc-0f62b89cdf3f\", \"requestMethod\":\"POST\", \"requestPath\":\"/istio.mixer.v1.Mixer/Check\", \"requestTotalSize\":\"2748\", \"responseCode\":\"200\", \"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":\"b55a0f7f20d36e49f8612bac4311791d\"}"
-)
-
-type RoundTripFunc func(req *http.Request) *http.Response
-
-func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return f(req), nil
-}
-
-func NewTestClient(fn RoundTripFunc) *http.Client {
-	return &http.Client{
-		Transport: fn,
-	}
-}
 
 func TestPublisher_Run(t *testing.T) {
 
@@ -79,18 +65,16 @@ func TestPublisher_Run(t *testing.T) {
 
 	ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
 
-	client := NewTestClient(func(req *http.Request) *http.Response {
-		return &http.Response{
-			StatusCode: 200,
-			Header:     make(http.Header),
-		}
-	})
+	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(200)
+	}))
+	defer testServer.Close()
 
-	var p = &Publisher{
+	var p = &databasepublisher.Publisher{
 		Ticker:      ticker,
 		Logger:      logger,
-		SpServerUrl: "http://test.com",
-		HttpClient:  client,
+		SpServerUrl: testServer.URL,
+		HttpClient:  &http.Client{},
 		Db:          db,
 		WaitingSize: queueLength,
 	}
