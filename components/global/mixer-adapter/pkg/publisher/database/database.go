@@ -21,22 +21,15 @@ package database
 import (
 	"bytes"
 	"compress/gzip"
-
-	//"bytes"
-	//"compress/gzip"
 	"database/sql"
 	"fmt"
-	"strings"
-
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
-
-	//"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
-	//"github.com/gofrs/flock"
-
 	"go.uber.org/zap"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
 )
 
 type (
@@ -121,7 +114,7 @@ func (publisher *Publisher) read(run chan bool) {
 
 	err := publisher.doTransaction(func(tx Transaction) error {
 
-		rows, err := tx.Query("SELECT * FROM persistence LIMIT ?", publisher.WaitingSize)
+		rows, err := tx.Query("SELECT * FROM persistence LIMIT ? FOR UPDATE", publisher.WaitingSize)
 		if err != nil {
 			return err
 		}

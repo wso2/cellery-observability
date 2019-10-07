@@ -26,7 +26,6 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
 )
 
 var (
@@ -52,28 +51,18 @@ func TestPublisher_Run(t *testing.T) {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 
-	shutdown := make(chan error, 1)
 	tickerSec := 3
 	queueLength := 2
 
-	// Creates sqlmock database connection and a mock to manage expectations.
 	db, mock, err := sqlmock.New()
 
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	// Closes the database and prevents new queries from starting.
-	defer func() {
-		_ = db.Close()
-	}()
 
-	// Here we are creating rows in our mocked database.
 	rows := sqlmock.NewRows([]string{"id", "json"}).
 		AddRow(1, testStr).
 		AddRow(2, testStr)
-
-	// This is most important part in our test. Here, literally, we are altering SQL query from MenuByNameAndLanguage
-	// function and replacing result with our expected result.
 	mock.ExpectBegin()
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
 		WillReturnRows(rows)
@@ -83,11 +72,10 @@ func TestPublisher_Run(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").WillReturnRows(sqlmock.NewRows([]string{}))
-
-	// we make sure that all expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
+	mock.ExpectExec("^DELETE FROM persistence*").
+		WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectCommit()
+	_ = mock.ExpectationsWereMet()
 
 	ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
 
@@ -98,24 +86,21 @@ func TestPublisher_Run(t *testing.T) {
 		}
 	})
 
-	var p publisher.Publisher
-
-	p = &Publisher{
+	var p = &Publisher{
 		Ticker:      ticker,
 		Logger:      logger,
-		SpServerUrl: "http://example.com",
+		SpServerUrl: "http://test.com",
 		HttpClient:  client,
 		Db:          db,
 		WaitingSize: queueLength,
 	}
 
-	defer func() {
-		p.Run(shutdown)
-	}()
+	go p.execute()
 
-	// we make sure that all expectations were met
+	time.Sleep(10 * time.Second)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
+	} else {
+		t.Log("Test passed")
 	}
-
 }

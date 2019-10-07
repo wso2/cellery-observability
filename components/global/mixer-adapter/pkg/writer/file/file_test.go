@@ -96,4 +96,3 @@ func TestWriter(t *testing.T) {
 	}
 
 }
-
