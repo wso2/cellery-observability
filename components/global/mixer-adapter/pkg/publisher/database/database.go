@@ -28,8 +28,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
 )
 
 type (
@@ -64,30 +62,28 @@ func (publisher *Publisher) Run(shutdown chan error) {
 func (publisher *Publisher) doTransaction(fn func(Transaction) error) (err error) {
 	tx, err := publisher.Db.Begin()
 	if err != nil {
-		return
+		publisher.Logger.Warnf("Could not begin the transaction : %s", err.Error())
+		return err
 	}
 
 	defer func() {
 		if p := recover(); p != nil {
-			_, err = retrier.Retry(10, 2*time.Second, "ROLLBACK", func() (locked interface{}, err error) {
-				err = tx.Rollback()
-				return
-			})
-			if err != nil {
-				publisher.Logger.Warnf("Could not rollback the transaction : %s", err.Error())
+			e := tx.Rollback()
+			if e != nil {
+				publisher.Logger.Warnf("Could not rollback the transaction : %s", e.Error())
+				err = e
 			}
 		} else if err != nil {
-			_, err = retrier.Retry(10, 2*time.Second, "ROLLBACK", func() (locked interface{}, err error) {
-				err = tx.Rollback()
-				return
-			})
-			if err != nil {
-				publisher.Logger.Warnf("Could not rollback the transaction : %s", err.Error())
+			e := tx.Rollback()
+			if e != nil {
+				publisher.Logger.Warnf("Could not rollback the transaction : %s", e.Error())
+				err = e
 			}
 		} else {
-			err = tx.Commit()
-			if err != nil {
-				publisher.Logger.Warnf("Could not commit : %s", err.Error())
+			e := tx.Commit()
+			if e != nil {
+				publisher.Logger.Warnf("Could not commit the transaction : %s", e.Error())
+				err = e
 			}
 		}
 	}()
@@ -112,10 +108,11 @@ func (publisher *Publisher) Execute() {
 
 func (publisher *Publisher) read(run chan bool) {
 
-	err := publisher.doTransaction(func(tx Transaction) error {
+	_ = publisher.doTransaction(func(tx Transaction) error {
 
 		rows, err := tx.Query("SELECT * FROM persistence LIMIT ? FOR UPDATE", publisher.WaitingSize)
 		if err != nil {
+			publisher.Logger.Warnf("Could not fetch rows from the database : %s", err.Error())
 			return err
 		}
 		defer func() {
@@ -144,6 +141,7 @@ func (publisher *Publisher) read(run chan bool) {
 
 		_, err = tx.Exec("DELETE FROM persistence WHERE id IN" + idArr)
 		if err != nil {
+			publisher.Logger.Warnf("Could not delete the Rows : %s", err.Error())
 			return err
 		}
 
@@ -155,9 +153,6 @@ func (publisher *Publisher) read(run chan bool) {
 		return nil
 	})
 
-	if err != nil {
-		publisher.Logger.Warnf("Could not read : %s", err.Error())
-	}
 }
 
 func (publisher *Publisher) publish(jsonArr string) int {
@@ -165,17 +160,17 @@ func (publisher *Publisher) publish(jsonArr string) int {
 	var buf bytes.Buffer
 	g := gzip.NewWriter(&buf)
 	if _, err := g.Write([]byte(jsonArr)); err != nil {
-		publisher.Logger.Debug(err.Error())
+		publisher.Logger.Debugf("Could not write to buffer : %s", err.Error())
 		return 500
 	}
 	if err := g.Close(); err != nil {
-		publisher.Logger.Debug(err.Error())
+		publisher.Logger.Debugf("Could not close the gzip writer : %s", err.Error())
 		return 500
 	}
 	req, err := http.NewRequest("POST", publisher.SpServerUrl, &buf)
 
 	if err != nil {
-		publisher.Logger.Debug(err.Error())
+		publisher.Logger.Debug("Could not make a new request : %s", err.Error())
 		return 500
 	}
 
@@ -186,7 +181,7 @@ func (publisher *Publisher) publish(jsonArr string) int {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		publisher.Logger.Debug(err.Error())
+		publisher.Logger.Debug("Could not receive a response from the server : %s", err.Error())
 		return 500
 	}
 

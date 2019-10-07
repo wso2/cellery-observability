@@ -22,8 +22,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
-
 	"go.uber.org/zap"
 )
 
@@ -70,28 +68,29 @@ func (writer *Writer) shouldWrite() bool {
 func (writer *Writer) doTransaction(fn func(Transaction) error) (err error) {
 	tx, err := writer.Db.Begin()
 	if err != nil {
-		return
+		writer.Logger.Warnf("Could not begin the transaction : %s", err.Error())
+		return err
 	}
 
 	defer func() {
 		if p := recover(); p != nil {
-			_, err = retrier.Retry(10, 2*time.Second, "ROLLBACK", func() (locked interface{}, err error) {
-				err = tx.Rollback()
-				return
-			})
-			if err != nil {
-				writer.Logger.Warnf("Could not rollback the transaction : %s", err.Error())
+			e := tx.Rollback()
+			if e != nil {
+				writer.Logger.Warnf("Could not rollback the transaction : %s", e.Error())
+				err = e
 			}
 		} else if err != nil {
-			_, err = retrier.Retry(10, 2*time.Second, "ROLLBACK", func() (locked interface{}, err error) {
-				err = tx.Rollback()
-				return
-			})
-			if err != nil {
-				writer.Logger.Warnf("Could not rollback the transaction : %s", err.Error())
+			e := tx.Rollback()
+			if e != nil {
+				writer.Logger.Warnf("Could not rollback the transaction : %s", e.Error())
+				err = e
 			}
 		} else {
-			err = tx.Commit()
+			e := tx.Commit()
+			if e != nil {
+				//writer.Logger.Warnf("Could not commit the transaction : %s", e.Error())
+				err = e
+			}
 		}
 	}()
 
@@ -109,20 +108,18 @@ func (writer *Writer) write() {
 			}
 			continue
 		}
-		_, err := retrier.Retry(5, 2*time.Second, "INSERT", func() (i interface{}, err error) {
-			err = writer.doTransaction(func(tx Transaction) error {
-				//CREATE TABLE IF NOT EXISTS `persistence` (`id` INT AUTO_INCREMENT PRIMARY KEY, `json` LONGTEXT);
-				i, err = tx.Exec("INSERT INTO persistence(json) VALUES (?)", element)
-				if err != nil {
-					return err
-				}
+		err := writer.doTransaction(func(tx Transaction) error {
+			//CREATE TABLE IF NOT EXISTS `persistence` (`id` INT AUTO_INCREMENT PRIMARY KEY, `json` LONGTEXT);
+			_, err := tx.Exec("INSERT INTO persistence(json) VALUES (?)", element)
+			if err != nil {
+				writer.Logger.Warnf("Could not insert the metric to the database : %s", err.Error())
+				return err
+			}
 
-				return nil
-			})
-			return i, err
+			return nil
 		})
 		if err != nil {
-			writer.Logger.Warnf("Could not insert : %s", err.Error())
+			writer.Logger.Debug("Could not store the metric in the database, restoring...")
 			writer.Buffer <- element
 		}
 		if len(writer.Buffer) == 0 {

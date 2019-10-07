@@ -19,12 +19,12 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer"
 
 	"github.com/DATA-DOG/go-sqlmock"
 
@@ -35,27 +35,7 @@ var (
 	testStr = "{\"contextReporterKind\":\"inbound\", \"destinationUID\":\"kubernetes://istio-policy-74d6c8b4d5-mmr49.istio-system\", \"requestID\":\"6e544e82-2a0c-4b83-abcc-0f62b89cdf3f\", \"requestMethod\":\"POST\", \"requestPath\":\"/istio.mixer.v1.Mixer/Check\", \"requestTotalSize\":\"2748\", \"responseCode\":\"200\", \"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":\"b55a0f7f20d36e49f8612bac4311791d\"}"
 )
 
-type RoundTripFunc func(req *http.Request) *http.Response
-
-func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return f(req), nil
-}
-
-func NewTestClient(fn RoundTripFunc) *http.Client {
-	return &http.Client{
-		Transport: fn,
-	}
-}
-
 func TestPublisher_Run(t *testing.T) {
-
-	logger, err := logging.NewLogger()
-	if err != nil {
-		t.Errorf("Error building logger: %s", err.Error())
-	}
-
-	tickerSec := 16
-	queueLength := 2
 
 	db, mock, err := sqlmock.New()
 
@@ -63,71 +43,30 @@ func TestPublisher_Run(t *testing.T) {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 
-	rows := sqlmock.NewRows([]string{"id", "json"}).
-		AddRow(1, testStr).
-		AddRow(2, testStr)
-
 	mock.ExpectBegin().WillReturnError(fmt.Errorf("test error 1"))
 
 	mock.ExpectBegin()
-	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
-		WillReturnError(fmt.Errorf("test error 2"))
+	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnError(fmt.Errorf("test error 2"))
 	mock.ExpectRollback()
 
 	mock.ExpectBegin()
-	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
-		WillReturnError(fmt.Errorf("test error 3"))
+	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnError(fmt.Errorf("test error 3"))
 	mock.ExpectRollback().WillReturnError(fmt.Errorf("test error 4"))
 
 	mock.ExpectBegin()
-	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
-		WillReturnRows(rows)
-	mock.ExpectExec("^DELETE FROM persistence*").
-		WillReturnResult(sqlmock.NewResult(2, 2))
-	mock.ExpectCommit().WillReturnError(fmt.Errorf("test error 5"))
-
-	rows = sqlmock.NewRows([]string{"id", "json"}).
-		AddRow(1, testStr).
-		AddRow(2, testStr)
+	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnResult(sqlmock.NewResult(2, 2))
+	mock.ExpectCommit().WillReturnError(fmt.Errorf("test error 4"))
 
 	mock.ExpectBegin()
-	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
-		WillReturnRows(rows)
-	mock.ExpectExec("^DELETE FROM persistence*").
-		WillReturnResult(sqlmock.NewResult(2, 2))
+	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnResult(sqlmock.NewResult(2, 2))
 	mock.ExpectCommit()
 
-	mock.ExpectBegin()
-	mock.ExpectQuery("^SELECT (.+) FROM persistence*").WillReturnRows(sqlmock.NewRows([]string{}))
-	mock.ExpectExec("^DELETE FROM persistence*").
-		WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectCommit()
+	buffer := make(chan string, 20)
 
-	ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
+	Run(db, t, buffer)
 
-	client := NewTestClient(func(req *http.Request) *http.Response {
-		return &http.Response{
-			StatusCode: 200,
-			Header:     make(http.Header),
-		}
-	})
-
-	var p publisher.Publisher
-
-	p = &Publisher{
-		Ticker:      ticker,
-		Logger:      logger,
-		SpServerUrl: "http://test.com",
-		HttpClient:  client,
-		Db:          db,
-		WaitingSize: queueLength,
-	}
-
-	shutdown := make(chan error, 1)
-
-	go func() {
-		p.Run(shutdown)
-	}()
+	buffer <- testStr
+	buffer <- ""
 
 	time.Sleep(30 * time.Second)
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -135,4 +74,28 @@ func TestPublisher_Run(t *testing.T) {
 	} else {
 		t.Log("Test passed")
 	}
+}
+
+func Run(db *sql.DB, t *testing.T, buffer chan string) {
+
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %s", err.Error())
+	}
+	shutdown := make(chan error, 1)
+
+	var p writer.Writer
+	p = &Writer{
+		WaitingTimeSec: 5,
+		Logger:         logger,
+		WaitingSize:    2,
+		Db:             db,
+		Buffer:         buffer,
+		StartTime:      time.Now(),
+	}
+
+	go func() {
+		p.Run(shutdown)
+	}()
+
 }

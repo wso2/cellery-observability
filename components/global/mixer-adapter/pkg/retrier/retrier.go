@@ -24,15 +24,12 @@ import (
 )
 
 func Retry(attempts int, sleep time.Duration, action string, f func() (interface{}, error)) (output interface{}, err error) {
-	for i := 0; ; i++ {
+	for i := 0; i < attempts; i++ {
 		output, err = f()
 		if err == nil {
 			return
 		}
-		if i >= (attempts - 1) {
-			break
-		}
 		time.Sleep(sleep)
 	}
-	return output, fmt.Errorf("tried %d times to %s, last error: %s", attempts, action, err)
+	return output, fmt.Errorf("tried %d times to %s : %s", attempts, action, err)
 }
