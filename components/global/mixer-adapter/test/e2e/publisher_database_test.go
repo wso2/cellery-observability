@@ -19,10 +19,13 @@
 package e2e
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
 
 	"github.com/DATA-DOG/go-sqlmock"
 
@@ -37,7 +40,7 @@ func TestPublisher_Run(t *testing.T) {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 
-	tickerSec := 3
+	tickerSec := 16
 	queueLength := 2
 
 	db, mock, err := sqlmock.New()
@@ -49,6 +52,30 @@ func TestPublisher_Run(t *testing.T) {
 	rows := sqlmock.NewRows([]string{"id", "json"}).
 		AddRow(1, testStr).
 		AddRow(2, testStr)
+
+	mock.ExpectBegin().WillReturnError(fmt.Errorf("test error 1"))
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
+		WillReturnError(fmt.Errorf("test error 2"))
+	mock.ExpectRollback()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
+		WillReturnError(fmt.Errorf("test error 3"))
+	mock.ExpectRollback().WillReturnError(fmt.Errorf("test error 4"))
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
+		WillReturnRows(rows)
+	mock.ExpectExec("^DELETE FROM persistence*").
+		WillReturnResult(sqlmock.NewResult(2, 2))
+	mock.ExpectCommit().WillReturnError(fmt.Errorf("test error 5"))
+
+	rows = sqlmock.NewRows([]string{"id", "json"}).
+		AddRow(1, testStr).
+		AddRow(2, testStr)
+
 	mock.ExpectBegin()
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
 		WillReturnRows(rows)
@@ -61,7 +88,6 @@ func TestPublisher_Run(t *testing.T) {
 	mock.ExpectExec("^DELETE FROM persistence*").
 		WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectCommit()
-	_ = mock.ExpectationsWereMet()
 
 	ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
 
@@ -70,7 +96,9 @@ func TestPublisher_Run(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	var p = &databasepublisher.Publisher{
+	var p publisher.Publisher
+
+	p = &databasepublisher.Publisher{
 		Ticker:      ticker,
 		Logger:      logger,
 		SpServerUrl: testServer.URL,
@@ -79,9 +107,13 @@ func TestPublisher_Run(t *testing.T) {
 		WaitingSize: queueLength,
 	}
 
-	go p.Execute()
+	shutdown := make(chan error, 1)
 
-	time.Sleep(10 * time.Second)
+	go func() {
+		p.Run(shutdown)
+	}()
+
+	time.Sleep(30 * time.Second)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	} else {
