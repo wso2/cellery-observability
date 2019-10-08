@@ -30,19 +30,19 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/persister"
+
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/database"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/file"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
-	publisherdatabase "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher/database"
-	publisherfile "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher/file"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer"
-	writerdatabase "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer/database"
-	writerfile "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer/file"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -99,19 +99,21 @@ func main() {
 	vendor := os.Getenv(vendorEnv)
 	dsn := os.Getenv(dsnEnv)
 
-	//TODO: Remove below test data
-	//vendor = "mysql"
-	//dsn = "root:@/PERSISTENCE"
-	//waitingSec = 3
-	//tickerSec = 3
-	//queueLength = 2
-	//spServerUrl = "http://localhost:8500"
-
 	persist, err = strconv.ParseBool(os.Getenv(shouldPersist)) // this should be a string contains a boolean, "true" or "false"
 	if err != nil {
 		logger.Warnf("Could not convert env of persisting : %s", err.Error())
 		persist = false
 	}
+
+	//TODO: Remove below test data
+	//vendor = "mysql"
+	//dsn = "root:@/PERSISTENCE"
+	waitingSec = 5
+	tickerSec = 3
+	queueLength = 2
+	spServerUrl = "http://localhost:8500"
+	persist = true
+	directory = "./temp"
 
 	logger.Infof("Sp server url : %s", spServerUrl)
 	logger.Infof("Directory to store files : %s", directory)
@@ -129,12 +131,7 @@ func main() {
 	}
 
 	buffer := make(chan string, queueLength*10)
-
-	var w writer.Writer
-	var p publisher.Publisher
-
 	shutdown := make(chan error, 1)
-
 	spAdapter, err := adapter.New(port, logger, client, serverOption, spServerUrl, buffer, persist)
 	if err != nil {
 		logger.Fatal("unable to start server: ", err.Error())
@@ -143,44 +140,71 @@ func main() {
 		spAdapter.Run(shutdown)
 	}()
 
-	if (vendor != "") && (dsn != "") {
+	if persist {
 
-		db, err := retrier.Retry(10, 2*time.Second, "CONNECT_SQL", func() (db interface{}, err error) {
-			db, err = sql.Open(vendor, dsn)
-			return db, err
-		})
+		var ps persister.Persister
+		w := &writer.Writer{
+			WaitingTimeSec: waitingSec,
+			WaitingSize:    queueLength,
+			Logger:         logger,
+			Buffer:         buffer,
+			StartTime:      time.Time{},
+		}
+		ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
+		p := &publisher.Publisher{
+			Ticker:      ticker,
+			Logger:      logger,
+			SpServerUrl: spServerUrl,
+			HttpClient:  &http.Client{},
+		}
 
-		if err != nil {
-			logger.Warnf("Could not connect to the MySQL database, enabling file persistence : %s", err.Error())
+		if (vendor != "") && (dsn != "") {
+
+			db, err := retrier.Retry(10, 2*time.Second, "CONNECT_SQL", func() (db interface{}, err error) {
+				db, err = sql.Open(vendor, dsn)
+				return db, err
+			})
+
+			if err != nil {
+				logger.Warnf("Could not connect to the MySQL database, enabling file persistence : %s", err.Error())
+			} else {
+
+				persist = false
+				logger.Infof("Successfully connected to the MySQL database, Disabling file persistence")
+				ps = &database.Persister{
+					WaitingSize: queueLength,
+					Logger:      logger,
+					Buffer:      buffer,
+					Db:          db.(*sql.DB),
+				}
+
+				w.Persister = ps
+				go func() {
+					w.Run(shutdown)
+				}()
+
+				p.Persister = ps
+				go func() {
+					p.Run(shutdown)
+				}()
+
+			}
 		} else {
 
-			persist = false
-			logger.Infof("Successfully connected to the MySQL database, Disabling file persistence")
-
-			w = &writerdatabase.Writer{
-				WaitingTimeSec: waitingSec,
-				WaitingSize:    queueLength,
-				Logger:         logger,
-				Buffer:         buffer,
-				StartTime:      time.Now(),
-				Db:             db.(*sql.DB),
+			ps = &file.Persister{
+				WaitingSize: waitingSec,
+				Logger:      logger,
+				Buffer:      buffer,
+				StartTime:   time.Time{},
+				Directory:   directory,
 			}
 
+			w.Persister = ps
 			go func() {
 				w.Run(shutdown)
 			}()
 
-			ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
-
-			p = &publisherdatabase.Publisher{
-				Ticker:      ticker,
-				Logger:      logger,
-				SpServerUrl: spServerUrl,
-				HttpClient:  client,
-				Db:          db.(*sql.DB),
-				WaitingSize: queueLength,
-			}
-
+			p.Persister = ps
 			go func() {
 				p.Run(shutdown)
 			}()
@@ -188,40 +212,30 @@ func main() {
 		}
 	}
 
-	if persist {
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
 
-		w = &writerfile.Writer{
-			WaitingTimeSec: waitingSec,
-			WaitingSize:    queueLength,
-			Logger:         logger,
-			Buffer:         buffer,
-			StartTime:      time.Now(),
-			Directory:      directory,
-		}
+	time.Sleep(5 * time.Second)
 
-		go func() {
-			w.Run(shutdown)
-		}()
-
-		ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
-
-		p = &publisherfile.Publisher{
-			Ticker:      ticker,
-			Logger:      logger,
-			SpServerUrl: spServerUrl,
-			Directory:   directory,
-			HttpClient:  client,
-		}
-
-		go func() {
-			p.Run(shutdown)
-		}()
-	}
+	buffer <- testStr
 
 	err = <-shutdown
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
+
 }
 
 func getServerTLSOption(adapterCertificate, adapterPrivateKey, caCertificate string) (grpc.ServerOption, error) {

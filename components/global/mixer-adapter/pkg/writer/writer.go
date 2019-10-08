@@ -18,8 +18,45 @@
 
 package writer
 
+import (
+	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/persister"
+)
+
 type (
-	Writer interface {
-		Run(shutdown chan error)
+	Writer struct {
+		WaitingTimeSec int
+		WaitingSize    int
+		Logger         *zap.SugaredLogger
+		Buffer         chan string
+		StartTime      time.Time
+		Persister      persister.Persister
 	}
 )
+
+func (writer *Writer) Run(shutdown chan error) {
+	writer.Logger.Info("writer started")
+	for {
+		select {
+		case quit := <-shutdown:
+			writer.Logger.Fatal(quit.Error())
+			return
+		default:
+			if writer.shouldWrite() {
+				writer.Persister.Write()
+			}
+		}
+	}
+}
+
+func (writer *Writer) shouldWrite() bool {
+	if (len(writer.Buffer) > 0) && (len(writer.Buffer) >= writer.WaitingSize || time.Since(writer.StartTime) > time.Duration(writer.WaitingTimeSec)*time.Second) {
+		writer.Logger.Debugf("Time since the previous write : %s", time.Since(writer.StartTime))
+		return true
+	} else {
+		return false
+	}
+}

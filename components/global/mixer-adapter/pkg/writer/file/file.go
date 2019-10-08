@@ -42,8 +42,6 @@ type (
 	}
 )
 
-var num int = 0
-
 func (writer *Writer) Run(shutdown chan error) {
 	writer.Logger.Info("File writer started")
 	for {

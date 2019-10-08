@@ -18,8 +18,95 @@
 
 package publisher
 
+import (
+	"bytes"
+	"compress/gzip"
+	"fmt"
+	"net/http"
+	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/persister"
+)
+
 type (
-	Publisher interface {
-		Run(shutdown chan error)
+	Publisher struct {
+		Ticker      *time.Ticker
+		Logger      *zap.SugaredLogger
+		SpServerUrl string
+		HttpClient  *http.Client
+		Persister   persister.Persister
 	}
 )
+
+func (publisher *Publisher) Run(shutdown chan error) {
+	publisher.Logger.Info("Publisher started")
+	for {
+		select {
+		case quit := <-shutdown:
+			publisher.Logger.Fatal(quit.Error())
+			return
+		case _ = <-publisher.Ticker.C:
+			publisher.execute()
+		}
+	}
+}
+
+func (publisher *Publisher) execute() {
+
+	run := make(chan bool, 1)
+	for {
+		select {
+		case _ = <-run:
+			return
+		default:
+			jsonArr, err := publisher.Persister.Fetch(run)
+			if err == nil && jsonArr != "" {
+				statusCode := publisher.publish(jsonArr)
+				if statusCode != 200 {
+					publisher.Persister.Clean(fmt.Errorf("bad response from the sp server : %d", statusCode))
+				} else {
+					publisher.Logger.Debugf("Response from the sp server : %d", statusCode)
+					publisher.Persister.Clean(nil)
+				}
+			}
+		}
+	}
+
+}
+
+func (publisher *Publisher) publish(jsonArr string) int {
+
+	var buf bytes.Buffer
+	g := gzip.NewWriter(&buf)
+	if _, err := g.Write([]byte(jsonArr)); err != nil {
+		publisher.Logger.Debugf("Could not write to buffer : %s", err.Error())
+		return 500
+	}
+	if err := g.Close(); err != nil {
+		publisher.Logger.Debugf("Could not close the gzip writer : %s", err.Error())
+		return 500
+	}
+	req, err := http.NewRequest("POST", publisher.SpServerUrl, &buf)
+
+	if err != nil {
+		publisher.Logger.Debug("Could not make a new request : %s", err.Error())
+		return 500
+	}
+
+	client := &http.Client{}
+
+	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Encoding", "gzip")
+	resp, err := client.Do(req)
+
+	if err != nil {
+		publisher.Logger.Debug("Could not receive a response from the server : %s", err.Error())
+		return 500
+	}
+
+	statusCode := resp.StatusCode
+
+	return statusCode
+}
