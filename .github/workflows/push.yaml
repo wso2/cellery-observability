@@ -1,0 +1,30 @@
+name: Push
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Cloning repository
+      uses: actions/checkout@v1
+    - name: Setup JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    - name: Setup Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.12.7
+    - name: Build Java Modules
+      run: mvn clean install
+    - name: Build Mixer Adapter
+      run: make clean.mixer-adapter check-style.mixer-adapter build.mixer-adapter test.mixer-adapter
+      env:
+        GO111MODULE: on
+    - name: Check Code Coverage
+      uses: codecov/codecov-action@v1.0.2
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Build Docker Images
+      run: make docker
+    - name: Push Docker Images
+      run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} && make docker-push
