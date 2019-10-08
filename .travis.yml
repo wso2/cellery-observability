@@ -1,4 +1,5 @@
 if: type = pull_request
+dist: trusty
 language: go
 jdk:
   - openjdk8
