@@ -123,6 +123,6 @@
 
     <properties>
         <maven.checkstyleplugin.excludes>**/generated/**</maven.checkstyleplugin.excludes>
-        <mavan.findbugsplugin.exclude.file>spotbugs-exclude.xml</mavan.findbugsplugin.exclude.file>
+        <maven.spotbugs.exclude.file>spotbugs-exclude.xml</maven.spotbugs.exclude.file>
     </properties>
 </project>
