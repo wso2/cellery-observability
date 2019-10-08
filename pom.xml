@@ -324,11 +324,6 @@
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <groupId>com.spotify</groupId>
-                    <artifactId>dockerfile-maven-plugin</artifactId>
-                    <version>${spotify.docker.plugin.version}</version>
-                </plugin>
-                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven.surefire.plugin.version}</version>
@@ -580,12 +575,7 @@
         <io.netty.version>4.1.36.Final</io.netty.version>
         <httpserver.version>20070405</httpserver.version>
 
-        <spotify.docker.plugin.version>1.4.10</spotify.docker.plugin.version>
         <spotbugs.version>3.1.12.2</spotbugs.version>
-
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <docker.repo.name>wso2cellery</docker.repo.name>
-        <docker.image.tag>latest</docker.image.tag>
     </properties>
 </project>
