@@ -61,10 +61,6 @@ const (
 	dsnEnv                     string = "DSN"
 )
 
-var (
-	testStr = "{\"contextReporterKind\":\"inbound\", \"destinationUID\":\"kubernetes://istio-policy-74d6c8b4d5-mmr49.istio-system\", \"requestID\":\"6e544e82-2a0c-4b83-abcc-0f62b89cdf3f\", \"requestMethod\":\"POST\", \"requestPath\":\"/istio.mixer.v1.Mixer/Check\", \"requestTotalSize\":\"2748\", \"responseCode\":\"200\", \"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":\"b55a0f7f20d36e49f8612bac4311791d\"}"
-)
-
 func main() {
 	port := adapter.DefaultAdapterPort //Pre defined port for the adaptor.
 	persist := true
@@ -108,12 +104,12 @@ func main() {
 	//TODO: Remove below test data
 	//vendor = "mysql"
 	//dsn = "root:@/PERSISTENCE"
-	waitingSec = 5
-	tickerSec = 3
-	queueLength = 2
-	spServerUrl = "http://localhost:8500"
-	persist = true
-	directory = "./temp"
+	//waitingSec = 5
+	//tickerSec = 3
+	//queueLength = 2
+	//spServerUrl = "http://localhost:8500"
+	//persist = true
+	//directory = "./temp"
 
 	logger.Infof("Sp server url : %s", spServerUrl)
 	logger.Infof("Directory to store files : %s", directory)
@@ -211,29 +207,6 @@ func main() {
 
 		}
 	}
-
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-
-	time.Sleep(15 * time.Second)
-
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
 
 	err = <-shutdown
 	if err != nil {
