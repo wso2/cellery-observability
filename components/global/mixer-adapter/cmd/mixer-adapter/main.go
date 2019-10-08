@@ -227,8 +227,12 @@ func main() {
 	buffer <- testStr
 	buffer <- testStr
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(15 * time.Second)
 
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
 	buffer <- testStr
 
 	err = <-shutdown

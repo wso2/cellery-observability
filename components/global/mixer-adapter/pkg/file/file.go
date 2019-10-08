@@ -55,6 +55,7 @@ func (persister *Persister) Write() {
 
 	if err != nil {
 		persister.Logger.Warnf("Could not lock the created file : %s", err.Error())
+		return
 	}
 
 	elements := persister.getElements()
@@ -158,10 +159,16 @@ func (persister *Persister) Clean(err error) {
 
 func (persister *Persister) read(fname string) (string, error) {
 	fileLock := flock.New(fname)
-	_, err := fileLock.TryLock()
+	locked, err := fileLock.TryLock()
+
 	if err != nil {
-		persister.Logger.Debug("Could not lock the file")
+		persister.Logger.Debugf("Could not lock the file : %s", err.Error())
 		return "", fmt.Errorf("could not lock the file")
+	}
+
+	if !locked {
+		persister.Logger.Debug("Could not achieve the lock")
+		return "", fmt.Errorf("could not achieve the lock")
 	}
 
 	data, err := ioutil.ReadFile(fname)
