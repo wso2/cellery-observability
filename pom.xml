@@ -384,6 +384,27 @@
                         </execution>
                     </executions>
                 </plugin>
+                <plugin>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>${spotbugs.version}</version>
+                    <configuration>
+                        <effort>Max</effort>
+                        <threshold>Low</threshold>
+                        <xmlOutput>true</xmlOutput>
+                        <spotbugsXmlOutputDirectory>${project.build.directory}/findbugs</spotbugsXmlOutputDirectory>
+                        <excludeFilterFile>${maven.spotbugs.exclude.file}</excludeFilterFile>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>analyze-compile</id>
+                            <phase>compile</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -417,6 +438,23 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>buildnumber-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+            </plugin>
+            <plugin><!-- Disabling findbugs plugin in favour of spotbugs plugin -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>analyze-compile</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -538,12 +576,12 @@
         <testng.version>6.9.10</testng.version>
         <org.jacoco.version>0.8.3</org.jacoco.version>
 
-        <spotify.docker.plugin.version>1.4.10</spotify.docker.plugin.version>
-        <maven.findbugsplugin.version>3.0.5</maven.findbugsplugin.version>
         <h2.database.version>1.4.191</h2.database.version>
         <io.netty.version>4.1.36.Final</io.netty.version>
-
         <httpserver.version>20070405</httpserver.version>
+
+        <spotify.docker.plugin.version>1.4.10</spotify.docker.plugin.version>
+        <spotbugs.version>3.1.12.2</spotbugs.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
