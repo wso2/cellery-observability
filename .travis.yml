@@ -1,3 +1,4 @@
+if: type = pull_request
 language: go
 jdk:
   - openjdk8
