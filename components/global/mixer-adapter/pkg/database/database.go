@@ -43,13 +43,15 @@ type (
 var trans *sql.Tx
 
 func (persister *Persister) Fetch(run chan bool) (string, error) {
+
 	var err error
 	trans, err = persister.Db.Begin()
+	defer persister.catchPanic()
 	if err != nil {
 		persister.Logger.Warnf("Could not begin the transaction : %s", err.Error())
 		return "", err
 	}
-	rows, err := trans.Query("SELECT * FROM persistence LIMIT ? FOR UPDATE", persister.WaitingSize)
+	rows, err := trans.Query("SELECT id,json FROM persistence LIMIT ? FOR UPDATE", persister.WaitingSize)
 	if err != nil {
 		persister.Logger.Warnf("Could not fetch rows from the database : %s", err.Error())
 		return "", err
@@ -89,19 +91,26 @@ func (persister *Persister) Fetch(run chan bool) (string, error) {
 	return jsonArr, nil
 }
 
+func (persister *Persister) catchPanic() {
+	if p := recover(); p != nil {
+		persister.Logger.Infof("There was a panic in the process : %s", p)
+		if trans == nil {
+			return
+		}
+		e := trans.Rollback()
+		if e != nil {
+			persister.Logger.Warnf("Could not rollback the transaction : %s", e.Error())
+		}
+	}
+}
+
 func (persister *Persister) Clean(err error) {
 
 	if trans == nil {
 		return
 	}
 
-	if p := recover(); p != nil {
-		e := trans.Rollback()
-		if e != nil {
-			persister.Logger.Warnf("Could not rollback the transaction : %s", e.Error())
-			err = e
-		}
-	} else if err != nil {
+	if err != nil {
 		e := trans.Rollback()
 		if e != nil {
 			persister.Logger.Warnf("Could not rollback the transaction : %s", e.Error())
@@ -126,7 +135,6 @@ func (persister *Persister) Write() {
 			continue
 		}
 		err := persister.doTransaction(func(tx Transaction) error {
-			//CREATE TABLE IF NOT EXISTS `persistence` (`id` INT AUTO_INCREMENT PRIMARY KEY, `json` LONGTEXT);
 			_, err := tx.Exec("INSERT INTO persistence(json) VALUES (?)", element)
 			if err != nil {
 				persister.Logger.Warnf("Could not insert the metric to the database : %s", err.Error())

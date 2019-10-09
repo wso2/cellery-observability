@@ -55,6 +55,7 @@ func (writer *Writer) Run(shutdown chan error) {
 func (writer *Writer) shouldWrite() bool {
 	if (len(writer.Buffer) > 0) && (len(writer.Buffer) >= writer.WaitingSize || time.Since(writer.StartTime) > time.Duration(writer.WaitingTimeSec)*time.Second) {
 		writer.Logger.Debugf("Time since the previous write : %s", time.Since(writer.StartTime))
+		writer.StartTime = time.Now()
 		return true
 	} else {
 		return false

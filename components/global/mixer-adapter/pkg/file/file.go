@@ -38,7 +38,6 @@ type (
 		WaitingSize int
 		Logger      *zap.SugaredLogger
 		Buffer      chan string
-		StartTime   time.Time
 		Directory   string
 	}
 )
@@ -46,6 +45,7 @@ type (
 var fname string
 
 func (persister *Persister) Write() {
+
 	fileLock := persister.createFile()
 	persister.Logger.Debugf("Created a new file : %s", fileLock.String())
 	_, err := retrier.Retry(5, 2*time.Second, "LOCK", func() (locked interface{}, err error) {
@@ -80,8 +80,6 @@ func (persister *Persister) Write() {
 	if err != nil {
 		persister.Logger.Debugf("Could not unlock the file after writing : %s", err.Error())
 	}
-
-	persister.StartTime = time.Now()
 
 }
 

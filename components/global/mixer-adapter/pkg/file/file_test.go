@@ -24,7 +24,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 )
@@ -45,7 +44,6 @@ func TestPersister_Write(t *testing.T) {
 		WaitingSize: 5,
 		Logger:      logger,
 		Buffer:      buffer,
-		StartTime:   time.Now(),
 		Directory:   ".",
 	}
 
@@ -78,7 +76,6 @@ func TestPersister_Fetch(t *testing.T) {
 		WaitingSize: 4,
 		Logger:      logger,
 		Buffer:      buffer,
-		StartTime:   time.Now(),
 		Directory:   "./",
 	}
 
@@ -114,7 +111,6 @@ func TestPersister_Clean(t *testing.T) {
 		WaitingSize: 4,
 		Logger:      logger,
 		Buffer:      buffer,
-		StartTime:   time.Now(),
 		Directory:   "./",
 	}
 

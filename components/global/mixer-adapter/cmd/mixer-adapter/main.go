@@ -62,7 +62,7 @@ const (
 )
 
 func main() {
-	port := adapter.DefaultAdapterPort //Pre defined port for the adaptor.
+	port := adapter.DefaultAdapterPort
 	persist := true
 
 	logger, err := logging.NewLogger()
@@ -87,11 +87,14 @@ func main() {
 	adapterCertificate := os.Getenv(grpcAdapterCertificatePath) // adapter.crt
 	adapterPrivateKey := os.Getenv(grpcAdapterPrivateKeyPath)   // adapter.key
 	caCertificate := os.Getenv(caCertificatePath)               // ca.pem
+
 	spServerUrl := os.Getenv(spServerUrlPath)
+
 	directory := os.Getenv(directory)
 	waitingSec, _ := strconv.Atoi(os.Getenv(waitingTimeSecEnv))
 	waitingSize, _ := strconv.Atoi(os.Getenv(waitingSizeEnv))
 	tickerSec, _ := strconv.Atoi(os.Getenv(tickerSecEnv))
+
 	vendor := os.Getenv(vendorEnv)
 	dsn := os.Getenv(dsnEnv)
 
@@ -100,16 +103,6 @@ func main() {
 		logger.Warnf("Could not convert env of persisting : %s", err.Error())
 		persist = false
 	}
-
-	//TODO: Remove below test data
-	//vendor = "mysql"
-	//dsn = "root:@/PERSISTENCE"
-	//waitingSec = 5
-	//tickerSec = 3
-	//waitingSize = 2
-	//spServerUrl = "http://localhost:8500"
-	//persist = true
-	//directory = "./temp"
 
 	logger.Infof("Sp server url : %s", spServerUrl)
 	logger.Infof("Directory to store files : %s", directory)
@@ -139,15 +132,15 @@ func main() {
 	if persist {
 
 		var ps persister.Persister
-		w := &writer.Writer{
+		wrt := &writer.Writer{
 			WaitingTimeSec: waitingSec,
 			WaitingSize:    waitingSize,
 			Logger:         logger,
 			Buffer:         buffer,
-			StartTime:      time.Time{},
+			StartTime:      time.Now(),
 		}
 		ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
-		p := &publisher.Publisher{
+		pub := &publisher.Publisher{
 			Ticker:      ticker,
 			Logger:      logger,
 			SpServerUrl: spServerUrl,
@@ -165,8 +158,7 @@ func main() {
 				logger.Warnf("Could not connect to the MySQL database, enabling file persistence : %s", err.Error())
 			} else {
 
-				persist = false
-				logger.Infof("Successfully connected to the MySQL database, Disabling file persistence")
+				logger.Infof("Successfully connected to the MySQL database")
 				ps = &database.Persister{
 					WaitingSize: waitingSize,
 					Logger:      logger,
@@ -174,14 +166,14 @@ func main() {
 					Db:          db.(*sql.DB),
 				}
 
-				w.Persister = ps
+				wrt.Persister = ps
 				go func() {
-					w.Run(shutdown)
+					wrt.Run(shutdown)
 				}()
 
-				p.Persister = ps
+				pub.Persister = ps
 				go func() {
-					p.Run(shutdown)
+					pub.Run(shutdown)
 				}()
 
 			}
@@ -191,18 +183,17 @@ func main() {
 				WaitingSize: waitingSec,
 				Logger:      logger,
 				Buffer:      buffer,
-				StartTime:   time.Time{},
 				Directory:   directory,
 			}
 
-			w.Persister = ps
+			wrt.Persister = ps
 			go func() {
-				w.Run(shutdown)
+				wrt.Run(shutdown)
 			}()
 
-			p.Persister = ps
+			pub.Persister = ps
 			go func() {
-				p.Run(shutdown)
+				pub.Run(shutdown)
 			}()
 
 		}
