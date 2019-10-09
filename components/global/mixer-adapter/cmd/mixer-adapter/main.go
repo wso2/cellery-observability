@@ -55,7 +55,7 @@ const (
 	directory                  string = "DIRECTORY"
 	shouldPersist              string = "SHOULD_PERSIST"
 	waitingTimeSecEnv          string = "WAITING_TIME_SEC"
-	queueLengthEnv             string = "QUEUE_LENGTH"
+	waitingSizeEnv             string = "WAITING_SIZE"
 	tickerSecEnv               string = "TICKER_SEC"
 	vendorEnv                  string = "VENDOR"
 	dsnEnv                     string = "DSN"
@@ -90,7 +90,7 @@ func main() {
 	spServerUrl := os.Getenv(spServerUrlPath)
 	directory := os.Getenv(directory)
 	waitingSec, _ := strconv.Atoi(os.Getenv(waitingTimeSecEnv))
-	queueLength, _ := strconv.Atoi(os.Getenv(queueLengthEnv))
+	waitingSize, _ := strconv.Atoi(os.Getenv(waitingSizeEnv))
 	tickerSec, _ := strconv.Atoi(os.Getenv(tickerSecEnv))
 	vendor := os.Getenv(vendorEnv)
 	dsn := os.Getenv(dsnEnv)
@@ -106,7 +106,7 @@ func main() {
 	//dsn = "root:@/PERSISTENCE"
 	//waitingSec = 5
 	//tickerSec = 3
-	//queueLength = 2
+	//waitingSize = 2
 	//spServerUrl = "http://localhost:8500"
 	//persist = true
 	//directory = "./temp"
@@ -126,7 +126,7 @@ func main() {
 		}
 	}
 
-	buffer := make(chan string, queueLength*10)
+	buffer := make(chan string, waitingSize*10)
 	shutdown := make(chan error, 1)
 	spAdapter, err := adapter.New(port, logger, client, serverOption, spServerUrl, buffer, persist)
 	if err != nil {
@@ -141,7 +141,7 @@ func main() {
 		var ps persister.Persister
 		w := &writer.Writer{
 			WaitingTimeSec: waitingSec,
-			WaitingSize:    queueLength,
+			WaitingSize:    waitingSize,
 			Logger:         logger,
 			Buffer:         buffer,
 			StartTime:      time.Time{},
@@ -168,7 +168,7 @@ func main() {
 				persist = false
 				logger.Infof("Successfully connected to the MySQL database, Disabling file persistence")
 				ps = &database.Persister{
-					WaitingSize: queueLength,
+					WaitingSize: waitingSize,
 					Logger:      logger,
 					Buffer:      buffer,
 					Db:          db.(*sql.DB),

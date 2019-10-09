@@ -20,10 +20,12 @@ package database
 
 import (
 	"fmt"
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 	"log"
 	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 )
 
 var (
@@ -123,7 +125,7 @@ func TestPersister_Fetch(t *testing.T) {
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
 		WillReturnRows(rows)
 	mock.ExpectExec("^DELETE FROM persistence*").
-		WillReturnResult(sqlmock.NewResult(2,2))
+		WillReturnResult(sqlmock.NewResult(2, 2))
 
 	mock.ExpectBegin()
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
@@ -143,11 +145,11 @@ func TestPersister_Fetch(t *testing.T) {
 	}
 
 	run := make(chan bool, 1)
-	_,_ = persister.Fetch(run)
-	_,_ = persister.Fetch(run)
-	_,_ = persister.Fetch(run)
-	_,_ = persister.Fetch(run)
-	_,_ = persister.Fetch(run)
+	_, _ = persister.Fetch(run)
+	_, _ = persister.Fetch(run)
+	_, _ = persister.Fetch(run)
+	_, _ = persister.Fetch(run)
+	_, _ = persister.Fetch(run)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)

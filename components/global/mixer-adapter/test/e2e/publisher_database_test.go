@@ -19,29 +19,31 @@
 package e2e
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
-
 	"github.com/DATA-DOG/go-sqlmock"
 
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/database"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
-	databasepublisher "github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher/database"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer"
 )
 
-func TestPublisher_Run(t *testing.T) {
+var (
+	testMetric = "{\"contextReporterKind\":\"inbound\", \"destinationUID\":\"kubernetes://istio-policy-74d6c8b4d5-mmr49.istio-system\", \"requestID\":\"6e544e82-2a0c-4b83-abcc-0f62b89cdf3f\", \"requestMethod\":\"POST\", \"requestPath\":\"/istio.mixer.v1.Mixer/Check\", \"requestTotalSize\":\"2748\", \"responseCode\":\"200\", \"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":\"b55a0f7f20d36e49f8612bac4311791d\"}"
+)
+
+func TestDatabaseIntegration(t *testing.T) {
 
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 
-	tickerSec := 16
-	queueLength := 2
+	tickerSec := 5
 
 	db, mock, err := sqlmock.New()
 
@@ -50,43 +52,22 @@ func TestPublisher_Run(t *testing.T) {
 	}
 
 	rows := sqlmock.NewRows([]string{"id", "json"}).
-		AddRow(1, testStr).
-		AddRow(2, testStr)
-
-	mock.ExpectBegin().WillReturnError(fmt.Errorf("test error 1"))
+		AddRow(1, testMetric).
+		AddRow(2, testMetric)
 
 	mock.ExpectBegin()
-	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
-		WillReturnError(fmt.Errorf("test error 2"))
-	mock.ExpectRollback()
-
-	mock.ExpectBegin()
-	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
-		WillReturnError(fmt.Errorf("test error 3"))
-	mock.ExpectRollback().WillReturnError(fmt.Errorf("test error 4"))
-
-	mock.ExpectBegin()
-	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
-		WillReturnRows(rows)
-	mock.ExpectExec("^DELETE FROM persistence*").
-		WillReturnResult(sqlmock.NewResult(2, 2))
-	mock.ExpectCommit().WillReturnError(fmt.Errorf("test error 5"))
-
-	rows = sqlmock.NewRows([]string{"id", "json"}).
-		AddRow(1, testStr).
-		AddRow(2, testStr)
-
-	mock.ExpectBegin()
-	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
-		WillReturnRows(rows)
-	mock.ExpectExec("^DELETE FROM persistence*").
-		WillReturnResult(sqlmock.NewResult(2, 2))
+	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnResult(sqlmock.NewResult(2, 2))
 	mock.ExpectCommit()
 
+	rows = sqlmock.NewRows([]string{"id", "json"}).
+		AddRow(1, testMetric).
+		AddRow(2, testMetric)
+
 	mock.ExpectBegin()
-	mock.ExpectQuery("^SELECT (.+) FROM persistence*").WillReturnRows(sqlmock.NewRows([]string{}))
+	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
+		WillReturnRows(rows)
 	mock.ExpectExec("^DELETE FROM persistence*").
-		WillReturnResult(sqlmock.NewResult(0, 0))
+		WillReturnResult(sqlmock.NewResult(2, 2))
 	mock.ExpectCommit()
 
 	ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
@@ -96,22 +77,35 @@ func TestPublisher_Run(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	var p publisher.Publisher
+	buffer := make(chan string, 20)
+	persister := &database.Persister{
+		Logger:      logger,
+		Db:          db,
+		WaitingSize: 2,
+		Buffer:      buffer,
+	}
 
-	p = &databasepublisher.Publisher{
+	p := publisher.Publisher{
 		Ticker:      ticker,
 		Logger:      logger,
 		SpServerUrl: testServer.URL,
 		HttpClient:  &http.Client{},
-		Db:          db,
-		WaitingSize: queueLength,
+		Persister:   persister,
 	}
-
 	shutdown := make(chan error, 1)
+	go p.Run(shutdown)
 
-	go func() {
-		p.Run(shutdown)
-	}()
+	w := writer.Writer{
+		WaitingTimeSec: tickerSec,
+		WaitingSize:    2,
+		Logger:         logger,
+		Buffer:         buffer,
+		StartTime:      time.Now(),
+		Persister:      persister,
+	}
+	go w.Run(shutdown)
+
+	buffer <- testMetric
 
 	time.Sleep(30 * time.Second)
 	if err := mock.ExpectationsWereMet(); err != nil {

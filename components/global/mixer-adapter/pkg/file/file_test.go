@@ -20,12 +20,13 @@ package file
 
 import (
 	"fmt"
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 )
 
 var (
@@ -41,11 +42,11 @@ func TestPersister_Write(t *testing.T) {
 	buffer := make(chan string, 20)
 
 	persister := &Persister{
-		WaitingSize:    5,
-		Logger:         logger,
-		Buffer:         buffer,
-		StartTime:      time.Now(),
-		Directory:      ".",
+		WaitingSize: 5,
+		Logger:      logger,
+		Buffer:      buffer,
+		StartTime:   time.Now(),
+		Directory:   ".",
 	}
 
 	buffer <- testStr
@@ -76,8 +77,8 @@ func TestPersister_Fetch(t *testing.T) {
 	persister := &Persister{
 		WaitingSize: 4,
 		Logger:      logger,
-		Buffer:buffer,
-		StartTime:time.Now(),
+		Buffer:      buffer,
+		StartTime:   time.Now(),
 		Directory:   "./",
 	}
 
@@ -112,8 +113,8 @@ func TestPersister_Clean(t *testing.T) {
 	persister := &Persister{
 		WaitingSize: 4,
 		Logger:      logger,
-		Buffer:buffer,
-		StartTime:time.Now(),
+		Buffer:      buffer,
+		StartTime:   time.Now(),
 		Directory:   "./",
 	}
 

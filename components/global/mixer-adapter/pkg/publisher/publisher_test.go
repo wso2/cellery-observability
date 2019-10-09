@@ -21,11 +21,12 @@ package publisher
 import (
 	"bytes"
 	"fmt"
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 )
 
 var (
@@ -34,8 +35,8 @@ var (
 
 type (
 	RoundTripFunc func(req *http.Request) *http.Response
-	MockCrr struct {}
-	MockErr struct {}
+	MockCrr       struct{}
+	MockErr       struct{}
 )
 
 func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -54,13 +55,11 @@ func (mockPersister *MockCrr) Fetch(run chan bool) (string, error) {
 }
 func (mockPersister *MockCrr) Clean(err error) {}
 
-
 func (mockPersister *MockErr) Write() {}
 func (mockPersister *MockErr) Fetch(run chan bool) (string, error) {
 	return "", fmt.Errorf("test error 1")
 }
 func (mockPersister *MockErr) Clean(err error) {}
-
 
 func TestPublisher_Run(t *testing.T) {
 	logger, err := logging.NewLogger()
@@ -86,24 +85,36 @@ func TestPublisher_Run(t *testing.T) {
 		Logger:      logger,
 		SpServerUrl: "http://example.com",
 		HttpClient:  client,
-		Persister: &MockCrr{},
+		Persister:   &MockCrr{},
 	}
 	go publisher.Run(shutdown)
 	time.Sleep(10 * time.Second)
 
-	publisher.Persister = &MockErr{}
-	go publisher.Run(shutdown)
+	publisher2 := &Publisher{
+		Ticker:      ticker,
+		Logger:      logger,
+		SpServerUrl: "http://example.com",
+		HttpClient:  client,
+		Persister:   &MockErr{},
+	}
+	go publisher2.Run(shutdown)
 	time.Sleep(10 * time.Second)
 
-	client = NewTestClient(func(req *http.Request) *http.Response {
+	client2 := NewTestClient(func(req *http.Request) *http.Response {
 		return &http.Response{
 			StatusCode: 500,
 			Body:       ioutil.NopCloser(bytes.NewBufferString("OK")),
 			Header:     make(http.Header),
 		}
 	})
-	publisher.HttpClient = client
-	go publisher.Run(shutdown)
+	publisher3 := &Publisher{
+		Ticker:      ticker,
+		Logger:      logger,
+		SpServerUrl: "http://example.com",
+		HttpClient:  client2,
+		Persister:   &MockCrr{},
+	}
+	go publisher3.Run(shutdown)
 	time.Sleep(10 * time.Second)
 
 }
