@@ -18,10 +18,6 @@
 
 package io.cellery.observability.telemetry.receiver.internal;
 
-import com.google.gson.JsonArray;
-//import com.google.gson.JsonElement;
-//import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.commons.io.IOUtils;
@@ -41,7 +37,6 @@ public class MetricsHandler implements HttpHandler {
 
     private static final Logger log = Logger.getLogger(MetricsHandler.class);
     private SourceEventListener sourceEventListener;
-    private int num = 0;
 
     public MetricsHandler(SourceEventListener sourceEventListener) {
         this.sourceEventListener = sourceEventListener;
@@ -50,33 +45,26 @@ public class MetricsHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
         if (httpExchange.getRequestBody() != null) {
-            try {
-                if (System.getenv("PERSIST").equals("true")) {
-                    GZIPInputStream gis = new GZIPInputStream(httpExchange.getRequestBody());
-                    BufferedReader bf = new BufferedReader(new InputStreamReader(gis, StandardCharsets.UTF_8));
-                    String json = IOUtils.toString(bf);
-                    if (log.isDebugEnabled()) {
-                        log.debug("Received a metric from the adapter : " + json);
-                    }
-                    JsonParser jsonParser = new JsonParser();
-                    JsonArray jsonArray = (JsonArray) jsonParser.parse(json);
-                    num += jsonArray.size();
-                    log.info("Count : " + num);
-                    sourceEventListener.onEvent(json, new String[0]);
-                    httpExchange.sendResponseHeaders(200, -1);
-                } else {
-                    String json = IOUtils.toString(httpExchange.getRequestBody());
-                    if (log.isDebugEnabled()) {
-                        log.debug("Received a metric from the adapter : " + json);
-                    }
-                    num += 1;
-                    log.info("Count : " + num);
-                    sourceEventListener.onEvent(json, new String[0]);
-                    httpExchange.sendResponseHeaders(200, -1);
+            if (System.getenv("PERSIST").equals("true")) {
+                try (GZIPInputStream gis = new GZIPInputStream(httpExchange.getRequestBody());
+                        BufferedReader bf = new BufferedReader(new InputStreamReader(gis, StandardCharsets.UTF_8))) {
+                        String json = IOUtils.toString(bf);
+                        if (log.isDebugEnabled()) {
+                            log.debug("Received a metric from the adapter : " + json);
+                        }
+                        sourceEventListener.onEvent(json, new String[0]);
+                        httpExchange.sendResponseHeaders(200, -1);
+                } catch (Exception e) {
+                    log.warn(e.getMessage());
+                    httpExchange.sendResponseHeaders(500, -1);
                 }
-            } catch (IOException e) {
-                log.warn(e.getMessage());
-                httpExchange.sendResponseHeaders(500, -1);
+            } else {
+                String json = IOUtils.toString(httpExchange.getRequestBody());
+                if (log.isDebugEnabled()) {
+                    log.debug("Received a metric from the adapter : " + json);
+                }
+                sourceEventListener.onEvent(json, new String[0]);
+                httpExchange.sendResponseHeaders(200, -1);
             }
         } else {
             httpExchange.sendResponseHeaders(500, -1);

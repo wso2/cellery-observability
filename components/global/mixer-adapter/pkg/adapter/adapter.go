@@ -65,8 +65,6 @@ type (
 	}
 )
 
-var num = 0
-
 // Decode received metrics from the mixer
 func (adapter *Adapter) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) (*v1beta1.ReportResult, error) {
 
@@ -74,8 +72,6 @@ func (adapter *Adapter) HandleMetric(ctx context.Context, r *metric.HandleMetric
 	for _, inst := range instances {
 		var attributesMap = decodeDimensions(inst.Dimensions)
 		adapter.logger.Debugf("received request : %s", attributesMap)
-		num += 1
-		adapter.logger.Infof("Count : %d", num)
 		if adapter.persist {
 			adapter.writeToBuffer(attributesMap)
 		} else {
@@ -117,17 +113,10 @@ func (adapter *Adapter) Publish(attributeMap map[string]interface{}) int {
 		if err != nil {
 			return 500
 		}
-		defer func() {
-			err := resp.Body.Close()
-			if err != nil {
-				adapter.logger.Warn("Could not close the body")
-			}
-		}()
-
 		adapter.logger.Infof("Received status code from SP Worker : %d", resp.StatusCode)
 		return resp.StatusCode
 	} else {
-		adapter.logger.Warnf("Could not send request : %s", err)
+		adapter.logger.Warnf("Could not send the request : %s", err)
 		return 500
 	}
 }

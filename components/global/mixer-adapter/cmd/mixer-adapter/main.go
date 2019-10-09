@@ -63,7 +63,7 @@ const (
 
 func main() {
 	port := adapter.DefaultAdapterPort
-	persist := true
+	persist := false
 
 	logger, err := logging.NewLogger()
 	if err != nil {
@@ -105,7 +105,6 @@ func main() {
 	}
 
 	logger.Infof("Sp server url : %s", spServerUrl)
-	logger.Infof("Directory to store files : %s", directory)
 	logger.Infof("Should persist : %s", persist)
 
 	client := &http.Client{}

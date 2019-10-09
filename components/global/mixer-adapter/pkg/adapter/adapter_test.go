@@ -33,6 +33,20 @@ import (
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 )
 
+type (
+	RoundTripFunc func(req *http.Request) *http.Response
+)
+
+func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req), nil
+}
+
+func NewTestClient(fn RoundTripFunc) *http.Client {
+	return &http.Client{
+		Transport: fn,
+	}
+}
+
 var (
 	sampleInstance1 = &metric.InstanceMsg{
 		Name: "wso2spadapter-metric",
@@ -86,11 +100,13 @@ func TestNewAdapter(t *testing.T) {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 	buffer := make(chan string, 100)
-	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		res.WriteHeader(200)
-	}))
-	defer testServer.Close()
-	adapter, err := New(DefaultAdapterPort, logger, &http.Client{}, nil, testServer.URL, buffer, false)
+	client := NewTestClient(func(req *http.Request) *http.Response {
+		return &http.Response{
+			StatusCode: 200,
+			Header:     make(http.Header),
+		}
+	})
+	adapter, err := New(DefaultAdapterPort, logger, client, nil, "http://example.com", buffer, false)
 	wantStr := "[::]:38355"
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %s", err.Error())
@@ -127,18 +143,20 @@ func TestHandleMetricPersist(t *testing.T) {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 
-	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		res.WriteHeader(200)
-	}))
-	defer func() { testServer.Close() }()
+	client := NewTestClient(func(req *http.Request) *http.Response {
+		return &http.Response{
+			StatusCode: 200,
+			Header:     make(http.Header),
+		}
+	})
 
 	buffer := make(chan string, 100)
 
 	wso2SpAdapter := &Adapter{
 		listener:    listener,
 		logger:      logger,
-		httpClient:  &http.Client{},
-		spServerUrl: testServer.URL,
+		httpClient:  client,
+		spServerUrl: "http://example.com",
 		buffer:      buffer,
 		persist:     false,
 	}

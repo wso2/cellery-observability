@@ -121,7 +121,7 @@ func TestPersister_Clean(t *testing.T) {
 	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
 	persister.Clean(fmt.Errorf("test error 1"))
 
-	fname = "./wrong.f.txt"
+	fname = "./wrong_file.txt"
 	persister.Clean(nil)
 
 	files, err := filepath.Glob("./*.txt")
