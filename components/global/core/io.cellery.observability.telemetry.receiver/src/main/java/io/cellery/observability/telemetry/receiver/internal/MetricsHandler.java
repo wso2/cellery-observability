@@ -54,9 +54,6 @@ public class MetricsHandler implements HttpHandler {
                         }
                         sourceEventListener.onEvent(json, new String[0]);
                         httpExchange.sendResponseHeaders(200, -1);
-                } catch (Exception e) {
-                    log.warn(e.getMessage());
-                    httpExchange.sendResponseHeaders(500, -1);
                 }
             } else {
                 String json = IOUtils.toString(httpExchange.getRequestBody());
