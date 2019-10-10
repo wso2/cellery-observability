@@ -51,7 +51,7 @@ func (persister *Persister) Fetch(run chan bool) (string, error) {
 		persister.Logger.Warnf("Could not begin the transaction : %s", err.Error())
 		return "", err
 	}
-	rows, err := trans.Query("SELECT id,json FROM persistence LIMIT ? FOR UPDATE", persister.WaitingSize)
+	rows, err := trans.Query("SELECT id,json FROM persistence LIMIT 1 FOR UPDATE")
 	if err != nil {
 		persister.Logger.Warnf("Could not fetch rows from the database : %s", err.Error())
 		return "", err
@@ -63,26 +63,20 @@ func (persister *Persister) Fetch(run chan bool) (string, error) {
 		}
 	}()
 
-	var jsons []string
-	var ids []string
+	jsonArr := ""
+	id := ""
 
 	for rows.Next() {
-		var id, json string
-		err = rows.Scan(&id, &json)
-		jsons = append(jsons, json)
-		ids = append(ids, id)
+		err = rows.Scan(&id, &jsonArr)
 	}
 
-	jsonArr := fmt.Sprintf("[%s]", strings.Join(jsons, ","))
-	idArr := fmt.Sprintf("(%s)", strings.Join(ids, ","))
-
-	if jsonArr == "[]" {
+	if jsonArr == "" || jsonArr == "[]" {
 		persister.Clean(fmt.Errorf("received empty rows"))
 		run <- false
 		return "", fmt.Errorf("received empty rows")
 	}
 
-	_, err = trans.Exec("DELETE FROM persistence WHERE id IN" + idArr)
+	_, err = trans.Exec("DELETE FROM persistence WHERE id = ?", id)
 	if err != nil {
 		persister.Logger.Warnf("Could not delete the Rows : %s", err.Error())
 		return "", err
@@ -126,6 +120,32 @@ func (persister *Persister) Clean(err error) {
 }
 
 func (persister *Persister) Write() {
+
+	elements := persister.getElements()
+	str := fmt.Sprintf("[%s]", strings.Join(elements, ","))
+	err := persister.doTransaction(func(tx Transaction) error {
+		_, err := tx.Exec("INSERT INTO persistence(json) VALUES (?)", str)
+		if err != nil {
+			persister.Logger.Warnf("Could not insert the metrics to the database : %s", err.Error())
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		persister.Logger.Debug("Could not store the metrics in the database, restoring...")
+		persister.restore(elements)
+	}
+}
+
+func (persister *Persister) restore(elements []string) {
+	for _, element := range elements {
+		persister.Buffer <- element
+	}
+}
+
+func (persister *Persister) getElements() []string {
+	var elements []string
 	for i := 0; i < persister.WaitingSize; i++ {
 		element := <-persister.Buffer
 		if element == "" {
@@ -134,23 +154,12 @@ func (persister *Persister) Write() {
 			}
 			continue
 		}
-		err := persister.doTransaction(func(tx Transaction) error {
-			_, err := tx.Exec("INSERT INTO persistence(json) VALUES (?)", element)
-			if err != nil {
-				persister.Logger.Warnf("Could not insert the metric to the database : %s", err.Error())
-				return err
-			}
-
-			return nil
-		})
-		if err != nil {
-			persister.Logger.Debug("Could not store the metric in the database, restoring...")
-			persister.Buffer <- element
-		}
+		elements = append(elements, element)
 		if len(persister.Buffer) == 0 {
 			break
 		}
 	}
+	return elements
 }
 
 func (persister *Persister) doTransaction(fn func(Transaction) error) (err error) {

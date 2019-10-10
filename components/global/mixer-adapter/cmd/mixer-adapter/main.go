@@ -118,7 +118,7 @@ func main() {
 		}
 	}
 
-	buffer := make(chan string, waitingSize*10)
+	buffer := make(chan string, waitingSize*1000)
 	shutdown := make(chan error, 1)
 	spAdapter, err := adapter.New(port, logger, client, serverOption, spServerUrl, buffer, persist)
 	if err != nil {
