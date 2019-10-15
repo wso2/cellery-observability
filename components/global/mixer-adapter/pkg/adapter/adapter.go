@@ -30,9 +30,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"time"
-
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -75,16 +72,9 @@ func (adapter *Adapter) HandleMetric(ctx context.Context, r *metric.HandleMetric
 		if adapter.persist {
 			adapter.writeToBuffer(attributesMap)
 		} else {
-			_, err := retrier.Retry(10, 2*time.Second, "SENDING_METRIC", func() (resp interface{}, err error) {
-				resp = adapter.Publish(attributesMap)
-				if resp.(int) != 200 {
-					return false, fmt.Errorf("could not sent the metric successfully")
-				}
-				return true, nil
-			})
-
-			if err != nil {
-				adapter.logger.Warnf("%s, lost metric : %s", err.Error(), attributesMap)
+			resp := adapter.Publish(attributesMap)
+			if resp != 200 {
+				 adapter.logger.Error(fmt.Errorf("could not sent the metric successfully"))
 			}
 		}
 	}

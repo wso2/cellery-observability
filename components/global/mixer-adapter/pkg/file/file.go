@@ -25,13 +25,11 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/gofrs/flock"
 	"github.com/rs/xid"
 	"go.uber.org/zap"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
 )
 
 type (
@@ -47,10 +45,7 @@ type (
 )
 
 func (cleaner *Cleaner) Commit() error {
-	_, err := retrier.Retry(10, 2*time.Second, "DELETE FILE", func() (i interface{}, e error) {
-		e = os.Remove(cleaner.Lock.String())
-		return i, e
-	})
+	err := os.Remove(cleaner.Lock.String())
 	if err != nil {
 		return fmt.Errorf("could not delete the published file : %s", err.Error())
 	}
@@ -68,28 +63,20 @@ func (cleaner *Cleaner) Rollback() error {
 func (persister *Persister) Write(str string) error {
 	fileLock := persister.createFile()
 	persister.Logger.Debugf("Created a new file : %s", fileLock.String())
-	_, err := retrier.Retry(5, 2*time.Second, "LOCK", func() (locked interface{}, err error) {
-		locked, err = fileLock.TryLock()
-		return
-	})
+	locked, err := fileLock.TryLock()
+	if !locked {
+		return fmt.Errorf("could not lock the created file")
+	}
 	if err != nil {
 		return fmt.Errorf("could not lock the created file : %s", err.Error())
 	}
-
 	bytesArr := []byte(str)
-	_, err = retrier.Retry(10, 2*time.Second, "WRITE", func() (locked interface{}, err error) {
-		err = ioutil.WriteFile(fileLock.String(), bytesArr, 0644)
-		return
-	})
+	err = ioutil.WriteFile(fileLock.String(), bytesArr, 0644)
 	if err != nil {
 		persister.unlock(fileLock)
 		return fmt.Errorf("could not write to the file, restoring... => error: %s", err.Error())
 	}
-
-	_, err = retrier.Retry(10, 2*time.Second, "UNLOCK", func() (locked interface{}, err error) {
-		err = fileLock.Unlock()
-		return
-	})
+	err = fileLock.Unlock()
 	if err != nil {
 		return fmt.Errorf("could not unlock the file after writing : %s", err.Error())
 	}
@@ -111,17 +98,14 @@ func (persister *Persister) unlock(flock *flock.Flock) {
 }
 
 func (persister *Persister) Fetch() (string, dal.Transaction, error) {
-	files, err := retrier.Retry(5, 1, "READ DIRECTORY", func() (files interface{}, err error) {
-		files, err = filepath.Glob(persister.Directory + "/*.txt")
-		return
-	})
+	files, err := filepath.Glob(persister.Directory + "/*.txt")
 	if err != nil {
 		return "",  &Cleaner{}, fmt.Errorf("could not read the given directory %s : %s", persister.Directory, err.Error())
 	}
-	persister.Logger.Debugf("%s", files.([]string))
-	if len(files.([]string)) > 0 {
+	persister.Logger.Debugf("%s", files)
+	if len(files) > 0 {
 		cleaner := &Cleaner{
-			Lock: flock.New(files.([]string)[rand.Intn(len(files.([]string)))]),
+			Lock: flock.New(files[rand.Intn(len(files))]),
 			Logger: persister.Logger,
 		}
 		return persister.read(cleaner)
