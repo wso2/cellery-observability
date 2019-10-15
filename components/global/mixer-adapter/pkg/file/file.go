@@ -20,10 +20,11 @@ package file
 
 import (
 	"fmt"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/gofrs/flock"
@@ -37,80 +38,69 @@ type (
 	Persister struct {
 		WaitingSize int
 		Logger      *zap.SugaredLogger
-		Buffer      chan string
 		Directory   string
+	}
+	Cleaner struct {
+		Lock *flock.Flock
+		Logger *zap.SugaredLogger
 	}
 )
 
-var fname string
+func (cleaner *Cleaner) Commit() error {
+	_, err := retrier.Retry(10, 2*time.Second, "DELETE FILE", func() (i interface{}, e error) {
+		e = os.Remove(cleaner.Lock.String())
+		return i, e
+	})
+	if err != nil {
+		return fmt.Errorf("could not delete the published file : %s", err.Error())
+	}
+	return nil
+}
 
-func (persister *Persister) Write() {
+func (cleaner *Cleaner) Rollback() error {
+	err := cleaner.Lock.Unlock()
+	if err != nil {
+		return fmt.Errorf("could not unlock the file")
+	}
+	return nil
+}
 
+func (persister *Persister) Write(str string) error {
 	fileLock := persister.createFile()
 	persister.Logger.Debugf("Created a new file : %s", fileLock.String())
 	_, err := retrier.Retry(5, 2*time.Second, "LOCK", func() (locked interface{}, err error) {
 		locked, err = fileLock.TryLock()
 		return
 	})
-
 	if err != nil {
-		persister.Logger.Warnf("Could not lock the created file : %s", err.Error())
-		return
+		return fmt.Errorf("could not lock the created file : %s", err.Error())
 	}
-
-	elements := persister.getElements()
-	str := fmt.Sprintf("[%s]", strings.Join(elements, ","))
 
 	bytesArr := []byte(str)
 	_, err = retrier.Retry(10, 2*time.Second, "WRITE", func() (locked interface{}, err error) {
 		err = ioutil.WriteFile(fileLock.String(), bytesArr, 0644)
 		return
 	})
-
 	if err != nil {
-		persister.Logger.Warnf("Could not write to the file, restoring... => error: %s,", err.Error())
-		persister.restore(elements)
+		persister.unlock(fileLock)
+		return fmt.Errorf("could not write to the file, restoring... => error: %s", err.Error())
 	}
 
 	_, err = retrier.Retry(10, 2*time.Second, "UNLOCK", func() (locked interface{}, err error) {
 		err = fileLock.Unlock()
 		return
 	})
-
 	if err != nil {
-		persister.Logger.Debugf("Could not unlock the file after writing : %s", err.Error())
+		return fmt.Errorf("could not unlock the file after writing : %s", err.Error())
 	}
 
+	return nil
 }
 
 func (persister *Persister) createFile() *flock.Flock {
 	uuid := xid.New().String()
 	fileLock := flock.New(fmt.Sprintf("%s/%s.txt", persister.Directory, uuid))
 	return fileLock
-}
-
-func (persister *Persister) restore(elements []string) {
-	for _, element := range elements {
-		persister.Buffer <- element
-	}
-}
-
-func (persister *Persister) getElements() []string {
-	var elements []string
-	for i := 0; i < persister.WaitingSize; i++ {
-		element := <-persister.Buffer
-		if element == "" {
-			if len(persister.Buffer) == 0 {
-				break
-			}
-			continue
-		}
-		elements = append(elements, element)
-		if len(persister.Buffer) == 0 {
-			break
-		}
-	}
-	return elements
 }
 
 func (persister *Persister) unlock(flock *flock.Flock) {
@@ -120,67 +110,46 @@ func (persister *Persister) unlock(flock *flock.Flock) {
 	}
 }
 
-func (persister *Persister) Fetch(run chan bool) (string, error) {
+func (persister *Persister) Fetch() (string, dal.Transaction, error) {
 	files, err := retrier.Retry(5, 1, "READ DIRECTORY", func() (files interface{}, err error) {
 		files, err = filepath.Glob(persister.Directory + "/*.txt")
 		return
 	})
 	if err != nil {
-		persister.Logger.Warnf("Could not read the given directory %s : %s", persister.Directory, err.Error())
-		return "", err
+		return "",  &Cleaner{}, fmt.Errorf("could not read the given directory %s : %s", persister.Directory, err.Error())
 	}
 	persister.Logger.Debugf("%s", files.([]string))
 	if len(files.([]string)) > 0 {
-		fname = files.([]string)[0]
-		return persister.read(fname)
-	} else {
-		persister.Logger.Debug("No files in the directory")
-		run <- false
-		return "", fmt.Errorf("no files in the directory")
-	}
-}
-
-func (persister *Persister) Clean(err error) {
-	fileLock := flock.New(fname)
-	if err == nil {
-		_, err = retrier.Retry(10, 2*time.Second, "DELETE FILE", func() (i interface{}, e error) {
-			e = os.Remove(fname)
-			return i, e
-		})
-		if err != nil {
-			persister.Logger.Warnf("Could not delete the published file : %s", err.Error())
+		cleaner := &Cleaner{
+			Lock: flock.New(files.([]string)[rand.Intn(len(files.([]string)))]),
+			Logger: persister.Logger,
 		}
+		return persister.read(cleaner)
 	} else {
-		persister.unlock(fileLock)
+		return "", &Cleaner{}, fmt.Errorf("no files in the directory")
 	}
 }
 
-func (persister *Persister) read(fname string) (string, error) {
-	fileLock := flock.New(fname)
-	locked, err := fileLock.TryLock()
-
-	if err != nil {
-		persister.Logger.Debugf("Could not lock the file : %s", err.Error())
-		return "", fmt.Errorf("could not lock the file")
-	}
-
+func (persister *Persister) read(cleaner *Cleaner) (string, *Cleaner, error) {
+	locked, err := cleaner.Lock.TryLock()
 	if !locked {
-		persister.Logger.Debug("Could not achieve the lock")
-		return "", fmt.Errorf("could not achieve the lock")
+		return "", cleaner, fmt.Errorf("could not achieve the lock")
 	}
-
-	data, err := ioutil.ReadFile(fname)
 	if err != nil {
-		persister.Logger.Warnf("Could not read the file : %s", err.Error())
-		persister.unlock(fileLock)
-		return "", fmt.Errorf("could not read the file")
+		_ = cleaner.Lock.Unlock() //handle error
+		return "", cleaner, fmt.Errorf("could not lock the file : %s", err.Error())
 	}
 
+	data, err := ioutil.ReadFile(cleaner.Lock.String())
+	if err != nil {
+		_ = cleaner.Lock.Unlock()
+		return "", cleaner, fmt.Errorf("could not read the file : %s", err.Error())
+	}
 	if data == nil || string(data) == "" {
-		persister.unlock(fileLock)
-		_ = os.Remove(fname)
-		return "", fmt.Errorf("file is empty") // Just delete the empty file
+		_ = cleaner.Lock.Unlock()
+		_ = os.Remove(cleaner.Lock.String())
+		return "", cleaner, fmt.Errorf("file is empty") // Just delete the empty file
 	}
 
-	return string(data), nil
+	return string(data), cleaner, nil
 }

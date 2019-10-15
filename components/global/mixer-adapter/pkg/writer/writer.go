@@ -19,11 +19,13 @@
 package writer
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/persister"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal"
 )
 
 type (
@@ -33,7 +35,7 @@ type (
 		Logger         *zap.SugaredLogger
 		Buffer         chan string
 		StartTime      time.Time
-		Persister      persister.Persister
+		Persister      dal.Persister
 	}
 )
 
@@ -46,7 +48,14 @@ func (writer *Writer) Run(shutdown chan error) {
 			return
 		default:
 			if writer.shouldWrite() {
-				writer.Persister.Write()
+				elements := writer.getElements()
+				str := fmt.Sprintf("[%s]", strings.Join(elements, ","))
+				err := writer.Persister.Write(str)
+				if err != nil {
+					writer.Logger.Warn(err.Error())
+					writer.restore(elements)
+				}
+				time.Sleep(5*time.Second)
 			}
 		}
 	}
@@ -59,5 +68,29 @@ func (writer *Writer) shouldWrite() bool {
 		return true
 	} else {
 		return false
+	}
+}
+
+func (writer *Writer) getElements() []string {
+	var elements []string
+	for i := 0; i < writer.WaitingSize; i++ {
+		element := <-writer.Buffer
+		if element == "" {
+			if len(writer.Buffer) == 0 {
+				break
+			}
+			continue
+		}
+		elements = append(elements, element)
+		if len(writer.Buffer) == 0 {
+			break
+		}
+	}
+	return elements
+}
+
+func (writer *Writer) restore(elements []string) {
+	for _, element := range elements {
+		writer.Buffer <- element
 	}
 }

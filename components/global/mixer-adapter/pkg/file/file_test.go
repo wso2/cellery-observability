@@ -38,22 +38,22 @@ func TestPersister_Write(t *testing.T) {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 
-	buffer := make(chan string, 20)
-
 	persister := &Persister{
 		WaitingSize: 5,
 		Logger:      logger,
-		Buffer:      buffer,
 		Directory:   ".",
 	}
 
-	buffer <- testStr
-	buffer <- testStr
-
-	persister.Write()
+	err = persister.Write(fmt.Sprintf("[%s]",testStr))
+	if err != nil {
+		t.Error("Could not write")
+	}
 
 	persister.Directory = "./wrong_directory"
-	persister.Write()
+	err = persister.Write(fmt.Sprintf("[%s]",testStr))
+	if err == nil {
+		t.Error("Expected error was not thrown")
+	}
 
 	files, err := filepath.Glob("./*.txt")
 	for _, fname := range files {
@@ -68,64 +68,75 @@ func TestPersister_Fetch(t *testing.T) {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
 
-	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
-
-	buffer := make(chan string, 5)
-
 	persister := &Persister{
 		WaitingSize: 4,
 		Logger:      logger,
-		Buffer:      buffer,
 		Directory:   "./",
 	}
 
-	run := make(chan bool, 1)
-	jsonArr, _ := persister.Fetch(run)
-
-	if jsonArr == testStr {
-		t.Log("data matches")
+	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
+	str, _, _ := persister.Fetch()
+	if str != testStr {
+		t.Error("Contents are not equal")
 	}
+	_ = os.Remove("./test.txt")
 
 	_ = ioutil.WriteFile("./test.txt", []byte(""), 0644)
-	_, _ = persister.Fetch(run)
+	_, _, err = persister.Fetch()
+	if err == nil {
+		t.Error("No error was thrown when reading an empty file")
+	}
 
 	persister.Directory = "./wrong_dir"
-	_, _ = persister.Fetch(run)
+	_, _, err = persister.Fetch()
+	if err == nil {
+		t.Error("Expected error was not thrown")
+	}
 
 	files, err := filepath.Glob("./*.txt")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}
-
 }
 
-func TestPersister_Clean(t *testing.T) {
+func TestCleaner_Commit(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
-
-	buffer := make(chan string, 5)
-
-	persister := &Persister{
-		WaitingSize: 4,
-		Logger:      logger,
-		Buffer:      buffer,
-		Directory:   "./",
+	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
+	cleaner := &Cleaner{
+		fname: "./test.txt",
+		Logger: logger,
+	}
+	err = cleaner.Commit()
+	if err != nil {
+		t.Error("Error when committing")
 	}
 
+	//Try to delete the already deleted file, this should log an error
+	cleaner = &Cleaner{
+		fname: "./test.txt",
+		Logger: logger,
+	}
+	err = cleaner.Commit()
+	if err == nil {
+		t.Error("No error was thrown when trying to delete an already deleted file")
+	}
+}
+
+func TestCleaner_Rollback(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %s", err.Error())
+	}
 	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
-	fname = "./test.txt"
-	persister.Clean(nil)
-
-	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
-	persister.Clean(fmt.Errorf("test error 1"))
-
-	fname = "./wrong_file.txt"
-	persister.Clean(nil)
-
-	files, err := filepath.Glob("./*.txt")
-	for _, fname := range files {
-		err = os.Remove(fname)
+	cleaner := &Cleaner{
+		fname: "./test.txt",
+		Logger: logger,
+	}
+	err = cleaner.Rollback()
+	if err != nil {
+		t.Error("An error was thrown when deleting the file")
 	}
 }

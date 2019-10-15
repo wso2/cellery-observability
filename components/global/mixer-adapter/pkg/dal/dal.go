@@ -16,12 +16,15 @@
  * under the License.
  */
 
-package persister
+package dal
 
 type (
 	Persister interface {
-		Fetch(run chan bool) (string, error)
-		Clean(err error)
-		Write()
+		Fetch() (string, Transaction, error)
+		Write(str string) error
+	}
+	Transaction interface {
+		Commit() error
+		Rollback() error
 	}
 )
