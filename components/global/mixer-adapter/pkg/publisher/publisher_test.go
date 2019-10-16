@@ -28,8 +28,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
 )
 
 var (
@@ -64,14 +64,14 @@ func (mockCleaner *MockCleaner) Rollback() error {
 func (mockPersister *MockCrr) Write(str string) error {
 	return nil
 }
-func (mockPersister *MockCrr) Fetch() (string, dal.Transaction, error) {
+func (mockPersister *MockCrr) Fetch() (string, store.Transaction, error) {
 	return fmt.Sprintf("[%s]", testStr), &MockCleaner{}, nil
 }
 
 func (mockPersister *MockErr) Write(str string) error {
 	return fmt.Errorf("test error in writing")
 }
-func (mockPersister *MockErr) Fetch() (string, dal.Transaction, error) {
+func (mockPersister *MockErr) Fetch() (string, store.Transaction, error) {
 	return "", &MockCleaner{}, fmt.Errorf("test error 1")
 }
 

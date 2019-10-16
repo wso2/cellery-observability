@@ -27,8 +27,8 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal/database"
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal/memory"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/database"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/memory"
 
 	//"database/sql"
 	"fmt"
@@ -38,7 +38,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
 
 	//"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
 
@@ -47,9 +47,9 @@ import (
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
 	//"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/database"
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal/file"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/file"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -189,7 +189,7 @@ func main() {
 	go func() {
 		spAdapter.Run(shutdown)
 	}()
-	var ps dal.Persister
+	var ps store.Persister
 	wrt := &writer.Writer{
 		WaitingTimeSec: bufferTimeoutSeconds,
 		WaitingSize:    minBufferSize,

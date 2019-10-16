@@ -24,7 +24,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
 )
 
 type (
@@ -71,7 +71,7 @@ func (persister *Persister) Write(str string) error {
 	return nil
 }
 
-func (persister *Persister) Fetch() (string, dal.Transaction, error) {
+func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	tx, err := persister.Db.Begin()
 	defer persister.catchPanic(tx)
 	if err != nil {

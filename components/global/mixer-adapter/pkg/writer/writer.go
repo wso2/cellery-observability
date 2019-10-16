@@ -25,7 +25,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
 )
 
 type (
@@ -35,7 +35,7 @@ type (
 		Logger         *zap.SugaredLogger
 		Buffer         chan string
 		StartTime      time.Time
-		Persister      dal.Persister
+		Persister      store.Persister
 	}
 )
 

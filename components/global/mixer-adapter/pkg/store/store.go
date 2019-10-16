@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package dal
+package store
 
 type (
 	Persister interface {

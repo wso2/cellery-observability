@@ -27,7 +27,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
 )
 
 type (
@@ -36,7 +36,7 @@ type (
 		Logger      *zap.SugaredLogger
 		SpServerUrl string
 		HttpClient  *http.Client
-		Persister   dal.Persister
+		Persister   store.Persister
 	}
 )
 

@@ -29,7 +29,7 @@ import (
 	"github.com/rs/xid"
 	"go.uber.org/zap"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
 )
 
 type (
@@ -94,7 +94,7 @@ func (persister *Persister) unlock(flock *flock.Flock) {
 	}
 }
 
-func (persister *Persister) Fetch() (string, dal.Transaction, error) {
+func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	files, err := filepath.Glob(persister.Directory + "/*.txt")
 	if err != nil {
 		return "", &Cleaner{}, fmt.Errorf("could not read the given directory %s : %s", persister.Directory, err.Error())

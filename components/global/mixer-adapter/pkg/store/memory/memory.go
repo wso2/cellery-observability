@@ -23,7 +23,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
 )
 
 type (
@@ -46,7 +46,7 @@ func (cleaner *Cleaner) Rollback() error {
 	return nil
 }
 
-func (persister *Persister) Fetch() (string, dal.Transaction, error) {
+func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	if len(persister.Buffer) > 0 {
 		str := <-persister.Buffer
 		cleaner := &Cleaner{Element: str}
