@@ -1,5 +1,5 @@
 {
-    "observabilityAPIURL": "http://wso2sp-observability-api/api",
+    "observabilityAPIURL": "http://cellery-dashboard/api",
     "idp": {
         "idpURL": "https://idp.cellery-system",
         "callBackURL": "http://cellery-dashboard"

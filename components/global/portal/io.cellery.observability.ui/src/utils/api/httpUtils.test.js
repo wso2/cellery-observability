@@ -141,7 +141,7 @@ describe("HttpUtils", () => {
     });
 
     describe("callObservabilityAPI()", () => {
-        const OBSERVABILITY_API_URL = "http://wso2sp-observability-api/api";
+        const OBSERVABILITY_API_URL = "http://cellery-dashboard/api";
         const stateHolder = new StateHolder();
         stateHolder.set(StateHolder.CONFIG, {
             observabilityAPIURL: OBSERVABILITY_API_URL
