@@ -27,6 +27,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gogo/protobuf/types"
+
 	"istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/template/metric"
 
@@ -51,8 +53,8 @@ var (
 	sampleInstance1 = &metric.InstanceMsg{
 		Name: "wso2spadapter-metric",
 		Dimensions: map[string]*v1beta1.Value{
-			"response_code": {
-				Value: &v1beta1.Value_Int64Value{Int64Value: 200},
+			"response_ip": {
+				Value: &v1beta1.Value_IpAddressValue{IpAddressValue: &v1beta1.IPAddress{Value: []byte{}}},
 			},
 		},
 		Value: &v1beta1.Value{
@@ -62,7 +64,7 @@ var (
 	sampleInstance2 = &metric.InstanceMsg{
 		Name: "wso2spadapter-metric",
 		Dimensions: map[string]*v1beta1.Value{
-			"response_code": {
+			"response_bool": {
 				Value: &v1beta1.Value_BoolValue{BoolValue: false},
 			},
 		},
@@ -73,7 +75,7 @@ var (
 	sampleInstance3 = &metric.InstanceMsg{
 		Name: "wso2spadapter-metric",
 		Dimensions: map[string]*v1beta1.Value{
-			"response_code": {
+			"response_string": {
 				Value: &v1beta1.Value_StringValue{StringValue: "Test"},
 			},
 		},
@@ -84,8 +86,30 @@ var (
 	sampleInstance4 = &metric.InstanceMsg{
 		Name: "wso2spadapter-metric",
 		Dimensions: map[string]*v1beta1.Value{
-			"response_code": {
+			"response_double": {
 				Value: &v1beta1.Value_DoubleValue{DoubleValue: 1.5},
+			},
+		},
+		Value: &v1beta1.Value{
+			Value: &v1beta1.Value_Int64Value{Int64Value: 0},
+		},
+	}
+	sampleInstance5 = &metric.InstanceMsg{
+		Name: "wso2spadapter-metric",
+		Dimensions: map[string]*v1beta1.Value{
+			"response_code": {
+				Value: &v1beta1.Value_Int64Value{Int64Value: 200},
+			},
+		},
+		Value: &v1beta1.Value{
+			Value: &v1beta1.Value_Int64Value{Int64Value: 0},
+		},
+	}
+	sampleInstance6 = &metric.InstanceMsg{
+		Name: "wso2spadapter-metric",
+		Dimensions: map[string]*v1beta1.Value{
+			"response_duration": {
+				Value: &v1beta1.Value_DurationValue{DurationValue: &v1beta1.Duration{Value: &types.Duration{Nanos: 200}}},
 			},
 		},
 		Value: &v1beta1.Value{
@@ -106,7 +130,7 @@ func TestNewAdapter(t *testing.T) {
 			Header:     make(http.Header),
 		}
 	})
-	adapter, err := New(DefaultAdapterPort, logger, client, nil, "http://example.com", buffer, false)
+	adapter, err := New(DefaultAdapterPort, logger, client, nil, "http://example.com", buffer)
 	wantStr := "[::]:38355"
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %s", err.Error())
@@ -126,59 +150,6 @@ func TestNewAdapter(t *testing.T) {
 			t.Error("Fail, Expected address is not received")
 		}
 	}
-}
-
-func TestHandleMetricPersist(t *testing.T) {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", DefaultAdapterPort))
-	if err != nil {
-		t.Errorf("Unable to listen on socket: %s", err.Error())
-	}
-
-	defer func() {
-		_ = listener.Close()
-	}()
-
-	logger, err := logging.NewLogger()
-	if err != nil {
-		t.Errorf("Error building logger: %s", err.Error())
-	}
-
-	client := NewTestClient(func(req *http.Request) *http.Response {
-		return &http.Response{
-			StatusCode: 200,
-			Header:     make(http.Header),
-		}
-	})
-
-	buffer := make(chan string, 100)
-
-	wso2SpAdapter := &Adapter{
-		listener:    listener,
-		logger:      logger,
-		httpClient:  client,
-		spServerUrl: "http://example.com",
-		buffer:      buffer,
-		persist:     false,
-	}
-
-	var sampleInstances []*metric.InstanceMsg
-	sampleInstances = append(sampleInstances, sampleInstance1)
-	sampleInstances = append(sampleInstances, sampleInstance2)
-	sampleInstances = append(sampleInstances, sampleInstance3)
-	sampleInstances = append(sampleInstances, sampleInstance4)
-
-	sampleMetricRequest := metric.HandleMetricRequest{
-		Instances: sampleInstances,
-	}
-
-	_, err = wso2SpAdapter.HandleMetric(context.TODO(), &sampleMetricRequest)
-
-	if err != nil {
-		t.Errorf("Metric could not be handled : %s", err.Error())
-	} else {
-		t.Log("Successfully handled the metrics")
-	}
-
 }
 
 func TestHandleMetric(t *testing.T) {
@@ -205,7 +176,6 @@ func TestHandleMetric(t *testing.T) {
 		httpClient:  &http.Client{},
 		spServerUrl: testServer.URL,
 		buffer:      buffer,
-		persist:     true,
 	}
 
 	var sampleInstances []*metric.InstanceMsg
@@ -213,6 +183,8 @@ func TestHandleMetric(t *testing.T) {
 	sampleInstances = append(sampleInstances, sampleInstance2)
 	sampleInstances = append(sampleInstances, sampleInstance3)
 	sampleInstances = append(sampleInstances, sampleInstance4)
+	sampleInstances = append(sampleInstances, sampleInstance5)
+	sampleInstances = append(sampleInstances, sampleInstance6)
 
 	sampleMetricRequest := metric.HandleMetricRequest{
 		Instances: sampleInstances,

@@ -23,9 +23,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 )
 
@@ -37,6 +40,7 @@ type (
 	RoundTripFunc func(req *http.Request) *http.Response
 	MockCrr       struct{}
 	MockErr       struct{}
+	MockCleaner   struct{}
 )
 
 func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -49,17 +53,27 @@ func NewTestClient(fn RoundTripFunc) *http.Client {
 	}
 }
 
-func (mockPersister *MockCrr) Write() {}
-func (mockPersister *MockCrr) Fetch(run chan bool) (string, error) {
-	return fmt.Sprintf("[%s]", testStr), nil
+func (mockCleaner *MockCleaner) Commit() error {
+	return nil
 }
-func (mockPersister *MockCrr) Clean(err error) {}
 
-func (mockPersister *MockErr) Write() {}
-func (mockPersister *MockErr) Fetch(run chan bool) (string, error) {
-	return "", fmt.Errorf("test error 1")
+func (mockCleaner *MockCleaner) Rollback() error {
+	return nil
 }
-func (mockPersister *MockErr) Clean(err error) {}
+
+func (mockPersister *MockCrr) Write(str string) error {
+	return nil
+}
+func (mockPersister *MockCrr) Fetch() (string, dal.Transaction, error) {
+	return fmt.Sprintf("[%s]", testStr), &MockCleaner{}, nil
+}
+
+func (mockPersister *MockErr) Write(str string) error {
+	return fmt.Errorf("test error in writing")
+}
+func (mockPersister *MockErr) Fetch() (string, dal.Transaction, error) {
+	return "", &MockCleaner{}, fmt.Errorf("test error 1")
+}
 
 func TestPublisher_Run(t *testing.T) {
 	logger, err := logging.NewLogger()
@@ -117,4 +131,8 @@ func TestPublisher_Run(t *testing.T) {
 	go publisher3.Run(shutdown)
 	time.Sleep(10 * time.Second)
 
+	files, err := filepath.Glob("./*.txt")
+	for _, fname := range files {
+		err = os.Remove(fname)
+	}
 }

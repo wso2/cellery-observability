@@ -25,6 +25,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/gofrs/flock"
+
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 )
 
@@ -44,13 +46,13 @@ func TestPersister_Write(t *testing.T) {
 		Directory:   ".",
 	}
 
-	err = persister.Write(fmt.Sprintf("[%s]",testStr))
+	err = persister.Write(fmt.Sprintf("[%s]", testStr))
 	if err != nil {
 		t.Error("Could not write")
 	}
 
 	persister.Directory = "./wrong_directory"
-	err = persister.Write(fmt.Sprintf("[%s]",testStr))
+	err = persister.Write(fmt.Sprintf("[%s]", testStr))
 	if err == nil {
 		t.Error("Expected error was not thrown")
 	}
@@ -73,7 +75,6 @@ func TestPersister_Fetch(t *testing.T) {
 		Logger:      logger,
 		Directory:   "./",
 	}
-
 	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
 	str, _, _ := persister.Fetch()
 	if str != testStr {
@@ -86,13 +87,11 @@ func TestPersister_Fetch(t *testing.T) {
 	if err == nil {
 		t.Error("No error was thrown when reading an empty file")
 	}
-
 	persister.Directory = "./wrong_dir"
 	_, _, err = persister.Fetch()
 	if err == nil {
 		t.Error("Expected error was not thrown")
 	}
-
 	files, err := filepath.Glob("./*.txt")
 	for _, fname := range files {
 		err = os.Remove(fname)
@@ -100,43 +99,39 @@ func TestPersister_Fetch(t *testing.T) {
 }
 
 func TestCleaner_Commit(t *testing.T) {
-	logger, err := logging.NewLogger()
-	if err != nil {
-		t.Errorf("Error building logger: %s", err.Error())
-	}
 	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
 	cleaner := &Cleaner{
-		fname: "./test.txt",
-		Logger: logger,
+		Lock: flock.New("./test.txt"),
 	}
-	err = cleaner.Commit()
+	err := cleaner.Commit()
 	if err != nil {
 		t.Error("Error when committing")
 	}
-
 	//Try to delete the already deleted file, this should log an error
 	cleaner = &Cleaner{
-		fname: "./test.txt",
-		Logger: logger,
+		Lock: flock.New("./test.txt"),
 	}
 	err = cleaner.Commit()
 	if err == nil {
 		t.Error("No error was thrown when trying to delete an already deleted file")
 	}
+	files, err := filepath.Glob("./*.txt")
+	for _, fname := range files {
+		err = os.Remove(fname)
+	}
 }
 
 func TestCleaner_Rollback(t *testing.T) {
-	logger, err := logging.NewLogger()
-	if err != nil {
-		t.Errorf("Error building logger: %s", err.Error())
-	}
 	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
 	cleaner := &Cleaner{
-		fname: "./test.txt",
-		Logger: logger,
+		Lock: flock.New("./test.txt"),
 	}
-	err = cleaner.Rollback()
+	err := cleaner.Rollback()
 	if err != nil {
 		t.Error("An error was thrown when deleting the file")
+	}
+	files, err := filepath.Glob("./*.txt")
+	for _, fname := range files {
+		err = os.Remove(fname)
 	}
 }

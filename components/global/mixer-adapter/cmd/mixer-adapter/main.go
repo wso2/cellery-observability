@@ -21,8 +21,14 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"database/sql"
 	"os"
 	"strconv"
+
+	"github.com/go-sql-driver/mysql"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal/database"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal/memory"
 
 	//"database/sql"
 	"fmt"
@@ -41,7 +47,7 @@ import (
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
 	//"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/database"
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/file"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal/file"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer"
@@ -51,25 +57,25 @@ import (
 
 type (
 	configMap struct {
-		tls struct{
+		tls struct {
 			cert string
-			key string
-			ca string
+			key  string
+			ca   string
 		}
-		publisher struct{
-			endpoint string
+		publisher struct {
+			endpoint            string
 			sendIntervalSeconds int
 		}
-		persistence struct{
-			bufferSize int
+		persistence struct {
+			bufferSize           int
 			bufferTimeoutSeconds int
-			source struct{
-				directory struct{
+			source               struct {
+				directory struct {
 					path string
 				}
-				db struct{
-					host string
-					port string
+				db struct {
+					host     string
+					port     string
 					username string
 					password string
 				}
@@ -84,7 +90,6 @@ var (
 
 func main() {
 	port := adapter.DefaultAdapterPort
-	persist := false
 
 	logger, err := logging.NewLogger()
 	if err != nil {
@@ -113,7 +118,7 @@ func main() {
 		publisher: struct {
 			endpoint            string
 			sendIntervalSeconds int
-		}{endpoint:"http://localhost:8500", sendIntervalSeconds:5},
+		}{endpoint: "http://localhost:8500", sendIntervalSeconds: 5},
 		persistence: struct {
 			bufferSize           int
 			bufferTimeoutSeconds int
@@ -128,7 +133,7 @@ func main() {
 					password string
 				}
 			}
-		}{bufferSize:2, bufferTimeoutSeconds:10, source: struct {
+		}{bufferSize: 2, bufferTimeoutSeconds: 10, source: struct {
 			directory struct {
 				path string
 			}
@@ -141,7 +146,7 @@ func main() {
 		}{
 			directory: struct {
 				path string
-			}{path:"/home/hasitha/go-workspace/src/github.com/cellery-io/mesh-observability/temp"},
+			}{path: ""},
 			db: struct {
 				host     string
 				port     string
@@ -159,7 +164,7 @@ func main() {
 	// Mutual TLS feature to secure connection between workloads. This is optional.
 	adapterCertificate := configMap.tls.cert // adapter.crt
 	adapterPrivateKey := configMap.tls.key   // adapter.key
-	caCertificate := configMap.tls.ca               // ca.pem
+	caCertificate := configMap.tls.ca        // ca.pem
 	spServerUrl := configMap.publisher.endpoint
 	filePath := configMap.persistence.source.directory.path
 	bufferTimeoutSeconds := configMap.persistence.bufferTimeoutSeconds
@@ -167,94 +172,82 @@ func main() {
 	tickerSec := configMap.publisher.sendIntervalSeconds
 
 	logger.Infof("Sp server url : %s", spServerUrl)
-
 	client := &http.Client{}
-
 	var serverOption grpc.ServerOption = nil
-
 	if adapterCertificate != "" {
 		serverOption, err = getServerTLSOption(adapterCertificate, adapterPrivateKey, caCertificate)
 		if err != nil {
 			logger.Warn("Server option could not be fetched, Connection will not be encrypted")
 		}
 	}
-
 	buffer := make(chan string, minBufferSize*1000)
 	shutdown := make(chan error, 1)
-
-	var source = configMap.persistence.source
-	if (source.directory.path != "") || ((source.db.host != "")&&(source.db.port != "")&&(source.db.username !="")) {
-		//Enabling persistence
-		var ps dal.Persister
-		wrt := &writer.Writer{
-			WaitingTimeSec: bufferTimeoutSeconds,
-			WaitingSize:    minBufferSize,
-			Logger:         logger,
-			Buffer:         buffer,
-			StartTime:      time.Now(),
-		}
-		ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
-		pub := &publisher.Publisher{
-			Ticker:      ticker,
-			Logger:      logger,
-			SpServerUrl: spServerUrl,
-			HttpClient:  &http.Client{},
-		}
-		persist = true
-		if source.directory.path != "" {
-			//File storage will be used for persistence. Priority will be given to the file system
-			ps = &file.Persister{
-				WaitingSize: bufferTimeoutSeconds,
-				Logger:      logger,
-				Directory:   filePath,
-			}
-			wrt.Persister = ps
-			go func() {
-				wrt.Run(shutdown)
-			}()
-			pub.Persister = ps
-			go func() {
-				pub.Run(shutdown)
-			}()
-		} else {
-			//Db will be used for persistence
-			//db, err := retrier.Retry(10, 2*time.Second, "CONNECT_SQL", func() (db interface{}, err error) {
-			//	db, err = sql.Open("mysql", mysql.Config{
-			//		User:   "root",
-			//		Passwd: "",
-			//		Net:    "tcp",
-			//		Addr:   "wso2apim-with-analytics-rdbms-service.cellery-system.svc.cluster.local:3306",
-			//		DBName: "PERSISTENCE",
-			//	}.FormatDSN())
-			//	return db, err
-			//})
-			//if err != nil {
-			//	logger.Warnf("Could not connect to the MySQL database, enabling file persistence : %s", err.Error())
-			//} else {
-			//	logger.Infof("Successfully connected to the MySQL database")
-			//	ps = &database.Persister{
-			//		WaitingSize: bufferTimeoutSeconds,
-			//		Logger:      logger,
-			//		Buffer:      buffer,
-			//		Db:          db.(*sql.DB),
-			//	}
-			//	wrt.Persister = ps
-			//	go func() {
-			//		wrt.Run(shutdown)
-			//	}()
-			//	pub.Persister = ps
-			//	go func() {
-			//		pub.Run(shutdown)
-			//	}()
-			//}
-		}
-	}
-	spAdapter, err := adapter.New(port, logger, client, serverOption, spServerUrl, buffer, persist)
+	spAdapter, err := adapter.New(port, logger, client, serverOption, spServerUrl, buffer)
 	if err != nil {
 		logger.Fatal("unable to start server: ", err.Error())
 	}
 	go func() {
 		spAdapter.Run(shutdown)
+	}()
+	var ps dal.Persister
+	wrt := &writer.Writer{
+		WaitingTimeSec: bufferTimeoutSeconds,
+		WaitingSize:    minBufferSize,
+		Logger:         logger,
+		Buffer:         buffer,
+		StartTime:      time.Now(),
+	}
+	ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
+	pub := &publisher.Publisher{
+		Ticker:      ticker,
+		Logger:      logger,
+		SpServerUrl: spServerUrl,
+		HttpClient:  &http.Client{},
+	}
+	var source = configMap.persistence.source
+	if source.directory.path != "" {
+		//File storage will be used for persistence. Priority will be given to the file system
+		logger.Info("Enabling file persistence")
+		ps = &file.Persister{
+			Logger:    logger,
+			Directory: filePath,
+		}
+		wrt.Persister = ps
+	} else if (source.db.host != "") && (source.db.port != "") && (source.db.username != "") {
+		//Db will be used for persistence
+		logger.Info("Enabling database persistence")
+		dsn := (&mysql.Config{
+			User:   source.db.username,
+			Passwd: source.db.password,
+			Addr:   fmt.Sprintf("%s:%s", source.db.host, source.db.port),
+			DBName: "PERSISTENCE",
+		}).FormatDSN()
+		db, err := sql.Open("mysql", dsn)
+		if err != nil {
+			logger.Fatal("Could not connect to the MySQL database : %s", err.Error())
+		} else {
+			ps = &database.Persister{
+				Logger: logger,
+				Db:     db,
+			}
+			wrt.Persister = ps
+		}
+	} else {
+		//In memory persistence
+		logger.Info("Enabling in memory persistence")
+		inMemoryBuffer := make(chan string, minBufferSize*1000)
+		ps = &memory.Persister{
+			Logger: logger,
+			Buffer: inMemoryBuffer,
+		}
+		wrt.Persister = ps
+	}
+	go func() {
+		wrt.Run(shutdown)
+	}()
+	pub.Persister = ps
+	go func() {
+		pub.Run(shutdown)
 	}()
 
 	buffer <- testStr

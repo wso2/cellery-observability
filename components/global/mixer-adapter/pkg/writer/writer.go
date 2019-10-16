@@ -55,7 +55,7 @@ func (writer *Writer) Run(shutdown chan error) {
 					writer.Logger.Warn(err.Error())
 					writer.restore(elements)
 				}
-				time.Sleep(5*time.Second)
+				time.Sleep(5 * time.Second)
 			}
 		}
 	}

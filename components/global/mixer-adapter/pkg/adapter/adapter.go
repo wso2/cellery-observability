@@ -24,7 +24,6 @@
 package adapter
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -58,7 +57,6 @@ type (
 		httpClient  *http.Client
 		spServerUrl string
 		buffer      chan string
-		persist     bool
 	}
 )
 
@@ -69,14 +67,7 @@ func (adapter *Adapter) HandleMetric(ctx context.Context, r *metric.HandleMetric
 	for _, inst := range instances {
 		var attributesMap = decodeDimensions(inst.Dimensions)
 		adapter.logger.Debugf("received request : %s", attributesMap)
-		if adapter.persist {
-			adapter.writeToBuffer(attributesMap)
-		} else {
-			resp := adapter.Publish(attributesMap)
-			if resp != 200 {
-				 adapter.logger.Error(fmt.Errorf("could not sent the metric successfully"))
-			}
-		}
+		adapter.writeToBuffer(attributesMap)
 	}
 
 	return &v1beta1.ReportResult{}, nil
@@ -88,27 +79,6 @@ func (adapter *Adapter) writeToBuffer(attributeMap map[string]interface{}) {
 		return
 	}
 	adapter.buffer <- string(jsonValue)
-}
-
-// Send metrics to sp server
-func (adapter *Adapter) Publish(attributeMap map[string]interface{}) int {
-	jsonValue, err := json.Marshal(attributeMap)
-	if err != nil {
-		return 500
-	}
-	req, err := http.NewRequest("POST", adapter.spServerUrl, bytes.NewBuffer(jsonValue))
-	if req != nil {
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := adapter.httpClient.Do(req)
-		if err != nil {
-			return 500
-		}
-		adapter.logger.Infof("Received status code from SP Worker : %d", resp.StatusCode)
-		return resp.StatusCode
-	} else {
-		adapter.logger.Warnf("Could not send the request : %s", err)
-		return 500
-	}
 }
 
 func decodeDimensions(in map[string]*policy.Value) map[string]interface{} {
@@ -162,23 +132,19 @@ func (adapter *Adapter) Close() error {
 }
 
 // New creates a new SP adapter that listens at provided port.
-func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, serverOption grpc.ServerOption, spServerUrl string, buffer chan string, persist bool) (Server, error) {
+func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, serverOption grpc.ServerOption, spServerUrl string, buffer chan string) (Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", addr))
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on socket: %v", err)
 	}
-
 	adapter := &Adapter{
 		listener:    listener,
 		logger:      logger,
 		httpClient:  httpClient,
 		spServerUrl: spServerUrl,
 		buffer:      buffer,
-		persist:     persist,
 	}
-
 	logger.Info("listening on ", adapter.Addr())
-
 	if serverOption != nil {
 		adapter.server = grpc.NewServer(serverOption)
 	} else {

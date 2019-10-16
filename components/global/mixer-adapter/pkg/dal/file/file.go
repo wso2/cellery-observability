@@ -20,7 +20,6 @@ package file
 
 import (
 	"fmt"
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -30,17 +29,16 @@ import (
 	"github.com/rs/xid"
 	"go.uber.org/zap"
 
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/dal"
 )
 
 type (
 	Persister struct {
-		WaitingSize int
-		Logger      *zap.SugaredLogger
-		Directory   string
+		Logger    *zap.SugaredLogger
+		Directory string
 	}
 	Cleaner struct {
 		Lock *flock.Flock
-		Logger *zap.SugaredLogger
 	}
 )
 
@@ -80,7 +78,6 @@ func (persister *Persister) Write(str string) error {
 	if err != nil {
 		return fmt.Errorf("could not unlock the file after writing : %s", err.Error())
 	}
-
 	return nil
 }
 
@@ -100,13 +97,12 @@ func (persister *Persister) unlock(flock *flock.Flock) {
 func (persister *Persister) Fetch() (string, dal.Transaction, error) {
 	files, err := filepath.Glob(persister.Directory + "/*.txt")
 	if err != nil {
-		return "",  &Cleaner{}, fmt.Errorf("could not read the given directory %s : %s", persister.Directory, err.Error())
+		return "", &Cleaner{}, fmt.Errorf("could not read the given directory %s : %s", persister.Directory, err.Error())
 	}
 	persister.Logger.Debugf("%s", files)
 	if len(files) > 0 {
 		cleaner := &Cleaner{
 			Lock: flock.New(files[rand.Intn(len(files))]),
-			Logger: persister.Logger,
 		}
 		return persister.read(cleaner)
 	} else {
@@ -120,20 +116,15 @@ func (persister *Persister) read(cleaner *Cleaner) (string, *Cleaner, error) {
 		return "", cleaner, fmt.Errorf("could not achieve the lock")
 	}
 	if err != nil {
-		_ = cleaner.Lock.Unlock() //handle error
 		return "", cleaner, fmt.Errorf("could not lock the file : %s", err.Error())
 	}
-
 	data, err := ioutil.ReadFile(cleaner.Lock.String())
 	if err != nil {
-		_ = cleaner.Lock.Unlock()
 		return "", cleaner, fmt.Errorf("could not read the file : %s", err.Error())
 	}
 	if data == nil || string(data) == "" {
-		_ = cleaner.Lock.Unlock()
 		_ = os.Remove(cleaner.Lock.String())
-		return "", cleaner, fmt.Errorf("file is empty") // Just delete the empty file
+		return "", cleaner, fmt.Errorf("file is empty, hence removed")
 	}
-
 	return string(data), cleaner, nil
 }
