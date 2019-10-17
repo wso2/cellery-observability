@@ -37,21 +37,21 @@ type (
 		Logger    *zap.SugaredLogger
 		Directory string
 	}
-	Cleaner struct {
+	Transaction struct {
 		Lock *flock.Flock
 	}
 )
 
-func (cleaner *Cleaner) Commit() error {
-	err := os.Remove(cleaner.Lock.String())
+func (transaction *Transaction) Commit() error {
+	err := os.Remove(transaction.Lock.String())
 	if err != nil {
 		return fmt.Errorf("could not delete the published file : %s", err.Error())
 	}
 	return nil
 }
 
-func (cleaner *Cleaner) Rollback() error {
-	err := cleaner.Lock.Unlock()
+func (transaction *Transaction) Rollback() error {
+	err := transaction.Lock.Unlock()
 	if err != nil {
 		return fmt.Errorf("could not unlock the file")
 	}
@@ -97,34 +97,34 @@ func (persister *Persister) unlock(flock *flock.Flock) {
 func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	files, err := filepath.Glob(persister.Directory + "/*.txt")
 	if err != nil {
-		return "", &Cleaner{}, fmt.Errorf("could not read the given directory %s : %s", persister.Directory, err.Error())
+		return "", &Transaction{}, fmt.Errorf("could not read the given directory %s : %s", persister.Directory, err.Error())
 	}
 	persister.Logger.Debugf("%s", files)
 	if len(files) > 0 {
-		cleaner := &Cleaner{
+		transaction := &Transaction{
 			Lock: flock.New(files[rand.Intn(len(files))]),
 		}
-		return persister.read(cleaner)
+		return persister.read(transaction)
 	} else {
-		return "", &Cleaner{}, fmt.Errorf("no files in the directory")
+		return "", &Transaction{}, fmt.Errorf("no files in the directory")
 	}
 }
 
-func (persister *Persister) read(cleaner *Cleaner) (string, *Cleaner, error) {
-	locked, err := cleaner.Lock.TryLock()
+func (persister *Persister) read(transaction *Transaction) (string, *Transaction, error) {
+	locked, err := transaction.Lock.TryLock()
 	if !locked {
-		return "", cleaner, fmt.Errorf("could not achieve the lock")
+		return "", transaction, fmt.Errorf("could not achieve the lock")
 	}
 	if err != nil {
-		return "", cleaner, fmt.Errorf("could not lock the file : %s", err.Error())
+		return "", transaction, fmt.Errorf("could not lock the file : %s", err.Error())
 	}
-	data, err := ioutil.ReadFile(cleaner.Lock.String())
+	data, err := ioutil.ReadFile(transaction.Lock.String())
 	if err != nil {
-		return "", cleaner, fmt.Errorf("could not read the file : %s", err.Error())
+		return "", transaction, fmt.Errorf("could not read the file : %s", err.Error())
 	}
 	if data == nil || string(data) == "" {
-		_ = os.Remove(cleaner.Lock.String())
-		return "", cleaner, fmt.Errorf("file is empty, hence removed")
+		_ = os.Remove(transaction.Lock.String())
+		return "", transaction, fmt.Errorf("file is empty, hence removed")
 	}
-	return string(data), cleaner, nil
+	return string(data), transaction, nil
 }

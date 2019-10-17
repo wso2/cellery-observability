@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
+
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 )
 
@@ -31,19 +33,38 @@ var (
 )
 
 type (
-	MockCrr struct {
+	MockPersister struct {
 		Buffer chan string
 	}
+	MockPersisterErr struct{}
+	MockTransaction  struct{}
 )
 
-func (mockPersister *MockCrr) Write() {
+func (mockTransaction *MockTransaction) Commit() error {
+	return nil
+}
+
+func (mockTransaction *MockTransaction) Rollback() error {
+	return nil
+}
+
+func (mockPersister *MockPersister) Write(str string) error {
 	_ = <-mockPersister.Buffer
 	_ = <-mockPersister.Buffer
+	return nil
 }
-func (mockPersister *MockCrr) Fetch(run chan bool) (string, error) {
-	return fmt.Sprintf("[%s]", testStr), nil
+
+func (mockPersister *MockPersister) Fetch() (string, store.Transaction, error) {
+	return fmt.Sprintf("[%s]", testStr), &MockTransaction{}, nil
 }
-func (mockPersister *MockCrr) Clean(err error) {}
+
+func (mockPersisterErr *MockPersisterErr) Write(str string) error {
+	return fmt.Errorf("test error 1")
+}
+
+func (mockPersisterErr *MockPersisterErr) Fetch() (string, store.Transaction, error) {
+	return "", &MockTransaction{}, fmt.Errorf("test error 2")
+}
 
 func TestWriter_Run(t *testing.T) {
 	logger, err := logging.NewLogger()
@@ -55,19 +76,33 @@ func TestWriter_Run(t *testing.T) {
 	buffer := make(chan string, 10)
 
 	writer := Writer{
-		WaitingTimeSec: 10,
+		WaitingTimeSec: 5,
 		WaitingSize:    2,
 		Logger:         logger,
 		Buffer:         buffer,
 		StartTime:      time.Now(),
-		Persister:      &MockCrr{Buffer: buffer},
+		Persister:      &MockPersister{Buffer: buffer},
 	}
-
 	go writer.Run(shutdown)
-
 	buffer <- testStr
 	buffer <- testStr
-
 	time.Sleep(10 * time.Second)
+	shutdown <- fmt.Errorf("test shutdown")
+
+	shutdown2 := make(chan error, 1)
+	buffer2 := make(chan string, 10)
+	writer2 := Writer{
+		WaitingTimeSec: 5,
+		WaitingSize:    2,
+		Logger:         logger,
+		Buffer:         buffer2,
+		StartTime:      time.Now(),
+		Persister:      &MockPersisterErr{},
+	}
+	go writer2.Run(shutdown2)
+	buffer2 <- testStr
+	buffer2 <- testStr
+	time.Sleep(10 * time.Second)
+	shutdown2 <- fmt.Errorf("test shutdown")
 
 }

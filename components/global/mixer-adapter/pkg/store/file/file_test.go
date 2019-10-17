@@ -41,9 +41,8 @@ func TestPersister_Write(t *testing.T) {
 	}
 
 	persister := &Persister{
-		WaitingSize: 5,
-		Logger:      logger,
-		Directory:   ".",
+		Logger:    logger,
+		Directory: ".",
 	}
 
 	err = persister.Write(fmt.Sprintf("[%s]", testStr))
@@ -71,9 +70,8 @@ func TestPersister_Fetch(t *testing.T) {
 	}
 
 	persister := &Persister{
-		WaitingSize: 4,
-		Logger:      logger,
-		Directory:   "./",
+		Logger:    logger,
+		Directory: "./",
 	}
 	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
 	str, _, _ := persister.Fetch()
@@ -98,20 +96,20 @@ func TestPersister_Fetch(t *testing.T) {
 	}
 }
 
-func TestCleaner_Commit(t *testing.T) {
+func TestTransaction_Commit(t *testing.T) {
 	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
-	cleaner := &Cleaner{
+	transaction := &Transaction{
 		Lock: flock.New("./test.txt"),
 	}
-	err := cleaner.Commit()
+	err := transaction.Commit()
 	if err != nil {
 		t.Error("Error when committing")
 	}
 	//Try to delete the already deleted file, this should log an error
-	cleaner = &Cleaner{
+	transaction = &Transaction{
 		Lock: flock.New("./test.txt"),
 	}
-	err = cleaner.Commit()
+	err = transaction.Commit()
 	if err == nil {
 		t.Error("No error was thrown when trying to delete an already deleted file")
 	}
@@ -121,12 +119,12 @@ func TestCleaner_Commit(t *testing.T) {
 	}
 }
 
-func TestCleaner_Rollback(t *testing.T) {
+func TestTransaction_Rollback(t *testing.T) {
 	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
-	cleaner := &Cleaner{
+	transaction := &Transaction{
 		Lock: flock.New("./test.txt"),
 	}
-	err := cleaner.Rollback()
+	err := transaction.Rollback()
 	if err != nil {
 		t.Error("An error was thrown when deleting the file")
 	}

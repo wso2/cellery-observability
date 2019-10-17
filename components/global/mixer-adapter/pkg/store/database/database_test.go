@@ -143,7 +143,7 @@ func TestPersister_Fetch(t *testing.T) {
 	}
 }
 
-func TestCleaner_Commit(t *testing.T) {
+func TestTransaction_Commit(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if db == nil || mock == nil || err != nil {
 		t.Log("Could not initialize the database")
@@ -156,16 +156,16 @@ func TestCleaner_Commit(t *testing.T) {
 		t.Logf("could not initialize the database %s", err.Error())
 		return
 	}
-	cleaner := &Cleaner{Tx: tx}
-	_ = cleaner.Commit()
+	transaction := &Transaction{Tx: tx}
+	_ = transaction.Commit()
 
 	tx2, err := db.Begin()
 	if err != nil {
 		t.Logf("could not initialize the database %s", err.Error())
 		return
 	}
-	cleaner2 := &Cleaner{Tx: tx2}
-	_ = cleaner2.Commit()
+	transaction2 := &Transaction{Tx: tx2}
+	_ = transaction2.Commit()
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	} else {
@@ -173,7 +173,7 @@ func TestCleaner_Commit(t *testing.T) {
 	}
 }
 
-func TestCleaner_Rollback(t *testing.T) {
+func TestTransaction_Rollback(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if db == nil || mock == nil || err != nil {
 		t.Log("Could not initialize the database")
@@ -186,16 +186,16 @@ func TestCleaner_Rollback(t *testing.T) {
 		t.Logf("could not initialize the database %s", err.Error())
 		return
 	}
-	cleaner := &Cleaner{Tx: tx}
-	_ = cleaner.Rollback()
+	transaction := &Transaction{Tx: tx}
+	_ = transaction.Rollback()
 
 	tx2, err := db.Begin()
 	if err != nil {
 		t.Logf("could not initialize the database %s", err.Error())
 		return
 	}
-	cleaner2 := &Cleaner{Tx: tx2}
-	_ = cleaner2.Rollback()
+	transaction2 := &Transaction{Tx: tx2}
+	_ = transaction2.Rollback()
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	} else {

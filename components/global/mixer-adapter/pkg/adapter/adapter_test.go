@@ -131,7 +131,7 @@ func TestNewAdapter(t *testing.T) {
 		}
 	})
 	adapter, err := New(DefaultAdapterPort, logger, client, nil, "http://example.com", buffer)
-	wantStr := "[::]:38355"
+	wantStr := fmt.Sprintf("[::]:%d", DefaultAdapterPort)
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %s", err.Error())
 	}

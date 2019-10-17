@@ -22,8 +22,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
-	"os"
-	"strconv"
+	"encoding/json"
 
 	"github.com/go-sql-driver/mysql"
 
@@ -56,41 +55,38 @@ import (
 )
 
 type (
-	configMap struct {
+	ConfigMap struct {
 		tls struct {
 			cert string
 			key  string
 			ca   string
 		}
 		publisher struct {
-			endpoint            string
-			sendIntervalSeconds int
+			spServerUrl           string
+			sendIntervalInSeconds int
 		}
-		persistence struct {
-			bufferSize           int
-			bufferTimeoutSeconds int
-			source               struct {
-				directory struct {
-					path string
-				}
-				db struct {
-					host     string
-					port     string
-					username string
-					password string
-				}
+		store struct {
+			fileStorage struct {
+				path string
 			}
+			db struct {
+				host     string
+				port     string
+				username string
+				password string
+				name     string
+			}
+			inMemory struct{}
+		}
+		advancedConfig struct {
+			bufferSize             int
+			bufferTimeoutInSeconds int
 		}
 	}
 )
 
-var (
-	testStr = "{\"contextReporterKind\":\"inbound\", \"destinationUID\":\"kubernetes://istio-policy-74d6c8b4d5-mmr49.istio-system\", \"requestID\":\"6e544e82-2a0c-4b83-abcc-0f62b89cdf3f\", \"requestMethod\":\"POST\", \"requestPath\":\"/istio.mixer.v1.Mixer/Check\", \"requestTotalSize\":\"2748\", \"responseCode\":\"200\", \"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":\"b55a0f7f20d36e49f8612bac4311791d\"}"
-)
-
 func main() {
 	port := adapter.DefaultAdapterPort
-
 	logger, err := logging.NewLogger()
 	if err != nil {
 		log.Fatalf("Error building logger: %s", err.Error())
@@ -101,75 +97,19 @@ func main() {
 			log.Fatalf("Error syncing logger: %s", err.Error())
 		}
 	}()
-
-	if len(os.Args) > 1 {
-		port, err = strconv.Atoi(os.Args[1])
-		if err != nil {
-			logger.Errorf("Could not convert the port number from string to int : %s", err.Error())
-		}
-	}
-
-	var configMap = &configMap{
-		tls: struct {
-			cert string
-			key  string
-			ca   string
-		}{cert: "", key: "", ca: ""},
-		publisher: struct {
-			endpoint            string
-			sendIntervalSeconds int
-		}{endpoint: "http://localhost:8500", sendIntervalSeconds: 5},
-		persistence: struct {
-			bufferSize           int
-			bufferTimeoutSeconds int
-			source               struct {
-				directory struct {
-					path string
-				}
-				db struct {
-					host     string
-					port     string
-					username string
-					password string
-				}
-			}
-		}{bufferSize: 2, bufferTimeoutSeconds: 10, source: struct {
-			directory struct {
-				path string
-			}
-			db struct {
-				host     string
-				port     string
-				username string
-				password string
-			}
-		}{
-			directory: struct {
-				path string
-			}{path: ""},
-			db: struct {
-				host     string
-				port     string
-				username string
-				password string
-			}{
-				host:     "",
-				port:     "",
-				username: "",
-				password: "",
-			},
-		}},
-	}
-
+	data, err := ioutil.ReadFile("/mnt/conf")
+	configMap := &ConfigMap{}
+	err = json.Unmarshal(data, &configMap)
+	logger.Info(configMap)
 	// Mutual TLS feature to secure connection between workloads. This is optional.
 	adapterCertificate := configMap.tls.cert // adapter.crt
 	adapterPrivateKey := configMap.tls.key   // adapter.key
 	caCertificate := configMap.tls.ca        // ca.pem
-	spServerUrl := configMap.publisher.endpoint
-	filePath := configMap.persistence.source.directory.path
-	bufferTimeoutSeconds := configMap.persistence.bufferTimeoutSeconds
-	minBufferSize := configMap.persistence.bufferSize
-	tickerSec := configMap.publisher.sendIntervalSeconds
+	spServerUrl := configMap.publisher.spServerUrl
+	filePath := configMap.store.fileStorage.path
+	bufferTimeoutSeconds := configMap.advancedConfig.bufferTimeoutInSeconds
+	minBufferSize := configMap.advancedConfig.bufferSize
+	tickerSec := configMap.publisher.sendIntervalInSeconds
 
 	logger.Infof("Sp server url : %s", spServerUrl)
 	client := &http.Client{}
@@ -204,8 +144,8 @@ func main() {
 		SpServerUrl: spServerUrl,
 		HttpClient:  &http.Client{},
 	}
-	var source = configMap.persistence.source
-	if source.directory.path != "" {
+	var source = configMap.store
+	if source.fileStorage.path != "" {
 		//File storage will be used for persistence. Priority will be given to the file system
 		logger.Info("Enabling file persistence")
 		ps = &file.Persister{
@@ -249,17 +189,6 @@ func main() {
 	go func() {
 		pub.Run(shutdown)
 	}()
-
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
-	buffer <- testStr
 
 	err = <-shutdown
 	if err != nil {

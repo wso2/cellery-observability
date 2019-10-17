@@ -31,28 +31,28 @@ type (
 		Logger *zap.SugaredLogger
 		Buffer chan string
 	}
-	Cleaner struct {
+	Transaction struct {
 		Element string
 		Buffer  chan string
 	}
 )
 
-func (cleaner *Cleaner) Commit() error {
+func (transaction *Transaction) Commit() error {
 	return nil
 }
 
-func (cleaner *Cleaner) Rollback() error {
-	cleaner.Buffer <- cleaner.Element
+func (transaction *Transaction) Rollback() error {
+	transaction.Buffer <- transaction.Element
 	return nil
 }
 
 func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	if len(persister.Buffer) > 0 {
 		str := <-persister.Buffer
-		cleaner := &Cleaner{Element: str}
-		return str, cleaner, nil
+		transaction := &Transaction{Element: str}
+		return str, transaction, nil
 	} else {
-		return "", &Cleaner{}, fmt.Errorf("there is no elements in the buffer")
+		return "", &Transaction{}, fmt.Errorf("there is no elements in the buffer")
 	}
 }
 

@@ -44,8 +44,7 @@ func (publisher *Publisher) Run(shutdown chan error) {
 	publisher.Logger.Info("Publisher started")
 	for {
 		select {
-		case quit := <-shutdown:
-			publisher.Logger.Fatal(quit.Error())
+		case <-shutdown:
 			return
 		case _ = <-publisher.Ticker.C:
 			publisher.execute()
@@ -55,20 +54,20 @@ func (publisher *Publisher) Run(shutdown chan error) {
 
 func (publisher *Publisher) execute() {
 	for {
-		str, cleaner, err := publisher.Persister.Fetch()
+		str, transaction, err := publisher.Persister.Fetch()
 		if err != nil {
-			publisher.Logger.Debug(err.Error())
+			publisher.Logger.Warn(err.Error())
 			return
 		}
 		err = publisher.publish(str)
 		if err != nil {
-			publisher.Logger.Warn(err.Error())
-			err = cleaner.Rollback()
+			publisher.Logger.Error(err.Error())
+			err = transaction.Rollback()
 			if err != nil {
 				publisher.Logger.Error(err.Error())
 			}
 		} else {
-			err = cleaner.Commit()
+			err = transaction.Commit()
 			if err != nil {
 				publisher.Logger.Error(err.Error())
 			}
@@ -86,16 +85,14 @@ func (publisher *Publisher) publish(jsonArr string) error {
 		return fmt.Errorf("could not close the gzip writer : %s", err.Error())
 	}
 	req, err := http.NewRequest("POST", publisher.SpServerUrl, &buf)
-
 	if err != nil {
 		return fmt.Errorf("could not make a new request : %s", err.Error())
 	}
 
 	client := &http.Client{}
-	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
 	_, err = client.Do(req)
-
 	if err != nil {
 		return fmt.Errorf("could not receive a response from the server : %s", err.Error())
 	}

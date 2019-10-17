@@ -43,8 +43,7 @@ func (writer *Writer) Run(shutdown chan error) {
 	writer.Logger.Info("writer started")
 	for {
 		select {
-		case quit := <-shutdown:
-			writer.Logger.Fatal(quit.Error())
+		case <-shutdown:
 			return
 		default:
 			if writer.shouldWrite() {

@@ -123,11 +123,9 @@ func (adapter *Adapter) Close() error {
 	if adapter.server != nil {
 		adapter.server.GracefulStop()
 	}
-
 	if adapter.listener != nil {
 		_ = adapter.listener.Close()
 	}
-
 	return nil
 }
 

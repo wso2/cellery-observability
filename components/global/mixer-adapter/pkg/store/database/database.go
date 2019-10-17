@@ -32,25 +32,21 @@ type (
 		Logger *zap.SugaredLogger
 		Db     *sql.DB
 	}
-	Transaction interface {
-		Exec(query string, args ...interface{}) (sql.Result, error)
-		Query(query string, args ...interface{}) (*sql.Rows, error)
-	}
-	Cleaner struct {
+	Transaction struct {
 		Tx *sql.Tx
 	}
 )
 
-func (cleaner *Cleaner) Commit() error {
-	e := cleaner.Tx.Commit()
+func (transaction *Transaction) Commit() error {
+	e := transaction.Tx.Commit()
 	if e != nil {
 		return fmt.Errorf("could not commit the sql transaction : %s", e.Error())
 	}
 	return nil
 }
 
-func (cleaner *Cleaner) Rollback() error {
-	e := cleaner.Tx.Rollback()
+func (transaction *Transaction) Rollback() error {
+	e := transaction.Tx.Rollback()
 	if e != nil {
 		return fmt.Errorf("could not rollback the sql transaction : %s", e.Error())
 	}
@@ -58,7 +54,7 @@ func (cleaner *Cleaner) Rollback() error {
 }
 
 func (persister *Persister) Write(str string) error {
-	err := persister.doTransaction(func(tx Transaction) error {
+	err := persister.doTransaction(func(tx *sql.Tx) error {
 		_, err := tx.Exec("INSERT INTO persistence(json) VALUES (?)", str)
 		if err != nil {
 			return fmt.Errorf("could not insert the metrics to the database : %s", err.Error())
@@ -75,11 +71,11 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	tx, err := persister.Db.Begin()
 	defer persister.catchPanic(tx)
 	if err != nil {
-		return "", &Cleaner{}, fmt.Errorf("could not begin the transaction : %s", err.Error())
+		return "", &Transaction{}, fmt.Errorf("could not begin the transaction : %s", err.Error())
 	}
 	rows, err := tx.Query("SELECT id,json FROM persistence LIMIT 1 FOR UPDATE")
 	if err != nil {
-		return "", &Cleaner{}, fmt.Errorf("could not fetch rows from the database : %s", err.Error())
+		return "", &Transaction{}, fmt.Errorf("could not fetch rows from the database : %s", err.Error())
 	}
 	defer func() {
 		err = rows.Close()
@@ -93,14 +89,14 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 		err = rows.Scan(&id, &jsonArr)
 	}
 	if jsonArr == "" || jsonArr == "[]" {
-		return "", &Cleaner{}, fmt.Errorf("received empty rows")
+		return "", &Transaction{}, fmt.Errorf("received empty rows")
 	}
 	_, err = tx.Exec("DELETE FROM persistence WHERE id = ?", id)
 	if err != nil {
-		return "", &Cleaner{}, fmt.Errorf("could not delete the Rows : %s", err.Error())
+		return "", &Transaction{}, fmt.Errorf("could not delete the Rows : %s", err.Error())
 	}
-	cleaner := &Cleaner{Tx: tx}
-	return jsonArr, cleaner, nil
+	transaction := &Transaction{Tx: tx}
+	return jsonArr, transaction, nil
 }
 
 func (persister *Persister) catchPanic(tx *sql.Tx) {
@@ -113,7 +109,7 @@ func (persister *Persister) catchPanic(tx *sql.Tx) {
 	}
 }
 
-func (persister *Persister) doTransaction(fn func(Transaction) error) (err error) {
+func (persister *Persister) doTransaction(fn func(*sql.Tx) error) (err error) {
 	tx, err := persister.Db.Begin()
 	if err != nil {
 		return fmt.Errorf("could not begin the transaction : %s", err.Error())

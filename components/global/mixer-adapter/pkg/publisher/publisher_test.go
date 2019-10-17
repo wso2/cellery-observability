@@ -37,10 +37,10 @@ var (
 )
 
 type (
-	RoundTripFunc func(req *http.Request) *http.Response
-	MockCrr       struct{}
-	MockErr       struct{}
-	MockCleaner   struct{}
+	RoundTripFunc   func(req *http.Request) *http.Response
+	MockCrr         struct{}
+	MockErr         struct{}
+	MockTransaction struct{}
 )
 
 func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -53,11 +53,11 @@ func NewTestClient(fn RoundTripFunc) *http.Client {
 	}
 }
 
-func (mockCleaner *MockCleaner) Commit() error {
+func (mockTransaction *MockTransaction) Commit() error {
 	return nil
 }
 
-func (mockCleaner *MockCleaner) Rollback() error {
+func (mockTransaction *MockTransaction) Rollback() error {
 	return nil
 }
 
@@ -65,14 +65,14 @@ func (mockPersister *MockCrr) Write(str string) error {
 	return nil
 }
 func (mockPersister *MockCrr) Fetch() (string, store.Transaction, error) {
-	return fmt.Sprintf("[%s]", testStr), &MockCleaner{}, nil
+	return fmt.Sprintf("[%s]", testStr), &MockTransaction{}, nil
 }
 
 func (mockPersister *MockErr) Write(str string) error {
 	return fmt.Errorf("test error in writing")
 }
 func (mockPersister *MockErr) Fetch() (string, store.Transaction, error) {
-	return "", &MockCleaner{}, fmt.Errorf("test error 1")
+	return "", &MockTransaction{}, fmt.Errorf("test error 1")
 }
 
 func TestPublisher_Run(t *testing.T) {
