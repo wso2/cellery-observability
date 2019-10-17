@@ -99,14 +99,14 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	if err != nil {
 		return "", &Transaction{}, fmt.Errorf("could not read the given directory %s : %s", persister.Directory, err.Error())
 	}
-	persister.Logger.Debugf("%s", files)
+	persister.Logger.Debugf("Files in the directory : %s", files)
 	if len(files) > 0 {
 		transaction := &Transaction{
 			Lock: flock.New(files[rand.Intn(len(files))]),
 		}
 		return persister.read(transaction)
 	} else {
-		return "", &Transaction{}, fmt.Errorf("no files in the directory")
+		return "", &Transaction{}, nil
 	}
 }
 

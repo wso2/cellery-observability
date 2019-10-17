@@ -23,67 +23,56 @@ import (
 	"crypto/x509"
 	"database/sql"
 	"encoding/json"
-
-	"github.com/go-sql-driver/mysql"
-
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/database"
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/memory"
-
-	//"database/sql"
 	"fmt"
-	//"github.com/go-sql-driver/mysql"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
-
-	//"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/retrier"
-
+	"github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
-	//"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/database"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/database"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/file"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/memory"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
-type (
-	ConfigMap struct {
-		tls struct {
-			cert string
-			key  string
-			ca   string
-		}
-		publisher struct {
-			spServerUrl           string
-			sendIntervalInSeconds int
-		}
-		store struct {
-			fileStorage struct {
-				path string
-			}
-			db struct {
-				host     string
-				port     string
-				username string
-				password string
-				name     string
-			}
-			inMemory struct{}
-		}
-		advancedConfig struct {
-			bufferSize             int
-			bufferTimeoutInSeconds int
-		}
-	}
-)
+type ConfigMap struct {
+	TLS struct {
+		Certificate   string `json:"certificate"`
+		PrivateKey    string `json:"privateKey"`
+		CaCertificate string `json:"caCertificate"`
+	} `json:"tls"`
+	Publisher struct {
+		SpServerURL           string `json:"spServerUrl"`
+		SendIntervalInSeconds int    `json:"sendIntervalInSeconds"`
+	} `json:"publisher"`
+	Store struct {
+		FileStorage struct {
+			Path string `json:"path"`
+		} `json:"fileStorage"`
+		Database struct {
+			Host     string `json:"host"`
+			Port     string `json:"port"`
+			Username string `json:"username"`
+			Password string `json:"password"`
+			Name     string `json:"name"`
+		} `json:"database"`
+		InMemory struct {
+		} `json:"inMemory"`
+	} `json:"store"`
+	AdvancedConfig struct {
+		BufferSize             int `json:"bufferSize"`
+		BufferTimeoutInSeconds int `json:"bufferTimeoutInSeconds"`
+	} `json:"advancedConfig"`
+}
 
 func main() {
 	port := adapter.DefaultAdapterPort
@@ -97,21 +86,30 @@ func main() {
 			log.Fatalf("Error syncing logger: %s", err.Error())
 		}
 	}()
-	data, err := ioutil.ReadFile("/mnt/conf")
+
+	data, err := ioutil.ReadFile("/mnt/conf/config.json")
+	if err != nil {
+		logger.Fatal("Could not read the config file")
+	}
 	configMap := &ConfigMap{}
 	err = json.Unmarshal(data, &configMap)
-	logger.Info(configMap)
-	// Mutual TLS feature to secure connection between workloads. This is optional.
-	adapterCertificate := configMap.tls.cert // adapter.crt
-	adapterPrivateKey := configMap.tls.key   // adapter.key
-	caCertificate := configMap.tls.ca        // ca.pem
-	spServerUrl := configMap.publisher.spServerUrl
-	filePath := configMap.store.fileStorage.path
-	bufferTimeoutSeconds := configMap.advancedConfig.bufferTimeoutInSeconds
-	minBufferSize := configMap.advancedConfig.bufferSize
-	tickerSec := configMap.publisher.sendIntervalInSeconds
+	if err != nil {
+		logger.Fatal("Could not unmarshal the data in config file")
+	}
 
-	logger.Infof("Sp server url : %s", spServerUrl)
+	// Mutual TLS feature to secure connection between workloads. This is optional.
+	adapterCertificate := configMap.TLS.Certificate // adapter.crt
+	adapterPrivateKey := configMap.TLS.PrivateKey   // adapter.key
+	caCertificate := configMap.TLS.CaCertificate    // ca.pem
+
+	//Initialize the variables from the config map
+	spServerUrl := configMap.Publisher.SpServerURL
+	filePath := configMap.Store.FileStorage.Path
+	bufferTimeoutSeconds := configMap.AdvancedConfig.BufferTimeoutInSeconds
+	minBufferSize := configMap.AdvancedConfig.BufferSize
+	tickerSec := configMap.Publisher.SendIntervalInSeconds
+	databaseName := configMap.Store.Database.Name
+
 	client := &http.Client{}
 	var serverOption grpc.ServerOption = nil
 	if adapterCertificate != "" {
@@ -144,8 +142,10 @@ func main() {
 		SpServerUrl: spServerUrl,
 		HttpClient:  &http.Client{},
 	}
-	var source = configMap.store
-	if source.fileStorage.path != "" {
+	var source = configMap.Store
+
+	//Check the config map to initialize the correct persistence
+	if source.FileStorage.Path != "" {
 		//File storage will be used for persistence. Priority will be given to the file system
 		logger.Info("Enabling file persistence")
 		ps = &file.Persister{
@@ -153,14 +153,14 @@ func main() {
 			Directory: filePath,
 		}
 		wrt.Persister = ps
-	} else if (source.db.host != "") && (source.db.port != "") && (source.db.username != "") {
+	} else if (source.Database.Host != "") && (source.Database.Port != "") && (source.Database.Username != "") {
 		//Db will be used for persistence
 		logger.Info("Enabling database persistence")
 		dsn := (&mysql.Config{
-			User:   source.db.username,
-			Passwd: source.db.password,
-			Addr:   fmt.Sprintf("%s:%s", source.db.host, source.db.port),
-			DBName: "PERSISTENCE",
+			User:   source.Database.Username,
+			Passwd: source.Database.Password,
+			Addr:   fmt.Sprintf("%s:%s", source.Database.Host, source.Database.Port),
+			DBName: databaseName,
 		}).FormatDSN()
 		db, err := sql.Open("mysql", dsn)
 		if err != nil {

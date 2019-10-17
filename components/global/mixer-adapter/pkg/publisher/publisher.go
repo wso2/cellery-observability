@@ -56,20 +56,22 @@ func (publisher *Publisher) execute() {
 	for {
 		str, transaction, err := publisher.Persister.Fetch()
 		if err != nil {
-			publisher.Logger.Warn(err.Error())
+			publisher.Logger.Error(err.Error())
 			return
 		}
-		err = publisher.publish(str)
-		if err != nil {
-			publisher.Logger.Error(err.Error())
-			err = transaction.Rollback()
+		if str != "" {
+			err = publisher.publish(str)
 			if err != nil {
 				publisher.Logger.Error(err.Error())
-			}
-		} else {
-			err = transaction.Commit()
-			if err != nil {
-				publisher.Logger.Error(err.Error())
+				err = transaction.Rollback()
+				if err != nil {
+					publisher.Logger.Error(err.Error())
+				}
+			} else {
+				err = transaction.Commit()
+				if err != nil {
+					publisher.Logger.Error(err.Error())
+				}
 			}
 		}
 	}
