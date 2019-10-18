@@ -27,10 +27,13 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"sync"
 	"time"
 
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/signals"
+
 	"github.com/go-sql-driver/mysql"
-	_ "github.com/go-sql-driver/mysql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -44,38 +47,45 @@ import (
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer"
 )
 
-type ConfigMap struct {
-	TLS struct {
-		Certificate   string `json:"certificate"`
-		PrivateKey    string `json:"privateKey"`
-		CaCertificate string `json:"caCertificate"`
-	} `json:"tls"`
-	Publisher struct {
-		SpServerURL           string `json:"spServerUrl"`
-		SendIntervalInSeconds int    `json:"sendIntervalInSeconds"`
-	} `json:"publisher"`
-	Store struct {
-		FileStorage struct {
-			Path string `json:"path"`
-		} `json:"fileStorage"`
-		Database struct {
-			Host     string `json:"host"`
-			Port     string `json:"port"`
-			Username string `json:"username"`
-			Password string `json:"password"`
-			Name     string `json:"name"`
-		} `json:"database"`
-		InMemory struct {
-		} `json:"inMemory"`
-	} `json:"store"`
-	AdvancedConfig struct {
-		BufferSize             int `json:"bufferSize"`
-		BufferTimeoutInSeconds int `json:"bufferTimeoutInSeconds"`
-	} `json:"advancedConfig"`
-}
+const (
+	configJsonPathEnv string = "CONFIG_JSON_PATH"
+)
+
+type (
+	ConfigMap struct {
+		TLS struct {
+			Certificate   string `json:"certificate"`
+			PrivateKey    string `json:"privateKey"`
+			CaCertificate string `json:"caCertificate"`
+		} `json:"tls"`
+		Publisher struct {
+			SpServerURL           string `json:"spServerUrl"`
+			SendIntervalInSeconds int    `json:"sendIntervalInSeconds"`
+		} `json:"publisher"`
+		Store struct {
+			FileStorage struct {
+				Path string `json:"path"`
+			} `json:"fileStorage"`
+			Database struct {
+				Host     string `json:"host"`
+				Port     int    `json:"port"`
+				Username string `json:"username"`
+				Password string `json:"password"`
+				Name     string `json:"name"`
+			} `json:"database"`
+			InMemory struct {
+			} `json:"inMemory"`
+		} `json:"store"`
+		AdvancedConfig struct {
+			BufferSize             int `json:"bufferSize"`
+			BufferTimeoutInSeconds int `json:"bufferTimeoutInSeconds"`
+		} `json:"advancedConfig"`
+	}
+)
 
 func main() {
 	port := adapter.DefaultAdapterPort
+	stopCh := signals.SetupSignalHandler()
 	logger, err := logging.NewLogger()
 	if err != nil {
 		log.Fatalf("Error building logger: %s", err.Error())
@@ -87,7 +97,7 @@ func main() {
 		}
 	}()
 
-	data, err := ioutil.ReadFile("/mnt/conf/config.json")
+	data, err := ioutil.ReadFile(os.Getenv(configJsonPathEnv))
 	if err != nil {
 		logger.Fatal("Could not read the config file")
 	}
@@ -108,7 +118,6 @@ func main() {
 	bufferTimeoutSeconds := configMap.AdvancedConfig.BufferTimeoutInSeconds
 	minBufferSize := configMap.AdvancedConfig.BufferSize
 	tickerSec := configMap.Publisher.SendIntervalInSeconds
-	databaseName := configMap.Store.Database.Name
 
 	client := &http.Client{}
 	var serverOption grpc.ServerOption = nil
@@ -119,13 +128,13 @@ func main() {
 		}
 	}
 	buffer := make(chan string, minBufferSize*1000)
-	shutdown := make(chan error, 1)
+	errCh := make(chan error, 1)
 	spAdapter, err := adapter.New(port, logger, client, serverOption, spServerUrl, buffer)
 	if err != nil {
-		logger.Fatal("unable to start server: ", err.Error())
+		logger.Fatalf("unable to start the server: ", err.Error())
 	}
 	go func() {
-		spAdapter.Run(shutdown)
+		spAdapter.Run(errCh)
 	}()
 	var ps store.Persister
 	wrt := &writer.Writer{
@@ -153,18 +162,22 @@ func main() {
 			Directory: filePath,
 		}
 		wrt.Persister = ps
-	} else if (source.Database.Host != "") && (source.Database.Port != "") && (source.Database.Username != "") {
+	} else if (source.Database.Host != "") && (source.Database.Username != "") {
 		//Db will be used for persistence
 		logger.Info("Enabling database persistence")
 		dsn := (&mysql.Config{
-			User:   source.Database.Username,
-			Passwd: source.Database.Password,
-			Addr:   fmt.Sprintf("%s:%s", source.Database.Host, source.Database.Port),
-			DBName: databaseName,
+			User:                 source.Database.Username,
+			Passwd:               source.Database.Password,
+			Net:                  "tcp",
+			Addr:                 fmt.Sprintf("%s:%d", source.Database.Host, source.Database.Port),
+			DBName:               source.Database.Name,
+			AllowNativePasswords: true,
+			MaxAllowedPacket:     4 << 20,
 		}).FormatDSN()
+		logger.Info(dsn)
 		db, err := sql.Open("mysql", dsn)
 		if err != nil {
-			logger.Fatal("Could not connect to the MySQL database : %s", err.Error())
+			logger.Fatalf("Could not connect to the MySQL database : %s", err.Error())
 		} else {
 			ps = &database.Persister{
 				Logger: logger,
@@ -182,19 +195,26 @@ func main() {
 		}
 		wrt.Persister = ps
 	}
+	var wg sync.WaitGroup
+	wg.Add(2)
 	go func() {
-		wrt.Run(shutdown)
+		wrt.Run(stopCh)
+		wg.Done()
 	}()
 	pub.Persister = ps
 	go func() {
-		pub.Run(shutdown)
+		pub.Run(stopCh)
+		wg.Done()
 	}()
 
-	err = <-shutdown
-	if err != nil {
-		logger.Fatal(err.Error())
+	select {
+	case <-stopCh:
+		wg.Wait()
+	case err = <-errCh:
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
 	}
-
 }
 
 func getServerTLSOption(adapterCertificate, adapterPrivateKey, caCertificate string) (grpc.ServerOption, error) {

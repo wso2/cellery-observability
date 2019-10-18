@@ -40,13 +40,13 @@ type (
 	}
 )
 
-func (publisher *Publisher) Run(shutdown chan error) {
+func (publisher *Publisher) Run(stopCh <-chan struct{}) {
 	publisher.Logger.Info("Publisher started")
 	for {
 		select {
-		case <-shutdown:
+		case <-stopCh:
 			return
-		case _ = <-publisher.Ticker.C:
+		case <-publisher.Ticker.C:
 			publisher.execute()
 		}
 	}

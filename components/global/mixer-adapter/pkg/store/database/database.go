@@ -89,7 +89,7 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 		err = rows.Scan(&id, &jsonArr)
 	}
 	if jsonArr == "" || jsonArr == "[]" {
-		return "", &Transaction{}, fmt.Errorf("received empty rows")
+		return "", &Transaction{}, nil
 	}
 	_, err = tx.Exec("DELETE FROM persistence WHERE id = ?", id)
 	if err != nil {
@@ -137,5 +137,3 @@ func (persister *Persister) doTransaction(fn func(*sql.Tx) error) (err error) {
 	err = fn(tx)
 	return err
 }
-
-//groupid- maven

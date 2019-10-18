@@ -46,7 +46,7 @@ type (
 	Server interface {
 		Addr() string
 		Close() error
-		Run(shutdown chan error)
+		Run(errCh chan error)
 	}
 
 	// Adapter supports metric template.
@@ -114,8 +114,9 @@ func (adapter *Adapter) Addr() string {
 }
 
 // Run starts the server run
-func (adapter *Adapter) Run(shutdown chan error) {
-	shutdown <- adapter.server.Serve(adapter.listener)
+func (adapter *Adapter) Run(errCh chan error) {
+	errCh <- adapter.server.Serve(adapter.listener)
+	_ = adapter.Close()
 }
 
 // Close gracefully shuts down the server; used for testing

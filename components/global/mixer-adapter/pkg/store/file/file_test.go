@@ -86,8 +86,8 @@ func TestPersister_Fetch(t *testing.T) {
 		t.Error("No error was thrown when reading an empty file")
 	}
 	persister.Directory = "./wrong_dir"
-	_, _, err = persister.Fetch()
-	if err == nil {
+	str, _, err = persister.Fetch()
+	if str != "" {
 		t.Error("Expected error was not thrown")
 	}
 	files, err := filepath.Glob("./*.txt")

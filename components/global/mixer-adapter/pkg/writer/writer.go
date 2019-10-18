@@ -39,11 +39,12 @@ type (
 	}
 )
 
-func (writer *Writer) Run(shutdown chan error) {
+func (writer *Writer) Run(stopCh <-chan struct{}) {
 	writer.Logger.Info("writer started")
 	for {
 		select {
-		case <-shutdown:
+		case <-stopCh:
+			writer.cleanBuffer()
 			return
 		default:
 			if writer.shouldWrite() {
@@ -56,6 +57,21 @@ func (writer *Writer) Run(shutdown chan error) {
 				}
 				time.Sleep(5 * time.Second)
 			}
+		}
+	}
+}
+
+func (writer *Writer) cleanBuffer() {
+	for {
+		if len(writer.Buffer) == 0 {
+			return
+		}
+		elements := writer.getElements()
+		str := fmt.Sprintf("[%s]", strings.Join(elements, ","))
+		err := writer.Persister.Write(str)
+		if err != nil {
+			writer.Logger.Warn(err.Error())
+			writer.restore(elements)
 		}
 	}
 }
