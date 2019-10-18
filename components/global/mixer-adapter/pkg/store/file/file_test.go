@@ -105,7 +105,7 @@ func TestTransaction_Commit(t *testing.T) {
 	if err != nil {
 		t.Error("Error when committing")
 	}
-	//Try to delete the already deleted file, this should log an error
+	// Try to delete the already deleted file, this should log an error
 	transaction = &Transaction{
 		Lock: flock.New("./test.txt"),
 	}

@@ -114,7 +114,7 @@ func main() {
 	adapterCertificate := config.Mixer.TLS.Certificate // adapter.crt
 	adapterPrivateKey := config.Mixer.TLS.PrivateKey   // adapter.key
 	caCertificate := config.Mixer.TLS.CaCertificate    // ca.pem
-	//Initialize the variables from the config map
+	// Initialize the variables from the config map
 	spServerUrl := config.SpEndpoint.URL
 	filePath := config.Store.FileStorage.Path
 	bufferTimeoutSeconds := config.Advanced.BufferTimeoutInSeconds
@@ -155,9 +155,9 @@ func main() {
 	}
 
 	var source = config.Store
-	//Check the config map to initialize the correct persistence
+	// Check the config map to initialize the correct persistence
 	if source.FileStorage.Path != "" {
-		//File storage will be used for persistence. Priority will be given to the file system
+		// File storage will be used for persistence. Priority will be given to the file system
 		logger.Info("Enabling file persistence")
 		ps = &file.Persister{
 			Logger:    logger,
@@ -165,7 +165,7 @@ func main() {
 		}
 		wrt.Persister = ps
 	} else if (source.Database.Host != "") && (source.Database.Username != "") {
-		//Db will be used for persistence
+		// Db will be used for persistence
 		logger.Info("Enabling database persistence")
 		dsn := (&mysql.Config{
 			User:                 source.Database.Username,
@@ -187,7 +187,7 @@ func main() {
 			wrt.Persister = ps
 		}
 	} else {
-		//In memory persistence
+		// In memory persistence
 		logger.Info("Enabling in memory persistence")
 		inMemoryBuffer := make(chan string, minBufferSize*config.Advanced.BufferSizeFactor)
 		ps = &memory.Persister{

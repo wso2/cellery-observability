@@ -45,22 +45,22 @@ func TestPersister_Write(t *testing.T) {
 	// Test for a transaction failure
 	mock.ExpectBegin().WillReturnError(fmt.Errorf("test error 1"))
 
-	//Test for a insertion failure
+	// Test for a insertion failure
 	mock.ExpectBegin()
 	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnError(fmt.Errorf("test error 2"))
 	mock.ExpectRollback()
 
-	//Test for a rollback failure
+	// Test for a rollback failure
 	mock.ExpectBegin()
 	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnError(fmt.Errorf("test error 3"))
 	mock.ExpectRollback().WillReturnError(fmt.Errorf("test error 4"))
 
-	//Test for a commit failure
+	// Test for a commit failure
 	mock.ExpectBegin()
 	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnResult(sqlmock.NewResult(2, 2))
 	mock.ExpectCommit().WillReturnError(fmt.Errorf("test error 5"))
 
-	//Test for a successful transaction
+	// Test for a successful transaction
 	mock.ExpectBegin()
 	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnResult(sqlmock.NewResult(2, 2))
 	mock.ExpectCommit()
@@ -94,34 +94,34 @@ func TestPersister_Fetch(t *testing.T) {
 		AddRow(1, testStr).
 		AddRow(2, testStr)
 
-	//Test for transaction failure
+	// Test for transaction failure
 	mock.ExpectBegin().WillReturnError(fmt.Errorf("test error 1"))
 
-	//Test for a selection failure
+	// Test for a selection failure
 	mock.ExpectBegin()
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
 		WillReturnError(fmt.Errorf("test error 2"))
 
-	//Test for a deletion failure
+	// Test for a deletion failure
 	mock.ExpectBegin()
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
 		WillReturnRows(rows)
 	mock.ExpectExec("^DELETE FROM persistence*").
 		WillReturnError(fmt.Errorf("test error 3"))
 
-	//Defining rows
+	// Defining rows
 	rows = sqlmock.NewRows([]string{"id", "json"}).
 		AddRow(1, testStr).
 		AddRow(2, testStr)
 
-	//Test for a successful fetch
+	// Test for a successful fetch
 	mock.ExpectBegin()
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
 		WillReturnRows(rows)
 	mock.ExpectExec("^DELETE FROM persistence*").
 		WillReturnResult(sqlmock.NewResult(2, 2))
 
-	//Test for fetching empty rows
+	// Test for fetching empty rows
 	mock.ExpectBegin()
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
 		WillReturnRows(rows)
