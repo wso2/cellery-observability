@@ -120,6 +120,7 @@ func (persister *Persister) doTransaction(fn func(*sql.Tx) error) (err error) {
 			if e != nil {
 				persister.Logger.Warnf("Could not rollback the transaction : %s", e.Error())
 			}
+			panic(p)
 		} else if err != nil {
 			e := tx.Rollback()
 			if e != nil {

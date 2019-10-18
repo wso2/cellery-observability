@@ -48,7 +48,7 @@ import (
 )
 
 const (
-	configJsonPathEnv string = "CONFIG_JSON_PATH"
+	configFilePathEnv string = "CONFIG_FILE_PATH"
 )
 
 type (
@@ -69,6 +69,7 @@ type (
 			Database struct {
 				Host     string `json:"host"`
 				Port     int    `json:"port"`
+				Protocol string `json:"protocol"`
 				Username string `json:"username"`
 				Password string `json:"password"`
 				Name     string `json:"name"`
@@ -78,6 +79,7 @@ type (
 		} `json:"store"`
 		AdvancedConfig struct {
 			BufferSize             int `json:"bufferSize"`
+			BufferSizeFactor       int `json:"bufferSizeFactor"`
 			BufferTimeoutInSeconds int `json:"bufferTimeoutInSeconds"`
 		} `json:"advancedConfig"`
 	}
@@ -97,7 +99,7 @@ func main() {
 		}
 	}()
 
-	data, err := ioutil.ReadFile(os.Getenv(configJsonPathEnv))
+	data, err := ioutil.ReadFile(os.Getenv(configFilePathEnv))
 	if err != nil {
 		logger.Fatal("Could not read the config file")
 	}
@@ -111,7 +113,6 @@ func main() {
 	adapterCertificate := configMap.TLS.Certificate // adapter.crt
 	adapterPrivateKey := configMap.TLS.PrivateKey   // adapter.key
 	caCertificate := configMap.TLS.CaCertificate    // ca.pem
-
 	//Initialize the variables from the config map
 	spServerUrl := configMap.Publisher.SpServerURL
 	filePath := configMap.Store.FileStorage.Path
@@ -127,7 +128,7 @@ func main() {
 			logger.Warn("Server option could not be fetched, Connection will not be encrypted")
 		}
 	}
-	buffer := make(chan string, minBufferSize*1000)
+	buffer := make(chan string, minBufferSize*configMap.AdvancedConfig.BufferSizeFactor)
 	errCh := make(chan error, 1)
 	spAdapter, err := adapter.New(port, logger, client, serverOption, spServerUrl, buffer)
 	if err != nil {
@@ -151,8 +152,8 @@ func main() {
 		SpServerUrl: spServerUrl,
 		HttpClient:  &http.Client{},
 	}
-	var source = configMap.Store
 
+	var source = configMap.Store
 	//Check the config map to initialize the correct persistence
 	if source.FileStorage.Path != "" {
 		//File storage will be used for persistence. Priority will be given to the file system
@@ -168,13 +169,12 @@ func main() {
 		dsn := (&mysql.Config{
 			User:                 source.Database.Username,
 			Passwd:               source.Database.Password,
-			Net:                  "tcp",
+			Net:                  source.Database.Protocol,
 			Addr:                 fmt.Sprintf("%s:%d", source.Database.Host, source.Database.Port),
 			DBName:               source.Database.Name,
 			AllowNativePasswords: true,
 			MaxAllowedPacket:     4 << 20,
 		}).FormatDSN()
-		logger.Info(dsn)
 		db, err := sql.Open("mysql", dsn)
 		if err != nil {
 			logger.Fatalf("Could not connect to the MySQL database : %s", err.Error())
@@ -188,23 +188,25 @@ func main() {
 	} else {
 		//In memory persistence
 		logger.Info("Enabling in memory persistence")
-		inMemoryBuffer := make(chan string, minBufferSize*1000)
+		inMemoryBuffer := make(chan string, minBufferSize*configMap.AdvancedConfig.BufferSizeFactor)
 		ps = &memory.Persister{
 			Logger: logger,
 			Buffer: inMemoryBuffer,
 		}
 		wrt.Persister = ps
 	}
+
 	var wg sync.WaitGroup
-	wg.Add(2)
 	go func() {
+		wg.Add(1)
+		defer wg.Done()
 		wrt.Run(stopCh)
-		wg.Done()
 	}()
 	pub.Persister = ps
 	go func() {
+		wg.Add(1)
+		defer wg.Done()
 		pub.Run(stopCh)
-		wg.Done()
 	}()
 
 	select {

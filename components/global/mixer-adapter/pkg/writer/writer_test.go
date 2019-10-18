@@ -71,10 +71,10 @@ func TestWriter_Run(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
-
-	shutdown := make(chan error, 1)
+	stopCh := make(chan struct{})
 	buffer := make(chan string, 10)
-
+	buffer <- testStr
+	buffer <- testStr
 	writer := Writer{
 		WaitingTimeSec: 5,
 		WaitingSize:    2,
@@ -83,14 +83,15 @@ func TestWriter_Run(t *testing.T) {
 		StartTime:      time.Now(),
 		Persister:      &MockPersister{Buffer: buffer},
 	}
-	go writer.Run(shutdown)
-	buffer <- testStr
-	buffer <- testStr
+	go writer.Run(stopCh)
 	time.Sleep(10 * time.Second)
-	shutdown <- fmt.Errorf("test shutdown")
+	close(stopCh)
+	time.Sleep(10 * time.Second)
 
-	shutdown2 := make(chan error, 1)
+	stopCh2 := make(chan struct{})
 	buffer2 := make(chan string, 10)
+	buffer2 <- testStr
+	buffer2 <- testStr
 	writer2 := Writer{
 		WaitingTimeSec: 5,
 		WaitingSize:    2,
@@ -99,10 +100,8 @@ func TestWriter_Run(t *testing.T) {
 		StartTime:      time.Now(),
 		Persister:      &MockPersisterErr{},
 	}
-	go writer2.Run(shutdown2)
-	buffer2 <- testStr
-	buffer2 <- testStr
+	go writer2.Run(stopCh2)
 	time.Sleep(10 * time.Second)
-	shutdown2 <- fmt.Errorf("test shutdown")
-
+	close(stopCh2)
+	time.Sleep(10 * time.Second)
 }

@@ -80,11 +80,8 @@ func TestPublisher_Run(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error building logger: %s", err.Error())
 	}
-
 	_ = ioutil.WriteFile("test.txt", []byte(testStr), 0644)
-
-	shutdown := make(chan error, 1)
-
+	stopCh := make(chan struct{})
 	client := NewTestClient(func(req *http.Request) *http.Response {
 		return &http.Response{
 			StatusCode: 200,
@@ -92,7 +89,6 @@ func TestPublisher_Run(t *testing.T) {
 			Header:     make(http.Header),
 		}
 	})
-
 	ticker := time.NewTicker(time.Duration(2) * time.Second)
 	publisher := &Publisher{
 		Ticker:      ticker,
@@ -101,7 +97,7 @@ func TestPublisher_Run(t *testing.T) {
 		HttpClient:  client,
 		Persister:   &MockCrr{},
 	}
-	go publisher.Run(shutdown)
+	go publisher.Run(stopCh)
 	time.Sleep(10 * time.Second)
 
 	publisher2 := &Publisher{
@@ -111,7 +107,7 @@ func TestPublisher_Run(t *testing.T) {
 		HttpClient:  client,
 		Persister:   &MockErr{},
 	}
-	go publisher2.Run(shutdown)
+	go publisher2.Run(stopCh)
 	time.Sleep(10 * time.Second)
 
 	client2 := NewTestClient(func(req *http.Request) *http.Response {
@@ -128,7 +124,7 @@ func TestPublisher_Run(t *testing.T) {
 		HttpClient:  client2,
 		Persister:   &MockCrr{},
 	}
-	go publisher3.Run(shutdown)
+	go publisher3.Run(stopCh)
 	time.Sleep(10 * time.Second)
 
 	files, err := filepath.Glob("./*.txt")
