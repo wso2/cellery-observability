@@ -106,6 +106,7 @@ func (persister *Persister) catchPanic(tx *sql.Tx) {
 		if e != nil {
 			persister.Logger.Warnf("Could not rollback the transaction : %s", e.Error())
 		}
+		panic(p)
 	}
 }
 

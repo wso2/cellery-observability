@@ -54,14 +54,16 @@ const (
 type (
 	ConfigMap struct {
 		TLS struct {
-			Certificate   string `json:"certificate"`
-			PrivateKey    string `json:"privateKey"`
-			CaCertificate string `json:"caCertificate"`
+			Mixer struct {
+				Certificate   string `json:"certificate"`
+				PrivateKey    string `json:"privateKey"`
+				CaCertificate string `json:"caCertificate"`
+			} `json:"mixer"`
 		} `json:"tls"`
-		Publisher struct {
-			SpServerURL           string `json:"spServerUrl"`
-			SendIntervalInSeconds int    `json:"sendIntervalInSeconds"`
-		} `json:"publisher"`
+		SpEndpoint struct {
+			URL                 string `json:"url"`
+			SendIntervalSeconds int    `json:"sendIntervalSeconds"`
+		} `json:"spEndpoint"`
 		Store struct {
 			FileStorage struct {
 				Path string `json:"path"`
@@ -77,11 +79,11 @@ type (
 			InMemory struct {
 			} `json:"inMemory"`
 		} `json:"store"`
-		AdvancedConfig struct {
+		Advanced struct {
 			BufferSize             int `json:"bufferSize"`
 			BufferSizeFactor       int `json:"bufferSizeFactor"`
 			BufferTimeoutInSeconds int `json:"bufferTimeoutInSeconds"`
-		} `json:"advancedConfig"`
+		} `json:"advanced"`
 	}
 )
 
@@ -110,15 +112,15 @@ func main() {
 	}
 
 	// Mutual TLS feature to secure connection between workloads. This is optional.
-	adapterCertificate := configMap.TLS.Certificate // adapter.crt
-	adapterPrivateKey := configMap.TLS.PrivateKey   // adapter.key
-	caCertificate := configMap.TLS.CaCertificate    // ca.pem
+	adapterCertificate := configMap.TLS.Mixer.Certificate // adapter.crt
+	adapterPrivateKey := configMap.TLS.Mixer.PrivateKey   // adapter.key
+	caCertificate := configMap.TLS.Mixer.CaCertificate    // ca.pem
 	//Initialize the variables from the config map
-	spServerUrl := configMap.Publisher.SpServerURL
+	spServerUrl := configMap.SpEndpoint.URL
 	filePath := configMap.Store.FileStorage.Path
-	bufferTimeoutSeconds := configMap.AdvancedConfig.BufferTimeoutInSeconds
-	minBufferSize := configMap.AdvancedConfig.BufferSize
-	tickerSec := configMap.Publisher.SendIntervalInSeconds
+	bufferTimeoutSeconds := configMap.Advanced.BufferTimeoutInSeconds
+	minBufferSize := configMap.Advanced.BufferSize
+	tickerSec := configMap.SpEndpoint.SendIntervalSeconds
 
 	client := &http.Client{}
 	var serverOption grpc.ServerOption = nil
@@ -128,7 +130,7 @@ func main() {
 			logger.Warn("Server option could not be fetched, Connection will not be encrypted")
 		}
 	}
-	buffer := make(chan string, minBufferSize*configMap.AdvancedConfig.BufferSizeFactor)
+	buffer := make(chan string, minBufferSize*configMap.Advanced.BufferSizeFactor)
 	errCh := make(chan error, 1)
 	spAdapter, err := adapter.New(port, logger, client, serverOption, spServerUrl, buffer)
 	if err != nil {
@@ -188,7 +190,7 @@ func main() {
 	} else {
 		//In memory persistence
 		logger.Info("Enabling in memory persistence")
-		inMemoryBuffer := make(chan string, minBufferSize*configMap.AdvancedConfig.BufferSizeFactor)
+		inMemoryBuffer := make(chan string, minBufferSize*configMap.Advanced.BufferSizeFactor)
 		ps = &memory.Persister{
 			Logger: logger,
 			Buffer: inMemoryBuffer,
