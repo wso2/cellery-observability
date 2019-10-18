@@ -53,13 +53,13 @@ const (
 
 type (
 	ConfigMap struct {
-		TLS struct {
-			Mixer struct {
+		Mixer struct {
+			TLS struct {
 				Certificate   string `json:"certificate"`
 				PrivateKey    string `json:"privateKey"`
 				CaCertificate string `json:"caCertificate"`
-			} `json:"mixer"`
-		} `json:"tls"`
+			} `json:"tls"`
+		} `json:"mixer"`
 		SpEndpoint struct {
 			URL                 string `json:"url"`
 			SendIntervalSeconds int    `json:"sendIntervalSeconds"`
@@ -112,9 +112,9 @@ func main() {
 	}
 
 	// Mutual TLS feature to secure connection between workloads. This is optional.
-	adapterCertificate := configMap.TLS.Mixer.Certificate // adapter.crt
-	adapterPrivateKey := configMap.TLS.Mixer.PrivateKey   // adapter.key
-	caCertificate := configMap.TLS.Mixer.CaCertificate    // ca.pem
+	adapterCertificate := configMap.Mixer.TLS.Certificate // adapter.crt
+	adapterPrivateKey := configMap.Mixer.TLS.PrivateKey   // adapter.key
+	caCertificate := configMap.Mixer.TLS.CaCertificate    // ca.pem
 	//Initialize the variables from the config map
 	spServerUrl := configMap.SpEndpoint.URL
 	filePath := configMap.Store.FileStorage.Path
