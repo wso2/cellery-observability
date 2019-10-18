@@ -73,6 +73,8 @@ func (publisher *Publisher) execute() {
 					publisher.Logger.Error(err.Error())
 				}
 			}
+		} else {
+			return
 		}
 	}
 }

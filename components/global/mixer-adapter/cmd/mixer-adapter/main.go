@@ -31,8 +31,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/signals"
-
 	"github.com/go-sql-driver/mysql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -40,6 +38,7 @@ import (
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/signals"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/database"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/file"
@@ -52,7 +51,7 @@ const (
 )
 
 type (
-	ConfigMap struct {
+	Config struct {
 		Mixer struct {
 			TLS struct {
 				Certificate   string `json:"certificate"`
@@ -105,22 +104,22 @@ func main() {
 	if err != nil {
 		logger.Fatal("Could not read the config file")
 	}
-	configMap := &ConfigMap{}
-	err = json.Unmarshal(data, &configMap)
+	config := &Config{}
+	err = json.Unmarshal(data, &config)
 	if err != nil {
 		logger.Fatal("Could not unmarshal the data in config file")
 	}
 
 	// Mutual TLS feature to secure connection between workloads. This is optional.
-	adapterCertificate := configMap.Mixer.TLS.Certificate // adapter.crt
-	adapterPrivateKey := configMap.Mixer.TLS.PrivateKey   // adapter.key
-	caCertificate := configMap.Mixer.TLS.CaCertificate    // ca.pem
+	adapterCertificate := config.Mixer.TLS.Certificate // adapter.crt
+	adapterPrivateKey := config.Mixer.TLS.PrivateKey   // adapter.key
+	caCertificate := config.Mixer.TLS.CaCertificate    // ca.pem
 	//Initialize the variables from the config map
-	spServerUrl := configMap.SpEndpoint.URL
-	filePath := configMap.Store.FileStorage.Path
-	bufferTimeoutSeconds := configMap.Advanced.BufferTimeoutInSeconds
-	minBufferSize := configMap.Advanced.BufferSize
-	tickerSec := configMap.SpEndpoint.SendIntervalSeconds
+	spServerUrl := config.SpEndpoint.URL
+	filePath := config.Store.FileStorage.Path
+	bufferTimeoutSeconds := config.Advanced.BufferTimeoutInSeconds
+	minBufferSize := config.Advanced.BufferSize
+	tickerSec := config.SpEndpoint.SendIntervalSeconds
 
 	client := &http.Client{}
 	var serverOption grpc.ServerOption = nil
@@ -130,7 +129,7 @@ func main() {
 			logger.Warn("Server option could not be fetched, Connection will not be encrypted")
 		}
 	}
-	buffer := make(chan string, minBufferSize*configMap.Advanced.BufferSizeFactor)
+	buffer := make(chan string, minBufferSize*config.Advanced.BufferSizeFactor)
 	errCh := make(chan error, 1)
 	spAdapter, err := adapter.New(port, logger, client, serverOption, spServerUrl, buffer)
 	if err != nil {
@@ -155,7 +154,7 @@ func main() {
 		HttpClient:  &http.Client{},
 	}
 
-	var source = configMap.Store
+	var source = config.Store
 	//Check the config map to initialize the correct persistence
 	if source.FileStorage.Path != "" {
 		//File storage will be used for persistence. Priority will be given to the file system
@@ -190,7 +189,7 @@ func main() {
 	} else {
 		//In memory persistence
 		logger.Info("Enabling in memory persistence")
-		inMemoryBuffer := make(chan string, minBufferSize*configMap.Advanced.BufferSizeFactor)
+		inMemoryBuffer := make(chan string, minBufferSize*config.Advanced.BufferSizeFactor)
 		ps = &memory.Persister{
 			Logger: logger,
 			Buffer: inMemoryBuffer,
