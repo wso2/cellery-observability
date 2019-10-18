@@ -163,7 +163,6 @@ func main() {
 			Logger:    logger,
 			Directory: filePath,
 		}
-		wrt.Persister = ps
 	} else if (source.Database.Host != "") && (source.Database.Username != "") {
 		// Db will be used for persistence
 		logger.Info("Enabling database persistence")
@@ -184,7 +183,6 @@ func main() {
 				Logger: logger,
 				Db:     db,
 			}
-			wrt.Persister = ps
 		}
 	} else {
 		// In memory persistence
@@ -194,16 +192,16 @@ func main() {
 			Logger: logger,
 			Buffer: inMemoryBuffer,
 		}
-		wrt.Persister = ps
 	}
 
 	var wg sync.WaitGroup
+	wrt.Persister = ps
+	pub.Persister = ps
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
 		wrt.Run(stopCh)
 	}()
-	pub.Persister = ps
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
