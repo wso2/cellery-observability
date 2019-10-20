@@ -56,21 +56,21 @@ func (publisher *Publisher) execute() {
 	for {
 		str, transaction, err := publisher.Persister.Fetch()
 		if err != nil {
-			publisher.Logger.Errorf("Failed to fetch the metrics : %s",err.Error())
+			publisher.Logger.Errorf("Failed to fetch the metrics : %s", err.Error())
 			return
 		}
 		if str != "" {
 			err = publisher.publish(str)
 			if err != nil {
-				publisher.Logger.Errorf("Failed to publish the metrics : %s",err.Error())
+				publisher.Logger.Errorf("Failed to publish the metrics : %s", err.Error())
 				err = transaction.Rollback()
 				if err != nil {
-					publisher.Logger.Errorf("Failed to rollback the transaction : %s",err.Error())
+					publisher.Logger.Errorf("Failed to rollback the transaction : %s", err.Error())
 				}
 			} else {
 				err = transaction.Commit()
 				if err != nil {
-					publisher.Logger.Errorf("Failed to commit the transaction : %s",err.Error())
+					publisher.Logger.Errorf("Failed to commit the transaction : %s", err.Error())
 				}
 			}
 		} else {
