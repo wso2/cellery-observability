@@ -80,7 +80,7 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	defer func() {
 		err = rows.Close()
 		if err != nil {
-			persister.Logger.Warnf("could not close the Rows : %s", err.Error())
+			persister.Logger.Warnf("Could not close the Rows : %s", err.Error())
 		}
 	}()
 	jsonArr := ""

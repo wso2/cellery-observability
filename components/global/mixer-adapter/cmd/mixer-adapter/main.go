@@ -135,9 +135,11 @@ func main() {
 	if err != nil {
 		logger.Fatalf("unable to start the server: ", err.Error())
 	}
-	go func() {
-		spAdapter.Run(errCh)
-	}()
+	if spAdapter == nil {
+		logger.Fatal("adapter.New returned a null struct")
+		return
+	}
+	go spAdapter.Run(errCh)
 	var ps store.Persister
 	wrt := &writer.Writer{
 		WaitingTimeSec: bufferTimeoutSeconds,
@@ -154,24 +156,24 @@ func main() {
 		HttpClient:  &http.Client{},
 	}
 
-	var source = config.Store
+	var metricsStore = config.Store
 	// Check the config map to initialize the correct persistence
-	if source.FileStorage.Path != "" {
+	if metricsStore.FileStorage.Path != "" {
 		// File storage will be used for persistence. Priority will be given to the file system
 		logger.Info("Enabling file persistence")
 		ps = &file.Persister{
 			Logger:    logger,
 			Directory: filePath,
 		}
-	} else if (source.Database.Host != "") && (source.Database.Username != "") {
+	} else if (metricsStore.Database.Host != "") && (metricsStore.Database.Username != "") {
 		// Db will be used for persistence
 		logger.Info("Enabling database persistence")
 		dsn := (&mysql.Config{
-			User:                 source.Database.Username,
-			Passwd:               source.Database.Password,
-			Net:                  source.Database.Protocol,
-			Addr:                 fmt.Sprintf("%s:%d", source.Database.Host, source.Database.Port),
-			DBName:               source.Database.Name,
+			User:                 metricsStore.Database.Username,
+			Passwd:               metricsStore.Database.Password,
+			Net:                  metricsStore.Database.Protocol,
+			Addr:                 fmt.Sprintf("%s:%d", metricsStore.Database.Host, metricsStore.Database.Port),
+			DBName:               metricsStore.Database.Name,
 			AllowNativePasswords: true,
 			MaxAllowedPacket:     4 << 20,
 		}).FormatDSN()

@@ -40,7 +40,7 @@ type (
 )
 
 func (writer *Writer) Run(stopCh <-chan struct{}) {
-	writer.Logger.Info("writer started")
+	writer.Logger.Info("Writer started")
 	for {
 		select {
 		case <-stopCh:
