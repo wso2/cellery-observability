@@ -22,6 +22,10 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/go-sql-driver/mysql"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/config"
+
 	"go.uber.org/zap"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
@@ -138,4 +142,29 @@ func (persister *Persister) doTransaction(fn func(*sql.Tx) error) (err error) {
 	}()
 	err = fn(tx)
 	return err
+}
+
+func New(config *config.Config) (*sql.DB, error) {
+	dbConfig := config.Store.Database
+	dsn := (&mysql.Config{
+		User:                 dbConfig.Username,
+		Passwd:               dbConfig.Password,
+		Net:                  dbConfig.Protocol,
+		Addr:                 fmt.Sprintf("%s:%d", dbConfig.Host, dbConfig.Port),
+		DBName:               dbConfig.Name,
+		AllowNativePasswords: true,
+		MaxAllowedPacket:     4 << 20,
+	}).FormatDSN()
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("could not connect to the MySQL database : %s", err.Error())
+	}
+	if db == nil {
+		return nil, fmt.Errorf("could not create the db struct")
+	}
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `persistence` (`id` int(11) NOT NULL AUTO_INCREMENT, `json` longtext NOT NULL, PRIMARY KEY (`id`))")
+	if err != nil {
+		return nil, fmt.Errorf("could not create the table : %s", err.Error())
+	}
+	return db, nil
 }

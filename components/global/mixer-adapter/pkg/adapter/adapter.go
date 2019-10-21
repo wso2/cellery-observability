@@ -25,10 +25,17 @@ package adapter
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
+
+	"google.golang.org/grpc/credentials"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/config"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -131,7 +138,7 @@ func (adapter *Adapter) Close() error {
 }
 
 // New creates a new SP adapter that listens at provided port.
-func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, serverOption grpc.ServerOption, spServerUrl string, buffer chan string) (Server, error) {
+func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, buffer chan string, config *config.Config) (Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", addr))
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on socket: %v", err)
@@ -140,10 +147,18 @@ func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, serverOpt
 		listener:    listener,
 		logger:      logger,
 		httpClient:  httpClient,
-		spServerUrl: spServerUrl,
+		spServerUrl: config.SpEndpoint.URL,
 		buffer:      buffer,
 	}
 	logger.Info("listening on ", adapter.Addr())
+	mixerTls := config.Mixer.TLS
+	var serverOption grpc.ServerOption = nil
+	if mixerTls.Certificate != "" {
+		serverOption, err = getServerTLSOption(mixerTls.Certificate, mixerTls.PrivateKey, mixerTls.CaCertificate)
+		if err != nil {
+			logger.Warn("Server option could not be fetched, Connection will not be encrypted")
+		}
+	}
 	if serverOption != nil {
 		adapter.server = grpc.NewServer(serverOption)
 	} else {
@@ -151,4 +166,32 @@ func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, serverOpt
 	}
 	metric.RegisterHandleMetricServiceServer(adapter.server, adapter)
 	return adapter, nil
+}
+
+func getServerTLSOption(adapterCertificate, adapterPrivateKey, caCertificate string) (grpc.ServerOption, error) {
+	certificate, err := tls.LoadX509KeyPair(
+		adapterCertificate,
+		adapterPrivateKey,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load key cert pair")
+	}
+	certPool := x509.NewCertPool()
+	bytesArray, err := ioutil.ReadFile(caCertificate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read client ca cert: %s", err)
+	}
+
+	ok := certPool.AppendCertsFromPEM(bytesArray)
+	if !ok {
+		return nil, fmt.Errorf("failed to append client certs")
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{certificate},
+		ClientCAs:    certPool,
+	}
+	tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+
+	return grpc.Creds(credentials.NewTLS(tlsConfig)), nil
 }

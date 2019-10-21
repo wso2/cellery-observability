@@ -27,6 +27,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/config"
+
 	"github.com/gogo/protobuf/types"
 
 	"istio.io/api/policy/v1beta1"
@@ -130,7 +132,7 @@ func TestNewAdapter(t *testing.T) {
 			Header:     make(http.Header),
 		}
 	})
-	adapter, err := New(DefaultAdapterPort, logger, client, nil, "http://example.com", buffer)
+	adapter, err := New(DefaultAdapterPort, logger, client, buffer, &config.Config{})
 	wantStr := fmt.Sprintf("[::]:%d", DefaultAdapterPort)
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %s", err.Error())

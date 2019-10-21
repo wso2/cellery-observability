@@ -19,23 +19,14 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/config"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/signals"
@@ -48,42 +39,6 @@ import (
 
 const (
 	configFilePathEnv string = "CONFIG_FILE_PATH"
-)
-
-type (
-	Config struct {
-		Mixer struct {
-			TLS struct {
-				Certificate   string `json:"certificate"`
-				PrivateKey    string `json:"privateKey"`
-				CaCertificate string `json:"caCertificate"`
-			} `json:"tls"`
-		} `json:"mixer"`
-		SpEndpoint struct {
-			URL                 string `json:"url"`
-			SendIntervalSeconds int    `json:"sendIntervalSeconds"`
-		} `json:"spEndpoint"`
-		Store struct {
-			FileStorage struct {
-				Path string `json:"path"`
-			} `json:"fileStorage"`
-			Database struct {
-				Host     string `json:"host"`
-				Port     int    `json:"port"`
-				Protocol string `json:"protocol"`
-				Username string `json:"username"`
-				Password string `json:"password"`
-				Name     string `json:"name"`
-			} `json:"database"`
-			InMemory struct {
-			} `json:"inMemory"`
-		} `json:"store"`
-		Advanced struct {
-			BufferSize             int `json:"bufferSize"`
-			BufferSizeFactor       int `json:"bufferSizeFactor"`
-			BufferTimeoutInSeconds int `json:"bufferTimeoutInSeconds"`
-		} `json:"advanced"`
-	}
 )
 
 func main() {
@@ -100,38 +55,24 @@ func main() {
 		}
 	}()
 
-	data, err := ioutil.ReadFile(os.Getenv(configFilePathEnv))
+	configuration, err := config.New(os.Getenv(configFilePathEnv))
 	if err != nil {
-		logger.Fatal("Could not read the config file")
+		logger.Fatalf("Could not get the configuration : %s", err.Error())
 	}
-	config := &Config{}
-	err = json.Unmarshal(data, &config)
-	if err != nil {
-		logger.Fatal("Could not unmarshal the data in config file")
+	if configuration == nil {
+		logger.Fatalf("Configuration struct is nil")
+		return
 	}
 
-	// Mutual TLS feature to secure connection between workloads. This is optional.
-	adapterCertificate := config.Mixer.TLS.Certificate // adapter.crt
-	adapterPrivateKey := config.Mixer.TLS.PrivateKey   // adapter.key
-	caCertificate := config.Mixer.TLS.CaCertificate    // ca.pem
-	// Initialize the variables from the config map
-	spServerUrl := config.SpEndpoint.URL
-	filePath := config.Store.FileStorage.Path
-	bufferTimeoutSeconds := config.Advanced.BufferTimeoutInSeconds
-	minBufferSize := config.Advanced.BufferSize
-	tickerSec := config.SpEndpoint.SendIntervalSeconds
+	advancedConfig := configuration.Advanced
+	bufferTimeoutSeconds := advancedConfig.BufferTimeoutInSeconds
+	minBufferSize := advancedConfig.BufferSize
+	tickerSec := configuration.SpEndpoint.SendIntervalSeconds
 
 	client := &http.Client{}
-	var serverOption grpc.ServerOption = nil
-	if adapterCertificate != "" {
-		serverOption, err = getServerTLSOption(adapterCertificate, adapterPrivateKey, caCertificate)
-		if err != nil {
-			logger.Warn("Server option could not be fetched, Connection will not be encrypted")
-		}
-	}
-	buffer := make(chan string, minBufferSize*config.Advanced.BufferSizeFactor)
+	buffer := make(chan string, minBufferSize*configuration.Advanced.BufferSizeFactor)
 	errCh := make(chan error, 1)
-	spAdapter, err := adapter.New(port, logger, client, serverOption, spServerUrl, buffer)
+	spAdapter, err := adapter.New(port, logger, client, buffer, configuration)
 	if err != nil {
 		logger.Fatalf("unable to start the server: ", err.Error())
 	}
@@ -140,6 +81,7 @@ func main() {
 		return
 	}
 	go spAdapter.Run(errCh)
+
 	var ps store.Persister
 	wrt := &writer.Writer{
 		WaitingTimeSec: bufferTimeoutSeconds,
@@ -152,32 +94,23 @@ func main() {
 	pub := &publisher.Publisher{
 		Ticker:      ticker,
 		Logger:      logger,
-		SpServerUrl: spServerUrl,
+		SpServerUrl: configuration.SpEndpoint.URL,
 		HttpClient:  &http.Client{},
 	}
 
-	var metricsStore = config.Store
+	metricsStore := configuration.Store
 	// Check the config map to initialize the correct persistence
 	if metricsStore.FileStorage.Path != "" {
 		// File storage will be used for persistence. Priority will be given to the file system
 		logger.Info("Enabling file persistence")
 		ps = &file.Persister{
 			Logger:    logger,
-			Directory: filePath,
+			Directory: metricsStore.FileStorage.Path,
 		}
-	} else if (metricsStore.Database.Host != "") && (metricsStore.Database.Username != "") {
+	} else if metricsStore.Database.Host != "" {
 		// Db will be used for persistence
 		logger.Info("Enabling database persistence")
-		dsn := (&mysql.Config{
-			User:                 metricsStore.Database.Username,
-			Passwd:               metricsStore.Database.Password,
-			Net:                  metricsStore.Database.Protocol,
-			Addr:                 fmt.Sprintf("%s:%d", metricsStore.Database.Host, metricsStore.Database.Port),
-			DBName:               metricsStore.Database.Name,
-			AllowNativePasswords: true,
-			MaxAllowedPacket:     4 << 20,
-		}).FormatDSN()
-		db, err := sql.Open("mysql", dsn)
+		db, err := database.New(configuration)
 		if err != nil {
 			logger.Fatalf("Could not connect to the MySQL database : %s", err.Error())
 		} else {
@@ -189,7 +122,7 @@ func main() {
 	} else {
 		// In memory persistence
 		logger.Info("Enabling in memory persistence")
-		inMemoryBuffer := make(chan string, minBufferSize*config.Advanced.BufferSizeFactor)
+		inMemoryBuffer := make(chan string, minBufferSize*advancedConfig.BufferSizeFactor)
 		ps = &memory.Persister{
 			Logger: logger,
 			Buffer: inMemoryBuffer,
@@ -218,32 +151,4 @@ func main() {
 			logger.Fatal(err.Error())
 		}
 	}
-}
-
-func getServerTLSOption(adapterCertificate, adapterPrivateKey, caCertificate string) (grpc.ServerOption, error) {
-	certificate, err := tls.LoadX509KeyPair(
-		adapterCertificate,
-		adapterPrivateKey,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load key cert pair")
-	}
-	certPool := x509.NewCertPool()
-	bytesArray, err := ioutil.ReadFile(caCertificate)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read client ca cert: %s", err)
-	}
-
-	ok := certPool.AppendCertsFromPEM(bytesArray)
-	if !ok {
-		return nil, fmt.Errorf("failed to append client certs")
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{certificate},
-		ClientCAs:    certPool,
-	}
-	tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-
-	return grpc.Creds(credentials.NewTLS(tlsConfig)), nil
 }
