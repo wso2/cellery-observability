@@ -43,6 +43,8 @@ const (
 
 func main() {
 	port := adapter.DefaultAdapterPort
+
+	// Initialize a channel to handle interruptions from external sources like Kubernetes. This channel will handle signals like os.Interrupt, syscall.SIGTERM
 	stopCh := signals.SetupSignalHandler()
 	logger, err := logging.NewLogger()
 	if err != nil {
@@ -65,12 +67,12 @@ func main() {
 	}
 
 	advancedConfig := configuration.Advanced
-	bufferTimeoutSeconds := advancedConfig.BufferTimeoutInSeconds
-	minBufferSize := advancedConfig.BufferSize
+	bufferTimeoutSeconds := advancedConfig.MaxRecordsForSingleWrite
+	maxRecordsForSingleWrite := advancedConfig.MaxRecordsForSingleWrite
 	tickerSec := configuration.SpEndpoint.SendIntervalSeconds
 
 	client := &http.Client{}
-	buffer := make(chan string, minBufferSize*configuration.Advanced.BufferSizeFactor)
+	buffer := make(chan string, maxRecordsForSingleWrite*configuration.Advanced.BufferSizeFactor)
 	errCh := make(chan error, 1)
 	spAdapter, err := adapter.New(port, logger, client, buffer, configuration)
 	if err != nil {
@@ -85,7 +87,7 @@ func main() {
 	var ps store.Persister
 	wrt := &writer.Writer{
 		WaitingTimeSec: bufferTimeoutSeconds,
-		WaitingSize:    minBufferSize,
+		WaitingSize:    maxRecordsForSingleWrite,
 		Logger:         logger,
 		Buffer:         buffer,
 		StartTime:      time.Now(),
@@ -103,6 +105,10 @@ func main() {
 	if metricsStore.FileStorage.Path != "" {
 		// File storage will be used for persistence. Priority will be given to the file system
 		logger.Info("Enabling file persistence")
+		err = file.New(configuration)
+		if err != nil {
+			logger.Fatalf("could not make the directory in the given path %s : error => %s", configuration.Store.FileStorage.Path, err.Error())
+		}
 		ps = &file.Persister{
 			Logger:    logger,
 			Directory: metricsStore.FileStorage.Path,
@@ -122,30 +128,32 @@ func main() {
 	} else {
 		// In memory persistence
 		logger.Info("Enabling in memory persistence")
-		inMemoryBuffer := make(chan string, minBufferSize*advancedConfig.BufferSizeFactor)
+		inMemoryBuffer := make(chan string, maxRecordsForSingleWrite*advancedConfig.BufferSizeFactor)
 		ps = &memory.Persister{
 			Logger: logger,
 			Buffer: inMemoryBuffer,
 		}
 	}
 
-	var wg sync.WaitGroup
+	var waitGroup sync.WaitGroup
 	wrt.Persister = ps
 	pub.Persister = ps
 	go func() {
-		wg.Add(1)
-		defer wg.Done()
+		waitGroup.Add(1)
+		defer waitGroup.Done()
 		wrt.Run(stopCh)
 	}()
 	go func() {
-		wg.Add(1)
-		defer wg.Done()
+		waitGroup.Add(1)
+		defer waitGroup.Done()
 		pub.Run(stopCh)
 	}()
 
 	select {
 	case <-stopCh:
-		wg.Wait()
+		// This will wait for publisher and writer
+		// If any interruption happens, this will give some time to clear in memory buffers by persisting them to prevent data losses.
+		waitGroup.Wait()
 	case err = <-errCh:
 		if err != nil {
 			logger.Fatal(err.Error())

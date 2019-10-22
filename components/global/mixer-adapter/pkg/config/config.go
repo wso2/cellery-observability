@@ -53,9 +53,9 @@ type (
 			} `json:"inMemory"`
 		} `json:"store"`
 		Advanced struct {
-			BufferSize             int `json:"bufferSize"`
-			BufferSizeFactor       int `json:"bufferSizeFactor"`
-			BufferTimeoutInSeconds int `json:"bufferTimeoutInSeconds"`
+			MaxRecordsForSingleWrite int `json:"maxRecordsForSingleWrite"`
+			BufferSizeFactor         int `json:"bufferSizeFactor"`
+			BufferTimeoutSeconds     int `json:"bufferTimeoutSeconds"`
 		} `json:"advanced"`
 	}
 )

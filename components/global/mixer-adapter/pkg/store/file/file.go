@@ -25,6 +25,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/config"
+
 	"github.com/gofrs/flock"
 	"github.com/rs/xid"
 	"go.uber.org/zap"
@@ -127,4 +129,18 @@ func (persister *Persister) read(transaction *Transaction) (string, *Transaction
 		return "", transaction, fmt.Errorf("file is empty, hence removed")
 	}
 	return string(data), transaction, nil
+}
+
+func New(config *config.Config) error {
+	path := config.Store.FileStorage.Path
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("could not make the directory : %s", err.Error())
+		}
+		return nil
+	} else {
+		return fmt.Errorf("error when checking the existance of the file path : %s", err.Error())
+	}
 }

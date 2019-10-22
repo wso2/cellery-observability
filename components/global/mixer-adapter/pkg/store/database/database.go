@@ -146,7 +146,7 @@ func (persister *Persister) doTransaction(fn func(*sql.Tx) error) (err error) {
 
 func New(config *config.Config) (*sql.DB, error) {
 	dbConfig := config.Store.Database
-	dsn := (&mysql.Config{
+	dataSourceName := (&mysql.Config{
 		User:                 dbConfig.Username,
 		Passwd:               dbConfig.Password,
 		Net:                  dbConfig.Protocol,
@@ -155,7 +155,7 @@ func New(config *config.Config) (*sql.DB, error) {
 		AllowNativePasswords: true,
 		MaxAllowedPacket:     4 << 20,
 	}).FormatDSN()
-	db, err := sql.Open("mysql", dsn)
+	db, err := sql.Open("mysql", dataSourceName)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to the MySQL database : %s", err.Error())
 	}
