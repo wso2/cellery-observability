@@ -38,6 +38,11 @@ type (
 		HttpClient  *http.Client
 		Persister   store.Persister
 	}
+
+	SpEndpoint struct {
+		URL                 string `json:"url"`
+		SendIntervalSeconds int    `json:"sendIntervalSeconds"`
+	}
 )
 
 func (publisher *Publisher) Run(stopCh <-chan struct{}) {

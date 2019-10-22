@@ -35,8 +35,6 @@ import (
 
 	"google.golang.org/grpc/credentials"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/config"
-
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"istio.io/api/mixer/adapter/model/v1beta1"
@@ -56,14 +54,21 @@ type (
 		Run(errCh chan error)
 	}
 
-	// Adapter supports metric template.
+	// The struct for the adapter. (Adapter supports metric template)
 	Adapter struct {
-		listener    net.Listener
-		server      *grpc.Server
-		logger      *zap.SugaredLogger
-		httpClient  *http.Client
-		spServerUrl string
-		buffer      chan string
+		listener   net.Listener
+		server     *grpc.Server
+		logger     *zap.SugaredLogger
+		httpClient *http.Client
+		buffer     chan string
+	}
+
+	Mixer struct {
+		TLS struct {
+			Certificate   string `json:"certificate"`
+			PrivateKey    string `json:"privateKey"`
+			CaCertificate string `json:"caCertificate"`
+		} `json:"tls"`
 	}
 )
 
@@ -138,20 +143,19 @@ func (adapter *Adapter) Close() error {
 }
 
 // New creates a new SP adapter that listens at provided port.
-func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, buffer chan string, config *config.Config) (Server, error) {
+func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, buffer chan string, config *Mixer) (Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", addr))
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on socket: %v", err)
 	}
 	adapter := &Adapter{
-		listener:    listener,
-		logger:      logger,
-		httpClient:  httpClient,
-		spServerUrl: config.SpEndpoint.URL,
-		buffer:      buffer,
+		listener:   listener,
+		logger:     logger,
+		httpClient: httpClient,
+		buffer:     buffer,
 	}
 	logger.Info("listening on ", adapter.Addr())
-	mixerTls := config.Mixer.TLS
+	mixerTls := config.TLS
 	var serverOption grpc.ServerOption = nil
 	if mixerTls.Certificate != "" {
 		serverOption, err = getServerTLSOption(mixerTls.Certificate, mixerTls.PrivateKey, mixerTls.CaCertificate)

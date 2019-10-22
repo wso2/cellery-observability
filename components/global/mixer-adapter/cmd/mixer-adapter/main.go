@@ -43,9 +43,7 @@ const (
 
 func main() {
 	port := adapter.DefaultAdapterPort
-
-	// Initialize a channel to handle interruptions from external sources like Kubernetes. This channel will handle signals like os.Interrupt, syscall.SIGTERM
-	stopCh := signals.SetupSignalHandler()
+	stopCh := signals.SetupSignalHandler() // Initialize a channel to handle interruptions from external sources like Kubernetes. This channel will handle signals like os.Interrupt, syscall.SIGTERM
 	logger, err := logging.NewLogger()
 	if err != nil {
 		log.Fatalf("Error building logger: %s", err.Error())
@@ -67,14 +65,15 @@ func main() {
 	}
 
 	advancedConfig := configuration.Advanced
-	bufferTimeoutSeconds := advancedConfig.MaxRecordsForSingleWrite
-	maxRecordsForSingleWrite := advancedConfig.MaxRecordsForSingleWrite
+	bufferTimeoutSeconds := advancedConfig.BufferTimeoutSeconds
+	maxMetricsCount := advancedConfig.MaxRecordsForSingleWrite
+	bufferSizeFactor := advancedConfig.BufferSizeFactor
 	tickerSec := configuration.SpEndpoint.SendIntervalSeconds
 
 	client := &http.Client{}
-	buffer := make(chan string, maxRecordsForSingleWrite*configuration.Advanced.BufferSizeFactor)
+	buffer := make(chan string, maxMetricsCount*bufferSizeFactor)
 	errCh := make(chan error, 1)
-	spAdapter, err := adapter.New(port, logger, client, buffer, configuration)
+	spAdapter, err := adapter.New(port, logger, client, buffer, &configuration.Mixer)
 	if err != nil {
 		logger.Fatalf("unable to start the server: ", err.Error())
 	}
@@ -85,38 +84,23 @@ func main() {
 	go spAdapter.Run(errCh)
 
 	var ps store.Persister
-	wrt := &writer.Writer{
-		WaitingTimeSec: bufferTimeoutSeconds,
-		WaitingSize:    maxRecordsForSingleWrite,
-		Logger:         logger,
-		Buffer:         buffer,
-		StartTime:      time.Now(),
-	}
-	ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
-	pub := &publisher.Publisher{
-		Ticker:      ticker,
-		Logger:      logger,
-		SpServerUrl: configuration.SpEndpoint.URL,
-		HttpClient:  &http.Client{},
-	}
-
 	metricsStore := configuration.Store
-	// Check the config map to initialize the correct persistence
-	if metricsStore.FileStorage.Path != "" {
+	// Check the config map to initialize the correct persistence mode
+	if metricsStore.File.Path != "" {
 		// File storage will be used for persistence. Priority will be given to the file system
 		logger.Info("Enabling file persistence")
-		err = file.New(configuration)
+		err = file.New(&configuration.Store.File)
 		if err != nil {
-			logger.Fatalf("could not make the directory in the given path %s : error => %s", configuration.Store.FileStorage.Path, err.Error())
+			logger.Fatalf("could not make the directory in the given path %s : error => %s", configuration.Store.File.Path, err.Error())
 		}
 		ps = &file.Persister{
 			Logger:    logger,
-			Directory: metricsStore.FileStorage.Path,
+			Directory: metricsStore.File.Path,
 		}
 	} else if metricsStore.Database.Host != "" {
 		// Db will be used for persistence
 		logger.Info("Enabling database persistence")
-		db, err := database.New(configuration)
+		db, err := database.New(&configuration.Store.Database)
 		if err != nil {
 			logger.Fatalf("Could not connect to the MySQL database : %s", err.Error())
 		} else {
@@ -128,7 +112,7 @@ func main() {
 	} else {
 		// In memory persistence
 		logger.Info("Enabling in memory persistence")
-		inMemoryBuffer := make(chan string, maxRecordsForSingleWrite*advancedConfig.BufferSizeFactor)
+		inMemoryBuffer := make(chan string, maxMetricsCount*bufferSizeFactor)
 		ps = &memory.Persister{
 			Logger: logger,
 			Buffer: inMemoryBuffer,
@@ -136,8 +120,22 @@ func main() {
 	}
 
 	var waitGroup sync.WaitGroup
-	wrt.Persister = ps
-	pub.Persister = ps
+	wrt := &writer.Writer{
+		WaitingTimeSec: bufferTimeoutSeconds,
+		WaitingSize:    maxMetricsCount,
+		Logger:         logger,
+		Buffer:         buffer,
+		StartTime:      time.Now(),
+		Persister:      ps,
+	}
+	ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
+	pub := &publisher.Publisher{
+		Ticker:      ticker,
+		Logger:      logger,
+		SpServerUrl: configuration.SpEndpoint.URL,
+		HttpClient:  &http.Client{},
+		Persister:   ps,
+	}
 	go func() {
 		waitGroup.Add(1)
 		defer waitGroup.Done()

@@ -23,9 +23,6 @@ import (
 	"fmt"
 
 	"github.com/go-sql-driver/mysql"
-
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/config"
-
 	"go.uber.org/zap"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
@@ -38,6 +35,15 @@ type (
 	}
 	Transaction struct {
 		Tx *sql.Tx
+	}
+
+	Database struct {
+		Host     string `json:"host"`
+		Port     int    `json:"port"`
+		Protocol string `json:"protocol"`
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Name     string `json:"name"`
 	}
 )
 
@@ -144,8 +150,7 @@ func (persister *Persister) doTransaction(fn func(*sql.Tx) error) (err error) {
 	return err
 }
 
-func New(config *config.Config) (*sql.DB, error) {
-	dbConfig := config.Store.Database
+func New(dbConfig *Database) (*sql.DB, error) {
 	dataSourceName := (&mysql.Config{
 		User:                 dbConfig.Username,
 		Passwd:               dbConfig.Password,

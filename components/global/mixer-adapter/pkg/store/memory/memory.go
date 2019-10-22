@@ -35,6 +35,8 @@ type (
 		Element string
 		Buffer  chan string
 	}
+	Memory struct {
+	}
 )
 
 func (transaction *Transaction) Commit() error {

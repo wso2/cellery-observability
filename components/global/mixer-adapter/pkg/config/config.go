@@ -22,35 +22,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/database"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/file"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/memory"
+
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
 )
 
 type (
 	Config struct {
-		Mixer struct {
-			TLS struct {
-				Certificate   string `json:"certificate"`
-				PrivateKey    string `json:"privateKey"`
-				CaCertificate string `json:"caCertificate"`
-			} `json:"tls"`
-		} `json:"mixer"`
-		SpEndpoint struct {
-			URL                 string `json:"url"`
-			SendIntervalSeconds int    `json:"sendIntervalSeconds"`
-		} `json:"spEndpoint"`
-		Store struct {
-			FileStorage struct {
-				Path string `json:"path"`
-			} `json:"fileStorage"`
-			Database struct {
-				Host     string `json:"host"`
-				Port     int    `json:"port"`
-				Protocol string `json:"protocol"`
-				Username string `json:"username"`
-				Password string `json:"password"`
-				Name     string `json:"name"`
-			} `json:"database"`
-			InMemory struct {
-			} `json:"inMemory"`
+		adapter.Mixer        `json:"mixer"`
+		publisher.SpEndpoint `json:"spEndpoint"`
+		Store                struct {
+			file.File         `json:"fileStorage"`
+			database.Database `json:"database"`
+			memory.Memory     `json:"inMemory"`
 		} `json:"store"`
 		Advanced struct {
 			MaxRecordsForSingleWrite int `json:"maxRecordsForSingleWrite"`

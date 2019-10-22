@@ -27,10 +27,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/config"
-
 	"github.com/gogo/protobuf/types"
-
 	"istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/template/metric"
 
@@ -132,7 +129,7 @@ func TestNewAdapter(t *testing.T) {
 			Header:     make(http.Header),
 		}
 	})
-	adapter, err := New(DefaultAdapterPort, logger, client, buffer, &config.Config{})
+	adapter, err := New(DefaultAdapterPort, logger, client, buffer, &Mixer{})
 	wantStr := fmt.Sprintf("[::]:%d", DefaultAdapterPort)
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %s", err.Error())
@@ -173,11 +170,10 @@ func TestHandleMetric(t *testing.T) {
 	buffer := make(chan string, 100)
 
 	wso2SpAdapter := &Adapter{
-		listener:    listener,
-		logger:      logger,
-		httpClient:  &http.Client{},
-		spServerUrl: testServer.URL,
-		buffer:      buffer,
+		listener:   listener,
+		logger:     logger,
+		httpClient: &http.Client{},
+		buffer:     buffer,
 	}
 
 	var sampleInstances []*metric.InstanceMsg

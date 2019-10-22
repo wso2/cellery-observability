@@ -25,8 +25,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/config"
-
 	"github.com/gofrs/flock"
 	"github.com/rs/xid"
 	"go.uber.org/zap"
@@ -41,6 +39,10 @@ type (
 	}
 	Transaction struct {
 		Lock *flock.Flock
+	}
+
+	File struct {
+		Path string `json:"path"`
 	}
 )
 
@@ -131,8 +133,8 @@ func (persister *Persister) read(transaction *Transaction) (string, *Transaction
 	return string(data), transaction, nil
 }
 
-func New(config *config.Config) error {
-	path := config.Store.FileStorage.Path
+func New(config *File) error {
+	path := config.Path
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(path, os.ModePerm)
