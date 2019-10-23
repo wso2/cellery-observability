@@ -85,7 +85,7 @@ func TestRunWithMockPersister(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
 	}
-	_ = ioutil.WriteFile("test.txt", []byte(testStr), 0644)
+	_ = ioutil.WriteFile("test.json", []byte(testStr), 0644)
 	stopCh := make(chan struct{})
 	client := NewTestClient(func(req *http.Request) *http.Response {
 		return &http.Response{
@@ -106,7 +106,7 @@ func TestRunWithMockPersister(t *testing.T) {
 	time.Sleep(10 * time.Second)
 	close(stopCh)
 
-	files, err := filepath.Glob("./*.txt")
+	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}
@@ -117,7 +117,7 @@ func TestRunWithMockPersisterError(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
 	}
-	_ = ioutil.WriteFile("test.txt", []byte(testStr), 0644)
+	_ = ioutil.WriteFile("test.json", []byte(testStr), 0644)
 	stopCh := make(chan struct{})
 	client := NewTestClient(func(req *http.Request) *http.Response {
 		return &http.Response{
@@ -138,7 +138,7 @@ func TestRunWithMockPersisterError(t *testing.T) {
 	time.Sleep(10 * time.Second)
 	close(stopCh)
 
-	files, err := filepath.Glob("./*.txt")
+	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}
@@ -149,7 +149,7 @@ func TestRunWithErrorFromServer(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
 	}
-	_ = ioutil.WriteFile("test.txt", []byte(testStr), 0644)
+	_ = ioutil.WriteFile("test.json", []byte(testStr), 0644)
 	stopCh := make(chan struct{})
 	ticker := time.NewTicker(time.Duration(2) * time.Second)
 	client := NewTestClient(func(req *http.Request) *http.Response {
@@ -170,7 +170,7 @@ func TestRunWithErrorFromServer(t *testing.T) {
 	time.Sleep(10 * time.Second)
 	close(stopCh)
 
-	files, err := filepath.Glob("./*.txt")
+	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}

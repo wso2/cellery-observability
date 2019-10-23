@@ -47,7 +47,7 @@ func TestWriteWithoutErrors(t *testing.T) {
 	if err != nil {
 		t.Error("Could not write")
 	}
-	files, err := filepath.Glob("./*.txt")
+	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}
@@ -66,7 +66,7 @@ func TestWriteWithInvalidDirectory(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error was not thrown")
 	}
-	files, err := filepath.Glob("./*.txt")
+	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}
@@ -81,12 +81,12 @@ func TestFetchWithoutErrors(t *testing.T) {
 		Logger:    logger,
 		Directory: "./",
 	}
-	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
+	_ = ioutil.WriteFile("./test.json", []byte(testStr), 0644)
 	str, _, _ := persister.Fetch()
 	if str != testStr {
 		t.Error("Contents are not equal")
 	}
-	files, err := filepath.Glob("./*.txt")
+	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}
@@ -101,12 +101,12 @@ func TestFetchWithEmptyFile(t *testing.T) {
 		Logger:    logger,
 		Directory: "./",
 	}
-	_ = ioutil.WriteFile("./test.txt", []byte(""), 0644)
+	_ = ioutil.WriteFile("./test.json", []byte(""), 0644)
 	_, _, err = persister.Fetch()
 	if err == nil {
 		t.Error("No error was thrown when reading an empty file")
 	}
-	files, err := filepath.Glob("./*.txt")
+	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}
@@ -128,15 +128,15 @@ func TestFetchWithInvalidDirectory(t *testing.T) {
 }
 
 func TestCommitWithoutErrors(t *testing.T) {
-	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
+	_ = ioutil.WriteFile("./test.json", []byte(testStr), 0644)
 	transaction := &Transaction{
-		Lock: flock.New("./test.txt"),
+		Lock: flock.New("./test.json"),
 	}
 	err := transaction.Commit()
 	if err != nil {
 		t.Error("Error when committing")
 	}
-	files, err := filepath.Glob("./*.txt")
+	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}
@@ -144,7 +144,7 @@ func TestCommitWithoutErrors(t *testing.T) {
 
 func TestCommitWithError(t *testing.T) {
 	transaction := &Transaction{
-		Lock: flock.New("./test.txt"),
+		Lock: flock.New("./test.json"),
 	}
 	err := transaction.Commit()
 	if err == nil {
@@ -153,16 +153,16 @@ func TestCommitWithError(t *testing.T) {
 }
 
 func TestRollback(t *testing.T) {
-	_ = ioutil.WriteFile("./test.txt", []byte(testStr), 0644)
+	_ = ioutil.WriteFile("./test.json", []byte(testStr), 0644)
 	transaction := &Transaction{
-		Lock: flock.New("./test.txt"),
+		Lock: flock.New("./test.json"),
 	}
 	_, _ = transaction.Lock.TryLock()
 	err := transaction.Rollback()
 	if err != nil {
 		t.Error("An error was thrown when unlocking the file")
 	}
-	files, err := filepath.Glob("./*.txt")
+	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}

@@ -83,7 +83,7 @@ func (persister *Persister) Write(str string) error {
 
 func (persister *Persister) createFile() *flock.Flock {
 	uuid := xid.New().String()
-	fileLock := flock.New(fmt.Sprintf("%s/%s.txt", persister.Directory, uuid))
+	fileLock := flock.New(fmt.Sprintf("%s/%s.json", persister.Directory, uuid))
 	return fileLock
 }
 
@@ -95,7 +95,7 @@ func (persister *Persister) unlock(flock *flock.Flock) {
 }
 
 func (persister *Persister) Fetch() (string, store.Transaction, error) {
-	files, err := filepath.Glob(persister.Directory + "/*.txt")
+	files, err := filepath.Glob(persister.Directory + "/*.json")
 	if err != nil {
 		return "", &Transaction{}, fmt.Errorf("could not read the given directory %s : %v", persister.Directory,
 			err)
