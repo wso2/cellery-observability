@@ -38,32 +38,36 @@ import (
 )
 
 const (
-	configFilePathEnv string = "CONFIG_FILE_PATH"
+	configFilePathEnv     string = "CONFIG_FILE_PATH"
+	defaultConfigFilePath string = "/mnt/conf/config.json"
 )
 
 func main() {
-	port := adapter.DefaultAdapterPort
-	stopCh := signals.SetupSignalHandler() // Initialize a channel to handle interruptions from external sources like Kubernetes. This channel will handle signals like os.Interrupt, syscall.SIGTERM
+	port := adapter.AdapterPort
+	// Initialize a channel to handle interruptions from external sources like Kubernetes. This channel will handle
+	// signals like os.Interrupt, syscall.SIGTERM
+	stopCh := signals.SetupSignalHandler()
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %s", err.Error())
+		log.Fatalf("Error building logger: %v", err)
 	}
 	defer func() {
 		err := logger.Sync()
 		if err != nil {
-			log.Fatalf("Error syncing logger: %s", err.Error())
+			log.Fatalf("Error syncing logger: %v", err)
 		}
 	}()
 
 	configuration, err := config.New(os.Getenv(configFilePathEnv))
 	if err != nil {
-		logger.Fatalf("Could not get the configuration : %s", err.Error())
-	}
-	if configuration == nil {
-		logger.Fatalf("Configuration struct is nil")
-		return
+		logger.Errorf("Could not get the configuration : %v", err)
+		configuration, err = config.New(defaultConfigFilePath)
+		if err != nil {
+			logger.Fatalf("Could not get configuration from the default config file path : %v", err)
+		}
 	}
 
+	//Initializing variables from the config file
 	advancedConfig := configuration.Advanced
 	bufferTimeoutSeconds := advancedConfig.BufferTimeoutSeconds
 	maxMetricsCount := advancedConfig.MaxRecordsForSingleWrite
@@ -75,7 +79,7 @@ func main() {
 	errCh := make(chan error, 1)
 	spAdapter, err := adapter.New(port, logger, client, buffer, &configuration.Mixer)
 	if err != nil {
-		logger.Fatalf("unable to start the server: ", err.Error())
+		logger.Fatalf("unable to start the server: %v", err)
 	}
 	if spAdapter == nil {
 		logger.Fatal("adapter.New returned a null struct")
@@ -86,23 +90,27 @@ func main() {
 	var ps store.Persister
 	metricsStore := configuration.Store
 	// Check the config map to initialize the correct persistence mode
-	if metricsStore.File.Path != "" {
+	if metricsStore.File != nil {
 		// File storage will be used for persistence. Priority will be given to the file system
 		logger.Info("Enabling file persistence")
-		err = file.New(&configuration.Store.File)
+		if metricsStore.File.Path == "" {
+			logger.Fatal("Given file path is empty")
+		}
+		err = file.New(configuration.Store.File)
 		if err != nil {
-			logger.Fatalf("could not make the directory in the given path %s : error => %s", configuration.Store.File.Path, err.Error())
+			logger.Fatalf("could not make the directory in the given path %s : error %v",
+				configuration.Store.File.Path, err)
 		}
 		ps = &file.Persister{
 			Logger:    logger,
 			Directory: metricsStore.File.Path,
 		}
-	} else if metricsStore.Database.Host != "" {
+	} else if metricsStore.Database != nil {
 		// Db will be used for persistence
 		logger.Info("Enabling database persistence")
-		db, err := database.New(&configuration.Store.Database)
+		db, err := database.New(configuration.Store.Database)
 		if err != nil {
-			logger.Fatalf("Could not connect to the MySQL database : %s", err.Error())
+			logger.Fatalf("Could not connect to the MySQL database : %v", err)
 		} else {
 			ps = &database.Persister{
 				Logger: logger,
@@ -121,12 +129,12 @@ func main() {
 
 	var waitGroup sync.WaitGroup
 	wrt := &writer.Writer{
-		WaitingTimeSec: bufferTimeoutSeconds,
-		WaitingSize:    maxMetricsCount,
-		Logger:         logger,
-		Buffer:         buffer,
-		StartTime:      time.Now(),
-		Persister:      ps,
+		WaitingTimeSec:  bufferTimeoutSeconds,
+		WaitingSize:     maxMetricsCount,
+		Logger:          logger,
+		Buffer:          buffer,
+		LastWrittenTime: time.Now(),
+		Persister:       ps,
 	}
 	ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
 	pub := &publisher.Publisher{
@@ -150,7 +158,8 @@ func main() {
 	select {
 	case <-stopCh:
 		// This will wait for publisher and writer
-		// If any interruption happens, this will give some time to clear in memory buffers by persisting them to prevent data losses.
+		// If any interruption happens, this will give some time to clear in memory buffers by persisting them to
+		// prevent data losses.
 		waitGroup.Wait()
 	case err = <-errCh:
 		if err != nil {

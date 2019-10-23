@@ -30,12 +30,12 @@ import (
 
 type (
 	Writer struct {
-		WaitingTimeSec int
-		WaitingSize    int
-		Logger         *zap.SugaredLogger
-		Buffer         chan string
-		StartTime      time.Time
-		Persister      store.Persister
+		WaitingTimeSec  int
+		WaitingSize     int
+		Logger          *zap.SugaredLogger
+		Buffer          chan string
+		LastWrittenTime time.Time
+		Persister       store.Persister
 	}
 )
 
@@ -48,16 +48,21 @@ func (writer *Writer) Run(stopCh <-chan struct{}) {
 			return
 		default:
 			if writer.shouldWrite() {
-				elements := writer.getElements()
-				str := fmt.Sprintf("[%s]", strings.Join(elements, ","))
-				err := writer.Persister.Write(str)
-				if err != nil {
-					writer.Logger.Warn(err.Error())
-					writer.restore(elements)
-				}
+				writer.write()
+			} else {
 				time.Sleep(5 * time.Second)
 			}
 		}
+	}
+}
+
+func (writer *Writer) write() {
+	elements := writer.getElements()
+	str := fmt.Sprintf("[%s]", strings.Join(elements, ","))
+	err := writer.Persister.Write(str)
+	if err != nil {
+		writer.Logger.Warn(err.Error())
+		writer.restore(elements)
 	}
 }
 
@@ -77,9 +82,10 @@ func (writer *Writer) cleanBuffer() {
 }
 
 func (writer *Writer) shouldWrite() bool {
-	if (len(writer.Buffer) > 0) && (len(writer.Buffer) >= writer.WaitingSize || time.Since(writer.StartTime) > time.Duration(writer.WaitingTimeSec)*time.Second) {
-		writer.Logger.Debugf("Time since the previous write : %s", time.Since(writer.StartTime))
-		writer.StartTime = time.Now()
+	if (len(writer.Buffer) > 0) && (len(writer.Buffer) >= writer.WaitingSize || time.Since(writer.LastWrittenTime) >
+		time.Duration(writer.WaitingTimeSec)*time.Second) {
+		writer.Logger.Debugf("Time since the previous write : %s", time.Since(writer.LastWrittenTime))
+		writer.LastWrittenTime = time.Now()
 		return true
 	} else {
 		return false

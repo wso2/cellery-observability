@@ -40,7 +40,6 @@ type (
 	Transaction struct {
 		Lock *flock.Flock
 	}
-
 	File struct {
 		Path string `json:"path"`
 	}
@@ -66,21 +65,18 @@ func (persister *Persister) Write(str string) error {
 	fileLock := persister.createFile()
 	persister.Logger.Debugf("Created a new file : %s", fileLock.String())
 	locked, err := fileLock.TryLock()
-	if !locked {
-		return fmt.Errorf("could not lock the created file")
-	}
 	if err != nil {
 		return fmt.Errorf("could not lock the created file : %s", err.Error())
 	}
+	if !locked {
+		return fmt.Errorf("could not lock the created file")
+	}
+	defer persister.unlock(fileLock)
+
 	bytesArr := []byte(str)
 	err = ioutil.WriteFile(fileLock.String(), bytesArr, 0644)
 	if err != nil {
-		persister.unlock(fileLock)
-		return fmt.Errorf("could not write to the file, restoring... => error: %s", err.Error())
-	}
-	err = fileLock.Unlock()
-	if err != nil {
-		return fmt.Errorf("could not unlock the file after writing : %s", err.Error())
+		return fmt.Errorf("could not write to the file : %v", err)
 	}
 	return nil
 }
@@ -101,7 +97,8 @@ func (persister *Persister) unlock(flock *flock.Flock) {
 func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	files, err := filepath.Glob(persister.Directory + "/*.txt")
 	if err != nil {
-		return "", &Transaction{}, fmt.Errorf("could not read the given directory %s : %s", persister.Directory, err.Error())
+		return "", &Transaction{}, fmt.Errorf("could not read the given directory %s : %s", persister.Directory,
+			err.Error())
 	}
 	persister.Logger.Debugf("Files in the directory : %s", files)
 	if len(files) > 0 {
@@ -116,12 +113,13 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 
 func (persister *Persister) read(transaction *Transaction) (string, *Transaction, error) {
 	locked, err := transaction.Lock.TryLock()
-	if !locked {
-		return "", transaction, fmt.Errorf("could not achieve the lock")
-	}
 	if err != nil {
 		return "", transaction, fmt.Errorf("could not lock the file : %s", err.Error())
 	}
+	if !locked {
+		return "", transaction, fmt.Errorf("could not achieve the lock")
+	}
+
 	data, err := ioutil.ReadFile(transaction.Lock.String())
 	if err != nil {
 		return "", transaction, fmt.Errorf("could not read the file : %s", err.Error())
@@ -136,6 +134,9 @@ func (persister *Persister) read(transaction *Transaction) (string, *Transaction
 func New(config *File) error {
 	path := config.Path
 	_, err := os.Stat(path)
+	if err == nil {
+		return nil
+	}
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(path, os.ModePerm)
 		if err != nil {

@@ -65,7 +65,7 @@ func (transaction *Transaction) Rollback() error {
 
 func (persister *Persister) Write(str string) error {
 	err := persister.doTransaction(func(tx *sql.Tx) error {
-		_, err := tx.Exec("INSERT INTO persistence(json) VALUES (?)", str)
+		_, err := tx.Exec("INSERT INTO persistence(data) VALUES (?)", str)
 		if err != nil {
 			return fmt.Errorf("could not insert the metrics to the database : %s", err.Error())
 		}
@@ -83,7 +83,7 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	if err != nil {
 		return "", &Transaction{}, fmt.Errorf("could not begin the transaction : %s", err.Error())
 	}
-	rows, err := tx.Query("SELECT id,json FROM persistence LIMIT 1 FOR UPDATE")
+	rows, err := tx.Query("SELECT id,data FROM persistence LIMIT 1 FOR UPDATE")
 	if err != nil {
 		return "", &Transaction{}, fmt.Errorf("could not fetch rows from the database : %s", err.Error())
 	}
@@ -167,7 +167,8 @@ func New(dbConfig *Database) (*sql.DB, error) {
 	if db == nil {
 		return nil, fmt.Errorf("could not create the db struct")
 	}
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `persistence` (`id` int(11) NOT NULL AUTO_INCREMENT, `json` longtext NOT NULL, PRIMARY KEY (`id`))")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `persistence` (`id` int NOT NULL AUTO_INCREMENT, `data`" +
+		" longtext NOT NULL, PRIMARY KEY (`id`))")
 	if err != nil {
 		return nil, fmt.Errorf("could not create the table : %s", err.Error())
 	}

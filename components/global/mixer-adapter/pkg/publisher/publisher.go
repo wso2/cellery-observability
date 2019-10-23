@@ -98,12 +98,16 @@ func (publisher *Publisher) publish(jsonArr string) error {
 		return fmt.Errorf("could not make a new request : %s", err.Error())
 	}
 
-	client := &http.Client{}
+	client := publisher.HttpClient
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
-	_, err = client.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("could not receive a response from the server : %s", err.Error())
+	}
+	if res != nil && res.StatusCode != 200 {
+		return fmt.Errorf("could not receive a good response code from the server, received response code : %d",
+			res.StatusCode)
 	}
 	return nil
 }

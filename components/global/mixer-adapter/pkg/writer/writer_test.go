@@ -76,12 +76,12 @@ func TestWriter_Run(t *testing.T) {
 	buffer <- testStr
 	buffer <- testStr
 	writer := Writer{
-		WaitingTimeSec: 5,
-		WaitingSize:    2,
-		Logger:         logger,
-		Buffer:         buffer,
-		StartTime:      time.Now(),
-		Persister:      &MockPersister{Buffer: buffer},
+		WaitingTimeSec:  5,
+		WaitingSize:     2,
+		Logger:          logger,
+		Buffer:          buffer,
+		LastWrittenTime: time.Now(),
+		Persister:       &MockPersister{Buffer: buffer},
 	}
 	go writer.Run(stopCh)
 	time.Sleep(10 * time.Second)
@@ -93,12 +93,12 @@ func TestWriter_Run(t *testing.T) {
 	buffer2 <- testStr
 	buffer2 <- testStr
 	writer2 := Writer{
-		WaitingTimeSec: 5,
-		WaitingSize:    2,
-		Logger:         logger,
-		Buffer:         buffer2,
-		StartTime:      time.Now(),
-		Persister:      &MockPersisterErr{},
+		WaitingTimeSec:  5,
+		WaitingSize:     2,
+		Logger:          logger,
+		Buffer:          buffer2,
+		LastWrittenTime: time.Now(),
+		Persister:       &MockPersisterErr{},
 	}
 	go writer2.Run(stopCh2)
 	time.Sleep(10 * time.Second)

@@ -129,8 +129,8 @@ func TestNewAdapter(t *testing.T) {
 			Header:     make(http.Header),
 		}
 	})
-	adapter, err := New(DefaultAdapterPort, logger, client, buffer, &Mixer{})
-	wantStr := fmt.Sprintf("[::]:%d", DefaultAdapterPort)
+	adapter, err := New(AdapterPort, logger, client, buffer, &Mixer{})
+	wantStr := fmt.Sprintf("[::]:%d", AdapterPort)
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %s", err.Error())
 	}
@@ -152,7 +152,7 @@ func TestNewAdapter(t *testing.T) {
 }
 
 func TestHandleMetric(t *testing.T) {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", DefaultAdapterPort))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", AdapterPort))
 	if err != nil {
 		t.Errorf("Unable to listen on socket: %s", err.Error())
 	}

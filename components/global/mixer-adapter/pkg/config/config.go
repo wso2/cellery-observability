@@ -36,9 +36,9 @@ type (
 		adapter.Mixer        `json:"mixer"`
 		publisher.SpEndpoint `json:"spEndpoint"`
 		Store                struct {
-			file.File         `json:"fileStorage"`
-			database.Database `json:"database"`
-			memory.Memory     `json:"inMemory"`
+			*file.File         `json:"fileStorage"`
+			*database.Database `json:"database"`
+			*memory.Memory     `json:"inMemory"`
 		} `json:"store"`
 		Advanced struct {
 			MaxRecordsForSingleWrite int `json:"maxRecordsForSingleWrite"`
@@ -54,7 +54,7 @@ func New(configFilePath string) (*Config, error) {
 		return nil, fmt.Errorf("could not read the config file : %s", err.Error())
 	}
 	config := &Config{}
-	err = json.Unmarshal(data, &config)
+	err = json.Unmarshal(data, config)
 	if err != nil {
 		return nil, fmt.Errorf("could not unmarshal the config file : %s", err.Error())
 	}
