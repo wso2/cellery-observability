@@ -47,22 +47,22 @@ func TestPersister_Write(t *testing.T) {
 
 	// Test for a insertion failure
 	mock.ExpectBegin()
-	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnError(fmt.Errorf("test error 2"))
+	mock.ExpectExec("^INSERT INTO persistence(data)*").WillReturnError(fmt.Errorf("test error 2"))
 	mock.ExpectRollback()
 
 	// Test for a rollback failure
 	mock.ExpectBegin()
-	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnError(fmt.Errorf("test error 3"))
+	mock.ExpectExec("^INSERT INTO persistence(data)*").WillReturnError(fmt.Errorf("test error 3"))
 	mock.ExpectRollback().WillReturnError(fmt.Errorf("test error 4"))
 
 	// Test for a commit failure
 	mock.ExpectBegin()
-	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnResult(sqlmock.NewResult(2, 2))
+	mock.ExpectExec("^INSERT INTO persistence(data)*").WillReturnResult(sqlmock.NewResult(2, 2))
 	mock.ExpectCommit().WillReturnError(fmt.Errorf("test error 5"))
 
 	// Test for a successful transaction
 	mock.ExpectBegin()
-	mock.ExpectExec("^INSERT INTO persistence(json)*").WillReturnResult(sqlmock.NewResult(2, 2))
+	mock.ExpectExec("^INSERT INTO persistence(data)*").WillReturnResult(sqlmock.NewResult(2, 2))
 	mock.ExpectCommit()
 
 	persister := &Persister{
@@ -90,7 +90,7 @@ func TestPersister_Fetch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	rows := sqlmock.NewRows([]string{"id", "json"}).
+	rows := sqlmock.NewRows([]string{"id", "data"}).
 		AddRow(1, testStr).
 		AddRow(2, testStr)
 
@@ -110,7 +110,7 @@ func TestPersister_Fetch(t *testing.T) {
 		WillReturnError(fmt.Errorf("test error 3"))
 
 	// Defining rows
-	rows = sqlmock.NewRows([]string{"id", "json"}).
+	rows = sqlmock.NewRows([]string{"id", "data"}).
 		AddRow(1, testStr).
 		AddRow(2, testStr)
 
