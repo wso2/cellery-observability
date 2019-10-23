@@ -61,7 +61,7 @@ func (writer *Writer) write() {
 	str := fmt.Sprintf("[%s]", strings.Join(elements, ","))
 	err := writer.Persister.Write(str)
 	if err != nil {
-		writer.Logger.Warnf(" : %v",err)
+		writer.Logger.Warnf(" : %v", err)
 		writer.restore(elements)
 	}
 }

@@ -66,7 +66,7 @@ func (mockPersisterErr *MockPersisterErr) Fetch() (string, store.Transaction, er
 	return "", &MockTransaction{}, fmt.Errorf("test error 2")
 }
 
-func TestWriter_Run(t *testing.T) {
+func TestRunWithoutError(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
@@ -86,22 +86,26 @@ func TestWriter_Run(t *testing.T) {
 	go writer.Run(stopCh)
 	time.Sleep(10 * time.Second)
 	close(stopCh)
-	time.Sleep(10 * time.Second)
+}
 
-	stopCh2 := make(chan struct{})
-	buffer2 := make(chan string, 10)
-	buffer2 <- testStr
-	buffer2 <- testStr
-	writer2 := Writer{
+func TestRunWithError(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	stopCh := make(chan struct{})
+	buffer := make(chan string, 10)
+	buffer <- testStr
+	buffer <- testStr
+	writer := Writer{
 		WaitingTimeSec:  5,
 		WaitingSize:     2,
 		Logger:          logger,
-		Buffer:          buffer2,
+		Buffer:          buffer,
 		LastWrittenTime: time.Now(),
 		Persister:       &MockPersisterErr{},
 	}
-	go writer2.Run(stopCh2)
+	go writer.Run(stopCh)
 	time.Sleep(10 * time.Second)
-	close(stopCh2)
-	time.Sleep(10 * time.Second)
+	close(stopCh)
 }

@@ -26,21 +26,12 @@ import (
 )
 
 var (
-	testStr = "{\r\n  \"mixer\": {\r\n    \"tls\": {\r\n      \"certificate\": \"certificate of this adapter\",\r\n  " +
-		"    \"privateKey\": \"private key of this adapter\",\r\n      \"caCertificate\": \"ca bundle of " +
-		"this adapter\"\r\n    }\r\n  },\r\n  \"spEndpoint\": {\r\n    \"url\": \"http://wso2sp-worker.cellery" +
-		"-system.svc.cluster.local:9091\",\r\n    \"sendIntervalSeconds\": 60\r\n  },\r\n  \"store\": {\r\n    " +
-		"\"fileStorage\": {\r\n      \"path\": \"/mnt/observability-metrics\"\r\n    },\r\n    \"database\": {\r\n  " +
-		"    \"host\": \"wso2apim-with-analytics-rdbms-service.cellery-system.svc.cluster.local\",\r\n      " +
-		"\"port\": 3306,\r\n      \"protocol\": \"tcp\",\r\n      \"username\": \"root\",\r\n      " +
-		"\"password\": \"root\",\r\n      \"name\": \"PERSISTENCE\"\r\n    },\r\n    \"inMemory\": {}\r\n  " +
-		"},\r\n  \"advanced\": {\r\n    \"maxMetricsCountForSingleWrite\": 100,\r\n    \"bufferSizeFactor\": 100,\r\n" +
-		"    \"bufferTimeoutSeconds\": 60\r\n  }\r\n}"
+	testStr = "{\r\n  \"mixer\": {\r\n    \"tls\": {\r\n      \"certificate\": \"\",\r\n      \"privateKey\": \"\",\r\n      \"caCertificate\": \"\"\r\n    }\r\n  },\r\n  \"spEndpoint\": {\r\n    \"url\": \"http://wso2sp-worker.cellery-system.svc.cluster.local:9091\",\r\n    \"sendIntervalSeconds\": 60\r\n  },\r\n  \"store\": {\r\n    \"fileStorage\": {\r\n      \"path\": \"/mnt/observability-metrics\"\r\n    },\r\n    \"database\": {\r\n      \"host\": \"wso2apim-with-analytics-rdbms-service.cellery-system.svc.cluster.local\",\r\n      \"port\": 3306,\r\n      \"protocol\": \"tcp\",\r\n      \"username\": \"root\",\r\n      \"password\": \"root\",\r\n      \"name\": \"PERSISTENCE\"\r\n    },\r\n    \"inMemory\": {}\r\n  },\r\n  \"advanced\": {\r\n    \"maxRecordsForSingleWrite\": 100,\r\n    \"bufferSizeFactor\": 100,\r\n    \"bufferTimeoutSeconds\": 60\r\n  }\r\n}"
 )
 
-func TestNew(t *testing.T) {
+func TestNewWithCorrectFile(t *testing.T) {
 	_ = ioutil.WriteFile("./config.json", []byte(testStr), 0644)
-	_, err := New("./foo.json")
+	_, err := New("./config.json")
 	if err != nil {
 		t.Log(err)
 	}
@@ -48,18 +39,22 @@ func TestNew(t *testing.T) {
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}
+}
 
+func TestNewWithEmptyFile(t *testing.T) {
 	_ = ioutil.WriteFile("./config.json", []byte(""), 0644)
-	_, err = New("./config.json")
+	_, err := New("./config.json")
 	if err != nil {
 		t.Log(err)
 	}
-	files, err = filepath.Glob("./*.json")
+	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}
+}
 
-	_, err = New("./config.json")
+func TestNewWithNoFile(t *testing.T) {
+	_, err := New("./config.json")
 	if err != nil {
 		t.Log(err)
 	}

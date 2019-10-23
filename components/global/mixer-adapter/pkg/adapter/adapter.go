@@ -64,11 +64,12 @@ type (
 	}
 
 	Mixer struct {
-		TLS struct {
-			Certificate   string `json:"certificate"`
-			PrivateKey    string `json:"privateKey"`
-			CaCertificate string `json:"caCertificate"`
-		} `json:"tls"`
+		*TLS `json:"tls"`
+	}
+	TLS struct {
+		Certificate   string `json:"certificate"`
+		PrivateKey    string `json:"privateKey"`
+		CaCertificate string `json:"caCertificate"`
 	}
 )
 

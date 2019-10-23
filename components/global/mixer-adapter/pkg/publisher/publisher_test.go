@@ -42,10 +42,10 @@ var (
 )
 
 type (
-	RoundTripFunc   func(req *http.Request) *http.Response
-	MockCrr         struct{}
-	MockErr         struct{}
-	MockTransaction struct{}
+	RoundTripFunc      func(req *http.Request) *http.Response
+	MockPersister      struct{}
+	MockPersisterError struct{}
+	MockTransaction    struct{}
 )
 
 func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -66,21 +66,21 @@ func (mockTransaction *MockTransaction) Rollback() error {
 	return nil
 }
 
-func (mockPersister *MockCrr) Write(str string) error {
+func (mockPersister *MockPersister) Write(str string) error {
 	return nil
 }
-func (mockPersister *MockCrr) Fetch() (string, store.Transaction, error) {
+func (mockPersister *MockPersister) Fetch() (string, store.Transaction, error) {
 	return fmt.Sprintf("[%s]", testStr), &MockTransaction{}, nil
 }
 
-func (mockPersister *MockErr) Write(str string) error {
+func (mockPersister *MockPersisterError) Write(str string) error {
 	return fmt.Errorf("test error in writing")
 }
-func (mockPersister *MockErr) Fetch() (string, store.Transaction, error) {
+func (mockPersister *MockPersisterError) Fetch() (string, store.Transaction, error) {
 	return "", &MockTransaction{}, fmt.Errorf("test error 1")
 }
 
-func TestPublisher_Run(t *testing.T) {
+func TestRunWithMockPersister(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
@@ -100,37 +100,75 @@ func TestPublisher_Run(t *testing.T) {
 		Logger:      logger,
 		SpServerUrl: "http://example.com",
 		HttpClient:  client,
-		Persister:   &MockCrr{},
+		Persister:   &MockPersister{},
 	}
 	go publisher.Run(stopCh)
 	time.Sleep(10 * time.Second)
+	close(stopCh)
 
-	publisher2 := &Publisher{
+	files, err := filepath.Glob("./*.txt")
+	for _, fname := range files {
+		err = os.Remove(fname)
+	}
+}
+
+func TestRunWithMockPersisterError(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	_ = ioutil.WriteFile("test.txt", []byte(testStr), 0644)
+	stopCh := make(chan struct{})
+	client := NewTestClient(func(req *http.Request) *http.Response {
+		return &http.Response{
+			StatusCode: 200,
+			Body:       ioutil.NopCloser(bytes.NewBufferString("OK")),
+			Header:     make(http.Header),
+		}
+	})
+	ticker := time.NewTicker(time.Duration(2) * time.Second)
+	publisher := &Publisher{
 		Ticker:      ticker,
 		Logger:      logger,
 		SpServerUrl: "http://example.com",
 		HttpClient:  client,
-		Persister:   &MockErr{},
+		Persister:   &MockPersisterError{},
 	}
-	go publisher2.Run(stopCh)
+	go publisher.Run(stopCh)
 	time.Sleep(10 * time.Second)
+	close(stopCh)
 
-	client2 := NewTestClient(func(req *http.Request) *http.Response {
+	files, err := filepath.Glob("./*.txt")
+	for _, fname := range files {
+		err = os.Remove(fname)
+	}
+}
+
+func TestRunWithErrorFromServer(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	_ = ioutil.WriteFile("test.txt", []byte(testStr), 0644)
+	stopCh := make(chan struct{})
+	ticker := time.NewTicker(time.Duration(2) * time.Second)
+	client := NewTestClient(func(req *http.Request) *http.Response {
 		return &http.Response{
 			StatusCode: 500,
 			Body:       ioutil.NopCloser(bytes.NewBufferString("OK")),
 			Header:     make(http.Header),
 		}
 	})
-	publisher3 := &Publisher{
+	publisher := &Publisher{
 		Ticker:      ticker,
 		Logger:      logger,
 		SpServerUrl: "http://example.com",
-		HttpClient:  client2,
-		Persister:   &MockCrr{},
+		HttpClient:  client,
+		Persister:   &MockPersister{},
 	}
-	go publisher3.Run(stopCh)
+	go publisher.Run(stopCh)
 	time.Sleep(10 * time.Second)
+	close(stopCh)
 
 	files, err := filepath.Glob("./*.txt")
 	for _, fname := range files {

@@ -28,7 +28,7 @@ var (
 	testStr = "{\"contextReporterKind\":\"inbound\", \"destinationUID\":\"kubernetes://istio-policy-74d6c8b4d5-mmr49.istio-system\", \"requestID\":\"6e544e82-2a0c-4b83-abcc-0f62b89cdf3f\", \"requestMethod\":\"POST\", \"requestPath\":\"/istio.mixer.v1.Mixer/Check\", \"requestTotalSize\":\"2748\", \"responseCode\":\"200\", \"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":\"b55a0f7f20d36e49f8612bac4311791d\"}"
 )
 
-func TestPersister_Fetch(t *testing.T) {
+func TestFetchWithDataInBuffer(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
@@ -45,7 +45,20 @@ func TestPersister_Fetch(t *testing.T) {
 		t.Fail()
 		return
 	}
+	t.Log("Test passed")
+}
 
+func TestFetchWithoutDataInBuffer(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+		return
+	}
+	buffer := make(chan string, 10)
+	persister := &Persister{
+		Logger: logger,
+		Buffer: buffer,
+	}
 	_, _, err = persister.Fetch()
 	if err == nil {
 		t.Fail()
@@ -54,7 +67,7 @@ func TestPersister_Fetch(t *testing.T) {
 	t.Log("Test passed")
 }
 
-func TestPersister_Write(t *testing.T) {
+func TestWrite(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
@@ -72,7 +85,7 @@ func TestPersister_Write(t *testing.T) {
 	t.Fail()
 }
 
-func TestTransaction_Rollback(t *testing.T) {
+func TestRollback(t *testing.T) {
 	buffer := make(chan string, 10)
 	transaction := Transaction{
 		Element: testStr,

@@ -129,7 +129,8 @@ func TestNewAdapter(t *testing.T) {
 			Header:     make(http.Header),
 		}
 	})
-	adapter, err := New(AdapterPort, logger, client, buffer, &Mixer{})
+	mixer := &Mixer{&TLS{}}
+	adapter, err := New(AdapterPort, logger, client, buffer, mixer)
 	wantStr := fmt.Sprintf("[::]:%d", AdapterPort)
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %v", err)
@@ -149,6 +150,48 @@ func TestNewAdapter(t *testing.T) {
 			t.Error("Fail, Expected address is not received")
 		}
 	}
+}
+
+func TestNewAdapterWithInvalidTlsData(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	buffer := make(chan string, 100)
+	client := NewTestClient(func(req *http.Request) *http.Response {
+		return &http.Response{
+			StatusCode: 200,
+			Header:     make(http.Header),
+		}
+	})
+	tls := &Mixer{TLS: &TLS{
+		Certificate:   "./testdata/test.crt",
+		PrivateKey:    "./testdata/test.key",
+		CaCertificate: "./testdata/test.pem",
+	}}
+	adapter, err := New(AdapterPort, logger, client, buffer, tls)
+	_ = adapter.Close()
+}
+
+func TestNewAdapterWithTLS(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	buffer := make(chan string, 100)
+	client := NewTestClient(func(req *http.Request) *http.Response {
+		return &http.Response{
+			StatusCode: 200,
+			Header:     make(http.Header),
+		}
+	})
+	tls := &Mixer{TLS: &TLS{
+		Certificate:   "./testdata/adapter.crt",
+		PrivateKey:    "./testdata/adapter.key",
+		CaCertificate: "./testdata/ca.pem",
+	}}
+	adapter, err := New(AdapterPort, logger, client, buffer, tls)
+	_ = adapter.Close()
 }
 
 func TestHandleMetric(t *testing.T) {
@@ -191,7 +234,7 @@ func TestHandleMetric(t *testing.T) {
 	_, err = wso2SpAdapter.HandleMetric(context.TODO(), &sampleMetricRequest)
 
 	if err != nil {
-		t.Errorf("Metric could not be handled : %v", err)
+		t.Errorf("Metrics could not be handled : %v", err)
 	} else {
 		t.Log("Successfully handled the metrics")
 	}
