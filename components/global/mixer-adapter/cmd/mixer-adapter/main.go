@@ -163,7 +163,7 @@ func main() {
 		waitGroup.Wait()
 	case err = <-errCh:
 		if err != nil {
-			logger.Fatal(err.Error())
+			logger.Fatalf("Something went wrong when initializing the adapter : %v",err)
 		}
 	}
 }

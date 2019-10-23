@@ -61,7 +61,7 @@ func (writer *Writer) write() {
 	str := fmt.Sprintf("[%s]", strings.Join(elements, ","))
 	err := writer.Persister.Write(str)
 	if err != nil {
-		writer.Logger.Warn(err.Error())
+		writer.Logger.Warnf(" : %v",err)
 		writer.restore(elements)
 	}
 }
@@ -71,13 +71,7 @@ func (writer *Writer) cleanBuffer() {
 		if len(writer.Buffer) == 0 {
 			return
 		}
-		elements := writer.getElements()
-		str := fmt.Sprintf("[%s]", strings.Join(elements, ","))
-		err := writer.Persister.Write(str)
-		if err != nil {
-			writer.Logger.Warn(err.Error())
-			writer.restore(elements)
-		}
+		writer.write()
 	}
 }
 

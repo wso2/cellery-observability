@@ -31,7 +31,7 @@ var (
 func TestPersister_Fetch(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		t.Errorf("Error building logger: %s", err.Error())
+		t.Errorf("Error building logger: %v", err)
 		return
 	}
 	buffer := make(chan string, 10)
@@ -57,7 +57,7 @@ func TestPersister_Fetch(t *testing.T) {
 func TestPersister_Write(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		t.Errorf("Error building logger: %s", err.Error())
+		t.Errorf("Error building logger: %v", err)
 	}
 	buffer := make(chan string, 10)
 	persister := &Persister{

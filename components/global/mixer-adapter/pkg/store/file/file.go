@@ -48,7 +48,7 @@ type (
 func (transaction *Transaction) Commit() error {
 	err := os.Remove(transaction.Lock.String())
 	if err != nil {
-		return fmt.Errorf("could not delete the published file : %s", err.Error())
+		return fmt.Errorf("could not delete the published file : %v", err)
 	}
 	return nil
 }
@@ -66,7 +66,7 @@ func (persister *Persister) Write(str string) error {
 	persister.Logger.Debugf("Created a new file : %s", fileLock.String())
 	locked, err := fileLock.TryLock()
 	if err != nil {
-		return fmt.Errorf("could not lock the created file : %s", err.Error())
+		return fmt.Errorf("could not lock the created file : %v", err)
 	}
 	if !locked {
 		return fmt.Errorf("could not lock the created file")
@@ -97,8 +97,8 @@ func (persister *Persister) unlock(flock *flock.Flock) {
 func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	files, err := filepath.Glob(persister.Directory + "/*.txt")
 	if err != nil {
-		return "", &Transaction{}, fmt.Errorf("could not read the given directory %s : %s", persister.Directory,
-			err.Error())
+		return "", &Transaction{}, fmt.Errorf("could not read the given directory %s : %v", persister.Directory,
+			err)
 	}
 	persister.Logger.Debugf("Files in the directory : %s", files)
 	if len(files) > 0 {
@@ -114,7 +114,7 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 func (persister *Persister) read(transaction *Transaction) (string, *Transaction, error) {
 	locked, err := transaction.Lock.TryLock()
 	if err != nil {
-		return "", transaction, fmt.Errorf("could not lock the file : %s", err.Error())
+		return "", transaction, fmt.Errorf("could not lock the file : %v", err)
 	}
 	if !locked {
 		return "", transaction, fmt.Errorf("could not achieve the lock")
@@ -122,7 +122,7 @@ func (persister *Persister) read(transaction *Transaction) (string, *Transaction
 
 	data, err := ioutil.ReadFile(transaction.Lock.String())
 	if err != nil {
-		return "", transaction, fmt.Errorf("could not read the file : %s", err.Error())
+		return "", transaction, fmt.Errorf("could not read the file : %v", err)
 	}
 	if data == nil || string(data) == "" {
 		_ = os.Remove(transaction.Lock.String())
@@ -140,10 +140,10 @@ func New(config *File) error {
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(path, os.ModePerm)
 		if err != nil {
-			return fmt.Errorf("could not make the directory : %s", err.Error())
+			return fmt.Errorf("could not make the directory : %v", err)
 		}
 		return nil
 	} else {
-		return fmt.Errorf("error when checking the existance of the file path : %s", err.Error())
+		return fmt.Errorf("error when checking the existance of the file path : %v", err)
 	}
 }

@@ -37,7 +37,7 @@ var (
 func TestPersister_Write(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		t.Errorf("Error building logger: %s", err.Error())
+		t.Errorf("Error building logger: %v", err)
 	}
 
 	persister := &Persister{
@@ -66,7 +66,7 @@ func TestPersister_Write(t *testing.T) {
 func TestPersister_Fetch(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		t.Errorf("Error building logger: %s", err.Error())
+		t.Errorf("Error building logger: %v", err)
 	}
 
 	persister := &Persister{

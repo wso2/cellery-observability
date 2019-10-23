@@ -35,7 +35,7 @@ var (
 func TestPersister_Write(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %s", err.Error())
+		log.Fatalf("Error building logger: %v", err)
 	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -75,7 +75,7 @@ func TestPersister_Write(t *testing.T) {
 	_ = persister.Write(testStr)
 	_ = persister.Write(testStr)
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
+		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
 		t.Log("Test passed")
 	}
@@ -84,7 +84,7 @@ func TestPersister_Write(t *testing.T) {
 func TestPersister_Fetch(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %s", err.Error())
+		log.Fatalf("Error building logger: %v", err)
 	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -137,7 +137,7 @@ func TestPersister_Fetch(t *testing.T) {
 	_, _, _ = persister.Fetch()
 	_, _, _ = persister.Fetch()
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
+		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
 		t.Log("Test passed")
 	}
@@ -153,7 +153,7 @@ func TestTransaction_Commit(t *testing.T) {
 	mock.ExpectCommit().WillReturnError(fmt.Errorf("test error 1"))
 	tx, err := db.Begin()
 	if err != nil {
-		t.Logf("could not initialize the database %s", err.Error())
+		t.Logf("could not initialize the database %v", err)
 		return
 	}
 	transaction := &Transaction{Tx: tx}
@@ -161,13 +161,13 @@ func TestTransaction_Commit(t *testing.T) {
 
 	tx2, err := db.Begin()
 	if err != nil {
-		t.Logf("could not initialize the database %s", err.Error())
+		t.Logf("could not initialize the database %v", err)
 		return
 	}
 	transaction2 := &Transaction{Tx: tx2}
 	_ = transaction2.Commit()
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
+		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
 		t.Log("Test passed")
 	}
@@ -183,7 +183,7 @@ func TestTransaction_Rollback(t *testing.T) {
 	mock.ExpectRollback().WillReturnError(fmt.Errorf("test error 1"))
 	tx, err := db.Begin()
 	if err != nil {
-		t.Logf("could not initialize the database %s", err.Error())
+		t.Logf("could not initialize the database %v", err)
 		return
 	}
 	transaction := &Transaction{Tx: tx}
@@ -191,13 +191,13 @@ func TestTransaction_Rollback(t *testing.T) {
 
 	tx2, err := db.Begin()
 	if err != nil {
-		t.Logf("could not initialize the database %s", err.Error())
+		t.Logf("could not initialize the database %v", err)
 		return
 	}
 	transaction2 := &Transaction{Tx: tx2}
 	_ = transaction2.Rollback()
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
+		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
 		t.Log("Test passed")
 	}

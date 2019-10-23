@@ -120,7 +120,7 @@ var (
 func TestNewAdapter(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		t.Errorf("Error building logger: %s", err.Error())
+		t.Errorf("Error building logger: %v", err)
 	}
 	buffer := make(chan string, 100)
 	client := NewTestClient(func(req *http.Request) *http.Response {
@@ -132,7 +132,7 @@ func TestNewAdapter(t *testing.T) {
 	adapter, err := New(AdapterPort, logger, client, buffer, &Mixer{})
 	wantStr := fmt.Sprintf("[::]:%d", AdapterPort)
 	if err != nil {
-		t.Errorf("Error while creating the adapter : %s", err.Error())
+		t.Errorf("Error while creating the adapter : %v", err)
 	}
 	if adapter == nil {
 		t.Error("Adapter is nil")
@@ -141,7 +141,7 @@ func TestNewAdapter(t *testing.T) {
 			defer func() {
 				err := adapter.Close()
 				if err != nil {
-					log.Fatalf("Error closing adapter: %s", err.Error())
+					log.Fatalf("Error closing adapter: %v", err)
 				}
 			}()
 			t.Log("Success, expected address is received")
@@ -154,12 +154,12 @@ func TestNewAdapter(t *testing.T) {
 func TestHandleMetric(t *testing.T) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", AdapterPort))
 	if err != nil {
-		t.Errorf("Unable to listen on socket: %s", err.Error())
+		t.Errorf("Unable to listen on socket: %v", err)
 	}
 
 	logger, err := logging.NewLogger()
 	if err != nil {
-		t.Errorf("Error building logger: %s", err.Error())
+		t.Errorf("Error building logger: %v", err)
 	}
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
@@ -191,7 +191,7 @@ func TestHandleMetric(t *testing.T) {
 	_, err = wso2SpAdapter.HandleMetric(context.TODO(), &sampleMetricRequest)
 
 	if err != nil {
-		t.Errorf("Metric could not be handled : %s", err.Error())
+		t.Errorf("Metric could not be handled : %v", err)
 	} else {
 		t.Log("Successfully handled the metrics")
 	}

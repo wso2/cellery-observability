@@ -40,10 +40,9 @@ var (
 
 func TestNew(t *testing.T) {
 	_ = ioutil.WriteFile("./config.json", []byte(testStr), 0644)
-	res, err := New("./foo.json")
-	print(res.Store.File == nil)
+	_, err := New("./foo.json")
 	if err != nil {
-		t.Log(err.Error())
+		t.Log(err)
 	}
 	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
@@ -53,7 +52,7 @@ func TestNew(t *testing.T) {
 	_ = ioutil.WriteFile("./config.json", []byte(""), 0644)
 	_, err = New("./config.json")
 	if err != nil {
-		t.Log(err.Error())
+		t.Log(err)
 	}
 	files, err = filepath.Glob("./*.json")
 	for _, fname := range files {
@@ -62,6 +61,6 @@ func TestNew(t *testing.T) {
 
 	_, err = New("./config.json")
 	if err != nil {
-		t.Log(err.Error())
+		t.Log(err)
 	}
 }

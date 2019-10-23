@@ -83,7 +83,7 @@ func (mockPersister *MockErr) Fetch() (string, store.Transaction, error) {
 func TestPublisher_Run(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		t.Errorf("Error building logger: %s", err.Error())
+		t.Errorf("Error building logger: %v", err)
 	}
 	_ = ioutil.WriteFile("test.txt", []byte(testStr), 0644)
 	stopCh := make(chan struct{})

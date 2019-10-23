@@ -50,7 +50,7 @@ type (
 func (transaction *Transaction) Commit() error {
 	e := transaction.Tx.Commit()
 	if e != nil {
-		return fmt.Errorf("could not commit the sql transaction : %s", e.Error())
+		return fmt.Errorf("could not commit the sql transaction : %v", e)
 	}
 	return nil
 }
@@ -58,7 +58,7 @@ func (transaction *Transaction) Commit() error {
 func (transaction *Transaction) Rollback() error {
 	e := transaction.Tx.Rollback()
 	if e != nil {
-		return fmt.Errorf("could not rollback the sql transaction : %s", e.Error())
+		return fmt.Errorf("could not rollback the sql transaction : %v", e)
 	}
 	return nil
 }
@@ -67,12 +67,12 @@ func (persister *Persister) Write(str string) error {
 	err := persister.doTransaction(func(tx *sql.Tx) error {
 		_, err := tx.Exec("INSERT INTO persistence(data) VALUES (?)", str)
 		if err != nil {
-			return fmt.Errorf("could not insert the metrics to the database : %s", err.Error())
+			return fmt.Errorf("could not insert the metrics to the database : %v", err)
 		}
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("could not store the metrics in the database, restoring... => error : %s", err.Error())
+		return fmt.Errorf("could not store the metrics in the database, restoring... => error : %v", err)
 	}
 	return nil
 }
@@ -81,16 +81,16 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	tx, err := persister.Db.Begin()
 	defer persister.catchPanic(tx)
 	if err != nil {
-		return "", &Transaction{}, fmt.Errorf("could not begin the transaction : %s", err.Error())
+		return "", &Transaction{}, fmt.Errorf("could not begin the transaction : %v", err)
 	}
 	rows, err := tx.Query("SELECT id,data FROM persistence LIMIT 1 FOR UPDATE")
 	if err != nil {
-		return "", &Transaction{}, fmt.Errorf("could not fetch rows from the database : %s", err.Error())
+		return "", &Transaction{}, fmt.Errorf("could not fetch rows from the database : %v", err)
 	}
 	defer func() {
 		err = rows.Close()
 		if err != nil {
-			persister.Logger.Warnf("Could not close the Rows : %s", err.Error())
+			persister.Logger.Warnf("Could not close the Rows : %v", err)
 		}
 	}()
 	jsonArr := ""
@@ -103,7 +103,7 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	}
 	_, err = tx.Exec("DELETE FROM persistence WHERE id = ?", id)
 	if err != nil {
-		return "", &Transaction{}, fmt.Errorf("could not delete the Rows : %s", err.Error())
+		return "", &Transaction{}, fmt.Errorf("could not delete the Rows : %v", err)
 	}
 	transaction := &Transaction{Tx: tx}
 	return jsonArr, transaction, nil
@@ -114,7 +114,7 @@ func (persister *Persister) catchPanic(tx *sql.Tx) {
 		persister.Logger.Infof("There was a panic in the process : %s", p)
 		e := tx.Rollback()
 		if e != nil {
-			persister.Logger.Warnf("Could not rollback the transaction : %s", e.Error())
+			persister.Logger.Warnf("Could not rollback the transaction : %v", e)
 		}
 		panic(p)
 	}
@@ -123,25 +123,25 @@ func (persister *Persister) catchPanic(tx *sql.Tx) {
 func (persister *Persister) doTransaction(fn func(*sql.Tx) error) (err error) {
 	tx, err := persister.Db.Begin()
 	if err != nil {
-		return fmt.Errorf("could not begin the transaction : %s", err.Error())
+		return fmt.Errorf("could not begin the transaction : %v", err)
 	}
 	defer func() {
 		if p := recover(); p != nil {
 			e := tx.Rollback()
 			if e != nil {
-				persister.Logger.Warnf("Could not rollback the transaction : %s", e.Error())
+				persister.Logger.Warnf("Could not rollback the transaction : %v", e)
 			}
 			panic(p)
 		} else if err != nil {
 			e := tx.Rollback()
 			if e != nil {
-				persister.Logger.Warnf("Could not rollback the transaction : %s", e.Error())
+				persister.Logger.Warnf("Could not rollback the transaction : %v", e)
 				err = e
 			}
 		} else {
 			e := tx.Commit()
 			if e != nil {
-				persister.Logger.Warnf("Could not commit the transaction : %s", e.Error())
+				persister.Logger.Warnf("Could not commit the transaction : %v", e)
 				err = e
 			}
 		}
@@ -162,7 +162,7 @@ func New(dbConfig *Database) (*sql.DB, error) {
 	}).FormatDSN()
 	db, err := sql.Open("mysql", dataSourceName)
 	if err != nil {
-		return nil, fmt.Errorf("could not connect to the MySQL database : %s", err.Error())
+		return nil, fmt.Errorf("could not connect to the MySQL database : %v", err)
 	}
 	if db == nil {
 		return nil, fmt.Errorf("could not create the db struct")
@@ -170,7 +170,7 @@ func New(dbConfig *Database) (*sql.DB, error) {
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `persistence` (`id` int NOT NULL AUTO_INCREMENT, `data`" +
 		" longtext NOT NULL, PRIMARY KEY (`id`))")
 	if err != nil {
-		return nil, fmt.Errorf("could not create the table : %s", err.Error())
+		return nil, fmt.Errorf("could not create the table : %v", err)
 	}
 	return db, nil
 }

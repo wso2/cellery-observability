@@ -183,7 +183,7 @@ func getServerTLSOption(adapterCertificate, adapterPrivateKey, caCertificate str
 	certPool := x509.NewCertPool()
 	bytesArray, err := ioutil.ReadFile(caCertificate)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read client ca cert: %s", err)
+		return nil, fmt.Errorf("failed to read client ca cert: %v", err)
 	}
 
 	ok := certPool.AppendCertsFromPEM(bytesArray)

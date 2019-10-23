@@ -69,7 +69,7 @@ func (mockPersisterErr *MockPersisterErr) Fetch() (string, store.Transaction, er
 func TestWriter_Run(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		t.Errorf("Error building logger: %s", err.Error())
+		t.Errorf("Error building logger: %v", err)
 	}
 	stopCh := make(chan struct{})
 	buffer := make(chan string, 10)

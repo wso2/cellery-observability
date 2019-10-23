@@ -51,12 +51,12 @@ type (
 func New(configFilePath string) (*Config, error) {
 	data, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("could not read the config file : %s", err.Error())
+		return nil, fmt.Errorf("could not read the config file : %v", err)
 	}
 	config := &Config{}
 	err = json.Unmarshal(data, config)
 	if err != nil {
-		return nil, fmt.Errorf("could not unmarshal the config file : %s", err.Error())
+		return nil, fmt.Errorf("could not unmarshal the config file : %v", err)
 	}
 	return config, nil
 }

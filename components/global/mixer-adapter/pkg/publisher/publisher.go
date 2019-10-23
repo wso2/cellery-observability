@@ -61,21 +61,21 @@ func (publisher *Publisher) execute() {
 	for {
 		str, transaction, err := publisher.Persister.Fetch()
 		if err != nil {
-			publisher.Logger.Errorf("Failed to fetch the metrics : %s", err.Error())
+			publisher.Logger.Errorf("Failed to fetch the metrics : %v", err)
 			return
 		}
 		if str != "" {
 			err = publisher.publish(str)
 			if err != nil {
-				publisher.Logger.Errorf("Failed to publish the metrics : %s", err.Error())
+				publisher.Logger.Errorf("Failed to publish the metrics : %v", err)
 				err = transaction.Rollback()
 				if err != nil {
-					publisher.Logger.Errorf("Failed to rollback the transaction : %s", err.Error())
+					publisher.Logger.Errorf("Failed to rollback the transaction : %v", err)
 				}
 			} else {
 				err = transaction.Commit()
 				if err != nil {
-					publisher.Logger.Errorf("Failed to commit the transaction : %s", err.Error())
+					publisher.Logger.Errorf("Failed to commit the transaction : %v", err)
 				}
 			}
 		} else {
@@ -88,14 +88,14 @@ func (publisher *Publisher) publish(jsonArr string) error {
 	var buf bytes.Buffer
 	g := gzip.NewWriter(&buf)
 	if _, err := g.Write([]byte(jsonArr)); err != nil {
-		return fmt.Errorf("could not write to buffer : %s", err.Error())
+		return fmt.Errorf("could not write to buffer : %v", err)
 	}
 	if err := g.Close(); err != nil {
-		return fmt.Errorf("could not close the gzip writer : %s", err.Error())
+		return fmt.Errorf("could not close the gzip writer : %v", err)
 	}
 	req, err := http.NewRequest("POST", publisher.SpServerUrl, &buf)
 	if err != nil {
-		return fmt.Errorf("could not make a new request : %s", err.Error())
+		return fmt.Errorf("could not make a new request : %v", err)
 	}
 
 	client := publisher.HttpClient
@@ -103,7 +103,7 @@ func (publisher *Publisher) publish(jsonArr string) error {
 	req.Header.Set("Content-Encoding", "gzip")
 	res, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("could not receive a response from the server : %s", err.Error())
+		return fmt.Errorf("could not receive a response from the server : %v", err)
 	}
 	if res != nil && res.StatusCode != 200 {
 		return fmt.Errorf("could not receive a good response code from the server, received response code : %d",
