@@ -61,6 +61,7 @@ func (publisher *Publisher) execute() {
 	for {
 		str, transaction, err := publisher.Persister.Fetch()
 		if err != nil {
+			_ = transaction.Rollback()
 			publisher.Logger.Errorf("Failed to fetch the metrics : %v", err)
 			return
 		}
@@ -79,6 +80,7 @@ func (publisher *Publisher) execute() {
 				}
 			}
 		} else {
+			_ = transaction.Rollback()
 			return
 		}
 	}

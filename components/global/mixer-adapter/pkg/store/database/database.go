@@ -72,7 +72,7 @@ func (persister *Persister) Write(str string) error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("could not store the metrics in the database, restoring... => error : %v", err)
+		return fmt.Errorf("could not store the metrics in the database : %v", err)
 	}
 	return nil
 }
@@ -83,9 +83,10 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	if err != nil {
 		return "", &Transaction{}, fmt.Errorf("could not begin the transaction : %v", err)
 	}
+	transaction := &Transaction{Tx: tx}
 	rows, err := tx.Query("SELECT id,data FROM persistence LIMIT 1 FOR UPDATE")
 	if err != nil {
-		return "", &Transaction{}, fmt.Errorf("could not fetch rows from the database : %v", err)
+		return "", transaction, fmt.Errorf("could not fetch rows from the database : %v", err)
 	}
 	defer func() {
 		err = rows.Close()
@@ -99,13 +100,12 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 		err = rows.Scan(&id, &jsonArr)
 	}
 	if jsonArr == "" || jsonArr == "[]" {
-		return "", &Transaction{}, nil
+		return "", transaction, nil
 	}
 	_, err = tx.Exec("DELETE FROM persistence WHERE id = ?", id)
 	if err != nil {
-		return "", &Transaction{}, fmt.Errorf("could not delete the Rows : %v", err)
+		return "", transaction, fmt.Errorf("could not delete the Rows : %v", err)
 	}
-	transaction := &Transaction{Tx: tx}
 	return jsonArr, transaction, nil
 }
 
@@ -125,6 +125,7 @@ func (persister *Persister) doTransaction(fn func(*sql.Tx) error) (err error) {
 	if err != nil {
 		return fmt.Errorf("could not begin the transaction : %v", err)
 	}
+	err = fn(tx)
 	defer func() {
 		if p := recover(); p != nil {
 			e := tx.Rollback()
@@ -146,7 +147,6 @@ func (persister *Persister) doTransaction(fn func(*sql.Tx) error) (err error) {
 			}
 		}
 	}()
-	err = fn(tx)
 	return err
 }
 
