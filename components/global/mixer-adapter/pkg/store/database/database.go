@@ -30,8 +30,8 @@ import (
 
 type (
 	Persister struct {
-		Logger *zap.SugaredLogger
-		Db     *sql.DB
+		logger *zap.SugaredLogger
+		db     *sql.DB
 	}
 	Transaction struct {
 		Tx *sql.Tx
@@ -78,7 +78,7 @@ func (persister *Persister) Write(str string) error {
 }
 
 func (persister *Persister) Fetch() (string, store.Transaction, error) {
-	tx, err := persister.Db.Begin()
+	tx, err := persister.db.Begin()
 	defer persister.catchPanic(tx)
 	if err != nil {
 		return "", &Transaction{}, fmt.Errorf("could not begin the transaction : %v", err)
@@ -91,7 +91,7 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 	defer func() {
 		err = rows.Close()
 		if err != nil {
-			persister.Logger.Warnf("Could not close the Rows : %v", err)
+			persister.logger.Warnf("Could not close the Rows : %v", err)
 		}
 	}()
 	jsonArr := ""
@@ -111,17 +111,17 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 
 func (persister *Persister) catchPanic(tx *sql.Tx) {
 	if p := recover(); p != nil {
-		persister.Logger.Infof("There was a panic in the process : %s", p)
+		persister.logger.Infof("There was a panic in the process : %s", p)
 		e := tx.Rollback()
 		if e != nil {
-			persister.Logger.Warnf("Could not rollback the transaction : %v", e)
+			persister.logger.Warnf("Could not rollback the transaction : %v", e)
 		}
 		panic(p)
 	}
 }
 
 func (persister *Persister) doTransaction(fn func(*sql.Tx) error) (err error) {
-	tx, err := persister.Db.Begin()
+	tx, err := persister.db.Begin()
 	if err != nil {
 		return fmt.Errorf("could not begin the transaction : %v", err)
 	}
@@ -130,19 +130,19 @@ func (persister *Persister) doTransaction(fn func(*sql.Tx) error) (err error) {
 		if p := recover(); p != nil {
 			e := tx.Rollback()
 			if e != nil {
-				persister.Logger.Warnf("Could not rollback the transaction : %v", e)
+				persister.logger.Warnf("Could not rollback the transaction : %v", e)
 			}
 			panic(p)
 		} else if err != nil {
 			e := tx.Rollback()
 			if e != nil {
-				persister.Logger.Warnf("Could not rollback the transaction : %v", e)
+				persister.logger.Warnf("Could not rollback the transaction : %v", e)
 				err = e
 			}
 		} else {
 			e := tx.Commit()
 			if e != nil {
-				persister.Logger.Warnf("Could not commit the transaction : %v", e)
+				persister.logger.Warnf("Could not commit the transaction : %v", e)
 				err = e
 			}
 		}
@@ -150,7 +150,7 @@ func (persister *Persister) doTransaction(fn func(*sql.Tx) error) (err error) {
 	return err
 }
 
-func New(dbConfig *Database) (*sql.DB, error) {
+func NewPersister(dbConfig *Database, logger *zap.SugaredLogger) (*Persister, error) {
 	dataSourceName := (&mysql.Config{
 		User:                 dbConfig.Username,
 		Passwd:               dbConfig.Password,
@@ -172,5 +172,9 @@ func New(dbConfig *Database) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not create the table : %v", err)
 	}
-	return db, nil
+	ps := &Persister{
+		db:     db,
+		logger: logger,
+	}
+	return ps, nil
 }

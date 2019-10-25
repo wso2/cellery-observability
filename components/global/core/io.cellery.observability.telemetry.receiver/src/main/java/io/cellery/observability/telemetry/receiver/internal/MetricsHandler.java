@@ -49,7 +49,7 @@ public class MetricsHandler implements HttpHandler {
                     BufferedReader bf = new BufferedReader(new InputStreamReader(gis, StandardCharsets.UTF_8))) {
                     String json = IOUtils.toString(bf);
                     if (log.isDebugEnabled()) {
-                        log.debug("Received a metric from the adapter : " + json);
+                        log.debug("Received metrics from the adapter : " + json);
                     }
                     sourceEventListener.onEvent(json, new String[0]);
                     httpExchange.sendResponseHeaders(200, -1);

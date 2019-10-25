@@ -131,19 +131,23 @@ func (persister *Persister) read(transaction *Transaction) (string, *Transaction
 	return string(data), transaction, nil
 }
 
-func New(config *File) error {
+func NewPersister(config *File, logger *zap.SugaredLogger) (*Persister, error) {
 	path := config.Path
+	ps := &Persister{
+		Logger:    logger,
+		Directory: path,
+	}
 	_, err := os.Stat(path)
 	if err == nil {
-		return nil
+		return ps, nil
 	}
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(path, os.ModePerm)
 		if err != nil {
-			return fmt.Errorf("could not make the directory : %v", err)
+			return nil, fmt.Errorf("could not make the directory : %v", err)
 		}
-		return nil
+		return ps, nil
 	} else {
-		return fmt.Errorf("error when checking the existance of the file path : %v", err)
+		return nil, fmt.Errorf("error when checking the existance of the file path : %v", err)
 	}
 }

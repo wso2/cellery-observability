@@ -135,20 +135,17 @@ func TestNewAdapter(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %v", err)
 	}
-	if adapter == nil {
-		t.Error("Adapter is nil")
+
+	if adapter.Addr() == wantStr {
+		defer func() {
+			err := adapter.Close()
+			if err != nil {
+				log.Fatalf("Error closing adapter: %v", err)
+			}
+		}()
+		t.Log("Success, expected address is received")
 	} else {
-		if adapter.Addr() == wantStr {
-			defer func() {
-				err := adapter.Close()
-				if err != nil {
-					log.Fatalf("Error closing adapter: %v", err)
-				}
-			}()
-			t.Log("Success, expected address is received")
-		} else {
-			t.Error("Fail, Expected address is not received")
-		}
+		t.Error("Fail, Expected address is not received")
 	}
 }
 

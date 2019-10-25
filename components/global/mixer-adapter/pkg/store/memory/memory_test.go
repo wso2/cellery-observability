@@ -36,8 +36,8 @@ func TestFetchWithDataInBuffer(t *testing.T) {
 	}
 	buffer := make(chan string, 10)
 	persister := &Persister{
-		Logger: logger,
-		Buffer: buffer,
+		logger: logger,
+		buffer: buffer,
 	}
 	buffer <- testStr
 	_, _, _ = persister.Fetch()
@@ -56,8 +56,8 @@ func TestFetchWithoutDataInBuffer(t *testing.T) {
 	}
 	buffer := make(chan string, 10)
 	persister := &Persister{
-		Logger: logger,
-		Buffer: buffer,
+		logger: logger,
+		buffer: buffer,
 	}
 	_, _, err = persister.Fetch()
 	if err == nil {
@@ -74,8 +74,8 @@ func TestWrite(t *testing.T) {
 	}
 	buffer := make(chan string, 10)
 	persister := &Persister{
-		Logger: logger,
-		Buffer: buffer,
+		logger: logger,
+		buffer: buffer,
 	}
 	_ = persister.Write(testStr)
 	if len(buffer) == 1 {
@@ -98,4 +98,12 @@ func TestRollback(t *testing.T) {
 	}
 	_ = transaction.Commit()
 	t.Log("Test passed")
+}
+
+func TestNewPersister(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	_, _ = NewPersister(10, 100, logger)
 }

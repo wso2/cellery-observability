@@ -58,16 +58,22 @@ func main() {
 		}
 	}()
 
-	configuration, err := config.New(os.Getenv(configFilePathEnv))
-	if err != nil {
-		logger.Errorf("Could not get the configuration : %v", err)
+	configFilePath := os.Getenv(configFilePathEnv)
+	var configuration *config.Config
+	if configFilePath != "" {
+		configuration, err = config.New(os.Getenv(configFilePathEnv))
+		if err != nil {
+			logger.Fatalf("Could not get configurations from the config file path : %v", err)
+		}
+	} else {
+		logger.Info("Config file path is not given. Going for the default path.")
 		configuration, err = config.New(defaultConfigFilePath)
 		if err != nil {
-			logger.Fatalf("Could not get configuration from the default config file path : %v", err)
+			logger.Fatalf("Could not get configurations from the default config file path : %v", err)
 		}
 	}
 
-	//Initializing variables from the config file
+	// Initializing variables from the config file
 	advancedConfig := configuration.Advanced
 	bufferTimeoutSeconds := advancedConfig.BufferTimeoutSeconds
 	maxMetricsCount := advancedConfig.MaxRecordsForSingleWrite
@@ -81,10 +87,6 @@ func main() {
 	if err != nil {
 		logger.Fatalf("unable to start the server: %v", err)
 	}
-	if spAdapter == nil {
-		logger.Fatal("adapter.New returned a null struct")
-		return
-	}
 	go spAdapter.Run(errCh)
 
 	var ps store.Persister
@@ -96,34 +98,24 @@ func main() {
 		if metricsStore.File.Path == "" {
 			logger.Fatal("Given file path is empty")
 		}
-		err = file.New(configuration.Store.File)
+		ps, err = file.NewPersister(configuration.Store.File, logger)
 		if err != nil {
-			logger.Fatalf("could not make the directory in the given path %s : error %v",
+			logger.Fatalf("Could not get the persister from the file package : error %v",
 				configuration.Store.File.Path, err)
 		}
-		ps = &file.Persister{
-			Logger:    logger,
-			Directory: metricsStore.File.Path,
-		}
 	} else if metricsStore.Database != nil {
-		// Db will be used for persistence
+		// Database will be used for persistence
 		logger.Info("Enabling database persistence")
-		db, err := database.New(configuration.Store.Database)
+		ps, err = database.NewPersister(configuration.Store.Database, logger)
 		if err != nil {
-			logger.Fatalf("Could not connect to the MySQL database : %v", err)
-		} else {
-			ps = &database.Persister{
-				Logger: logger,
-				Db:     db,
-			}
+			logger.Fatalf("Could not get the persister from the database package : %v", err)
 		}
 	} else {
 		// In memory persistence
 		logger.Info("Enabling in memory persistence")
-		inMemoryBuffer := make(chan string, maxMetricsCount*bufferSizeFactor)
-		ps = &memory.Persister{
-			Logger: logger,
-			Buffer: inMemoryBuffer,
+		ps, err = memory.NewPersister(maxMetricsCount, bufferSizeFactor, logger)
+		if err != nil {
+			logger.Fatalf("Could not get the persister from the memory package : %v", err)
 		}
 	}
 

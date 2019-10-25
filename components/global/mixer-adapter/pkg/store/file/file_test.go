@@ -170,13 +170,21 @@ func TestRollback(t *testing.T) {
 
 func TestNewMethodWithoutDir(t *testing.T) {
 	config := &File{Path: "./testDir"}
-	_ = New(config)
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	_, _ = NewPersister(config, logger)
 	_ = os.RemoveAll(config.Path)
 }
 
 func TestNewMethodWithDir(t *testing.T) {
 	config := &File{Path: "./testDir"}
 	_ = os.MkdirAll(config.Path, os.ModePerm)
-	_ = New(config)
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	_, _ = NewPersister(config, logger)
 	_ = os.RemoveAll(config.Path)
 }

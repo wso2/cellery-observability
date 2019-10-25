@@ -28,8 +28,8 @@ import (
 
 type (
 	Persister struct {
-		Logger *zap.SugaredLogger
-		Buffer chan string
+		logger *zap.SugaredLogger
+		buffer chan string
 	}
 	Transaction struct {
 		Element string
@@ -49,8 +49,8 @@ func (transaction *Transaction) Rollback() error {
 }
 
 func (persister *Persister) Fetch() (string, store.Transaction, error) {
-	if len(persister.Buffer) > 0 {
-		str := <-persister.Buffer
+	if len(persister.buffer) > 0 {
+		str := <-persister.buffer
 		transaction := &Transaction{Element: str}
 		return str, transaction, nil
 	} else {
@@ -59,6 +59,15 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 }
 
 func (persister *Persister) Write(str string) error {
-	persister.Buffer <- str
+	persister.buffer <- str
 	return nil
+}
+
+func NewPersister(maxMetricsCount int, bufferSizeFactor int, logger *zap.SugaredLogger) (*Persister, error) {
+	inMemoryBuffer := make(chan string, maxMetricsCount*bufferSizeFactor)
+	ps := &Persister{
+		logger: logger,
+		buffer: inMemoryBuffer,
+	}
+	return ps, nil
 }

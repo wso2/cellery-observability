@@ -43,8 +43,8 @@ func TestWriteWithTransactionFailure(t *testing.T) {
 	}
 	mock.ExpectBegin().WillReturnError(fmt.Errorf("test error 1"))
 	persister := &Persister{
-		Logger: logger,
-		Db:     db,
+		logger: logger,
+		db:     db,
 	}
 	_ = persister.Write(testStr)
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -67,8 +67,8 @@ func TestWriteWithInsertionFailure(t *testing.T) {
 	mock.ExpectExec("^INSERT INTO persistence(data)*").WillReturnError(fmt.Errorf("test error 2"))
 	mock.ExpectRollback()
 	persister := &Persister{
-		Logger: logger,
-		Db:     db,
+		logger: logger,
+		db:     db,
 	}
 	_ = persister.Write(testStr)
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -91,8 +91,8 @@ func TestWriteWithRollbackFailure(t *testing.T) {
 	mock.ExpectExec("^INSERT INTO persistence(data)*").WillReturnError(fmt.Errorf("test error 3"))
 	mock.ExpectRollback().WillReturnError(fmt.Errorf("test error 4"))
 	persister := &Persister{
-		Logger: logger,
-		Db:     db,
+		logger: logger,
+		db:     db,
 	}
 	_ = persister.Write(testStr)
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -115,8 +115,8 @@ func TestWriteWithCommitFailure(t *testing.T) {
 	mock.ExpectExec("^INSERT INTO persistence(data)*").WillReturnResult(sqlmock.NewResult(2, 2))
 	mock.ExpectCommit().WillReturnError(fmt.Errorf("test error 5"))
 	persister := &Persister{
-		Logger: logger,
-		Db:     db,
+		logger: logger,
+		db:     db,
 	}
 	_ = persister.Write(testStr)
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -139,8 +139,8 @@ func TestWriteWithSuccessfulTransaction(t *testing.T) {
 	mock.ExpectExec("^INSERT INTO persistence(data)*").WillReturnResult(sqlmock.NewResult(2, 2))
 	mock.ExpectCommit()
 	persister := &Persister{
-		Logger: logger,
-		Db:     db,
+		logger: logger,
+		db:     db,
 	}
 	_ = persister.Write(testStr)
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -161,8 +161,8 @@ func TestFetchWithTransactionFailure(t *testing.T) {
 	}
 	mock.ExpectBegin().WillReturnError(fmt.Errorf("test error 1"))
 	persister := &Persister{
-		Logger: logger,
-		Db:     db,
+		logger: logger,
+		db:     db,
 	}
 	_, _, _ = persister.Fetch()
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -185,8 +185,8 @@ func TestFetchWithSelectionFailure(t *testing.T) {
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
 		WillReturnError(fmt.Errorf("test error 2"))
 	persister := &Persister{
-		Logger: logger,
-		Db:     db,
+		logger: logger,
+		db:     db,
 	}
 	_, _, _ = persister.Fetch()
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -214,8 +214,8 @@ func TestFetchWithDeletionFailure(t *testing.T) {
 	mock.ExpectExec("^DELETE FROM persistence*").
 		WillReturnError(fmt.Errorf("test error 3"))
 	persister := &Persister{
-		Logger: logger,
-		Db:     db,
+		logger: logger,
+		db:     db,
 	}
 	_, _, _ = persister.Fetch()
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -243,8 +243,8 @@ func TestFetchWithSuccessfulFetch(t *testing.T) {
 	mock.ExpectExec("^DELETE FROM persistence*").
 		WillReturnResult(sqlmock.NewResult(2, 2))
 	persister := &Persister{
-		Logger: logger,
-		Db:     db,
+		logger: logger,
+		db:     db,
 	}
 	_, _, _ = persister.Fetch()
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -268,8 +268,8 @@ func TestFetchWithEmptyRows(t *testing.T) {
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
 		WillReturnRows(rows)
 	persister := &Persister{
-		Logger: logger,
-		Db:     db,
+		logger: logger,
+		db:     db,
 	}
 	_, _, _ = persister.Fetch()
 	if err := mock.ExpectationsWereMet(); err != nil {
