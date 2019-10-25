@@ -34,8 +34,8 @@ import (
 
 type (
 	Persister struct {
-		Logger    *zap.SugaredLogger
-		Directory string
+		logger    *zap.SugaredLogger
+		directory string
 	}
 	Transaction struct {
 		Lock *flock.Flock
@@ -63,7 +63,7 @@ func (transaction *Transaction) Rollback() error {
 
 func (persister *Persister) Write(str string) error {
 	fileLock := persister.createFile()
-	persister.Logger.Debugf("Created a new file : %s", fileLock.String())
+	persister.logger.Debugf("Created a new file : %s", fileLock.String())
 	locked, err := fileLock.TryLock()
 	if err != nil {
 		return fmt.Errorf("could not lock the created file : %v", err)
@@ -83,24 +83,24 @@ func (persister *Persister) Write(str string) error {
 
 func (persister *Persister) createFile() *flock.Flock {
 	uuid := xid.New().String()
-	fileLock := flock.New(fmt.Sprintf("%s/%s.json", persister.Directory, uuid))
+	fileLock := flock.New(fmt.Sprintf("%s/%s.json", persister.directory, uuid))
 	return fileLock
 }
 
 func (persister *Persister) unlock(flock *flock.Flock) {
 	err := flock.Unlock()
 	if err != nil {
-		persister.Logger.Warn("Could not unlock the file")
+		persister.logger.Warn("Could not unlock the file")
 	}
 }
 
 func (persister *Persister) Fetch() (string, store.Transaction, error) {
-	files, err := filepath.Glob(persister.Directory + "/*.json")
+	files, err := filepath.Glob(persister.directory + "/*.json")
 	if err != nil {
-		return "", &Transaction{}, fmt.Errorf("could not read the given directory %s : %v", persister.Directory,
+		return "", &Transaction{}, fmt.Errorf("could not read the given directory %s : %v", persister.directory,
 			err)
 	}
-	persister.Logger.Debugf("Files in the directory : %s", files)
+	persister.logger.Debugf("Files in the directory : %s", files)
 	if len(files) > 0 {
 		transaction := &Transaction{
 			Lock: flock.New(files[rand.Intn(len(files))]),
@@ -125,7 +125,8 @@ func (persister *Persister) read(transaction *Transaction) (string, *Transaction
 		return "", transaction, fmt.Errorf("could not read the file : %v", err)
 	}
 	if data == nil || string(data) == "" {
-		_ = os.Remove(transaction.Lock.String())
+		err = os.Remove(transaction.Lock.String())
+		persister.logger.Debugf("Could not remove the empty file : %v", err)
 		return "", transaction, fmt.Errorf("file is empty, hence removed")
 	}
 	return string(data), transaction, nil
@@ -134,8 +135,8 @@ func (persister *Persister) read(transaction *Transaction) (string, *Transaction
 func NewPersister(config *File, logger *zap.SugaredLogger) (*Persister, error) {
 	path := config.Path
 	ps := &Persister{
-		Logger:    logger,
-		Directory: path,
+		logger:    logger,
+		directory: path,
 	}
 	_, err := os.Stat(path)
 	if err == nil {

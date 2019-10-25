@@ -61,8 +61,9 @@ func (publisher *Publisher) execute() {
 	for {
 		str, transaction, err := publisher.Persister.Fetch()
 		if err != nil {
-			_ = transaction.Rollback()
 			publisher.Logger.Errorf("Failed to fetch the metrics : %v", err)
+			err = transaction.Rollback()
+			publisher.Logger.Debugf("Could not rollback the transaction : %v", err)
 			return
 		}
 		if str != "" {
@@ -80,7 +81,8 @@ func (publisher *Publisher) execute() {
 				}
 			}
 		} else {
-			_ = transaction.Rollback()
+			err = transaction.Rollback()
+			publisher.Logger.Debugf("Could not rollback the transaction : %v", err)
 			return
 		}
 	}

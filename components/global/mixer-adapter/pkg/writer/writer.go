@@ -44,7 +44,7 @@ func (writer *Writer) Run(stopCh <-chan struct{}) {
 	for {
 		select {
 		case <-stopCh:
-			writer.cleanBuffer()
+			writer.flushBuffer()
 			return
 		default:
 			if writer.shouldWrite() {
@@ -66,7 +66,7 @@ func (writer *Writer) write() {
 	}
 }
 
-func (writer *Writer) cleanBuffer() {
+func (writer *Writer) flushBuffer() {
 	for {
 		if len(writer.Buffer) == 0 {
 			return

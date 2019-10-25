@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	testStr = "{\"contextReporterKind\":\"inbound\", \"destinationUID\":\"kubernetes://istio-policy-74d6c8b4d5-mmr49.istio-system\", \"requestID\":\"6e544e82-2a0c-4b83-abcc-0f62b89cdf3f\", \"requestMethod\":\"POST\", \"requestPath\":\"/istio.mixer.v1.Mixer/Check\", \"requestTotalSize\":\"2748\", \"responseCode\":\"200\", \"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":\"b55a0f7f20d36e49f8612bac4311791d\"}"
+	testStr = "[{\"contextReporterKind\":\"inbound\", \"destinationUID\":\"kubernetes://istio-policy-74d6c8b4d5-mmr49.istio-system\", \"requestID\":\"6e544e82-2a0c-4b83-abcc-0f62b89cdf3f\", \"requestMethod\":\"POST\", \"requestPath\":\"/istio.mixer.v1.Mixer/Check\", \"requestTotalSize\":\"2748\", \"responseCode\":\"200\", \"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":\"b55a0f7f20d36e49f8612bac4311791d\"}]"
 )
 
 func TestWriteWithTransactionFailure(t *testing.T) {
@@ -46,7 +46,12 @@ func TestWriteWithTransactionFailure(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	_ = persister.Write(testStr)
+	err = persister.Write(testStr)
+	if err != nil && err.Error() == "could not store the metrics in the database : could not begin the transaction : test error 1" {
+		t.Log("Exact error received")
+	} else {
+		t.Error("Expected error has not been received")
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -70,7 +75,12 @@ func TestWriteWithInsertionFailure(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	_ = persister.Write(testStr)
+	err = persister.Write(testStr)
+	if err != nil && err.Error() == "could not store the metrics in the database : could not insert the metrics to the database : test error 2" {
+		t.Log("Exact error received")
+	} else {
+		t.Error("Expected error has not been received")
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -94,7 +104,12 @@ func TestWriteWithRollbackFailure(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	_ = persister.Write(testStr)
+	err = persister.Write(testStr)
+	if err != nil && err.Error() == "could not store the metrics in the database : test error 4" {
+		t.Log("Exact error received")
+	} else {
+		t.Error("Expected error has not been received")
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -118,7 +133,12 @@ func TestWriteWithCommitFailure(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	_ = persister.Write(testStr)
+	err = persister.Write(testStr)
+	if err != nil && err.Error() == "could not store the metrics in the database : test error 5" {
+		t.Log("Exact error received")
+	} else {
+		t.Error("Expected error has not been received")
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -142,7 +162,10 @@ func TestWriteWithSuccessfulTransaction(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	_ = persister.Write(testStr)
+	err = persister.Write(testStr)
+	if err != nil {
+		t.Errorf("An unexpected error received : %v", err)
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -164,7 +187,15 @@ func TestFetchWithTransactionFailure(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	_, _, _ = persister.Fetch()
+	str, _, err := persister.Fetch()
+	if err != nil && err.Error() == "could not begin the transaction : test error 1" {
+		t.Log("Exact error received")
+	} else {
+		t.Error("Expected error has not been received")
+	}
+	if str != "" {
+		t.Errorf("Expected an empty string, but received : %s", str)
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -188,7 +219,15 @@ func TestFetchWithSelectionFailure(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	_, _, _ = persister.Fetch()
+	str, _, err := persister.Fetch()
+	if err != nil && err.Error() == "could not fetch rows from the database : test error 2" {
+		t.Log("Exact error received")
+	} else {
+		t.Error("Expected error has not been received")
+	}
+	if str != "" {
+		t.Errorf("Expected an empty string, but received : %s", str)
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -217,7 +256,15 @@ func TestFetchWithDeletionFailure(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	_, _, _ = persister.Fetch()
+	str, _, err := persister.Fetch()
+	if err != nil && err.Error() == "could not delete the Rows : test error 3" {
+		t.Log("Exact error received")
+	} else {
+		t.Error("Expected error has not been received")
+	}
+	if str != "" {
+		t.Errorf("Expected an empty string, but received : %s", str)
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -235,8 +282,7 @@ func TestFetchWithSuccessfulFetch(t *testing.T) {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	rows := sqlmock.NewRows([]string{"id", "data"}).
-		AddRow(1, testStr).
-		AddRow(2, testStr)
+		AddRow(1, testStr)
 	mock.ExpectBegin()
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
 		WillReturnRows(rows)
@@ -246,7 +292,13 @@ func TestFetchWithSuccessfulFetch(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	_, _, _ = persister.Fetch()
+	str, _, err := persister.Fetch()
+	if err != nil {
+		t.Errorf("An unexpected error received : %v", err)
+	}
+	if str != testStr {
+		t.Errorf("Expected an empty string, but received : %s", str)
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -271,7 +323,13 @@ func TestFetchWithEmptyRows(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	_, _, _ = persister.Fetch()
+	str, _, err := persister.Fetch()
+	if err != nil {
+		t.Errorf("An unexpected error received : %v", err)
+	}
+	if str != "" {
+		t.Errorf("Expected an empty string, but received : %s", str)
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -293,7 +351,12 @@ func TestCommitWithError(t *testing.T) {
 		return
 	}
 	transaction := &Transaction{Tx: tx}
-	_ = transaction.Commit()
+	err = transaction.Commit()
+	if err != nil && err.Error() == "could not commit the sql transaction : test error 1" {
+		t.Log("Exact error received")
+	} else {
+		t.Error("Expected error has not been received")
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -315,7 +378,10 @@ func TestCommitWithoutError(t *testing.T) {
 		return
 	}
 	transaction := &Transaction{Tx: tx}
-	_ = transaction.Commit()
+	err = transaction.Commit()
+	if err != nil {
+		t.Errorf("An unexpected error received : %v", err)
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -337,7 +403,12 @@ func TestRollbackWithError(t *testing.T) {
 		return
 	}
 	transaction := &Transaction{Tx: tx}
-	_ = transaction.Rollback()
+	err = transaction.Rollback()
+	if err != nil && err.Error() == "could not rollback the sql transaction : test error 1" {
+		t.Log("Exact error received")
+	} else {
+		t.Error("Expected error has not been received")
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {
@@ -359,7 +430,10 @@ func TestRollbackWithoutError(t *testing.T) {
 		return
 	}
 	transaction := &Transaction{Tx: tx}
-	_ = transaction.Rollback()
+	err = transaction.Rollback()
+	if err != nil {
+		t.Errorf("An unexpected error received : %v", err)
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %v", err)
 	} else {

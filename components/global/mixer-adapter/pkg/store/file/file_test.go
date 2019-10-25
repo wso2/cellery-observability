@@ -40,8 +40,8 @@ func TestWriteWithoutErrors(t *testing.T) {
 		t.Errorf("Error building logger: %v", err)
 	}
 	persister := &Persister{
-		Logger:    logger,
-		Directory: ".",
+		logger:    logger,
+		directory: ".",
 	}
 	err = persister.Write(fmt.Sprintf("[%s]", testStr))
 	if err != nil {
@@ -59,8 +59,8 @@ func TestWriteWithInvalidDirectory(t *testing.T) {
 		t.Errorf("Error building logger: %v", err)
 	}
 	persister := &Persister{
-		Logger:    logger,
-		Directory: "./wrong_directory",
+		logger:    logger,
+		directory: "./wrong_directory",
 	}
 	err = persister.Write(fmt.Sprintf("[%s]", testStr))
 	if err == nil {
@@ -78,8 +78,8 @@ func TestFetchWithoutErrors(t *testing.T) {
 		t.Errorf("Error building logger: %v", err)
 	}
 	persister := &Persister{
-		Logger:    logger,
-		Directory: "./",
+		logger:    logger,
+		directory: "./",
 	}
 	_ = ioutil.WriteFile("./test.json", []byte(testStr), 0644)
 	str, _, _ := persister.Fetch()
@@ -98,8 +98,8 @@ func TestFetchWithEmptyFile(t *testing.T) {
 		t.Errorf("Error building logger: %v", err)
 	}
 	persister := &Persister{
-		Logger:    logger,
-		Directory: "./",
+		logger:    logger,
+		directory: "./",
 	}
 	_ = ioutil.WriteFile("./test.json", []byte(""), 0644)
 	_, _, err = persister.Fetch()
@@ -118,8 +118,8 @@ func TestFetchWithInvalidDirectory(t *testing.T) {
 		t.Errorf("Error building logger: %v", err)
 	}
 	persister := &Persister{
-		Logger:    logger,
-		Directory: "./wrong_dir",
+		logger:    logger,
+		directory: "./wrong_dir",
 	}
 	str, _, _ := persister.Fetch()
 	if str != "" {
@@ -175,6 +175,16 @@ func TestNewMethodWithoutDir(t *testing.T) {
 		t.Errorf("Error building logger: %v", err)
 	}
 	_, _ = NewPersister(config, logger)
+	_, err = os.Stat(config.Path)
+	if err == nil {
+		t.Log("Test passed")
+	} else {
+		if os.IsNotExist(err) {
+			t.Error("Directory has not been created")
+		} else {
+			t.Errorf("An unexpected error has been occured : %v", err)
+		}
+	}
 	_ = os.RemoveAll(config.Path)
 }
 
@@ -185,6 +195,9 @@ func TestNewMethodWithDir(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
 	}
-	_, _ = NewPersister(config, logger)
+	_, err = NewPersister(config, logger)
+	if err != nil {
+		t.Errorf("An unexpected error has been occured : %v", err)
+	}
 	_ = os.RemoveAll(config.Path)
 }
