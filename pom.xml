@@ -572,7 +572,7 @@
         <org.jacoco.version>0.8.3</org.jacoco.version>
 
         <h2.database.version>1.4.191</h2.database.version>
-        <io.netty.version>4.1.36.Final</io.netty.version>
+        <io.netty.version>4.1.42.Final</io.netty.version>
         <httpserver.version>20070405</httpserver.version>
 
         <spotbugs.version>3.1.12.2</spotbugs.version>
