@@ -39,7 +39,7 @@ import (
 
 const (
 	configFilePathEnv     string = "CONFIG_FILE_PATH"
-	defaultConfigFilePath string = "/mnt/conf/config.json"
+	defaultConfigFilePath string = "/etc/conf/config.json"
 )
 
 func main() {
