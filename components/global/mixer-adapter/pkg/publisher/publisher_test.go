@@ -20,11 +20,11 @@ package publisher
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -39,6 +39,7 @@ var (
 		"\"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--" +
 		"controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":" +
 		"\"b55a0f7f20d36e49f8612bac4311791d\"}"
+	metricsCounter int
 )
 
 type (
@@ -59,6 +60,7 @@ func NewTestClient(fn RoundTripFunc) *http.Client {
 }
 
 func (mockTransaction *MockTransaction) Commit() error {
+	metricsCounter--
 	return nil
 }
 
@@ -70,7 +72,11 @@ func (mockPersister *MockPersister) Write(str string) error {
 	return nil
 }
 func (mockPersister *MockPersister) Fetch() (string, store.Transaction, error) {
-	return fmt.Sprintf("[%s]", testStr), &MockTransaction{}, nil
+	if metricsCounter > 0 {
+		return fmt.Sprintf("[%s]", testStr), &MockTransaction{}, nil
+	} else {
+		return "", &MockTransaction{}, nil
+	}
 }
 
 func (mockPersister *MockPersisterError) Write(str string) error {
@@ -80,17 +86,37 @@ func (mockPersister *MockPersisterError) Fetch() (string, store.Transaction, err
 	return "", &MockTransaction{}, fmt.Errorf("test error 1")
 }
 
-func TestRunWithMockPersister(t *testing.T) {
+func TestFetchWithMockPersister(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
 	}
-	_ = ioutil.WriteFile("test.json", []byte(testStr), 0644)
-	stopCh := make(chan struct{})
+	metricsCounter = 1
+	if err != nil {
+		t.Errorf("could not write the file : %v", err)
+	}
 	client := NewTestClient(func(req *http.Request) *http.Response {
+		if req.Method != http.MethodPost {
+			t.Errorf("Expected a POST method. but received : %s", req.Method)
+		}
+		if req.URL.Host != "example.com" {
+			t.Errorf("Requested url is wrong, requested : %s, expected : %s", req.URL.Host, "example.com")
+		}
+		var buf bytes.Buffer
+		bytesArr, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			t.Errorf("Could not read the body of the request : %v", err)
+		}
+		err = decodeGzip(&buf, bytesArr)
+		if err != nil {
+			t.Errorf("Error when decoding gzip : %v", err)
+		}
+		expectedStr := fmt.Sprintf("[%s]", testStr)
+		if buf.String() != expectedStr {
+			t.Errorf("Expected error has not been received, expected : %s, received : %s", expectedStr, buf.String())
+		}
 		return &http.Response{
 			StatusCode: 200,
-			Body:       ioutil.NopCloser(bytes.NewBufferString("OK")),
 			Header:     make(http.Header),
 		}
 	})
@@ -102,23 +128,29 @@ func TestRunWithMockPersister(t *testing.T) {
 		HttpClient:  client,
 		Persister:   &MockPersister{},
 	}
-	go publisher.Run(stopCh)
-	time.Sleep(10 * time.Second)
-	close(stopCh)
-
-	files, err := filepath.Glob("./*.json")
-	for _, fname := range files {
-		err = os.Remove(fname)
+	err = publisher.execute()
+	if err != nil {
+		t.Errorf("Unexpected error occured : %v", err)
 	}
 }
 
-func TestRunWithMockPersisterError(t *testing.T) {
+func decodeGzip(w io.Writer, data []byte) error {
+	gr, err := gzip.NewReader(bytes.NewBuffer(data))
+	defer gr.Close()
+	data, err = ioutil.ReadAll(gr)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(data)
+	return err
+}
+
+func TestFetchWithMockPersisterError(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
 	}
-	_ = ioutil.WriteFile("test.json", []byte(testStr), 0644)
-	stopCh := make(chan struct{})
+	metricsCounter = 1
 	client := NewTestClient(func(req *http.Request) *http.Response {
 		return &http.Response{
 			StatusCode: 200,
@@ -134,28 +166,27 @@ func TestRunWithMockPersisterError(t *testing.T) {
 		HttpClient:  client,
 		Persister:   &MockPersisterError{},
 	}
-	go publisher.Run(stopCh)
-	time.Sleep(10 * time.Second)
-	close(stopCh)
-
-	files, err := filepath.Glob("./*.json")
-	for _, fname := range files {
-		err = os.Remove(fname)
+	err = publisher.execute()
+	expectedErr := "failed to fetch the metrics : test error 1"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 }
 
-func TestRunWithErrorFromServer(t *testing.T) {
+func TestFetchWithErrorFromServer(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
 	}
-	_ = ioutil.WriteFile("test.json", []byte(testStr), 0644)
-	stopCh := make(chan struct{})
+	metricsCounter = 1
 	ticker := time.NewTicker(time.Duration(2) * time.Second)
 	client := NewTestClient(func(req *http.Request) *http.Response {
 		return &http.Response{
 			StatusCode: 500,
-			Body:       ioutil.NopCloser(bytes.NewBufferString("OK")),
 			Header:     make(http.Header),
 		}
 	})
@@ -166,12 +197,13 @@ func TestRunWithErrorFromServer(t *testing.T) {
 		HttpClient:  client,
 		Persister:   &MockPersister{},
 	}
-	go publisher.Run(stopCh)
-	time.Sleep(10 * time.Second)
-	close(stopCh)
-
-	files, err := filepath.Glob("./*.json")
-	for _, fname := range files {
-		err = os.Remove(fname)
+	err = publisher.execute()
+	expectedErr := "failed to publish the metrics : received a bad response code from the server, received response code : 500"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 }

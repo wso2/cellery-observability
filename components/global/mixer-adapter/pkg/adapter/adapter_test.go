@@ -131,21 +131,20 @@ func TestNewAdapter(t *testing.T) {
 	})
 	mixer := &Mixer{&TLS{}}
 	adapter, err := New(AdapterPort, logger, client, buffer, mixer)
-	wantStr := fmt.Sprintf("[::]:%d", AdapterPort)
+	expectedStr := fmt.Sprintf("[::]:%d", AdapterPort)
 	if err != nil {
 		t.Errorf("Error while creating the adapter : %v", err)
 	}
-
-	if adapter.Addr() == wantStr {
+	if adapter.Addr() == expectedStr {
 		defer func() {
 			err := adapter.Close()
 			if err != nil {
 				log.Fatalf("Error closing adapter: %v", err)
 			}
 		}()
-		t.Log("Success, expected address is received")
+		t.Log("Success, expected address has received")
 	} else {
-		t.Error("Fail, Expected address is not received")
+		t.Error("Fail, Expected address has not received")
 	}
 }
 
@@ -167,6 +166,9 @@ func TestNewAdapterWithInvalidTlsData(t *testing.T) {
 		CaCertificate: "./testdata/test.pem",
 	}}
 	adapter, err := New(AdapterPort, logger, client, buffer, tls)
+	if adapter == nil {
+		t.Error("Received struct of the adapter is null")
+	}
 	_ = adapter.Close()
 }
 
@@ -188,6 +190,9 @@ func TestNewAdapterWithTLS(t *testing.T) {
 		CaCertificate: "./testdata/ca.pem",
 	}}
 	adapter, err := New(AdapterPort, logger, client, buffer, tls)
+	if adapter == nil {
+		t.Error("Received struct of the adapter is null")
+	}
 	_ = adapter.Close()
 }
 
@@ -196,26 +201,21 @@ func TestHandleMetric(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unable to listen on socket: %v", err)
 	}
-
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
 	}
-
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(200)
 	}))
 	defer func() { testServer.Close() }()
-
 	buffer := make(chan string, 100)
-
 	wso2SpAdapter := &Adapter{
 		listener:   listener,
 		logger:     logger,
 		httpClient: &http.Client{},
 		buffer:     buffer,
 	}
-
 	var sampleInstances []*metric.InstanceMsg
 	sampleInstances = append(sampleInstances, sampleInstance1)
 	sampleInstances = append(sampleInstances, sampleInstance2)
@@ -223,17 +223,11 @@ func TestHandleMetric(t *testing.T) {
 	sampleInstances = append(sampleInstances, sampleInstance4)
 	sampleInstances = append(sampleInstances, sampleInstance5)
 	sampleInstances = append(sampleInstances, sampleInstance6)
-
 	sampleMetricRequest := metric.HandleMetricRequest{
 		Instances: sampleInstances,
 	}
-
 	_, err = wso2SpAdapter.HandleMetric(context.TODO(), &sampleMetricRequest)
-
 	if err != nil {
 		t.Errorf("Metrics could not be handled : %v", err)
-	} else {
-		t.Log("Successfully handled the metrics")
 	}
-
 }

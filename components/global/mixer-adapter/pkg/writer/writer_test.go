@@ -19,6 +19,7 @@
 package writer
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -34,7 +35,9 @@ var (
 
 type (
 	MockPersister struct {
-		Buffer chan string
+		expectedStr string
+		Buffer      chan string
+		actions     []string
 	}
 	MockPersisterErr struct{}
 	MockTransaction  struct{}
@@ -49,8 +52,15 @@ func (mockTransaction *MockTransaction) Rollback() error {
 }
 
 func (mockPersister *MockPersister) Write(str string) error {
-	_ = <-mockPersister.Buffer
-	_ = <-mockPersister.Buffer
+	var v interface{}
+	if err := json.Unmarshal([]byte(str), &v); err != nil {
+		return err
+	}
+	if mockPersister.expectedStr != str {
+		return fmt.Errorf("could not receive the expected string, expected string : %s, received string : %s",
+			mockPersister.expectedStr, str)
+	}
+	mockPersister.actions = append(mockPersister.actions, str)
 	return nil
 }
 
@@ -66,34 +76,41 @@ func (mockPersisterErr *MockPersisterErr) Fetch() (string, store.Transaction, er
 	return "", &MockTransaction{}, fmt.Errorf("test error 2")
 }
 
-func TestRunWithoutError(t *testing.T) {
+func TestWriteWithoutError(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
 	}
-	stopCh := make(chan struct{})
 	buffer := make(chan string, 10)
 	buffer <- testStr
 	buffer <- testStr
+	mockPersister := MockPersister{
+		expectedStr: fmt.Sprintf("[%s,%s]", testStr, testStr),
+		Buffer:      buffer,
+	}
 	writer := Writer{
 		WaitingTimeSec:  5,
 		WaitingSize:     2,
 		Logger:          logger,
 		Buffer:          buffer,
 		LastWrittenTime: time.Now(),
-		Persister:       &MockPersister{Buffer: buffer},
+		Persister:       &mockPersister,
 	}
-	go writer.Run(stopCh)
-	time.Sleep(10 * time.Second)
-	close(stopCh)
+	err = writer.write()
+	if err != nil {
+		t.Errorf("Received an error while writing : %v", err)
+	}
+	if len(mockPersister.actions) != 1 {
+		t.Errorf("Write function was called unexpected number of times, expected: 1, called: %d",
+			len(mockPersister.actions))
+	}
 }
 
-func TestRunWithError(t *testing.T) {
+func TestWriteWithError(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
 	}
-	stopCh := make(chan struct{})
 	buffer := make(chan string, 10)
 	buffer <- testStr
 	buffer <- testStr
@@ -105,7 +122,140 @@ func TestRunWithError(t *testing.T) {
 		LastWrittenTime: time.Now(),
 		Persister:       &MockPersisterErr{},
 	}
-	go writer.Run(stopCh)
-	time.Sleep(10 * time.Second)
-	close(stopCh)
+	err = writer.write()
+	expectedErr := "test error 1"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
+	}
+}
+
+func TestWriteWithEmptyString(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	buffer := make(chan string, 10)
+	buffer <- ""
+	buffer <- testStr
+	mockPersister := MockPersister{
+		expectedStr: fmt.Sprintf("[%s]", testStr),
+		Buffer:      buffer,
+	}
+	writer := Writer{
+		WaitingTimeSec:  5,
+		WaitingSize:     2,
+		Logger:          logger,
+		Buffer:          buffer,
+		LastWrittenTime: time.Now(),
+		Persister:       &mockPersister,
+	}
+	err = writer.write()
+	if err != nil {
+		t.Errorf("Unexpected error : %v", err)
+	}
+	if len(mockPersister.actions) != 1 {
+		t.Errorf("Write function was called unexpected number of times, expected: 1, called: %d",
+			len(mockPersister.actions))
+	}
+}
+
+func TestShouldWriteWithFilledBuffer(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	buffer := make(chan string, 10)
+	buffer <- testStr
+	buffer <- testStr
+	writer := Writer{
+		WaitingTimeSec:  5,
+		WaitingSize:     2,
+		Logger:          logger,
+		Buffer:          buffer,
+		LastWrittenTime: time.Now(),
+		Persister:       &MockPersister{},
+	}
+	result := writer.shouldWrite()
+	if !result {
+		t.Fail()
+	}
+}
+
+func TestShouldWriteCheckTimout(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	buffer := make(chan string, 10)
+	buffer <- testStr
+	writer := &Writer{
+		WaitingTimeSec:  2,
+		WaitingSize:     2,
+		Logger:          logger,
+		Buffer:          buffer,
+		LastWrittenTime: time.Now(),
+		Persister:       &MockPersister{},
+	}
+	time.Sleep(3 * time.Second)
+	result := writer.shouldWrite()
+	if !result {
+		t.Fail()
+	}
+}
+
+func TestShouldWriteWithoutValidConditions(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	buffer := make(chan string, 10)
+	buffer <- testStr
+	writer := &Writer{
+		WaitingTimeSec:  2,
+		WaitingSize:     2,
+		Logger:          logger,
+		Buffer:          buffer,
+		LastWrittenTime: time.Now(),
+		Persister:       &MockPersister{},
+	}
+	result := writer.shouldWrite()
+	if result {
+		t.Fail()
+	}
+}
+
+func TestFlushBuffer(t *testing.T) {
+	logger, err := logging.NewLogger()
+	if err != nil {
+		t.Errorf("Error building logger: %v", err)
+	}
+	buffer := make(chan string, 10)
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	buffer <- testStr
+	mockPersister := MockPersister{
+		expectedStr: fmt.Sprintf("[%s,%s]", testStr, testStr),
+		Buffer:      buffer,
+	}
+	writer := &Writer{
+		WaitingTimeSec:  2,
+		WaitingSize:     2,
+		Logger:          logger,
+		Buffer:          buffer,
+		LastWrittenTime: time.Now(),
+		Persister:       &mockPersister,
+	}
+	writer.flushBuffer()
+	if len(buffer) != 0 {
+		t.Error("Buffer has not been flushed by the method")
+	}
+	if len(mockPersister.actions) != 2 {
+		t.Errorf("Write function was called unexpected number of times, expected: 2, called: %d",
+			len(mockPersister.actions))
+	}
 }

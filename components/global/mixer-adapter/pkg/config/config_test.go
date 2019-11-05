@@ -33,9 +33,9 @@ func TestNewWithCorrectFile(t *testing.T) {
 	_ = ioutil.WriteFile("./config.json", []byte(testStr), 0644)
 	_, err := New("./config.json")
 	if err != nil {
-		t.Log(err)
+		t.Errorf("Unexpected error occurred : %v", err)
 	}
-	files, err := filepath.Glob("./*.json")
+	files, _ := filepath.Glob("./*.json")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}
@@ -44,10 +44,15 @@ func TestNewWithCorrectFile(t *testing.T) {
 func TestNewWithEmptyFile(t *testing.T) {
 	_ = ioutil.WriteFile("./config.json", []byte(""), 0644)
 	_, err := New("./config.json")
-	if err != nil {
-		t.Log(err)
+	expectedErr := "could not unmarshal the config file : unexpected end of JSON input"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
 	}
-	files, err := filepath.Glob("./*.json")
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
+	}
+	files, _ := filepath.Glob("./*.json")
 	for _, fname := range files {
 		err = os.Remove(fname)
 	}
@@ -55,7 +60,12 @@ func TestNewWithEmptyFile(t *testing.T) {
 
 func TestNewWithNoFile(t *testing.T) {
 	_, err := New("./config.json")
-	if err != nil {
-		t.Log(err)
+	expectedErr := "could not read the config file : open ./config.json: no such file or directory"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 }

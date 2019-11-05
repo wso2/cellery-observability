@@ -52,30 +52,30 @@ func (publisher *Publisher) Run(stopCh <-chan struct{}) {
 		case <-stopCh:
 			return
 		case <-publisher.Ticker.C:
-			publisher.execute()
+			err := publisher.execute()
+			publisher.Logger.Errorf("Error when executing : %v", err)
 		}
 	}
 }
 
-func (publisher *Publisher) execute() {
+func (publisher *Publisher) execute() error {
 	for {
 		str, transaction, err := publisher.Persister.Fetch()
 		if err != nil {
-			publisher.Logger.Errorf("Failed to fetch the metrics : %v", err)
-			err = transaction.Rollback()
-			if err != nil {
-				publisher.Logger.Debugf("Could not rollback the transaction : %v", err)
+			rollbackErr := transaction.Rollback()
+			if rollbackErr != nil {
+				publisher.Logger.Debugf("Could not rollback the transaction : %v", rollbackErr)
 			}
-			return
+			return fmt.Errorf("failed to fetch the metrics : %v", err)
 		}
 		if str != "" {
 			err = publisher.publish(str)
 			if err != nil {
-				publisher.Logger.Errorf("Failed to publish the metrics : %v", err)
-				err = transaction.Rollback()
-				if err != nil {
-					publisher.Logger.Errorf("Failed to rollback the transaction : %v", err)
+				rollbackErr := transaction.Rollback()
+				if rollbackErr != nil {
+					publisher.Logger.Errorf("Failed to rollback the transaction : %v", rollbackErr)
 				}
+				return fmt.Errorf("failed to publish the metrics : %v", err)
 			} else {
 				err = transaction.Commit()
 				if err != nil {
@@ -87,7 +87,7 @@ func (publisher *Publisher) execute() {
 			if err != nil {
 				publisher.Logger.Debugf("Could not rollback the transaction : %v", err)
 			}
-			return
+			return nil
 		}
 	}
 }
@@ -114,7 +114,7 @@ func (publisher *Publisher) publish(jsonArr string) error {
 		return fmt.Errorf("could not receive a response from the server : %v", err)
 	}
 	if res != nil && res.StatusCode != 200 {
-		return fmt.Errorf("could not receive a good response code from the server, received response code : %d",
+		return fmt.Errorf("received a bad response code from the server, received response code : %d",
 			res.StatusCode)
 	}
 	return nil

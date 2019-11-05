@@ -32,7 +32,6 @@ func TestFetchWithDataInBuffer(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
-		return
 	}
 	buffer := make(chan string, 10)
 	persister := &Persister{
@@ -40,19 +39,25 @@ func TestFetchWithDataInBuffer(t *testing.T) {
 		buffer: buffer,
 	}
 	buffer <- testStr
-	_, _, _ = persister.Fetch()
+	str, tx, err := persister.Fetch()
 	if len(buffer) != 0 {
-		t.Fail()
-		return
+		t.Error("Buffer has not been cleaned")
 	}
-	t.Log("Test passed")
+	if str != testStr {
+		t.Errorf("Expected string has not been received, expeced : %s, received : %s", testStr, str)
+	}
+	if err != nil {
+		t.Errorf("Unexpected error : %v", err)
+	}
+	if tx == nil {
+		t.Error("Received an empty transaction struct")
+	}
 }
 
 func TestFetchWithoutDataInBuffer(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
-		return
 	}
 	buffer := make(chan string, 10)
 	persister := &Persister{
@@ -60,11 +65,14 @@ func TestFetchWithoutDataInBuffer(t *testing.T) {
 		buffer: buffer,
 	}
 	_, _, err = persister.Fetch()
+	expectedErr := "there are no elements in the buffer"
 	if err == nil {
-		t.Fail()
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
 		return
 	}
-	t.Log("Test passed")
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
+	}
 }
 
 func TestWrite(t *testing.T) {
@@ -77,12 +85,13 @@ func TestWrite(t *testing.T) {
 		logger: logger,
 		buffer: buffer,
 	}
-	_ = persister.Write(testStr)
-	if len(buffer) == 1 {
-		t.Log("Test passed")
-		return
+	err = persister.Write(testStr)
+	if len(buffer) != 1 {
+		t.Error("String has not been written to the buffer.")
 	}
-	t.Fail()
+	if err != nil {
+		t.Errorf("Unexpected error received : %v", err)
+	}
 }
 
 func TestRollback(t *testing.T) {
@@ -91,13 +100,17 @@ func TestRollback(t *testing.T) {
 		Element: testStr,
 		Buffer:  buffer,
 	}
-	_ = transaction.Rollback()
+	err := transaction.Rollback()
 	if len(buffer) != 1 {
-		t.Fail()
-		return
+		t.Error("Elements has not been recovered after the rollback")
 	}
-	_ = transaction.Commit()
-	t.Log("Test passed")
+	if err != nil {
+		t.Errorf("Unexpected error received : %v", err)
+	}
+	err = transaction.Commit()
+	if err != nil {
+		t.Errorf("Unexpected error received : %v", err)
+	}
 }
 
 func TestNewPersister(t *testing.T) {
@@ -105,5 +118,11 @@ func TestNewPersister(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)
 	}
-	_, _ = NewPersister(10, 100, logger)
+	persister, err := NewPersister(10, 100, logger)
+	if persister == nil {
+		t.Errorf("Method returned a null struct")
+	}
+	if err != nil {
+		t.Errorf("Unexpected error received : %v", err)
+	}
 }

@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gofrs/flock"
@@ -63,8 +64,13 @@ func TestWriteWithInvalidDirectory(t *testing.T) {
 		directory: "./wrong_directory",
 	}
 	err = persister.Write(fmt.Sprintf("[%s]", testStr))
+	expectedErr := "no such file or directory"
 	if err == nil {
-		t.Error("Expected error was not thrown")
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if strings.Contains(expectedErr, err.Error()) {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
@@ -103,8 +109,13 @@ func TestFetchWithEmptyFile(t *testing.T) {
 	}
 	_ = ioutil.WriteFile("./test.json", []byte(""), 0644)
 	_, _, err = persister.Fetch()
+	expectedErr := "file is empty, hence removed"
 	if err == nil {
-		t.Error("No error was thrown when reading an empty file")
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
@@ -121,7 +132,7 @@ func TestFetchWithInvalidDirectory(t *testing.T) {
 		logger:    logger,
 		directory: "./wrong_dir",
 	}
-	str, _, _ := persister.Fetch()
+	str, _, err := persister.Fetch()
 	if str != "" {
 		t.Error("Unexpected behaviour from the function")
 	}
@@ -134,7 +145,7 @@ func TestCommitWithoutErrors(t *testing.T) {
 	}
 	err := transaction.Commit()
 	if err != nil {
-		t.Error("Error when committing")
+		t.Errorf("Error when committing : %v", err)
 	}
 	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
@@ -147,8 +158,13 @@ func TestCommitWithError(t *testing.T) {
 		Lock: flock.New("./test.json"),
 	}
 	err := transaction.Commit()
+	expectedErr := "could not delete the published file : remove ./test.json: no such file or directory"
 	if err == nil {
-		t.Error("No error was thrown when trying to delete an already deleted file")
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 }
 
@@ -160,7 +176,7 @@ func TestRollback(t *testing.T) {
 	_, _ = transaction.Lock.TryLock()
 	err := transaction.Rollback()
 	if err != nil {
-		t.Error("An error was thrown when unlocking the file")
+		t.Errorf("An error was thrown when unlocking the file : %v", err)
 	}
 	files, err := filepath.Glob("./*.json")
 	for _, fname := range files {
@@ -176,9 +192,7 @@ func TestNewMethodWithoutDir(t *testing.T) {
 	}
 	_, _ = NewPersister(config, logger)
 	_, err = os.Stat(config.Path)
-	if err == nil {
-		t.Log("Test passed")
-	} else {
+	if err != nil {
 		if os.IsNotExist(err) {
 			t.Error("Directory has not been created")
 		} else {
@@ -190,7 +204,10 @@ func TestNewMethodWithoutDir(t *testing.T) {
 
 func TestNewMethodWithDir(t *testing.T) {
 	config := &File{Path: "./testDir"}
-	_ = os.MkdirAll(config.Path, os.ModePerm)
+	err := os.MkdirAll(config.Path, os.ModePerm)
+	if err != nil {
+		t.Errorf("error occurred when creating the directory : %v", err)
+	}
 	logger, err := logging.NewLogger()
 	if err != nil {
 		t.Errorf("Error building logger: %v", err)

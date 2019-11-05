@@ -20,7 +20,6 @@ package database
 
 import (
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -35,11 +34,11 @@ var (
 func TestWriteWithTransactionFailure(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %v", err)
+		t.Errorf("Error building logger: %v", err)
 	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	mock.ExpectBegin().WillReturnError(fmt.Errorf("test error 1"))
 	persister := &Persister{
@@ -47,26 +46,27 @@ func TestWriteWithTransactionFailure(t *testing.T) {
 		db:     db,
 	}
 	err = persister.Write(testStr)
-	if err != nil && err.Error() == "could not store the metrics in the database : could not begin the transaction : test error 1" {
-		t.Log("Exact error received")
-	} else {
-		t.Error("Expected error has not been received")
+	expectedErr := "could not store the metrics in the database : could not begin the transaction : test error 1"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
 	}
 }
 
 func TestWriteWithInsertionFailure(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %v", err)
+		t.Errorf("Error building logger: %v", err)
 	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	mock.ExpectBegin()
 	mock.ExpectExec("^INSERT INTO persistence(data)*").WillReturnError(fmt.Errorf("test error 2"))
@@ -76,26 +76,27 @@ func TestWriteWithInsertionFailure(t *testing.T) {
 		db:     db,
 	}
 	err = persister.Write(testStr)
-	if err != nil && err.Error() == "could not store the metrics in the database : could not insert the metrics to the database : test error 2" {
-		t.Log("Exact error received")
-	} else {
-		t.Error("Expected error has not been received")
+	expectedErr := "could not store the metrics in the database : could not insert the metrics to the database : test error 2"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
 	}
 }
 
 func TestWriteWithRollbackFailure(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %v", err)
+		t.Errorf("Error building logger: %v", err)
 	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	mock.ExpectBegin()
 	mock.ExpectExec("^INSERT INTO persistence(data)*").WillReturnError(fmt.Errorf("test error 3"))
@@ -105,26 +106,27 @@ func TestWriteWithRollbackFailure(t *testing.T) {
 		db:     db,
 	}
 	err = persister.Write(testStr)
-	if err != nil && err.Error() == "could not store the metrics in the database : test error 4" {
-		t.Log("Exact error received")
-	} else {
-		t.Error("Expected error has not been received")
+	expectedErr := "could not store the metrics in the database : test error 4"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
 	}
 }
 
 func TestWriteWithCommitFailure(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %v", err)
+		t.Errorf("Error building logger: %v", err)
 	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	mock.ExpectBegin()
 	mock.ExpectExec("^INSERT INTO persistence(data)*").WillReturnResult(sqlmock.NewResult(2, 2))
@@ -134,26 +136,27 @@ func TestWriteWithCommitFailure(t *testing.T) {
 		db:     db,
 	}
 	err = persister.Write(testStr)
-	if err != nil && err.Error() == "could not store the metrics in the database : test error 5" {
-		t.Log("Exact error received")
-	} else {
-		t.Error("Expected error has not been received")
+	expectedErr := "could not store the metrics in the database : test error 5"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
 	}
 }
 
 func TestWriteWithSuccessfulTransaction(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %v", err)
+		t.Errorf("Error building logger: %v", err)
 	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	mock.ExpectBegin()
 	mock.ExpectExec("^INSERT INTO persistence(data)*").WillReturnResult(sqlmock.NewResult(2, 2))
@@ -167,50 +170,51 @@ func TestWriteWithSuccessfulTransaction(t *testing.T) {
 		t.Errorf("An unexpected error received : %v", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
 	}
 }
 
 func TestFetchWithTransactionFailure(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %v", err)
+		t.Errorf("Error building logger: %v", err)
 	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	mock.ExpectBegin().WillReturnError(fmt.Errorf("test error 1"))
 	persister := &Persister{
 		logger: logger,
 		db:     db,
 	}
-	str, _, err := persister.Fetch()
-	if err != nil && err.Error() == "could not begin the transaction : test error 1" {
-		t.Log("Exact error received")
-	} else {
-		t.Error("Expected error has not been received")
+	str, tx, err := persister.Fetch()
+	expectedErr := "could not begin the transaction : test error 1"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+	}
+	if err != nil && err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 	if str != "" {
 		t.Errorf("Expected an empty string, but received : %s", str)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
+	}
+	if tx == nil {
+		t.Error("Received an empty transaction struct")
 	}
 }
 
 func TestFetchWithSelectionFailure(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %v", err)
+		t.Errorf("Error building logger: %v", err)
 	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	mock.ExpectBegin()
 	mock.ExpectQuery("^SELECT (.+) FROM persistence*").
@@ -219,30 +223,34 @@ func TestFetchWithSelectionFailure(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	str, _, err := persister.Fetch()
-	if err != nil && err.Error() == "could not fetch rows from the database : test error 2" {
-		t.Log("Exact error received")
-	} else {
-		t.Error("Expected error has not been received")
+	str, tx, err := persister.Fetch()
+	expectedErr := "could not fetch rows from the database : test error 2"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 	if str != "" {
 		t.Errorf("Expected an empty string, but received : %s", str)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
+	}
+	if tx == nil {
+		t.Error("Received an empty transaction struct")
 	}
 }
 
 func TestFetchWithDeletionFailure(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %v", err)
+		t.Errorf("Error building logger: %v", err)
 	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	rows := sqlmock.NewRows([]string{"id", "data"}).
 		AddRow(1, testStr).
@@ -256,30 +264,34 @@ func TestFetchWithDeletionFailure(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	str, _, err := persister.Fetch()
-	if err != nil && err.Error() == "could not delete the Rows : test error 3" {
-		t.Log("Exact error received")
-	} else {
-		t.Error("Expected error has not been received")
+	str, tx, err := persister.Fetch()
+	expectedErr := "could not delete the Rows : test error 3"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 	if str != "" {
 		t.Errorf("Expected an empty string, but received : %s", str)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
+	}
+	if tx == nil {
+		t.Error("Received an empty transaction struct")
 	}
 }
 
 func TestFetchWithSuccessfulFetch(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %v", err)
+		t.Errorf("Error building logger: %v", err)
 	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	rows := sqlmock.NewRows([]string{"id", "data"}).
 		AddRow(1, testStr)
@@ -292,7 +304,7 @@ func TestFetchWithSuccessfulFetch(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	str, _, err := persister.Fetch()
+	str, tx, err := persister.Fetch()
 	if err != nil {
 		t.Errorf("An unexpected error received : %v", err)
 	}
@@ -300,20 +312,21 @@ func TestFetchWithSuccessfulFetch(t *testing.T) {
 		t.Errorf("Expected an empty string, but received : %s", str)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
+	}
+	if tx == nil {
+		t.Error("Received an empty transaction struct")
 	}
 }
 
 func TestFetchWithEmptyRows(t *testing.T) {
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %v", err)
+		t.Errorf("Error building logger: %v", err)
 	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	rows := sqlmock.NewRows([]string{"id", "data"})
 	mock.ExpectBegin()
@@ -323,7 +336,7 @@ func TestFetchWithEmptyRows(t *testing.T) {
 		logger: logger,
 		db:     db,
 	}
-	str, _, err := persister.Fetch()
+	str, tx, err := persister.Fetch()
 	if err != nil {
 		t.Errorf("An unexpected error received : %v", err)
 	}
@@ -331,51 +344,49 @@ func TestFetchWithEmptyRows(t *testing.T) {
 		t.Errorf("Expected an empty string, but received : %s", str)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
+	}
+	if tx == nil {
+		t.Error("Received an empty transaction struct")
 	}
 }
 
 func TestCommitWithError(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	if db == nil || mock == nil || err != nil {
-		t.Log("Could not initialize the database")
-		return
+	if err != nil {
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	mock.ExpectBegin()
 	mock.ExpectCommit().WillReturnError(fmt.Errorf("test error 1"))
 	tx, err := db.Begin()
 	if err != nil {
-		t.Logf("could not initialize the database %v", err)
-		return
+		t.Errorf("Could not initialize the transaction %v", err)
 	}
 	transaction := &Transaction{Tx: tx}
 	err = transaction.Commit()
-	if err != nil && err.Error() == "could not commit the sql transaction : test error 1" {
-		t.Log("Exact error received")
-	} else {
-		t.Error("Expected error has not been received")
+	expectedErr := "could not commit the sql transaction : test error 1"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
 	}
 }
 
 func TestCommitWithoutError(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	if db == nil || mock == nil || err != nil {
-		t.Log("Could not initialize the database")
-		return
+	if err != nil {
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	mock.ExpectBegin()
 	mock.ExpectCommit()
 	tx, err := db.Begin()
 	if err != nil {
-		t.Logf("could not initialize the database %v", err)
-		return
+		t.Errorf("Could not initialize the transaction %v", err)
 	}
 	transaction := &Transaction{Tx: tx}
 	err = transaction.Commit()
@@ -383,51 +394,46 @@ func TestCommitWithoutError(t *testing.T) {
 		t.Errorf("An unexpected error received : %v", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
 	}
 }
 
 func TestRollbackWithError(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	if db == nil || mock == nil || err != nil {
-		t.Log("Could not initialize the database")
-		return
+	if err != nil {
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	mock.ExpectBegin()
 	mock.ExpectRollback().WillReturnError(fmt.Errorf("test error 1"))
 	tx, err := db.Begin()
 	if err != nil {
-		t.Logf("could not initialize the database %v", err)
-		return
+		t.Errorf("Could not initialize the transaction %v", err)
 	}
 	transaction := &Transaction{Tx: tx}
 	err = transaction.Rollback()
-	if err != nil && err.Error() == "could not rollback the sql transaction : test error 1" {
-		t.Log("Exact error received")
-	} else {
-		t.Error("Expected error has not been received")
+	expectedErr := "could not rollback the sql transaction : test error 1"
+	if err == nil {
+		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
+		return
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error was not thrown, received error : %v", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
 	}
 }
 
 func TestRollbackWithoutError(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	if db == nil || mock == nil || err != nil {
-		t.Log("Could not initialize the database")
-		return
+	if err != nil {
+		t.Errorf("An error when opening a stub database connection : %v ", err)
 	}
 	mock.ExpectBegin()
 	mock.ExpectRollback()
 	tx, err := db.Begin()
 	if err != nil {
-		t.Logf("could not initialize the database %v", err)
-		return
+		t.Errorf("Could not initialize the transaction %v", err)
 	}
 	transaction := &Transaction{Tx: tx}
 	err = transaction.Rollback()
@@ -435,8 +441,6 @@ func TestRollbackWithoutError(t *testing.T) {
 		t.Errorf("An unexpected error received : %v", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	} else {
-		t.Log("Test passed")
+		t.Errorf("There are unfulfilled expectations: %v", err)
 	}
 }

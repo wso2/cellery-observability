@@ -48,7 +48,10 @@ func (writer *Writer) Run(stopCh <-chan struct{}) {
 			return
 		default:
 			if writer.shouldWrite() {
-				writer.write()
+				err := writer.write()
+				if err != nil {
+					writer.Logger.Errorf("Received an error while writing : %v", err)
+				}
 			} else {
 				time.Sleep(5 * time.Second)
 			}
@@ -56,14 +59,15 @@ func (writer *Writer) Run(stopCh <-chan struct{}) {
 	}
 }
 
-func (writer *Writer) write() {
+func (writer *Writer) write() error {
 	elements := writer.getElements()
 	str := fmt.Sprintf("[%s]", strings.Join(elements, ","))
 	err := writer.Persister.Write(str)
 	if err != nil {
-		writer.Logger.Warnf(" : %v", err)
 		writer.restore(elements)
+		return err
 	}
+	return nil
 }
 
 func (writer *Writer) flushBuffer() {
@@ -71,7 +75,10 @@ func (writer *Writer) flushBuffer() {
 		if len(writer.Buffer) == 0 {
 			return
 		}
-		writer.write()
+		err := writer.write()
+		if err != nil {
+			writer.Logger.Errorf("Received an error while writing : %v", err)
+		}
 	}
 }
 

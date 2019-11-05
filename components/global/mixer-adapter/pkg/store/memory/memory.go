@@ -54,7 +54,7 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 		transaction := &Transaction{Element: str}
 		return str, transaction, nil
 	} else {
-		return "", &Transaction{}, fmt.Errorf("there is no elements in the buffer")
+		return "", &Transaction{}, fmt.Errorf("there are no elements in the buffer")
 	}
 }
 
