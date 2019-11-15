@@ -28,7 +28,7 @@
     <groupId>io.cellery.observability</groupId>
     <artifactId>io.cellery.observability.parent</artifactId>
     <name>Cellery Observability</name>
-    <version>0.4.2-SNAPSHOT</version>
+    <version>0.5.0</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -458,7 +458,7 @@
         <url>https://github.com/cellery-io/mesh-observability.git</url>
         <developerConnection>scm:git:https://github.com/cellery-io/mesh-observability.git</developerConnection>
         <connection>scm:git:https://github.com/cellery-io/mesh-observability.git</connection>
-        <tag>HEAD</tag>
+        <tag>v0.5.0</tag>
     </scm>
 
     <repositories>
