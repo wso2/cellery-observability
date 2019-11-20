@@ -19,112 +19,143 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"sync"
+	"time"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/adapter"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/config"
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/logging"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/publisher"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/signals"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/database"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/file"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store/memory"
+	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/writer"
 )
 
 const (
-	defaultAdapterPort         int    = 38355
-	grpcAdapterCertificatePath string = "GRPC_ADAPTER_CERTIFICATE_PATH"
-	grpcAdapterPrivateKeyPath  string = "GRPC_ADAPTER_PRIVATE_KEY_PATH"
-	caCertificatePath          string = "CA_CERTIFICATE_PATH"
-	spServerUrlPath            string = "SP_SERVER_URL"
+	configFilePathEnv     string = "CONFIG_FILE_PATH"
+	defaultConfigFilePath string = "/etc/conf/config.json"
 )
 
 func main() {
-
-	port := defaultAdapterPort //Pre defined port for the adaptor. ToDo: Should get this as an environment variable
-
+	port := adapter.AdapterPort
+	// Initialize a channel to handle interruptions from external sources like Kubernetes. This channel will handle
+	// signals like os.Interrupt, syscall.SIGTERM
+	stopCh := signals.SetupSignalHandler()
 	logger, err := logging.NewLogger()
 	if err != nil {
-		log.Fatalf("Error building logger: %s", err.Error())
+		log.Fatalf("Error building logger: %v", err)
 	}
 	defer func() {
 		err := logger.Sync()
 		if err != nil {
-			log.Fatalf("Error syncing logger: %s", err.Error())
+			log.Fatalf("Error syncing logger: %v", err)
 		}
 	}()
 
-	if len(os.Args) > 1 {
-		port, err = strconv.Atoi(os.Args[1])
+	configFilePath := os.Getenv(configFilePathEnv)
+	var configuration *config.Config
+	if configFilePath != "" {
+		configuration, err = config.New(os.Getenv(configFilePathEnv))
 		if err != nil {
-			logger.Errorf("Could not convert the port number from string to int : %s", err.Error())
+			logger.Fatalf("Could not get configurations from the config file path : %v", err)
+		}
+	} else {
+		logger.Info("Config file path is not given. Going for the default path.")
+		configuration, err = config.New(defaultConfigFilePath)
+		if err != nil {
+			logger.Fatalf("Could not get configurations from the default config file path : %v", err)
 		}
 	}
 
-	/* Mutual TLS feature to secure connection between workloads
-	   This is optional. */
-	adapterCertificate := os.Getenv(grpcAdapterCertificatePath) // adapter.crt //change the name
-	adapterprivateKey := os.Getenv(grpcAdapterPrivateKeyPath)   // adapter.key
-	caCertificate := os.Getenv(caCertificatePath)               // ca.pem
-	spServerUrl := os.Getenv(spServerUrlPath)
-
-	logger.Infof("Sp server url : %s", spServerUrl)
+	// Initializing variables from the config file
+	advancedConfig := configuration.Advanced
+	bufferTimeoutSeconds := advancedConfig.BufferTimeoutSeconds
+	maxMetricsCount := advancedConfig.MaxRecordsForSingleWrite
+	bufferSizeFactor := advancedConfig.BufferSizeFactor
+	tickerSec := configuration.SpEndpoint.SendIntervalSeconds
 
 	client := &http.Client{}
-	publisher := adapter.SPMetricsPublisher{}
+	buffer := make(chan string, maxMetricsCount*bufferSizeFactor)
+	errCh := make(chan error, 1)
+	spAdapter, err := adapter.New(port, logger, client, buffer, &configuration.Mixer)
+	if err != nil {
+		logger.Fatalf("unable to start the server: %v", err)
+	}
+	go spAdapter.Run(errCh)
 
-	var serverOption grpc.ServerOption = nil
-
-	if adapterCertificate != "" {
-		serverOption, err = getServerTLSOption(adapterCertificate, adapterprivateKey, caCertificate)
+	var ps store.Persister
+	metricsStore := configuration.Store
+	// Check the config map to initialize the correct persistence mode
+	if metricsStore.File != nil {
+		// File storage will be used for persistence. Priority will be given to the file system
+		logger.Info("Enabling file persistence")
+		if metricsStore.File.Path == "" {
+			logger.Fatal("Given file path is empty")
+		}
+		ps, err = file.NewPersister(configuration.Store.File, logger)
 		if err != nil {
-			logger.Warn("Server option could not be fetched, Connection will not be encrypted")
+			logger.Fatalf("Could not get the persister from the file package : error %v",
+				configuration.Store.File.Path, err)
+		}
+	} else if metricsStore.Database != nil {
+		// Database will be used for persistence
+		logger.Info("Enabling database persistence")
+		ps, err = database.NewPersister(configuration.Store.Database, logger)
+		if err != nil {
+			logger.Fatalf("Could not get the persister from the database package : %v", err)
+		}
+	} else {
+		// In memory persistence
+		logger.Info("Enabling in memory persistence")
+		ps, err = memory.NewPersister(maxMetricsCount, bufferSizeFactor, logger)
+		if err != nil {
+			logger.Fatalf("Could not get the persister from the memory package : %v", err)
 		}
 	}
 
-	spAdapter, err := adapter.New(port, logger, client, publisher, serverOption, spServerUrl)
-	if err != nil {
-		logger.Fatal("unable to start server: ", err.Error())
+	var waitGroup sync.WaitGroup
+	wrt := &writer.Writer{
+		WaitingTimeSec:  bufferTimeoutSeconds,
+		WaitingSize:     maxMetricsCount,
+		Logger:          logger,
+		Buffer:          buffer,
+		LastWrittenTime: time.Now(),
+		Persister:       ps,
 	}
-
-	shutdown := make(chan error, 1)
+	ticker := time.NewTicker(time.Duration(tickerSec) * time.Second)
+	pub := &publisher.Publisher{
+		Ticker:      ticker,
+		Logger:      logger,
+		SpServerUrl: configuration.SpEndpoint.URL,
+		HttpClient:  &http.Client{},
+		Persister:   ps,
+	}
 	go func() {
-		spAdapter.Run(shutdown)
+		waitGroup.Add(1)
+		defer waitGroup.Done()
+		wrt.Run(stopCh)
 	}()
-	err = <-shutdown
-	if err != nil {
-		logger.Error(err.Error())
-	}
-}
+	go func() {
+		waitGroup.Add(1)
+		defer waitGroup.Done()
+		pub.Run(stopCh)
+	}()
 
-func getServerTLSOption(adapterCertificate, adapterPrivateKey, caCertificate string) (grpc.ServerOption, error) {
-	certificate, err := tls.LoadX509KeyPair(
-		adapterCertificate,
-		adapterPrivateKey,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load key cert pair")
+	select {
+	case <-stopCh:
+		// This will wait for publisher and writer
+		// If any interruption happens, this will give some time to clear in memory buffers by persisting them to
+		// prevent data losses.
+		waitGroup.Wait()
+	case err = <-errCh:
+		if err != nil {
+			logger.Fatalf("Something went wrong when initializing the adapter : %v", err)
+		}
 	}
-	certPool := x509.NewCertPool()
-	bytesArray, err := ioutil.ReadFile(caCertificate)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read client ca cert: %s", err)
-	}
-
-	ok := certPool.AppendCertsFromPEM(bytesArray)
-	if !ok {
-		return nil, fmt.Errorf("failed to append client certs")
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{certificate},
-		ClientCAs:    certPool,
-	}
-	tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-
-	return grpc.Creds(credentials.NewTLS(tlsConfig)), nil
 }

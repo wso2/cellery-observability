@@ -18,14 +18,17 @@
 
 package io.cellery.observability.telemetry.receiver.internal;
 
-import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPInputStream;
 
 /**
  * This class is responsible for handling metrics received from the http server.
@@ -33,7 +36,6 @@ import java.io.IOException;
 public class MetricsHandler implements HttpHandler {
 
     private static final Logger log = Logger.getLogger(MetricsHandler.class);
-    private static final Gson gson = new Gson();
     private SourceEventListener sourceEventListener;
 
     public MetricsHandler(SourceEventListener sourceEventListener) {
@@ -43,15 +45,14 @@ public class MetricsHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
         if (httpExchange.getRequestBody() != null) {
-            try {
-                String json = IOUtils.toString(httpExchange.getRequestBody());
-                if (log.isDebugEnabled()) {
-                    log.debug("Received a metric from the adapter : " + json);
-                }
-                sourceEventListener.onEvent(json, new String[0]);
-                httpExchange.sendResponseHeaders(200, -1);
-            } catch (IOException e) {
-                httpExchange.sendResponseHeaders(500, -1);
+            try (GZIPInputStream gis = new GZIPInputStream(httpExchange.getRequestBody());
+                    BufferedReader bf = new BufferedReader(new InputStreamReader(gis, StandardCharsets.UTF_8))) {
+                    String json = IOUtils.toString(bf);
+                    if (log.isDebugEnabled()) {
+                        log.debug("Received metrics from the adapter : " + json);
+                    }
+                    sourceEventListener.onEvent(json, new String[0]);
+                    httpExchange.sendResponseHeaders(200, -1);
             }
         } else {
             httpExchange.sendResponseHeaders(500, -1);

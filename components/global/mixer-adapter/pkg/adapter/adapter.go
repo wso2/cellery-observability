@@ -24,13 +24,16 @@
 package adapter
 
 import (
-	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
+
+	"google.golang.org/grpc/credentials"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -39,30 +42,35 @@ import (
 	"istio.io/istio/mixer/template/metric"
 )
 
+const (
+	AdapterPort int = 38355
+)
+
 type (
 	// Server is basic server interface
 	Server interface {
 		Addr() string
 		Close() error
-		Run(shutdown chan error)
+		Run(errCh chan error)
 	}
 
-	// Adapter supports metric template.
+	// The struct for the adapter. (Adapter supports metric template)
 	Adapter struct {
-		listener    net.Listener
-		server      *grpc.Server
-		logger      *zap.SugaredLogger
-		httpClient  *http.Client
-		publisher   Publisher
-		spServerUrl string
+		listener   net.Listener
+		server     *grpc.Server
+		logger     *zap.SugaredLogger
+		httpClient *http.Client
+		buffer     chan string
 	}
 
-	/* This interface and the struct has been implemented to test the Publish() function */
-	Publisher interface {
-		Publish(attributeMap map[string]interface{}, logger *zap.SugaredLogger, httpClient *http.Client, spServerUrl string) bool
+	Mixer struct {
+		*TLS `json:"tls"`
 	}
-
-	SPMetricsPublisher struct{}
+	TLS struct {
+		Certificate   string `json:"certificate"`
+		PrivateKey    string `json:"privateKey"`
+		CaCertificate string `json:"caCertificate"`
+	}
 )
 
 // Decode received metrics from the mixer
@@ -72,35 +80,18 @@ func (adapter *Adapter) HandleMetric(ctx context.Context, r *metric.HandleMetric
 	for _, inst := range instances {
 		var attributesMap = decodeDimensions(inst.Dimensions)
 		adapter.logger.Debugf("received request : %s", attributesMap)
-		adapter.publisher.Publish(attributesMap, adapter.logger, adapter.httpClient, adapter.spServerUrl) // ToDO : get the boolean value from the function to check whether the metric is delivered or not
+		adapter.writeToBuffer(attributesMap)
 	}
 
 	return &v1beta1.ReportResult{}, nil
 }
 
-// Send metrics to sp server
-func (publisher SPMetricsPublisher) Publish(attributeMap map[string]interface{}, logger *zap.SugaredLogger, httpClient *http.Client, spServerUrl string) bool {
-	jsonValue, _ := json.Marshal(attributeMap)
-	req, err := http.NewRequest("POST", spServerUrl, bytes.NewBuffer(jsonValue))
-	if req != nil {
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return false
-		}
-		defer func() {
-			err := resp.Body.Close()
-			if err != nil {
-				logger.Warn("Could not close the body")
-			}
-		}()
-		body, _ := ioutil.ReadAll(resp.Body)
-		logger.Info("Received response from SP Worker : ", string(body))
-		return true // ToDo : return the boolean value considering the response
-	} else {
-		logger.Warnf("Could not send request : %s", err)
-		return false
+func (adapter *Adapter) writeToBuffer(attributeMap map[string]interface{}) {
+	jsonValue, err := json.Marshal(attributeMap)
+	if err != nil {
+		return
 	}
+	adapter.buffer <- string(jsonValue)
 }
 
 func decodeDimensions(in map[string]*policy.Value) map[string]interface{} {
@@ -136,8 +127,9 @@ func (adapter *Adapter) Addr() string {
 }
 
 // Run starts the server run
-func (adapter *Adapter) Run(shutdown chan error) {
-	shutdown <- adapter.server.Serve(adapter.listener)
+func (adapter *Adapter) Run(errCh chan error) {
+	errCh <- adapter.server.Serve(adapter.listener)
+	_ = adapter.Close()
 }
 
 // Close gracefully shuts down the server; used for testing
@@ -145,31 +137,33 @@ func (adapter *Adapter) Close() error {
 	if adapter.server != nil {
 		adapter.server.GracefulStop()
 	}
-
 	if adapter.listener != nil {
 		_ = adapter.listener.Close()
 	}
-
 	return nil
 }
 
 // New creates a new SP adapter that listens at provided port.
-func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, publisher Publisher, serverOption grpc.ServerOption, spServerUrl string) (Server, error) {
+func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, buffer chan string, config *Mixer) (Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", addr))
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on socket: %v", err)
 	}
-
 	adapter := &Adapter{
-		listener:    listener,
-		logger:      logger,
-		httpClient:  httpClient,
-		publisher:   publisher,
-		spServerUrl: spServerUrl,
+		listener:   listener,
+		logger:     logger,
+		httpClient: httpClient,
+		buffer:     buffer,
 	}
-
 	logger.Info("listening on ", adapter.Addr())
-
+	mixerTls := config.TLS
+	var serverOption grpc.ServerOption = nil
+	if mixerTls.Certificate != "" {
+		serverOption, err = getServerTLSOption(mixerTls.Certificate, mixerTls.PrivateKey, mixerTls.CaCertificate)
+		if err != nil {
+			logger.Warn("Server option could not be fetched, Connection will not be encrypted")
+		}
+	}
 	if serverOption != nil {
 		adapter.server = grpc.NewServer(serverOption)
 	} else {
@@ -177,4 +171,32 @@ func New(addr int, logger *zap.SugaredLogger, httpClient *http.Client, publisher
 	}
 	metric.RegisterHandleMetricServiceServer(adapter.server, adapter)
 	return adapter, nil
+}
+
+func getServerTLSOption(adapterCertificate, adapterPrivateKey, caCertificate string) (grpc.ServerOption, error) {
+	certificate, err := tls.LoadX509KeyPair(
+		adapterCertificate,
+		adapterPrivateKey,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load key cert pair")
+	}
+	certPool := x509.NewCertPool()
+	bytesArray, err := ioutil.ReadFile(caCertificate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read client ca cert: %v", err)
+	}
+
+	ok := certPool.AppendCertsFromPEM(bytesArray)
+	if !ok {
+		return nil, fmt.Errorf("failed to append client certs")
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{certificate},
+		ClientCAs:    certPool,
+	}
+	tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+
+	return grpc.Creds(credentials.NewTLS(tlsConfig)), nil
 }

@@ -79,7 +79,7 @@ test: test.mixer-adapter
 
 .PHONY: test.mixer-adapter
 test.mixer-adapter:
-	go test -race -covermode=atomic -coverprofile=./components/global/mixer-adapter/target/coverage.txt ./components/global/mixer-adapter/pkg/$(TARGET)/...
+	go test `go list ./components/global/mixer-adapter/pkg/... | grep -v ./components/global/mixer-adapter/pkg/signals` -race -covermode=atomic -coverprofile=./components/global/mixer-adapter/target/coverage.txt
 
 
 .PHONY: docker
