@@ -31,7 +31,6 @@ public class Constants {
     public static final String COMPOSITE_CRD_VERSION = "v1alpha2";
     public static final String COMPOSITE_KIND = "Composite";
 
-    public static final String NAMESPACE = "default";
     public static final String CELLERY_OBSERVABILITY_GROUP = "observability." + CELLERY_GROUP;
     public static final String CELLERY_OBSERVABILITY_INSTANCE_LABEL = CELLERY_OBSERVABILITY_GROUP + "/instance";
     public static final String CELLERY_OBSERVABILITY_INSTANCE_KIND_LABEL =

@@ -631,6 +631,17 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
                         // Ingress can be lower case as well
                         generateServicesTemplate(namespaceA, "test-component-alt", "grpc")));
 
+        Destination cellEGrpcIngressADestination = new Destination();
+        cellEGrpcIngressADestination.setHost("test-component");
+        GRPC cellEGrpcIngressA = new GRPC();
+        cellEGrpcIngressA.setDestination(cellEGrpcIngressADestination);
+
+        Cell cellE = generateCell(namespaceB, "cell-d",
+                generateGatewayTemplate(null, null, null, Collections.singletonList(cellEGrpcIngressA)),
+                Arrays.asList(generateServicesTemplate(namespaceB, "test-component", "GRPC"),
+                        // Ingress can be lower case as well
+                        generateServicesTemplate(namespaceB, "test-component-alt", "grpc")));
+
         Composite compositeA = generateComposite(namespaceC, "composite-a",
                 Arrays.asList(generateServicesTemplate(namespaceC, "test-component-a", "GRPC"),
                         generateServicesTemplate(namespaceC, "test-component-alt", "HTTP")));
@@ -642,6 +653,10 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
         Composite compositeC = generateComposite(namespaceB, "composite-c",
                 Arrays.asList(generateServicesTemplate(namespaceB, "test-r", "TCP"),
                         generateServicesTemplate(namespaceB, "test-s", "GRPC")));
+
+        Composite compositeD = generateComposite(namespaceA, "composite-c",
+                Arrays.asList(generateServicesTemplate(namespaceA, "test-r", "TCP"),
+                        generateServicesTemplate(namespaceA, "test-s", "GRPC")));
 
         k8sServer.expect()
                 .withPath(WATCH_CELL_URL)
@@ -655,6 +670,8 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
                 .andEmit(new WatchEvent(cellC, "DELETED"))
                 .waitFor(21)
                 .andEmit(new WatchEvent(cellD, "ERROR"))
+                .waitFor(102)
+                .andEmit(new WatchEvent(cellE, "ERROR"))
                 .done()
                 .once();
         k8sServer.expect()
@@ -667,12 +684,14 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
                 .andEmit(new WatchEvent(compositeB, "MODIFIED"))
                 .waitFor(923)
                 .andEmit(new WatchEvent(compositeC, "DELETED"))
+                .waitFor(704)
+                .andEmit(new WatchEvent(compositeD, "DELETED"))
                 .done()
                 .once();
         initializeSiddhiAppRuntime();
 
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 16, eventCount, TIMEOUT);
-        Assert.assertEquals(eventCount.get(), 15);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 20, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 19);
         for (Event receivedEvent : receivedEvents) {
             Object[] data = receivedEvent.getData();
             Assert.assertEquals(data.length, 7);
@@ -682,92 +701,101 @@ public class ComponentsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
             } else {
                 ingressTypes = new String[]{};
             }
-            if ("cell-a".equals(data[1]) && "portal".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceA);
+            if (namespaceA.equals(data[0]) && "cell-a".equals(data[1]) && "portal".equals(data[3])) {
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[4], -1L);
                 Assert.assertEquals(data[6], "ADDED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.WEB});
-            } else if ("cell-b".equals(data[1]) && "test-a".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceC);
+            } else if (namespaceC.equals(data[0]) && "cell-b".equals(data[1]) && "test-a".equals(data[3])) {
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "MODIFIED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.TCP});
-            } else if ("cell-b".equals(data[1]) && "test-b".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceC);
+            } else if (namespaceC.equals(data[0]) && "cell-b".equals(data[1]) && "test-b".equals(data[3])) {
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "MODIFIED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
-            } else if ("cell-c".equals(data[1]) && "controller".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceB);
+            } else if (namespaceB.equals(data[0]) && "cell-c".equals(data[1]) && "controller".equals(data[3])) {
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "DELETED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.HTTP});
-            } else if ("cell-c".equals(data[1]) && "customers".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceB);
+            } else if (namespaceB.equals(data[0]) && "cell-c".equals(data[1]) && "customers".equals(data[3])) {
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "DELETED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.HTTP});
-            } else if ("cell-c".equals(data[1]) && "orders".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceB);
+            } else if (namespaceB.equals(data[0]) && "cell-c".equals(data[1]) && "orders".equals(data[3])) {
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "DELETED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
-            } else if ("cell-c".equals(data[1]) && "catalog".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceB);
+            } else if (namespaceB.equals(data[0]) && "cell-c".equals(data[1]) && "catalog".equals(data[3])) {
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "DELETED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
-            } else if ("cell-d".equals(data[1]) && "test-component".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceA);
+            } else if (namespaceA.equals(data[0]) && "cell-d".equals(data[1]) && "test-component".equals(data[3])) {
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "ERROR");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.GRPC});
-            } else if ("cell-d".equals(data[1]) && "test-component-alt".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceA);
+            } else if (namespaceA.equals(data[0]) && "cell-d".equals(data[1]) && "test-component-alt".equals(data[3])) {
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "ERROR");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
-            } else if ("composite-a".equals(data[1]) && "test-component-a".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceC);
+            } else if (namespaceB.equals(data[0]) && "cell-d".equals(data[1]) && "test-component".equals(data[3])) {
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[4], creationTimestamp);
+                Assert.assertEquals(data[6], "ERROR");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.GRPC});
+            } else if (namespaceB.equals(data[0]) && "cell-d".equals(data[1]) && "test-component-alt".equals(data[3])) {
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[4], creationTimestamp);
+                Assert.assertEquals(data[6], "ERROR");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
+            } else if (namespaceC.equals(data[0]) && "composite-a".equals(data[1])
+                    && "test-component-a".equals(data[3])) {
                 Assert.assertEquals(data[2], "Composite");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "ADDED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.GRPC});
-            } else if ("composite-a".equals(data[1]) && "test-component-alt".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceC);
+            } else if (namespaceC.equals(data[0]) && "composite-a".equals(data[1])
+                    && "test-component-alt".equals(data[3])) {
                 Assert.assertEquals(data[2], "Composite");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "ADDED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.HTTP});
-            } else if ("composite-b".equals(data[1]) && "test-component-b".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceA);
+            } else if (namespaceA.equals(data[0]) && "composite-b".equals(data[1])
+                    && "test-component-b".equals(data[3])) {
                 Assert.assertEquals(data[2], "Composite");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "MODIFIED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.HTTP});
-            } else if ("composite-b".equals(data[1]) && "test-component-alt".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceA);
+            } else if (namespaceA.equals(data[0]) && "composite-b".equals(data[1])
+                    && "test-component-alt".equals(data[3])) {
                 Assert.assertEquals(data[2], "Composite");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "MODIFIED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{});
-            } else if ("composite-c".equals(data[1]) && "test-r".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceB);
+            } else if (namespaceB.equals(data[0]) && "composite-c".equals(data[1]) && "test-r".equals(data[3])) {
                 Assert.assertEquals(data[2], "Composite");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "DELETED");
                 Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.TCP});
-            } else if ("composite-c".equals(data[1]) && "test-s".equals(data[3])) {
-                Assert.assertEquals(data[0], namespaceB);
+            } else if (namespaceB.equals(data[0]) && "composite-c".equals(data[1]) && "test-s".equals(data[3])) {
+                Assert.assertEquals(data[2], "Composite");
+                Assert.assertEquals(data[4], creationTimestamp);
+                Assert.assertEquals(data[6], "DELETED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.GRPC});
+            } else if (namespaceA.equals(data[0]) && "composite-c".equals(data[1]) && "test-r".equals(data[3])) {
+                Assert.assertEquals(data[2], "Composite");
+                Assert.assertEquals(data[4], creationTimestamp);
+                Assert.assertEquals(data[6], "DELETED");
+                Assert.assertEqualsNoOrder(ingressTypes, new String[]{Constants.IngressType.TCP});
+            } else if (namespaceA.equals(data[0]) && "composite-c".equals(data[1]) && "test-s".equals(data[3])) {
                 Assert.assertEquals(data[2], "Composite");
                 Assert.assertEquals(data[4], creationTimestamp);
                 Assert.assertEquals(data[6], "DELETED");
