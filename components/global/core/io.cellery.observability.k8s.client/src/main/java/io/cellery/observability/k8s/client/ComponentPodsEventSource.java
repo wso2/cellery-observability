@@ -85,7 +85,7 @@ public class ComponentPodsEventSource extends Source {
 
         // Pod watcher for Cellery Instance components
         Watch componentsWatch = k8sClient.pods()
-                .inNamespace(Constants.NAMESPACE)
+                .inAnyNamespace()
                 .withLabel(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL)
                 .withLabel(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL)
                 .watch(new PodWatcher(this.sourceEventListener, Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL));
@@ -95,7 +95,7 @@ public class ComponentPodsEventSource extends Source {
         }
         // Pod watcher for Cellery cell gateways
         Watch gatewaysWatch = k8sClient.pods()
-                .inNamespace(Constants.NAMESPACE)
+                .inAnyNamespace()
                 .withLabel(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL)
                 .withLabel(Constants.CELLERY_OBSERVABILITY_GATEWAY_NAME_LABEL)
                 .watch(new PodWatcher(this.sourceEventListener, Constants.CELLERY_OBSERVABILITY_GATEWAY_NAME_LABEL));
@@ -168,6 +168,7 @@ public class ComponentPodsEventSource extends Source {
         public void eventReceived(Action action, Pod pod) {
             try {
                 Map<String, Object> attributes = new HashMap<>();
+                attributes.put(Constants.Attribute.NAMESPACE, pod.getMetadata().getNamespace());
                 attributes.put(Constants.Attribute.INSTANCE, pod.getMetadata().getLabels().getOrDefault(
                         Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, ""));
                 attributes.put(Constants.Attribute.COMPONENT, Utils.getComponentName(pod));
