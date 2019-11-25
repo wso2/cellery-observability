@@ -67,6 +67,14 @@ public class TracingSynapseHandler extends AbstractSynapseHandler {
         if (apiContext == null) {
             apiContext = Constants.ZIPKIN_API_CONTEXT_DEFAULT_VALUE;
         }
+        String tracingServiceName = System.getenv(Constants.CELLERY_TRACING_SERVICE_NAME_ENV_VAR);
+        if (tracingServiceName == null) {
+            tracingServiceName = Constants.CELLERY_TRACING_SERVICE_NAME_DEFAULT_VALUE;
+        }
+        String tracingNamespace = System.getenv(Constants.CELLERY_TRACING_NAMESPACE_ENV_VAR);
+        if (tracingNamespace != null) {
+            tracingServiceName = tracingServiceName + "." + tracingNamespace;
+        }
 
         // Instantiating the reporter
         String tracingReceiverEndpoint = "http://" + hostname + ":" + port + apiContext;
@@ -81,7 +89,7 @@ public class TracingSynapseHandler extends AbstractSynapseHandler {
 
         // Instantiating the tracer
         Tracing braveTracing = Tracing.newBuilder()
-                .localServiceName(Constants.GLOBAL_GATEWAY_SERVICE_NAME)
+                .localServiceName(tracingServiceName)
                 .spanReporter(reporter)
                 .build();
         tracer = BraveTracer.newBuilder(braveTracing)
