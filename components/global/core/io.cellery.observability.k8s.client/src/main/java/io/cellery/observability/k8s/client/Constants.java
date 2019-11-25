@@ -56,6 +56,7 @@ public class Constants {
      * Siddhi extension attribute names.
      */
     public static class Attribute {
+        public static final String NAMESPACE = "namespace";
         public static final String INSTANCE = "instance";
         public static final String INSTANCE_KIND = "instanceKind";
         public static final String ACTION = "action";

@@ -51,7 +51,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Test case for Component Pod Event Source.
  */
 public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCase {
-
     private static final Logger logger = Logger.getLogger(ComponentPodsEventSourceTestCase.class.getName());
 
     private AtomicInteger eventCount = new AtomicInteger(0);
@@ -70,7 +69,9 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
 
     @AfterMethod
     public void cleanUp() {
-        siddhiAppRuntime.shutdown();
+        if (siddhiAppRuntime != null) {
+            siddhiAppRuntime.shutdown();
+        }
     }
 
     @Test
@@ -122,92 +123,93 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
         Assert.assertEquals(eventCount.get(), 9);
         for (Event receivedEvent : receivedEvents) {
             Object[] data = receivedEvent.getData();
-            Assert.assertEquals(data.length, 9);
-            if ("pet-be--test-a".equals(data[3])) {
-                Assert.assertEquals(data[0], "pet-be");
-                Assert.assertEquals(data[1], "Cell");
-                Assert.assertEquals(data[2], "test-a");
-                Assert.assertEquals(data[4], -1L);
+            Assert.assertEquals(data.length, 10);
+            Assert.assertEquals(data[0], DEFAULT_NAMESPACE);
+            if ("pet-be--test-a".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-be");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "test-a");
                 Assert.assertEquals(data[5], -1L);
-                Assert.assertEquals(data[6], "");
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "ADDED");
-            } else if ("pet-fe--test-b".equals(data[3])) {
-                Assert.assertEquals(data[0], "pet-fe");
-                Assert.assertEquals(data[1], "Cell");
-                Assert.assertEquals(data[2], "test-b");
-                Assert.assertEquals(data[4], creationTimestamp);
-                Assert.assertEquals(data[5], -1L);
-                Assert.assertEquals(data[6], NODE_NAME);
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "MODIFIED");
-            } else if ("pet-be--test-c".equals(data[3])) {
-                Assert.assertEquals(data[0], "pet-be");
-                Assert.assertEquals(data[1], "Cell");
-                Assert.assertEquals(data[2], "test-c");
-                Assert.assertEquals(data[4], creationTimestamp);
-                Assert.assertEquals(data[5], new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], "");
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "ADDED");
+            } else if ("pet-fe--test-b".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-fe");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "test-b");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "MODIFIED");
+            } else if ("pet-be--test-c".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-be");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "test-c");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
                         .parse(deletionTimestamp).getTime());
-                Assert.assertEquals(data[6], NODE_NAME);
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "DELETED");
-            } else if ("pet-fe--test-d".equals(data[3])) {
-                Assert.assertEquals(data[0], "pet-fe");
-                Assert.assertEquals(data[1], "Cell");
-                Assert.assertEquals(data[2], "test-d");
-                Assert.assertEquals(data[4], creationTimestamp);
-                Assert.assertEquals(data[5], -1L);
-                Assert.assertEquals(data[6], NODE_NAME);
-                Assert.assertEquals(data[7], "ErrImagePull");
-                Assert.assertEquals(data[8], "ERROR");
-            } else if ("pet-fe--gateway".equals(data[3])) {
-                Assert.assertEquals(data[0], "pet-fe");
-                Assert.assertEquals(data[1], "Cell");
-                Assert.assertEquals(data[2], "gateway");
-                Assert.assertEquals(data[4], creationTimestamp);
-                Assert.assertEquals(data[5], -1L);
-                Assert.assertEquals(data[6], NODE_NAME);
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "MODIFIED");
-            } else if ("pet-be--gateway".equals(data[3])) {
-                Assert.assertEquals(data[0], "pet-be");
-                Assert.assertEquals(data[1], "Cell");
-                Assert.assertEquals(data[2], "gateway");
-                Assert.assertEquals(data[4], creationTimestamp);
-                Assert.assertEquals(data[5], -1L);
-                Assert.assertEquals(data[6], NODE_NAME);
-                Assert.assertEquals(data[7], "ErrImagePull");
-                Assert.assertEquals(data[8], "ERROR");
-            } else if ("employee-comp--test-a".equals(data[3])) {
-                Assert.assertEquals(data[0], "employee-comp");
-                Assert.assertEquals(data[1], "Composite");
-                Assert.assertEquals(data[2], "test-a");
-                Assert.assertEquals(data[4], creationTimestamp);
-                Assert.assertEquals(data[5], -1L);
-                Assert.assertEquals(data[6], NODE_NAME);
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "MODIFIED");
-            } else if ("stock-comp--test-b".equals(data[3])) {
-                Assert.assertEquals(data[0], "stock-comp");
-                Assert.assertEquals(data[1], "Composite");
-                Assert.assertEquals(data[2], "test-b");
-                Assert.assertEquals(data[4], creationTimestamp);
-                Assert.assertEquals(data[5], -1L);
-                Assert.assertEquals(data[6], NODE_NAME);
-                Assert.assertEquals(data[7], "ErrImagePull");
-                Assert.assertEquals(data[8], "ERROR");
-            } else if ("hr-comp--test-d".equals(data[3])) {
-                Assert.assertEquals(data[0], "hr-comp");
-                Assert.assertEquals(data[1], "Composite");
-                Assert.assertEquals(data[2], "test-d");
-                Assert.assertEquals(data[4], creationTimestamp);
-                Assert.assertEquals(data[5], new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "DELETED");
+            } else if ("pet-fe--test-d".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-fe");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "test-d");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "ErrImagePull");
+                Assert.assertEquals(data[9], "ERROR");
+            } else if ("pet-fe--gateway".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-fe");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "gateway");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "MODIFIED");
+            } else if ("pet-be--gateway".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-be");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "gateway");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "ErrImagePull");
+                Assert.assertEquals(data[9], "ERROR");
+            } else if ("employee-comp--test-a".equals(data[4])) {
+                Assert.assertEquals(data[1], "employee-comp");
+                Assert.assertEquals(data[2], "Composite");
+                Assert.assertEquals(data[3], "test-a");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "MODIFIED");
+            } else if ("stock-comp--test-b".equals(data[4])) {
+                Assert.assertEquals(data[1], "stock-comp");
+                Assert.assertEquals(data[2], "Composite");
+                Assert.assertEquals(data[3], "test-b");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "ErrImagePull");
+                Assert.assertEquals(data[9], "ERROR");
+            } else if ("hr-comp--test-d".equals(data[4])) {
+                Assert.assertEquals(data[1], "hr-comp");
+                Assert.assertEquals(data[2], "Composite");
+                Assert.assertEquals(data[3], "test-d");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
                         .parse(deletionTimestamp).getTime());
-                Assert.assertEquals(data[6], NODE_NAME);
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "DELETED");
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "DELETED");
             } else {
-                Assert.fail("Received unexpect pod " + data[3]);
+                Assert.fail("Received unexpect pod " + data[4] + " in namespace " + data[0]);
             }
         }
     }
@@ -236,22 +238,22 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
         Assert.assertEquals(eventCount.get(), 2);
         for (Event receivedEvent : receivedEvents) {
             Object[] data = receivedEvent.getData();
-            Assert.assertEquals(data.length, 9);
+            Assert.assertEquals(data.length, 10);
             validatePodData(data);
-            if ("pet-be--test-a".equals(data[3])) {
-                Assert.assertEquals(data[0], "pet-be");
-                Assert.assertEquals(data[1], "Cell");
-                Assert.assertEquals(data[2], "test-a");
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "ADDED");
-            } else if ("pet-fe--test-b".equals(data[3])) {
-                Assert.assertEquals(data[0], "pet-fe");
-                Assert.assertEquals(data[1], "Cell");
-                Assert.assertEquals(data[2], "test-b");
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "MODIFIED");
+            if ("pet-be--test-a".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-be");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "test-a");
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "ADDED");
+            } else if ("pet-fe--test-b".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-fe");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "test-b");
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "MODIFIED");
             } else {
-                Assert.fail("Received unexpect pod " + data[3]);
+                Assert.fail("Received unexpect pod " + data[4] + " in namespace " + data[0]);
             }
         }
     }
@@ -280,22 +282,22 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
         Assert.assertEquals(eventCount.get(), 2);
         for (Event receivedEvent : receivedEvents) {
             Object[] data = receivedEvent.getData();
-            Assert.assertEquals(data.length, 9);
+            Assert.assertEquals(data.length, 10);
             validatePodData(data);
-            if ("pet-be--gateway".equals(data[3])) {
-                Assert.assertEquals(data[0], "pet-be");
-                Assert.assertEquals(data[1], "Cell");
-                Assert.assertEquals(data[2], "gateway");
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "ADDED");
-            } else if ("pet-fe--gateway".equals(data[3])) {
-                Assert.assertEquals(data[0], "pet-fe");
-                Assert.assertEquals(data[1], "Cell");
-                Assert.assertEquals(data[2], "gateway");
-                Assert.assertEquals(data[7], "ErrImagePull");
-                Assert.assertEquals(data[8], "ERROR");
+            if ("pet-be--gateway".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-be");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "gateway");
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "ADDED");
+            } else if ("pet-fe--gateway".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-fe");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "gateway");
+                Assert.assertEquals(data[8], "ErrImagePull");
+                Assert.assertEquals(data[9], "ERROR");
             } else {
-                Assert.fail("Received unexpect pod " + data[3]);
+                Assert.fail("Received unexpect pod " + data[4] + " in namespace " + data[0]);
             }
         }
     }
@@ -324,22 +326,22 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
         Assert.assertEquals(eventCount.get(), 2);
         for (Event receivedEvent : receivedEvents) {
             Object[] data = receivedEvent.getData();
-            Assert.assertEquals(data.length, 9);
+            Assert.assertEquals(data.length, 10);
             validatePodData(data);
-            if ("hr-comp--test-a".equals(data[3])) {
-                Assert.assertEquals(data[0], "hr-comp");
-                Assert.assertEquals(data[1], "Composite");
-                Assert.assertEquals(data[2], "test-a");
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "ADDED");
-            } else if ("stock-comp--test-b".equals(data[3])) {
-                Assert.assertEquals(data[0], "stock-comp");
-                Assert.assertEquals(data[1], "Composite");
-                Assert.assertEquals(data[2], "test-b");
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "MODIFIED");
+            if ("hr-comp--test-a".equals(data[4])) {
+                Assert.assertEquals(data[1], "hr-comp");
+                Assert.assertEquals(data[2], "Composite");
+                Assert.assertEquals(data[3], "test-a");
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "ADDED");
+            } else if ("stock-comp--test-b".equals(data[4])) {
+                Assert.assertEquals(data[1], "stock-comp");
+                Assert.assertEquals(data[2], "Composite");
+                Assert.assertEquals(data[3], "test-b");
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "MODIFIED");
             } else {
-                Assert.fail("Received unexpect pod " + data[3]);
+                Assert.fail("Received unexpect pod " + data[4] + " in namespace " + data[0]);
             }
         }
     }
@@ -423,28 +425,28 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
         Assert.assertEquals(eventCount.get(), 3);
         for (Event receivedEvent : receivedEvents) {
             Object[] data = receivedEvent.getData();
-            Assert.assertEquals(data.length, 9);
+            Assert.assertEquals(data.length, 10);
             validatePodData(data);
-            if ("pet-be--test-a".equals(data[3])) {
-                Assert.assertEquals(data[0], "pet-be");
-                Assert.assertEquals(data[1], "Cell");
-                Assert.assertEquals(data[2], "test-a");
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "ADDED");
-            } else if ("pet-fe--gateway".equals(data[3])) {
-                Assert.assertEquals(data[0], "pet-fe");
-                Assert.assertEquals(data[1], "Cell");
-                Assert.assertEquals(data[2], "gateway");
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "MODIFIED");
-            } else if ("hr-comp--test-g".equals(data[3])) {
-                Assert.assertEquals(data[0], "hr-comp");
-                Assert.assertEquals(data[1], "Composite");
-                Assert.assertEquals(data[2], "test-g");
-                Assert.assertEquals(data[7], "Running");
-                Assert.assertEquals(data[8], "MODIFIED");
+            if ("pet-be--test-a".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-be");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "test-a");
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "ADDED");
+            } else if ("pet-fe--gateway".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-fe");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "gateway");
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "MODIFIED");
+            } else if ("hr-comp--test-g".equals(data[4])) {
+                Assert.assertEquals(data[1], "hr-comp");
+                Assert.assertEquals(data[2], "Composite");
+                Assert.assertEquals(data[3], "test-g");
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "MODIFIED");
             } else {
-                Assert.fail("Received unexpect pod " + data[3]);
+                Assert.fail("Received unexpect pod " + data[4] + " in namespace " + data[0]);
             }
         }
     }
@@ -521,6 +523,160 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
         Assert.assertEquals(eventCount.get(), 3);
     }
 
+    @Test
+    public void testNamespaceSeparation() throws Exception {
+        String namespaceA = "namespace-a";
+        String namespaceB = "namespace-b";
+        String namespaceC = "namespace-c";
+        String deletionTimestamp = "2019-04-30T13:52:22Z";
+        Pod podA = generateCelleryCellComponentPod(namespaceA, "pet-be", "test-a");
+        podA.getMetadata().setCreationTimestamp(null);
+        podA.getSpec().setNodeName(null);
+
+        Pod podB = generateCelleryCellComponentPod(namespaceB, "pet-be", "test-c");
+        podB.getMetadata().setDeletionTimestamp(deletionTimestamp);
+
+        Pod podC = generateCelleryCompositeComponentPod(namespaceA, "hr-comp", "test-d");
+        podC.getMetadata().setDeletionTimestamp(deletionTimestamp);
+
+        k8sServer.expect()
+                .withPath(getWatchComponentPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(1135)
+                .andEmit(new WatchEvent(podA, "ADDED"))
+                .waitFor(193)
+                .andEmit(new WatchEvent(generateCelleryCellComponentPod(namespaceC, "pet-fe", "test-b"), "MODIFIED"))
+                .waitFor(1)
+                .andEmit(new WatchEvent(podB, "DELETED"))
+                .waitFor(21)
+                .andEmit(new WatchEvent(generateFailingCelleryCellComponentPod(namespaceA, "pet-fe", "test-d"),
+                        "ERROR"))
+                .waitFor(2264)
+                .andEmit(new WatchEvent(generateCelleryCompositeComponentPod(namespaceB, "employee-comp", "test-a"),
+                        "MODIFIED"))
+                .waitFor(53)
+                .andEmit(new WatchEvent(generateFailingCelleryCompositeComponentPod(namespaceB, "stock-comp", "test-b"),
+                        "ERROR"))
+                .waitFor(1)
+                .andEmit(new WatchEvent(podC, "DELETED"))
+                .done()
+                .once();
+        k8sServer.expect()
+                .withPath(getWatchGatewayPodsUrl())
+                .andUpgradeToWebSocket()
+                .open()
+                .waitFor(2264)
+                .andEmit(new WatchEvent(generateCelleryCellGatewayPod(namespaceA, "pet-fe"), "MODIFIED"))
+                .waitFor(53)
+                .andEmit(new WatchEvent(generateFailingCelleryCellGatewayPod(namespaceA, "pet-be"), "ERROR"))
+                .done()
+                .once();
+        initializeSiddhiAppRuntime();
+
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 10, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 9);
+        for (Event receivedEvent : receivedEvents) {
+            Object[] data = receivedEvent.getData();
+            Assert.assertEquals(data.length, 10);
+            if ("pet-be--test-a".equals(data[4])) {
+                Assert.assertEquals(data[0], namespaceA);
+                Assert.assertEquals(data[1], "pet-be");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "test-a");
+                Assert.assertEquals(data[5], -1L);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], "");
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "ADDED");
+            } else if ("pet-fe--test-b".equals(data[4])) {
+                Assert.assertEquals(data[0], namespaceC);
+                Assert.assertEquals(data[1], "pet-fe");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "test-b");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "MODIFIED");
+            } else if ("pet-be--test-c".equals(data[4])) {
+                Assert.assertEquals(data[0], namespaceB);
+                Assert.assertEquals(data[1], "pet-be");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "test-c");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
+                        .parse(deletionTimestamp).getTime());
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "DELETED");
+            } else if ("pet-fe--test-d".equals(data[4])) {
+                Assert.assertEquals(data[0], namespaceA);
+                Assert.assertEquals(data[1], "pet-fe");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "test-d");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "ErrImagePull");
+                Assert.assertEquals(data[9], "ERROR");
+            } else if ("pet-fe--gateway".equals(data[4])) {
+                Assert.assertEquals(data[0], namespaceA);
+                Assert.assertEquals(data[1], "pet-fe");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "gateway");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "MODIFIED");
+            } else if ("pet-be--gateway".equals(data[4])) {
+                Assert.assertEquals(data[0], namespaceA);
+                Assert.assertEquals(data[1], "pet-be");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "gateway");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "ErrImagePull");
+                Assert.assertEquals(data[9], "ERROR");
+            } else if ("employee-comp--test-a".equals(data[4])) {
+                Assert.assertEquals(data[0], namespaceB);
+                Assert.assertEquals(data[1], "employee-comp");
+                Assert.assertEquals(data[2], "Composite");
+                Assert.assertEquals(data[3], "test-a");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "MODIFIED");
+            } else if ("stock-comp--test-b".equals(data[4])) {
+                Assert.assertEquals(data[0], namespaceB);
+                Assert.assertEquals(data[1], "stock-comp");
+                Assert.assertEquals(data[2], "Composite");
+                Assert.assertEquals(data[3], "test-b");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "ErrImagePull");
+                Assert.assertEquals(data[9], "ERROR");
+            } else if ("hr-comp--test-d".equals(data[4])) {
+                Assert.assertEquals(data[0], namespaceA);
+                Assert.assertEquals(data[1], "hr-comp");
+                Assert.assertEquals(data[2], "Composite");
+                Assert.assertEquals(data[3], "test-d");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
+                        .parse(deletionTimestamp).getTime());
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "DELETED");
+            } else {
+                Assert.fail("Received unexpect pod " + data[4] + " in namespace " + data[0]);
+            }
+        }
+    }
+
     /**
      * Initialize the Siddhi App Runtime with the k8s
      */
@@ -528,9 +684,9 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
         String inStreamDefinition = "@App:name(\"test-siddhi-app\")\n" +
                 "@source(type=\"k8s-component-pods\", @map(type=\"keyvalue\", " +
                 "fail.on.missing.attribute=\"true\"))\n" +
-                "define stream K8sComponentPodsStream (instance string, instanceKind string, component string, " +
-                "podName string, creationTimestamp long, deletionTimestamp long, nodeName string, status string, " +
-                "action string);";
+                "define stream K8sComponentPodsStream (namespace string, instance string, instanceKind string," +
+                "component string, podName string, creationTimestamp long, deletionTimestamp long," +
+                "nodeName string, status string, action string);";
         String query = "@info(name = \"query\")\n" +
                 "from K8sComponentPodsStream\n" +
                 "select *\n" +
@@ -563,9 +719,10 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
      * @param data      The pod event data
      */
     private void validatePodData(Object[] data) {
-        Assert.assertEquals(data[4], creationTimestamp);
-        Assert.assertEquals(data[5], -1L);
-        Assert.assertEquals(data[6], NODE_NAME);
+        Assert.assertEquals(data[0], DEFAULT_NAMESPACE);
+        Assert.assertEquals(data[5], creationTimestamp);
+        Assert.assertEquals(data[6], -1L);
+        Assert.assertEquals(data[7], NODE_NAME);
     }
 
     /**
@@ -574,8 +731,8 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
      * @return The watch component URL
      */
     private String getWatchComponentPodsUrl() throws Exception {
-        return "/api/v1/namespaces/" + URLEncoder.encode(Constants.NAMESPACE, StandardCharsets.UTF_8.toString())
-                + "/pods?labelSelector=" + URLEncoder.encode(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL + ","
+        return "/api/v1/pods?labelSelector="
+                + URLEncoder.encode(Constants.CELLERY_OBSERVABILITY_COMPONENT_NAME_LABEL + ","
                 + Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, StandardCharsets.UTF_8.toString())
                 + "&watch=true";
     }
@@ -586,8 +743,8 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
      * @return The watch component URL
      */
     private String getWatchGatewayPodsUrl() throws Exception {
-        return "/api/v1/namespaces/" + URLEncoder.encode(Constants.NAMESPACE, StandardCharsets.UTF_8.toString())
-                + "/pods?labelSelector=" + URLEncoder.encode(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL + ","
+        return "/api/v1/pods?labelSelector="
+                + URLEncoder.encode(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL + ","
                 + Constants.CELLERY_OBSERVABILITY_GATEWAY_NAME_LABEL, StandardCharsets.UTF_8.toString())
                 + "&watch=true";
     }
