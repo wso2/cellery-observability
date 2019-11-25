@@ -104,7 +104,7 @@ public class ComponentsEventSource extends Source {
 
         // Cell watch for Cellery cell updates
         Watch cellWatch = k8sClient.customResources(cellCrd, CellImpl.class, CellList.class, DoneableCell.class)
-                .inNamespace(Constants.NAMESPACE)
+                .inAnyNamespace()
                 .watch(new Watcher<CellImpl>() {
                     @Override
                     public void eventReceived(Action action, CellImpl cell) {
@@ -117,6 +117,7 @@ public class ComponentsEventSource extends Source {
 
                             for (Map.Entry<String, Set<String>> entry : componentIngressTypes.entrySet()) {
                                 Map<String, Object> attributes = new HashMap<>();
+                                attributes.put(Constants.Attribute.NAMESPACE, cell.getMetadata().getNamespace());
                                 attributes.put(Constants.Attribute.INSTANCE, cell.getMetadata().getName());
                                 attributes.put(Constants.Attribute.COMPONENT, entry.getKey());
                                 attributes.put(Constants.Attribute.INSTANCE_KIND, Constants.CELL_KIND);
@@ -149,7 +150,7 @@ public class ComponentsEventSource extends Source {
         // Component watch for Cellery component updates
         Watch compositeWatch = k8sClient.customResources(compositeCrd, CompositeImpl.class, CompositeList.class,
                 DoneableComposite.class)
-                .inNamespace(Constants.NAMESPACE)
+                .inAnyNamespace()
                 .watch(new Watcher<CompositeImpl>() {
                     @Override
                     public void eventReceived(Action action, CompositeImpl composite) {
@@ -162,6 +163,7 @@ public class ComponentsEventSource extends Source {
 
                             for (Map.Entry<String, Set<String>> entry : componentIngressTypes.entrySet()) {
                                 Map<String, Object> attributes = new HashMap<>();
+                                attributes.put(Constants.Attribute.NAMESPACE, composite.getMetadata().getNamespace());
                                 attributes.put(Constants.Attribute.INSTANCE, composite.getMetadata().getName());
                                 attributes.put(Constants.Attribute.COMPONENT, entry.getKey());
                                 attributes.put(Constants.Attribute.INSTANCE_KIND, Constants.COMPOSITE_KIND);
