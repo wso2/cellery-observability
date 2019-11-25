@@ -78,7 +78,8 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
                     "parameters, but " + attributeExpressionExecutors.length + " attributes found");
         }
 
-        List<Attribute> appendedAttributes = new ArrayList<>();
+        List<Attribute> appendedAttributes = new ArrayList<>(7);
+        appendedAttributes.add(new Attribute(Constants.Attribute.NAMESPACE, Attribute.Type.STRING));
         appendedAttributes.add(new Attribute(Constants.Attribute.INSTANCE, Attribute.Type.STRING));
         appendedAttributes.add(new Attribute(Constants.Attribute.COMPONENT, Attribute.Type.STRING));
         appendedAttributes.add(new Attribute(Constants.Attribute.POD_NAME, Attribute.Type.STRING));
@@ -152,7 +153,7 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
         PodList componentPodList = null;
         try {
             componentPodList = k8sClient.pods()
-                    .inNamespace(Constants.NAMESPACE)
+                    .inAnyNamespace()
                     .withLabel(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL)
                     .withLabel(componentNameLabel)
                     .withField(Constants.STATUS_FIELD, Constants.STATUS_FIELD_RUNNING_VALUE)
@@ -166,7 +167,8 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
                 String kind = pod.getMetadata().getLabels()
                         .getOrDefault(Constants.CELLERY_OBSERVABILITY_INSTANCE_KIND_LABEL, "");
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Added event - pod " + pod.getMetadata().getName() + " belonging to " + kind + " " +
+                    logger.debug("Added event - pod " + pod.getMetadata().getName() + " from namespace " +
+                            pod.getMetadata().getNamespace() + " belonging to " + kind + " " +
                             pod.getMetadata().getLabels()
                                     .getOrDefault(Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, "") +
                             " of type " +
@@ -174,15 +176,16 @@ public class GetComponentPodsStreamProcessor extends StreamProcessor {
                                     ? "component" : "gateway") + " to the event");
                 }
 
-                Object[] newData = new Object[6];
-                newData[0] = pod.getMetadata().getLabels().getOrDefault(
+                Object[] newData = new Object[7];
+                newData[0] = pod.getMetadata().getNamespace();
+                newData[1] = pod.getMetadata().getLabels().getOrDefault(
                         Constants.CELLERY_OBSERVABILITY_INSTANCE_LABEL, "");
-                newData[1] = Utils.getComponentName(pod);
-                newData[2] = pod.getMetadata().getName();
-                newData[3] = kind;
-                newData[4] = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
+                newData[2] = Utils.getComponentName(pod);
+                newData[3] = pod.getMetadata().getName();
+                newData[4] = kind;
+                newData[5] = new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
                         .parse(pod.getMetadata().getCreationTimestamp()).getTime();
-                newData[5] = pod.getSpec().getNodeName();
+                newData[6] = pod.getSpec().getNodeName();
 
                 StreamEvent streamEventCopy = streamEventCloner.copyStreamEvent(incomingStreamEvent);
                 complexEventPopulater.populateComplexEvent(streamEventCopy, newData);

@@ -533,7 +533,7 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
         podA.getMetadata().setCreationTimestamp(null);
         podA.getSpec().setNodeName(null);
 
-        Pod podB = generateCelleryCellComponentPod(namespaceB, "pet-be", "test-c");
+        Pod podB = generateCelleryCellComponentPod(namespaceB, "pet-be", "test-a");
         podB.getMetadata().setDeletionTimestamp(deletionTimestamp);
 
         Pod podC = generateCelleryCompositeComponentPod(namespaceA, "hr-comp", "test-d");
@@ -568,19 +568,20 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
                 .open()
                 .waitFor(2264)
                 .andEmit(new WatchEvent(generateCelleryCellGatewayPod(namespaceA, "pet-fe"), "MODIFIED"))
+                .waitFor(312)
+                .andEmit(new WatchEvent(generateCelleryCellGatewayPod(namespaceB, "pet-fe"), "MODIFIED"))
                 .waitFor(53)
                 .andEmit(new WatchEvent(generateFailingCelleryCellGatewayPod(namespaceA, "pet-be"), "ERROR"))
                 .done()
                 .once();
         initializeSiddhiAppRuntime();
 
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 10, eventCount, TIMEOUT);
-        Assert.assertEquals(eventCount.get(), 9);
+        SiddhiTestHelper.waitForEvents(WAIT_TIME, 11, eventCount, TIMEOUT);
+        Assert.assertEquals(eventCount.get(), 10);
         for (Event receivedEvent : receivedEvents) {
             Object[] data = receivedEvent.getData();
             Assert.assertEquals(data.length, 10);
-            if ("pet-be--test-a".equals(data[4])) {
-                Assert.assertEquals(data[0], namespaceA);
+            if (namespaceA.equals(data[0]) && "pet-be--test-a".equals(data[4])) {
                 Assert.assertEquals(data[1], "pet-be");
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[3], "test-a");
@@ -589,8 +590,7 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
                 Assert.assertEquals(data[7], "");
                 Assert.assertEquals(data[8], "Running");
                 Assert.assertEquals(data[9], "ADDED");
-            } else if ("pet-fe--test-b".equals(data[4])) {
-                Assert.assertEquals(data[0], namespaceC);
+            } else if (namespaceC.equals(data[0]) && "pet-fe--test-b".equals(data[4])) {
                 Assert.assertEquals(data[1], "pet-fe");
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[3], "test-b");
@@ -599,19 +599,17 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
                 Assert.assertEquals(data[7], NODE_NAME);
                 Assert.assertEquals(data[8], "Running");
                 Assert.assertEquals(data[9], "MODIFIED");
-            } else if ("pet-be--test-c".equals(data[4])) {
-                Assert.assertEquals(data[0], namespaceB);
+            } else if (namespaceB.equals(data[0]) && "pet-be--test-a".equals(data[4])) {
                 Assert.assertEquals(data[1], "pet-be");
                 Assert.assertEquals(data[2], "Cell");
-                Assert.assertEquals(data[3], "test-c");
+                Assert.assertEquals(data[3], "test-a");
                 Assert.assertEquals(data[5], creationTimestamp);
                 Assert.assertEquals(data[6], new SimpleDateFormat(Constants.K8S_DATE_FORMAT, Locale.US)
                         .parse(deletionTimestamp).getTime());
                 Assert.assertEquals(data[7], NODE_NAME);
                 Assert.assertEquals(data[8], "Running");
                 Assert.assertEquals(data[9], "DELETED");
-            } else if ("pet-fe--test-d".equals(data[4])) {
-                Assert.assertEquals(data[0], namespaceA);
+            } else if (namespaceA.equals(data[0]) && "pet-fe--test-d".equals(data[4])) {
                 Assert.assertEquals(data[1], "pet-fe");
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[3], "test-d");
@@ -620,8 +618,7 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
                 Assert.assertEquals(data[7], NODE_NAME);
                 Assert.assertEquals(data[8], "ErrImagePull");
                 Assert.assertEquals(data[9], "ERROR");
-            } else if ("pet-fe--gateway".equals(data[4])) {
-                Assert.assertEquals(data[0], namespaceA);
+            } else if (namespaceA.equals(data[0]) && "pet-fe--gateway".equals(data[4])) {
                 Assert.assertEquals(data[1], "pet-fe");
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[3], "gateway");
@@ -630,8 +627,16 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
                 Assert.assertEquals(data[7], NODE_NAME);
                 Assert.assertEquals(data[8], "Running");
                 Assert.assertEquals(data[9], "MODIFIED");
-            } else if ("pet-be--gateway".equals(data[4])) {
-                Assert.assertEquals(data[0], namespaceA);
+            } else if (namespaceB.equals(data[0]) && "pet-fe--gateway".equals(data[4])) {
+                Assert.assertEquals(data[1], "pet-fe");
+                Assert.assertEquals(data[2], "Cell");
+                Assert.assertEquals(data[3], "gateway");
+                Assert.assertEquals(data[5], creationTimestamp);
+                Assert.assertEquals(data[6], -1L);
+                Assert.assertEquals(data[7], NODE_NAME);
+                Assert.assertEquals(data[8], "Running");
+                Assert.assertEquals(data[9], "MODIFIED");
+            } else if (namespaceA.equals(data[0]) && "pet-be--gateway".equals(data[4])) {
                 Assert.assertEquals(data[1], "pet-be");
                 Assert.assertEquals(data[2], "Cell");
                 Assert.assertEquals(data[3], "gateway");
@@ -640,8 +645,7 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
                 Assert.assertEquals(data[7], NODE_NAME);
                 Assert.assertEquals(data[8], "ErrImagePull");
                 Assert.assertEquals(data[9], "ERROR");
-            } else if ("employee-comp--test-a".equals(data[4])) {
-                Assert.assertEquals(data[0], namespaceB);
+            } else if (namespaceB.equals(data[0]) && "employee-comp--test-a".equals(data[4])) {
                 Assert.assertEquals(data[1], "employee-comp");
                 Assert.assertEquals(data[2], "Composite");
                 Assert.assertEquals(data[3], "test-a");
@@ -650,8 +654,7 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
                 Assert.assertEquals(data[7], NODE_NAME);
                 Assert.assertEquals(data[8], "Running");
                 Assert.assertEquals(data[9], "MODIFIED");
-            } else if ("stock-comp--test-b".equals(data[4])) {
-                Assert.assertEquals(data[0], namespaceB);
+            } else if (namespaceB.equals(data[0]) && "stock-comp--test-b".equals(data[4])) {
                 Assert.assertEquals(data[1], "stock-comp");
                 Assert.assertEquals(data[2], "Composite");
                 Assert.assertEquals(data[3], "test-b");
@@ -660,8 +663,7 @@ public class ComponentPodsEventSourceTestCase extends BaseSiddhiExtensionTestCas
                 Assert.assertEquals(data[7], NODE_NAME);
                 Assert.assertEquals(data[8], "ErrImagePull");
                 Assert.assertEquals(data[9], "ERROR");
-            } else if ("hr-comp--test-d".equals(data[4])) {
-                Assert.assertEquals(data[0], namespaceA);
+            } else if (namespaceA.equals(data[0]) && "hr-comp--test-d".equals(data[4])) {
                 Assert.assertEquals(data[1], "hr-comp");
                 Assert.assertEquals(data[2], "Composite");
                 Assert.assertEquals(data[3], "test-d");
