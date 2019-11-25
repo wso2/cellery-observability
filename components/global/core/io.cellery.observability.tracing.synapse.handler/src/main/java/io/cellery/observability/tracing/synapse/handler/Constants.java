@@ -25,12 +25,14 @@ public class Constants {
     public static final String ZIPKIN_HOST_ENV_VAR = "ZIPKIN_HOST";
     public static final String ZIPKIN_PORT_ENV_VAR = "ZIPKIN_PORT";
     public static final String ZIPKIN_API_CONTEXT_ENV_VAR = "ZIPKIN_API_CONTEXT";
+    public static final String CELLERY_TRACING_SERVICE_NAME_ENV_VAR = "CELLERY_TRACING_SERVICE_NAME";
+    public static final String CELLERY_TRACING_NAMESPACE_ENV_VAR = "CELLERY_TRACING_NAMESPACE";
     public static final String ZIPKIN_HOST_DEFAULT_VALUE = "wso2sp-worker.cellery-system";
     public static final int ZIPKIN_PORT_DEFAULT_VALUE = 9411;
     public static final String ZIPKIN_API_CONTEXT_DEFAULT_VALUE = "/api/v1/spans";
+    public static final String CELLERY_TRACING_SERVICE_NAME_DEFAULT_VALUE = "global-gateway";
 
     public static final String TRACING_CORRELATION_ID = "TRACING_CORRELATION_ID";
-    public static final String GLOBAL_GATEWAY_SERVICE_NAME = "global-gateway";
     public static final boolean TRACING_SENDER_COMPRESSION_ENABLED = false;
     public static final String B3_GLOBAL_GATEWAY_CORRELATION_ID_HEADER = "X-B3-GlobalGatewayCorrelationId";
 
