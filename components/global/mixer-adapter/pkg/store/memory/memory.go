@@ -19,8 +19,6 @@
 package memory
 
 import (
-	"fmt"
-
 	"go.uber.org/zap"
 
 	"github.com/cellery-io/mesh-observability/components/global/mixer-adapter/pkg/store"
@@ -44,7 +42,9 @@ func (transaction *Transaction) Commit() error {
 }
 
 func (transaction *Transaction) Rollback() error {
-	transaction.Buffer <- transaction.Element
+	if transaction.Buffer != nil {
+		transaction.Buffer <- transaction.Element
+	}
 	return nil
 }
 
@@ -54,7 +54,7 @@ func (persister *Persister) Fetch() (string, store.Transaction, error) {
 		transaction := &Transaction{Element: str}
 		return str, transaction, nil
 	} else {
-		return "", &Transaction{}, fmt.Errorf("there are no elements in the buffer")
+		return "", &Transaction{}, nil
 	}
 }
 
