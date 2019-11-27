@@ -19,8 +19,7 @@
 @App:name("tracing-app")
 @App:description("Cellery Tracing Siddhi App for processing and storing trace spans")
 
-@source(type="tracing-receiver", host="0.0.0.0", port="9411", api.context="/api/v1/spans",
-        @map(type="keyvalue", fail.on.missing.attribute="false"))
+@source(type="runtime-agent", port="9411", @map(type="json", fail.on.missing.attribute="false"))
 define stream ZipkinStreamIn(traceId string, id string, parentId string, operationName string, serviceName string,
                              spanKind string, timestamp long, duration long, tags string);
 
