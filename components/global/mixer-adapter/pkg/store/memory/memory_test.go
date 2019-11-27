@@ -64,14 +64,12 @@ func TestFetchWithoutDataInBuffer(t *testing.T) {
 		logger: logger,
 		buffer: buffer,
 	}
-	_, _, err = persister.Fetch()
-	expectedErr := "there are no elements in the buffer"
-	if err == nil {
-		t.Errorf("An error was not thrown, but expected : %s", expectedErr)
-		return
+	str, _, err := persister.Fetch()
+	if err != nil {
+		t.Errorf("Unexpected error received : %v", err)
 	}
-	if err.Error() != expectedErr {
-		t.Errorf("Expected error was not thrown, received error : %v", err)
+	if str != "" {
+		t.Errorf("Expected an empty string, but received : %s", str)
 	}
 }
 
