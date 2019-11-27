@@ -22,45 +22,47 @@
 define trigger K8sScrapeTrigger at every 10 min;
 
 @source(type="k8s-component-pods", @map(type="keyvalue", fail.on.missing.attribute="false"))
-define stream K8sPodEventSourceStream(instance string, component string, podName string, instanceKind string,
-                                      creationTimestamp long, deletionTimestamp long, nodeName string, status string,
-                                      action string);
+define stream K8sPodEventSourceStream(namespace string, instance string, component string, podName string,
+                                      instanceKind string, creationTimestamp long, deletionTimestamp long,
+                                      nodeName string, status string, action string);
 
 @Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB")
-@PrimaryKey("instance", "component", "podName")
+@PrimaryKey("namespace", "instance", "component", "podName")
 @purge(enable="false")
-define table K8sPodInfoTable(instance string, component string, podName string, creationTimestamp long,
-                             lastKnownAliveTimestamp long, nodeName string);
+define table K8sPodInfoTable(namespace string, instance string, component string, podName string,
+                             creationTimestamp long, lastKnownAliveTimestamp long, nodeName string);
 
-define stream K8sComponentPodStream(instance string, component string, podName string, instanceKind string,
-                                    creationTimestamp long, lastKnownAliveTimestamp long, nodeName string,
-                                    status string, action string);
+define stream K8sComponentPodStream(namespace string, instance string, component string, podName string,
+                                    instanceKind string, creationTimestamp long, lastKnownAliveTimestamp long,
+                                    nodeName string, status string, action string);
 
 -- Collecting Pod info from different sources
 -- This collects Pod Info from the K8s watch as well as periodically by scraping K8s API Server
 
 from K8sScrapeTrigger#k8sClient:getComponentPods()
-select instance, component, podName, instanceKind, creationTimestamp, triggered_time as lastKnownAliveTimestamp, nodeName,
-    "Running" as status, "" as action
+select
+    namespace, instance, component, podName, instanceKind, creationTimestamp,
+    triggered_time as lastKnownAliveTimestamp, nodeName, "Running" as status, "" as action
 insert into K8sComponentPodStream;
 
 from K8sPodEventSourceStream
-select instance, component, podName, instanceKind, creationTimestamp, deletionTimestamp as lastKnownAliveTimestamp, nodeName,
-    status, action
+select
+    namespace, instance, component, podName, instanceKind, creationTimestamp,
+    deletionTimestamp as lastKnownAliveTimestamp, nodeName, status, action
 insert into K8sComponentPodStream;
 
 -- Inserting Pod info to the K8sPodInfoTable
 
 from K8sComponentPodStream[action == "" or action == "DELETED"]
-select instance, component, podName, creationTimestamp, lastKnownAliveTimestamp, nodeName
+select namespace, instance, component, podName, creationTimestamp, lastKnownAliveTimestamp, nodeName
 insert into K8sPodInfoStream;
 
 from K8sComponentPodStream[action == "CREATED"]
-select instance, component, podName, creationTimestamp, creationTimestamp as lastKnownAliveTimestamp, nodeName
+select namespace, instance, component, podName, creationTimestamp, creationTimestamp as lastKnownAliveTimestamp, nodeName
 insert into K8sPodInfoStream;
 
 from K8sComponentPodStream[action == "MODIFIED" or action == "ERROR"]
-select instance, component, podName, creationTimestamp, time:timestampInMilliseconds() as lastKnownAliveTimestamp, nodeName
+select namespace, instance, component, podName, creationTimestamp, time:timestampInMilliseconds() as lastKnownAliveTimestamp, nodeName
 insert into K8sPodInfoStream;
 
 from K8sPodInfoStream
@@ -68,4 +70,4 @@ update or insert into K8sPodInfoTable
     set K8sPodInfoTable.creationTimestamp = creationTimestamp,
         K8sPodInfoTable.lastKnownAliveTimestamp = lastKnownAliveTimestamp,
         K8sPodInfoTable.nodeName = nodeName
-    on K8sPodInfoTable.instance == instance and K8sPodInfoTable.component == component and K8sPodInfoTable.podName == podName;
+    on K8sPodInfoTable.namespace == namespace and  K8sPodInfoTable.instance == instance and K8sPodInfoTable.component == component and K8sPodInfoTable.podName == podName;

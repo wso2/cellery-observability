@@ -20,20 +20,20 @@
 @App:description("This collects instance related information and stores them in relevant data sources")
 
 @source(type="k8s-components", @map(type="keyvalue", fail.on.missing.attribute="false"))
-define stream K8sComponentEventSourceStream(instance String, component string, instanceKind string, creationTimestamp long,
-                                            ingressTypes string, action string);
+define stream K8sComponentEventSourceStream(namespace string, instance String, component string, instanceKind string,
+                                            creationTimestamp long, ingressTypes string, action string);
 
 @Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB")
-@PrimaryKey("instance","component")
+@PrimaryKey("namespace", "instance","component")
 @purge(enable="false")
-define table K8sComponentInfoTable(instance string, component string, instanceKind string, creationTimestamp long,
-                                   lastKnownAliveTimestamp long, ingressTypes string);
+define table K8sComponentInfoTable(namespace string, instance string, component string, instanceKind string,
+                                   creationTimestamp long, lastKnownAliveTimestamp long, ingressTypes string);
 
 from K8sComponentEventSourceStream
-select instance, component, instanceKind, creationTimestamp, time:timestampInMilliseconds() as lastKnownAliveTimestamp, ingressTypes
+select namespace, instance, component, instanceKind, creationTimestamp, time:timestampInMilliseconds() as lastKnownAliveTimestamp, ingressTypes
 update or insert into K8sComponentInfoTable
     set K8sComponentInfoTable.instanceKind = instanceKind,
         K8sComponentInfoTable.creationTimestamp = creationTimestamp,
         K8sComponentInfoTable.lastKnownAliveTimestamp = lastKnownAliveTimestamp,
         K8sComponentInfoTable.ingressTypes = ingressTypes
-    on K8sComponentInfoTable.instance == instance and K8sComponentInfoTable.component == component;
+    on K8sComponentInfoTable.namespace == namespace and  K8sComponentInfoTable.instance == instance and K8sComponentInfoTable.component == component;
