@@ -1,13 +1,13 @@
 Mesh Observability
 ==================
 
-  [![Build Status](https://wso2.org/jenkins/view/cellery/job/cellery/job/mesh-observability/badge/icon)](https://wso2.org/jenkins/view/cellery/job/cellery/job/mesh-observability/)
-  [![GitHub (pre-)release](https://img.shields.io/github/release/wso2-cellery/mesh-observability/all.svg)](https://github.com/wso2-cellery/mesh-observability/releases)
-  [![GitHub (Pre-)Release Date](https://img.shields.io/github/release-date-pre/wso2-cellery/mesh-observability.svg)](https://github.com/wso2-cellery/mesh-observability/releases)
-  [![GitHub last commit](https://img.shields.io/github/last-commit/wso2-cellery/mesh-observability.svg)](https://github.com/wso2-cellery/mesh-observability/commits/master)
+  [![Build Status](https://wso2.org/jenkins/view/cellery/job/cellery/job/cellery-observability/badge/icon)](https://wso2.org/jenkins/view/cellery/job/cellery/job/cellery-observability/)
+  [![GitHub (pre-)release](https://img.shields.io/github/release/wso2/cellery-observability/all.svg)](https://github.com/wso2/cellery-observability/releases)
+  [![GitHub (Pre-)Release Date](https://img.shields.io/github/release-date-pre/wso2/cellery-observability.svg)](https://github.com/wso2/cellery-observability/releases)
+  [![GitHub last commit](https://img.shields.io/github/last-commit/wso2/cellery-observability.svg)](https://github.com/wso2/cellery-observability/commits/master)
   [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-**Note**: If you just wish to get started with trying out Cellery, you can start your journey at [wso2-cellery/sdk](https://github.com/wso2-cellery/sdk) repository.  
+**Note**: If you just wish to get started with trying out Cellery, you can start your journey at [wso2/cellery](https://github.com/wso2/cellery) repository.  
 
 Cellery Observability brings along the capability to observe the Cells deployed on Cellery Mesh. This combines the [Siddhi](https://siddhi-io.github.io/siddhi) Stream Processing Capabilities of [WSO2 Stream Processor](https://wso2.com/analytics-and-stream-processing/) and observability agents deployed along with the Cells to collect and process metrics and tracing data from the Cells.
 
@@ -49,7 +49,7 @@ The Observability Portal can depict the below information. It will show the curr
 The Mesh Observability Code is structured as shown below.
 
 ```
-mesh-observability
+cellery-observability
   ├── components
   │     └── global
   │           ├── core (Core components of Observability)
@@ -103,7 +103,7 @@ If you wish to **customize the build** you can add the following Environment Var
 
 ### Issue Management
 
-Cellery Mesh Observability issue management is mainly handled through GitHub Issues. Please feel free to open an issue about any question, bug report or feature request that you have in mind. (If you are unclear about where your issue should belong to, you can create it in [Cellery SDK](https://github.com/wso2-cellery/sdk).)
+Cellery Mesh Observability issue management is mainly handled through GitHub Issues. Please feel free to open an issue about any question, bug report or feature request that you have in mind. (If you are unclear about where your issue should belong to, you can create it in [Cellery SDK](https://github.com/wso2/cellery).)
 
 We also welcome any external contributors who are willing to contribute. You can join a conversation in any existing issue and even send PRs to contribute. However, we suggest to start by joining into the conversations and learning about Cellery Mesh Observability as the first step.
 

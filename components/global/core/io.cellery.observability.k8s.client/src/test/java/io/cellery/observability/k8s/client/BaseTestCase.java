@@ -50,7 +50,7 @@ import java.util.Map;
 
 class BaseTestCase {
 
-    private static final String TEST_LABEL = "mesh-observability-test";
+    private static final String TEST_LABEL = "cellery-observability-test";
 
     static final String NODE_NAME = "node1";
     private static final String CREATION_TIMESTAMP_STRING = "2019-04-30T13:21:22Z";

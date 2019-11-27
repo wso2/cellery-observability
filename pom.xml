@@ -455,9 +455,9 @@
     </build>
 
     <scm>
-        <url>https://github.com/cellery-io/mesh-observability.git</url>
-        <developerConnection>scm:git:https://github.com/cellery-io/mesh-observability.git</developerConnection>
-        <connection>scm:git:https://github.com/cellery-io/mesh-observability.git</connection>
+        <url>https://github.com/wso2/cellery-observability.git</url>
+        <developerConnection>scm:git:https://github.com/wso2/cellery-observability.git</developerConnection>
+        <connection>scm:git:https://github.com/wso2/cellery-observability.git</connection>
         <tag>HEAD</tag>
     </scm>
 
