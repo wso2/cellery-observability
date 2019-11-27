@@ -24,20 +24,21 @@ all: clean init build docker
 
 
 .PHONY: clean
-clean: clean.mixer-adapter
+clean: clean.observability-agent
 	mvn clean -f pom.xml
 
-.PHONY: clean.mixer-adapter
-clean.mixer-adapter:
-	rm -rf ./components/global/mixer-adapter/target
-	rm -rf ./docker/mixer-adapter/target
+.PHONY: clean.observability-agent
+clean.observability-agent:
+	rm -rf ./components/global/observability-agent/target
+	rm -rf ./docker/observability-agent/telemetry-agent/target
+	rm -rf ./docker/observability-agent/tracing-agent/target
 
 
 .PHONY: init
-init: init.mixer-adapter
+init: init.observability-agent
 
-.PHONY: init.mixer-adapter
-init.mixer-adapter: init.tools
+.PHONY: init.observability-agent
+init.observability-agent: init.tools
 
 .PHONY: init.tools
 init.tools:
@@ -49,37 +50,38 @@ init.tools:
 
 
 .PHONY: check-style
-check-style: check-style.mixer-adapter
+check-style: check-style.observability-agent
 
-.PHONY: check-style.mixer-adapter
-check-style.mixer-adapter: init.tools
-	test -z "$$(goimports -local $(PROJECT_PKG) -l ./components/global/mixer-adapter | tee /dev/stderr)"
+.PHONY: check-style.observability-agent
+check-style.observability-agent: init.tools
+	test -z "$$(goimports -local $(PROJECT_PKG) -l ./components/global/observability-agent | tee /dev/stderr)"
 
 
 .PHONY: code-format
-code-format: code-format.mixer-adapter
+code-format: code-format.observability-agent
 
-.PHONY: code-format.mixer-adapter
-code-format.mixer-adapter:
-	@goimports -w -local $(PROJECT_PKG) -l ./components/global/mixer-adapter
+.PHONY: code-format.observability-agent
+code-format.observability-agent:
+	@goimports -w -local $(PROJECT_PKG) -l ./components/global/observability-agent
 
 
 .PHONY: build
-build: build.mixer-adapter
+build: build.observability-agent
 	mvn install -f components/pom.xml -Dmaven.test.skip=true
 
-.PHONY: build.mixer-adapter
-build.mixer-adapter:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./components/global/mixer-adapter/target/mixer-adapter ./components/global/mixer-adapter/cmd/mixer-adapter/
+.PHONY: build.observability-agent
+build.observability-agent:
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./components/global/observability-agent/target/telemetry-agent ./components/global/observability-agent/cmd/telemetry-agent/
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./components/global/observability-agent/target/tracing-agent ./components/global/observability-agent/cmd/tracing-agent/
 
 
 .PHONY: test
-test: test.mixer-adapter
+test: test.observability-agent
 	mvn test -f components/pom.xml
 
-.PHONY: test.mixer-adapter
-test.mixer-adapter:
-	go test `go list ./components/global/mixer-adapter/pkg/... | grep -v ./components/global/mixer-adapter/pkg/signals` -race -covermode=atomic -coverprofile=./components/global/mixer-adapter/target/coverage.txt
+.PHONY: test.observability-agent
+test.observability-agent:
+	go test `go list ./components/global/observability-agent/pkg/... | grep -v ./components/global/observability-agent/pkg/signals` -race -covermode=atomic -coverprofile=./components/global/observability-agent/target/coverage.txt
 
 
 .PHONY: docker
@@ -89,15 +91,21 @@ docker:
 	docker build -t $(DOCKER_REPO)/observability-portal:$(DOCKER_IMAGE_TAG) .
 	cd docker/sp; \
 	docker build -t ${DOCKER_REPO}/sp-worker:${DOCKER_IMAGE_TAG} .
-	@rm -rf ./docker/mixer-adapter/target
-	@mkdir ./docker/mixer-adapter/target
-	cp ./components/global/mixer-adapter/target/mixer-adapter ./docker/mixer-adapter/target/mixer-adapter
-	cd docker/mixer-adapter; \
-	docker build -t ${DOCKER_REPO}/mixer-adapter:${DOCKER_IMAGE_TAG} .
+	@rm -rf ./docker/observability-agent/telemetry-agent/target
+	@mkdir ./docker/observability-agent/telemetry-agent/target
+	@rm -rf ./docker/observability-agent/tracing-agent/target
+	@mkdir ./docker/observability-agent/tracing-agent/target
+	cp ./components/global/observability-agent/target/telemetry-agent ./docker/observability-agent/telemetry-agent/target/telemetry-agent
+	cp ./components/global/observability-agent/target/tracing-agent ./docker/observability-agent/tracing-agent/target/tracing-agent
+	cd docker/observability-agent/telemetry-agent; \
+	docker build -t ${DOCKER_REPO}/telemetry-agent:${DOCKER_IMAGE_TAG} .
+	cd docker/observability-agent/tracing-agent; \
+    docker build -t ${DOCKER_REPO}/tracing-agent:${DOCKER_IMAGE_TAG} .
 
 
 .PHONY: docker-push
 docker-push: docker
 	docker push $(DOCKER_REPO)/sp-worker:$(DOCKER_IMAGE_TAG)
 	docker push $(DOCKER_REPO)/observability-portal:$(DOCKER_IMAGE_TAG)
-	docker push $(DOCKER_REPO)/mixer-adapter:$(DOCKER_IMAGE_TAG)
+	docker push $(DOCKER_REPO)/telemetry-agent:$(DOCKER_IMAGE_TAG)
+	docker push $(DOCKER_REPO)/tracing-agent:$(DOCKER_IMAGE_TAG)
