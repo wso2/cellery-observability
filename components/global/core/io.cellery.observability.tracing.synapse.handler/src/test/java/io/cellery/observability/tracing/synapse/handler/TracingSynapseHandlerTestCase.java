@@ -53,7 +53,7 @@ import java.util.UUID;
 @PrepareForTest(URLConnectionSender.class)
 @PowerMockIgnore("org.apache.log4j.*")
 public class TracingSynapseHandlerTestCase {
-
+    private static final String GLOBAL_GATEWAY_SERVICE_NAME = "global-gateway.cellery-system";
     private static final String B3_TRACE_ID_HEADER = "X-B3-TraceId";
     private static final String B3_SPAN_ID_HEADER = "X-B3-SpanId";
     private static final String B3_PARENT_SPAN_ID_HEADER = "X-B3-ParentSpanId";
@@ -71,7 +71,7 @@ public class TracingSynapseHandlerTestCase {
     public void init() {
         reportedSpans = new ArrayList<>();
         Tracing braveTracing = Tracing.newBuilder()
-                .localServiceName(Constants.GLOBAL_GATEWAY_SERVICE_NAME)
+                .localServiceName(GLOBAL_GATEWAY_SERVICE_NAME)
                 .spanReporter(reportedSpans::add)
                 .build();
         tracer = BraveTracer.newBuilder(braveTracing)
@@ -206,7 +206,7 @@ public class TracingSynapseHandlerTestCase {
         Assert.assertTrue(span1.timestamp() > 0);
         Assert.assertTrue(span1.duration() > 0);
         Assert.assertNotNull(span1.localEndpoint());
-        Assert.assertEquals(span1.localEndpoint().serviceName(), Constants.GLOBAL_GATEWAY_SERVICE_NAME);
+        Assert.assertEquals(span1.localEndpoint().serviceName(), GLOBAL_GATEWAY_SERVICE_NAME);
         Assert.assertNull(span1.remoteEndpoint());
         Assert.assertEquals(span1.annotations().size(), 0);
         Assert.assertNotNull(span1.tags());
@@ -225,7 +225,7 @@ public class TracingSynapseHandlerTestCase {
         Assert.assertTrue(span2.timestamp() > span1.timestamp());
         Assert.assertTrue(span2.duration() > 0);
         Assert.assertNotNull(span2.localEndpoint());
-        Assert.assertEquals(span2.localEndpoint().serviceName(), Constants.GLOBAL_GATEWAY_SERVICE_NAME);
+        Assert.assertEquals(span2.localEndpoint().serviceName(), GLOBAL_GATEWAY_SERVICE_NAME);
         Assert.assertNull(span2.remoteEndpoint());
         Assert.assertEquals(span2.annotations().size(), 0);
         Assert.assertNotNull(span2.tags());
@@ -457,7 +457,7 @@ public class TracingSynapseHandlerTestCase {
         Assert.assertTrue(span1.timestamp() > 0);
         Assert.assertTrue(span1.duration() > 0);
         Assert.assertNotNull(span1.localEndpoint());
-        Assert.assertEquals(span1.localEndpoint().serviceName(), Constants.GLOBAL_GATEWAY_SERVICE_NAME);
+        Assert.assertEquals(span1.localEndpoint().serviceName(), GLOBAL_GATEWAY_SERVICE_NAME);
         Assert.assertNull(span1.remoteEndpoint());
         Assert.assertEquals(span1.annotations().size(), 0);
         Assert.assertNotNull(span1.tags());
@@ -476,7 +476,7 @@ public class TracingSynapseHandlerTestCase {
         Assert.assertTrue(span2.timestamp() > span1.timestamp());
         Assert.assertTrue(span2.duration() > 0);
         Assert.assertNotNull(span2.localEndpoint());
-        Assert.assertEquals(span2.localEndpoint().serviceName(), Constants.GLOBAL_GATEWAY_SERVICE_NAME);
+        Assert.assertEquals(span2.localEndpoint().serviceName(), GLOBAL_GATEWAY_SERVICE_NAME);
         Assert.assertNull(span2.remoteEndpoint());
         Assert.assertEquals(span2.annotations().size(), 0);
         Assert.assertNotNull(span2.tags());
@@ -497,7 +497,7 @@ public class TracingSynapseHandlerTestCase {
         Assert.assertTrue(span3.timestamp() > span1.timestamp());
         Assert.assertTrue(span3.duration() > 0);
         Assert.assertNotNull(span3.localEndpoint());
-        Assert.assertEquals(span3.localEndpoint().serviceName(), Constants.GLOBAL_GATEWAY_SERVICE_NAME);
+        Assert.assertEquals(span3.localEndpoint().serviceName(), GLOBAL_GATEWAY_SERVICE_NAME);
         Assert.assertNull(span3.remoteEndpoint());
         Assert.assertEquals(span3.annotations().size(), 0);
         Assert.assertNotNull(span3.tags());
@@ -516,7 +516,7 @@ public class TracingSynapseHandlerTestCase {
         Assert.assertTrue(span4.timestamp() > span1.timestamp());
         Assert.assertTrue(span4.duration() > 0);
         Assert.assertNotNull(span4.localEndpoint());
-        Assert.assertEquals(span4.localEndpoint().serviceName(), Constants.GLOBAL_GATEWAY_SERVICE_NAME);
+        Assert.assertEquals(span4.localEndpoint().serviceName(), GLOBAL_GATEWAY_SERVICE_NAME);
         Assert.assertNull(span4.remoteEndpoint());
         Assert.assertEquals(span4.annotations().size(), 0);
         Assert.assertNotNull(span4.tags());
@@ -594,7 +594,7 @@ public class TracingSynapseHandlerTestCase {
         Assert.assertTrue(span.timestamp() > 0);
         Assert.assertTrue(span.duration() > 0);
         Assert.assertNotNull(span.localEndpoint());
-        Assert.assertEquals(span.localEndpoint().serviceName(), Constants.GLOBAL_GATEWAY_SERVICE_NAME);
+        Assert.assertEquals(span.localEndpoint().serviceName(), GLOBAL_GATEWAY_SERVICE_NAME);
         Assert.assertNull(span.remoteEndpoint());
         Assert.assertEquals(span.annotations().size(), 0);
         Assert.assertNotNull(span.tags());
@@ -681,7 +681,7 @@ public class TracingSynapseHandlerTestCase {
         Assert.assertTrue(span1.timestamp() > 0);
         Assert.assertTrue(span1.duration() > 0);
         Assert.assertNotNull(span1.localEndpoint());
-        Assert.assertEquals(span1.localEndpoint().serviceName(), Constants.GLOBAL_GATEWAY_SERVICE_NAME);
+        Assert.assertEquals(span1.localEndpoint().serviceName(), GLOBAL_GATEWAY_SERVICE_NAME);
         Assert.assertNull(span1.remoteEndpoint());
         Assert.assertEquals(span1.annotations().size(), 0);
         Assert.assertNotNull(span1.tags());

@@ -30,36 +30,40 @@ import org.wso2.siddhi.core.event.Event;
 public class SiddhiStoreQueryManager {
     private static final String DISTRIBUTED_TRACING_TABLE_DEFINITION = "@Store(type=\"rdbms\", " +
             "datasource=\"CELLERY_OBSERVABILITY_DB\", field.length=\"tags:8000\")\n" +
-            "@PrimaryKey(\"traceId\", \"spanId\", \"spanKind\")\n" +
+            "@PrimaryKey(\"traceId\", \"spanId\")\n" +
             "@purge(enable=\"false\")\n" +
             "define table DistributedTracingTable (traceId string, spanId string, parentId string, namespace string, " +
             "instance string, instanceKind string, serviceName string, pod string, operationName string, " +
             "spanKind string, startTime long, duration long, tags string);";
     private static final String REQUEST_AGGREGATION_DEFINITION = "define stream ProcessedRequestsStream(" +
-            "sourceInstance string, sourceInstanceKind string, sourceComponent string, destinationInstance string, " +
-            "destinationInstanceKind string, destinationComponent string, httpResponseGroup string, " +
-            "responseTimeMilliSec double, requestSizeBytes long, responseSizeBytes long);" +
-            "@store(type=\"rdbms\", datasource=\"CELLERY_OBSERVABILITY_DB\")\n" +
+            "sourceNamespace string, sourceInstance string, sourceInstanceKind string, sourceComponent string," +
+            "destinationNamespace string, destinationInstance string, destinationInstanceKind string, " +
+            "destinationComponent string, httpResponseGroup string, responseTimeMilliSec double, " +
+            "requestSizeBytes long, responseSizeBytes long);" +
+            "@store(type=\"rdbms\", datasource=\"CELLERY_OBSERVABILITY_DB\", field.length=\"sourceNamespace: 253, " +
+            "sourceInstance:253, sourceInstanceKind:9, sourceComponent:253, destinationNamespace:253, " +
+            "destinationInstance:253, destinationInstanceKind:9, destinationComponent: 253, httpResponseGroup:3\")\n" +
             "@purge(enable=\"false\")\n" +
             "define aggregation RequestAggregation from ProcessedRequestsStream\n" +
-            "select sourceInstance, sourceInstanceKind, sourceComponent, destinationInstance, " +
-            "destinationInstanceKind, destinationComponent, httpResponseGroup, " +
+            "select sourceNamespace, sourceInstance, sourceInstanceKind, sourceComponent, destinationNamespace, " +
+            "destinationInstance, destinationInstanceKind, destinationComponent, httpResponseGroup, " +
             "sum(responseTimeMilliSec) as totalResponseTimeMilliSec, sum(requestSizeBytes) as totalRequestSizeBytes, " +
             "sum(responseSizeBytes) as totalResponseSizeBytes, count() as requestCount\n" +
-            "group by sourceInstance, sourceComponent, destinationInstance, destinationComponent, httpResponseGroup\n" +
+            "group by sourceNamespace, sourceInstance, sourceComponent, destinationNamespace, destinationInstance, " +
+            "destinationComponent, httpResponseGroup\n" +
             "aggregate every sec...year;";
     private static final String K8S_POD_INFO_TABLE = "@Store(type=\"rdbms\", " +
             "datasource=\"CELLERY_OBSERVABILITY_DB\")\n" +
-            "@PrimaryKey(\"instance\", \"component\", \"podName\")\n" +
+            "@PrimaryKey(\"namespace\", \"instance\", \"component\", \"podName\")\n" +
             "@purge(enable=\"false\")\n" +
-            "define table K8sPodInfoTable (instance string, component string, podName string," +
+            "define table K8sPodInfoTable (namespace string, instance string, component string, podName string," +
             "creationTimestamp long, lastKnownAliveTimestamp long, nodeName string);";
     private static final String K8S_COMPONENT_INFO_TABLE = "@Store(type=\"rdbms\", " +
             "datasource=\"CELLERY_OBSERVABILITY_DB\")\n" +
-            "@PrimaryKey(\"instance\", \"component\")\n" +
+            "@PrimaryKey(\"namespace\", \"instance\", \"component\")\n" +
             "@purge(enable=\"false\")\n" +
-            "define table K8sComponentInfoTable(instance string, component string, instanceKind string, " +
-            "creationTimestamp long, lastKnownAliveTimestamp long, ingressTypes string)";
+            "define table K8sComponentInfoTable(namespace string, instance string, component string, " +
+            "instanceKind string, creationTimestamp long, lastKnownAliveTimestamp long, ingressTypes string)";
 
     private static final String SIDDHI_APP = DISTRIBUTED_TRACING_TABLE_DEFINITION + "\n" +
             REQUEST_AGGREGATION_DEFINITION + "\n" + K8S_POD_INFO_TABLE  + "\n" + K8S_COMPONENT_INFO_TABLE;
