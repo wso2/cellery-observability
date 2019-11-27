@@ -14,13 +14,9 @@ env:
   - GO111MODULE=on
 before_install:
   - npm i -g npm
-  - mkdir -p $HOME/gopath/src/github.com/cellery-io
-  - mv ${TRAVIS_BUILD_DIR} $GOPATH/src/github.com/cellery-io/mesh-observability
-  - export TRAVIS_BUILD_DIR=$HOME/gopath/src/github.com/cellery-io/mesh-observability
-  - cd $HOME/gopath/src/github.com/cellery-io/mesh-observability
 script:
   - make clean.mixer-adapter check-style.mixer-adapter build.mixer-adapter test.mixer-adapter
-  - mvn clean install -q
+  - travis_wait 30 mvn clean install
   - make docker
 after_success:
   - bash <(curl -s https://codecov.io/bash)
