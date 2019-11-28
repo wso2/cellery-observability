@@ -15,7 +15,7 @@ env:
 before_install:
   - npm i -g npm
 script:
-  - make clean.mixer-adapter check-style.mixer-adapter build.mixer-adapter test.mixer-adapter
+  - make clean.observability-agent check-style.observability-agent build.observability-agent test.observability-agent
   - travis_wait 30 mvn clean install
   - make docker
 after_success:

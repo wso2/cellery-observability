@@ -40,10 +40,11 @@ import java.util.Map;
 /**
  * This class implements the event source, where the received telemetry attributes can be injected to streams.
  */
-@Extension(name = "runtime-agent", namespace = "source", description = "Observability runtime agent for Cellery",
+@Extension(name = "runtime-agent", namespace = "source",
+        description = "Observability runtime agent data receiver for Cellery",
         parameters = {
                 @Parameter(name = "port",
-                        description = "The port which the service should be started on",
+                        description = "The port which the service should be started on. Default is 9091",
                         type = {DataType.INT},
                         optional = true,
                         defaultValue = "9091"),

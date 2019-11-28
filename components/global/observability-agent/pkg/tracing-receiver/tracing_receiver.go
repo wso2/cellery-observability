@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -32,7 +33,6 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	thriftzipkin "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
-	"github.com/rs/cors"
 	"go.uber.org/zap"
 )
 
@@ -48,7 +48,7 @@ type (
 		Name        string `json:"operationName"`
 		ServiceName string `json:"serviceName"`
 		SpanKind    string `json:"spanKind"`
-		Timestamp   int    `json:"timestamp"`
+		Timestamp   int64  `json:"timestamp"`
 		Duration    int64  `json:"duration"`
 		Tags        string `json:"tags"`
 	}
@@ -64,7 +64,7 @@ type (
 )
 
 const (
-	defaultTracingReceiverPort int = 38350
+	tracingReceiverPort int = 9411
 )
 
 // Println logs an error message with the given fields
@@ -86,19 +86,20 @@ func (receiver *TracingReceiver) Run(errCh chan error) {
 		sanitizer: sanitizerzipkin.NewChainedSanitizer(sanitizerzipkin.StandardSanitizers...),
 		receiver:  receiver,
 	}
-	recoveryHandler := NewRecoveryHandler(receiver.logger.Desugar(), true)
-	startZipkinHTTPAPI(receiver.logger, defaultTracingReceiverPort, zipkinSpansHandler, recoveryHandler, errCh)
+	zWrapper := zapRecoveryWrapper{receiver.logger.Desugar()}
+	recoveryHandler := handlers.RecoveryHandler(handlers.RecoveryLogger(zWrapper), handlers.PrintRecoveryStack(true))
+	startZipkinHTTPAPI(receiver.logger, tracingReceiverPort, zipkinSpansHandler, recoveryHandler, errCh)
 }
 
 func (receiver *TracingReceiver) convertSpan(span *model.Span) ProcessedSpan {
 	spanKind := ""
-	processedTags := make(map[string]string)
+	processedTags := make(map[string]interface{})
 	tags := span.Tags
 	for _, tag := range tags {
-		processedTags[tag.Key] = tag.VStr
-		if tag.Key == "span.kind" {
-			spanKind = tag.VStr
-		}
+		processedTags[tag.Key] = getTagValue(tag)
+	}
+	if processedTags["span.kind"] != nil {
+		spanKind = processedTags["span.kind"].(string)
 	}
 	processedTagsStr, err := json.Marshal(processedTags)
 	if err != nil {
@@ -106,16 +107,37 @@ func (receiver *TracingReceiver) convertSpan(span *model.Span) ProcessedSpan {
 	}
 	processedSpan := ProcessedSpan{
 		TraceID:     span.TraceID.String(),
-		ParentID:    span.ParentSpanID().String(),
 		ID:          span.SpanID.String(),
 		Name:        span.OperationName,
 		ServiceName: span.Process.ServiceName,
-		SpanKind:    spanKind,
-		Timestamp:   span.StartTime.Nanosecond(),
-		Duration:    span.Duration.Nanoseconds(),
+		SpanKind:    strings.ToUpper(spanKind),
+		Timestamp:   span.StartTime.UnixNano() / 1000000,
+		Duration:    span.Duration.Nanoseconds() / 1000000,
 		Tags:        string(processedTagsStr),
 	}
+	parentSpanId := span.ParentSpanID().String()
+	if parentSpanId != "0" {
+		processedSpan.ParentID = parentSpanId
+	}
 	return processedSpan
+}
+
+func getTagValue(tag model.KeyValue) interface{} {
+	valueType := tag.VType
+	switch valueType {
+	case model.ValueType_STRING:
+		return tag.VStr
+	case model.ValueType_BOOL:
+		return tag.VBool
+	case model.ValueType_INT64:
+		return tag.VInt64
+	case model.ValueType_FLOAT64:
+		return tag.VFloat64
+	case model.ValueType_BINARY:
+		return tag.VBinary
+	default:
+		return ""
+	}
 }
 
 func startZipkinHTTPAPI(
@@ -125,55 +147,32 @@ func startZipkinHTTPAPI(
 	recoveryHandler func(http.Handler) http.Handler,
 	errCh chan error,
 ) {
-	if zipkinPort != 0 {
-		zHandler := appzipkin.NewAPIHandler(zipkinSpansHandler)
-		r := mux.NewRouter()
-		zHandler.RegisterRoutes(r)
-
-		c := cors.New(cors.Options{
-			AllowedMethods: []string{"POST"}, // Allowing only POST, because that's the only handled one
-		})
-
-		httpPortStr := ":" + strconv.Itoa(zipkinPort)
-		logger.Info("Listening for Zipkin HTTP traffic", zap.Int("zipkin.http-port", zipkinPort))
-
-		errCh <- http.ListenAndServe(httpPortStr, c.Handler(recoveryHandler(r)))
-	}
+	zHandler := appzipkin.NewAPIHandler(zipkinSpansHandler)
+	r := mux.NewRouter()
+	zHandler.RegisterRoutes(r)
+	httpPortStr := ":" + strconv.Itoa(zipkinPort)
+	logger.Info("Listening for Zipkin HTTP traffic", zap.Int("zipkin.http-port", zipkinPort))
+	errCh <- http.ListenAndServe(httpPortStr, recoveryHandler(r))
 }
 
 func (handler *ZipkinSpanHandler) SubmitZipkinBatch(spans []*zipkincore.Span, options app.SubmitBatchOptions) ([]*zipkincore.Response, error) {
-	mSpans := make([]*model.Span, 0, len(spans))
 	responses := make([]*zipkincore.Response, len(spans))
 	for _, span := range spans {
 		sanitized := handler.sanitizer.Sanitize(span)
-		mSpans = append(mSpans, convertZipkinToModel(sanitized, handler.logger)...)
-	}
-	for _, span := range mSpans {
-		processedSpan := handler.receiver.convertSpan(span)
-		jsonStr, err := json.Marshal(processedSpan)
+		processedSpans, err := thriftzipkin.ToDomainSpan(sanitized)
 		if err != nil {
-			return nil, fmt.Errorf("could not marshal span struct : %v", err)
+			handler.receiver.logger.Warnf("Warning while converting zipkin to domain span", zap.Error(err))
 		}
-		handler.receiver.writeToBuffer(string(jsonStr))
-		handler.logger.Debugf("received span : %s", string(jsonStr))
+
+		for _, span := range processedSpans {
+			processedSpan := handler.receiver.convertSpan(span)
+			jsonStr, err := json.Marshal(processedSpan)
+			if err != nil {
+				return nil, fmt.Errorf("could not marshal span struct : %v", err)
+			}
+			handler.receiver.buffer <- string(jsonStr)
+			handler.logger.Debugf("received span : %s", string(jsonStr))
+		}
 	}
 	return responses, nil
-}
-
-// ConvertZipkinToModel is a helper function that logs warnings during conversion
-func convertZipkinToModel(zSpan *zipkincore.Span, logger *zap.SugaredLogger) []*model.Span {
-	mSpans, err := thriftzipkin.ToDomainSpan(zSpan)
-	if err != nil {
-		logger.Warnf("Warning while converting zipkin to domain span", zap.Error(err))
-	}
-	return mSpans
-}
-
-func NewRecoveryHandler(logger *zap.Logger, printStack bool) func(handler http.Handler) http.Handler {
-	zWrapper := zapRecoveryWrapper{logger}
-	return handlers.RecoveryHandler(handlers.RecoveryLogger(zWrapper), handlers.PrintRecoveryStack(printStack))
-}
-
-func (receiver *TracingReceiver) writeToBuffer(span string) {
-	receiver.buffer <- span
 }
