@@ -32,7 +32,7 @@ import (
 	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/logging"
 )
 
-const defaultAdapterPort int = 38355
+const defaultAdapterPort int = 9091
 
 func TestReport(t *testing.T) {
 	adapterBytes, err := ioutil.ReadFile("./testdata/sample-adapter.yaml")

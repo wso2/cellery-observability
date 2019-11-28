@@ -18,6 +18,6 @@
 
 FROM scratch
 
-COPY ./target/telemetry-agent /telemetry-agemt
+COPY ./target/telemetry-agent /telemetry-agent
 
 ENTRYPOINT ["/telemetry-agent"]

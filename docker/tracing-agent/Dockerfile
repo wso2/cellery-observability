@@ -18,6 +18,6 @@
 
 FROM scratch
 
-COPY target/tracing-agent /tracing-agent
+COPY ./target/tracing-agent /tracing-agent
 
 ENTRYPOINT ["/tracing-agent"]

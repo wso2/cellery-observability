@@ -43,7 +43,7 @@ import (
 )
 
 const (
-	AdapterPort int = 38355
+	AdapterPort int = 9091
 )
 
 type (

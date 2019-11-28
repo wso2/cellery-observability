@@ -30,8 +30,8 @@ clean: clean.observability-agent
 .PHONY: clean.observability-agent
 clean.observability-agent:
 	rm -rf ./components/global/observability-agent/target
-	rm -rf ./docker/observability-agent/telemetry-agent/target
-	rm -rf ./docker/observability-agent/tracing-agent/target
+	rm -rf ./docker/telemetry-agent/target
+	rm -rf ./docker/tracing-agent/target
 
 
 .PHONY: init
@@ -91,16 +91,16 @@ docker:
 	docker build -t $(DOCKER_REPO)/observability-portal:$(DOCKER_IMAGE_TAG) .
 	cd docker/sp; \
 	docker build -t ${DOCKER_REPO}/sp-worker:${DOCKER_IMAGE_TAG} .
-	@rm -rf ./docker/observability-agent/telemetry-agent/target
-	@mkdir ./docker/observability-agent/telemetry-agent/target
-	@rm -rf ./docker/observability-agent/tracing-agent/target
-	@mkdir ./docker/observability-agent/tracing-agent/target
-	cp ./components/global/observability-agent/target/telemetry-agent ./docker/observability-agent/telemetry-agent/target/telemetry-agent
-	cp ./components/global/observability-agent/target/tracing-agent ./docker/observability-agent/tracing-agent/target/tracing-agent
-	cd docker/observability-agent/telemetry-agent; \
+	@rm -rf ./docker/telemetry-agent/target
+	@mkdir ./docker/telemetry-agent/target
+	cp ./components/global/observability-agent/target/telemetry-agent ./docker/telemetry-agent/target/telemetry-agent
+	cd docker/telemetry-agent; \
 	docker build -t ${DOCKER_REPO}/telemetry-agent:${DOCKER_IMAGE_TAG} .
-	cd docker/observability-agent/tracing-agent; \
-    docker build -t ${DOCKER_REPO}/tracing-agent:${DOCKER_IMAGE_TAG} .
+	@rm -rf ./docker/tracing-agent/target
+	@mkdir ./docker/tracing-agent/target
+	cp ./components/global/observability-agent/target/tracing-agent ./docker/tracing-agent/target/tracing-agent
+	cd docker/tracing-agent; \
+	docker build -t ${DOCKER_REPO}/tracing-agent:${DOCKER_IMAGE_TAG} .
 
 
 .PHONY: docker-push
