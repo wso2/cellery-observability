@@ -25,7 +25,7 @@ import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.internal.ServiceHolder;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
-import io.cellery.observability.model.generator.ModelManager;
+import io.cellery.observability.model.generator.model.ModelManager;
 import io.cellery.observability.model.generator.internal.ModelStoreManager;
 import org.apache.log4j.Logger;
 import org.mockito.Mockito;

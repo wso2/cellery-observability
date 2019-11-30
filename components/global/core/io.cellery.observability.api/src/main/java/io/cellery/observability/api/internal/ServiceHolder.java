@@ -19,7 +19,7 @@ package io.cellery.observability.api.internal;
 
 import io.cellery.observability.api.auth.OIDCOauthManager;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
-import io.cellery.observability.model.generator.ModelManager;
+import io.cellery.observability.model.generator.model.ModelManager;
 import org.wso2.carbon.config.provider.ConfigProvider;
 import org.wso2.carbon.kernel.CarbonRuntime;
 import org.wso2.msf4j.MicroservicesRunner;

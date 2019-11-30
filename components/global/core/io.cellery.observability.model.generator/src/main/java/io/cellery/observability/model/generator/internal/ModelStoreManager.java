@@ -17,13 +17,12 @@
  */
 package io.cellery.observability.model.generator.internal;
 
-import com.google.common.graph.MutableNetwork;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import io.cellery.observability.model.generator.Node;
-import io.cellery.observability.model.generator.Utils;
 import io.cellery.observability.model.generator.exception.GraphStoreException;
+import io.cellery.observability.model.generator.model.Edge;
 import io.cellery.observability.model.generator.model.Model;
+import io.cellery.observability.model.generator.model.Node;
 import org.apache.log4j.Logger;
 import org.wso2.carbon.datasource.core.exception.DataSourceException;
 
@@ -49,14 +48,15 @@ public class ModelStoreManager {
 
     private static final String TABLE_NAME = "DependencyModelTable";
     private static final String DATASOURCE_NAME = "CELLERY_OBSERVABILITY_DB";
+
     private static final Type NODE_SET_TYPE = new TypeToken<HashSet<Node>>() {
     }.getType();
-    private static final Type STRING_SET_TYPE = new TypeToken<HashSet<String>>() {
+    private static final Type STRING_SET_TYPE = new TypeToken<HashSet<Edge>>() {
     }.getType();
+
     private DataSource dataSource;
     private Gson gson;
     private Model lastModel;
-
 
     public ModelStoreManager() {
         try {
@@ -78,6 +78,12 @@ public class ModelStoreManager {
         cleanupConnection(null, statement, connection);
     }
 
+    /**
+     * Load the last saved model.
+     *
+     * @return The last saved model
+     * @throws GraphStoreException If loading the model failed
+     */
     public Model loadLastModel() throws GraphStoreException {
         try {
             Connection connection = getConnection();
@@ -99,17 +105,25 @@ public class ModelStoreManager {
         String nodes = resultSet.getString(2);
         String edges = resultSet.getString(3);
         Set<Node> nodesSet = gson.fromJson(nodes, NODE_SET_TYPE);
-        Set<String> edgeSet = gson.fromJson(edges, STRING_SET_TYPE);
-        return new Model(nodesSet, Utils.getEdges(edgeSet));
+        Set<Edge> edgeSet = gson.fromJson(edges, STRING_SET_TYPE);
+        return new Model(nodesSet, edgeSet);
     }
 
-    public List<Model> loadModel(long fromTime, long toTime) throws GraphStoreException {
+    /**
+     * Load a list of models stored within a given time period.
+     *
+     * @param startTime The start of the time period
+     * @param endTime The end of the time period
+     * @return The list of model that were stored within the period
+     * @throws GraphStoreException If loading the model failed
+     */
+    public List<Model> loadModel(long startTime, long endTime) throws GraphStoreException {
         try {
             Connection connection = getConnection();
             PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + TABLE_NAME
                     + " WHERE MODEL_TIME >= ? AND MODEL_TIME <= ? ORDER BY MODEL_TIME");
-            statement.setTimestamp(1, new Timestamp(fromTime));
-            statement.setTimestamp(2, new Timestamp(toTime));
+            statement.setTimestamp(1, new Timestamp(startTime));
+            statement.setTimestamp(2, new Timestamp(endTime));
             ResultSet resultSet = statement.executeQuery();
             List<Model> models = new ArrayList<>();
             while (resultSet.next()) {
@@ -122,7 +136,7 @@ public class ModelStoreManager {
                 resultSet = statement.executeQuery();
                 if (resultSet.next()) {
                     Timestamp timestamp = resultSet.getTimestamp(1);
-                    if (timestamp.getTime() < fromTime) {
+                    if (timestamp.getTime() < startTime) {
                         models.add(getModel(resultSet));
                     }
                 }
@@ -169,48 +183,57 @@ public class ModelStoreManager {
         }
     }
 
-    public Model persistModel(MutableNetwork<Node, String> graph) throws GraphStoreException {
+    /**
+     * Persist a particular model.
+     *
+     * @param nodes The set of nodes in the model
+     * @param edges The set of edges in the model
+     * @throws GraphStoreException If storing the model failed
+     */
+    public void persistModel(Set<Node> nodes, Set<Edge> edges) throws GraphStoreException {
         try {
-            String nodes = gson.toJson(graph.nodes(), NODE_SET_TYPE);
-            String edges = gson.toJson(graph.edges(), STRING_SET_TYPE);
+            String nodesJson = gson.toJson(nodes, NODE_SET_TYPE);
+            String edgesJson = gson.toJson(edges, STRING_SET_TYPE);
             Connection connection = getConnection();
             PreparedStatement statement = connection.prepareStatement("INSERT INTO " + TABLE_NAME
                     + " VALUES (?, ?, ?)");
             statement.setTimestamp(1, Timestamp.from(Instant.now()));
-            statement.setString(2, nodes);
-            statement.setString(3, edges);
+            statement.setString(2, nodesJson);
+            statement.setString(3, edgesJson);
             statement.executeUpdate();
             connection.commit();
-            Model model = new Model(gson.fromJson(nodes, NODE_SET_TYPE),
-                    Utils.getEdges(gson.fromJson(edges, STRING_SET_TYPE)));
             cleanupConnection(null, statement, connection);
-            return model;
+            this.lastModel = new Model(new HashSet<>(nodes), new HashSet<>(edges));
         } catch (SQLException ex) {
             throw new GraphStoreException("Unable to persist the graph to the datasource: " + DATASOURCE_NAME, ex);
         }
     }
 
+    /**
+     * Store the current model in the Model Manager.
+     *
+     * @throws GraphStoreException If a failure occurs while storing
+     */
     public void storeCurrentModel() throws GraphStoreException {
         try {
-            MutableNetwork<Node, String> currentModel = ServiceHolder.getModelManager().getDependencyGraph();
-            if (lastModel == null) {
+            Set<Node> currentNodes = ServiceHolder.getModelManager().getCurrentNodes();
+            Set<Edge> currentEdges = ServiceHolder.getModelManager().getCurrentEdges();
+            if (this.lastModel == null) {
                 this.lastModel = loadLastModel();
             }
             if (this.lastModel == null) {
-                if (currentModel.nodes().size() != 0) {
-                    lastModel = ServiceHolder.getModelStoreManager().persistModel(currentModel);
+                if (currentNodes.size() != 0) {
+                    this.persistModel(currentNodes, currentEdges);
                 }
             } else {
-                Set<Node> currentNodes = currentModel.nodes();
-                Set<String> currentEdges = currentModel.edges();
                 Set<Node> lastNodes = this.lastModel.getNodes();
-                Set<String> lastEdges = Utils.getEdgesString(this.lastModel.getEdges());
+                Set<Edge> lastEdges = this.lastModel.getEdges();
                 if (currentEdges.size() == lastEdges.size() && currentNodes.size() == lastNodes.size()) {
                     if (isSameNodes(currentNodes, lastNodes) && isSameEdges(currentEdges, lastEdges)) {
                         return;
                     }
                 }
-                lastModel = ServiceHolder.getModelStoreManager().persistModel(currentModel);
+                this.persistModel(currentNodes, currentEdges);
             }
         } catch (GraphStoreException e) {
             log.error("Error occurred while handling the dependency graph persistence. ", e);
@@ -218,46 +241,37 @@ public class ModelStoreManager {
         }
     }
 
-    private boolean isSameNodes(Set<Node> currentNodes, Set<Node> lastNodes) {
-        boolean isSameModel = true;
-        for (Node currentNode : currentNodes) {
-            Node lastNode = null;
-            //Find the node from the last persisted graph
-            for (Node node : lastNodes) {
-                if (node.equals(currentNode)) {
-                    lastNode = node;
-                    break;
-                }
-            }
-            // Check the services within the node is also same.
-            if (lastNode != null) {
-                if (lastNode.getComponents().size() == currentNode.getComponents().size()) {
-                    if (!lastNode.getComponents().containsAll(currentNode.getComponents())) {
-                        isSameModel = false;
-                        break;
-                    }
-                } else {
-                    isSameModel = false;
-                    break;
-                }
-                if (lastNode.getEdges().size() == currentNode.getEdges().size()) {
-                    if (!lastNode.getEdges().containsAll(currentNode.getEdges())) {
-                        isSameModel = false;
-                        break;
-                    }
-                } else {
-                    isSameModel = false;
-                    break;
-                }
-            } else {
-                isSameModel = false;
-                break;
-            }
-        }
-        return isSameModel;
+    /**
+     * Clear the stored model.
+     */
+    public void clear() throws GraphStoreException, SQLException {
+        Connection connection = getConnection();
+        PreparedStatement statement = connection.prepareStatement("DELETE FROM " + TABLE_NAME);
+        statement.executeUpdate();
+        connection.commit();
+        cleanupConnection(null, statement, connection);
+        this.lastModel = null;
     }
 
-    private boolean isSameEdges(Set<String> currentEdges, Set<String> lastEdges) {
-        return currentEdges.containsAll(lastEdges);
+    /**
+     * Check if two sets of nodes are equal.
+     *
+     * @param nodesSetA First nodes set
+     * @param nodesSetB Second nodes set
+     * @return True if the two node sets are equal
+     */
+    private boolean isSameNodes(Set<Node> nodesSetA, Set<Node> nodesSetB) {
+        return nodesSetA.containsAll(nodesSetB);
+    }
+
+    /**
+     * Check if two sets of edges are equal.
+     *
+     * @param edgesSetA First edges set
+     * @param edgesSetB Second edges set
+     * @return True if the two edge sets are equal
+     */
+    private boolean isSameEdges(Set<Edge> edgesSetA, Set<Edge> edgesSetB) {
+        return edgesSetA.containsAll(edgesSetB);
     }
 }

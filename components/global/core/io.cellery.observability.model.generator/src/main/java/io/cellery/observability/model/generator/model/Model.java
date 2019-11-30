@@ -17,16 +17,16 @@
  */
 package io.cellery.observability.model.generator.model;
 
-import io.cellery.observability.model.generator.Node;
-
 import java.util.Set;
 
 /**
- * This is the POJO of the whole Model information that is being returned to by the MSF4J services - DependencyModelAPI
+ * Represents a dependency model between components in the system.
  */
 public class Model {
     private Set<Node> nodes;
     private Set<Edge> edges;
+
+    private static final String NODE_FQN_SEPARATOR = "#";
 
     public Model(Set<Node> nodes, Set<Edge> edges) {
         this.nodes = nodes;
@@ -41,9 +41,11 @@ public class Model {
         return edges;
     }
 
-    public void mergeModel(Model anotherModel, Edge connectorEdge) {
-        nodes.addAll(anotherModel.nodes);
-        edges.addAll(anotherModel.edges);
-        edges.add(connectorEdge);
+    public static String getNodeFQN(EdgeNode node) {
+        return Model.getNodeFQN(node.getNamespace(), node.getInstance(), node.getComponent());
+    }
+
+    public static String getNodeFQN(String namespace, String instance, String component) {
+        return namespace + NODE_FQN_SEPARATOR + instance + NODE_FQN_SEPARATOR + component;
     }
 }

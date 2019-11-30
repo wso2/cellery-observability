@@ -17,7 +17,7 @@
  */
 package io.cellery.observability.model.generator.internal;
 
-import io.cellery.observability.model.generator.ModelManager;
+import io.cellery.observability.model.generator.model.ModelManager;
 import org.apache.log4j.Logger;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;

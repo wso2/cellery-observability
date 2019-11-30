@@ -43,7 +43,9 @@ public class DependencyModelAPI {
                                         @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
         try {
-            Model model = ServiceHolder.getModelManager().getGraph(queryStartTime, queryEndTime);
+            // TODO: Read namespace from API
+            Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(queryStartTime, queryEndTime,
+                    "default");
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
             throw new APIInvocationException("Unexpected error occurred while fetching the Instance dependency model",
@@ -59,8 +61,9 @@ public class DependencyModelAPI {
                                               @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
         try {
-            Model model = ServiceHolder.getModelManager().getDependencyModel(queryStartTime, queryEndTime,
-                    instanceName);
+            // TODO: Read namespace from API
+            Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(queryStartTime, queryEndTime,
+                    "default", instanceName);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
             throw new APIInvocationException("API Invocation error occurred while fetching the dependency model for " +
@@ -77,8 +80,9 @@ public class DependencyModelAPI {
                                                @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
         try {
-            Model model = ServiceHolder.getModelManager().getDependencyModel(queryStartTime, queryEndTime, instanceName,
-                    componentName);
+            // TODO: Read namespace from API
+            Model model = ServiceHolder.getModelManager().getComponentDependencyModel(queryStartTime, queryEndTime,
+                    "default", instanceName, componentName);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
             throw new APIInvocationException("API Invocation error occurred while fetching the dependency model for " +

@@ -17,13 +17,13 @@
  */
 package io.cellery.observability.model.generator;
 
+import io.cellery.observability.model.generator.exception.GraphStoreException;
 import io.cellery.observability.model.generator.internal.ServiceHolder;
-import io.cellery.observability.model.generator.model.SpanInfo;
+import io.cellery.observability.model.generator.model.Node;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.core.config.SiddhiAppContext;
-import org.wso2.siddhi.core.event.ComplexEvent;
 import org.wso2.siddhi.core.event.ComplexEventChunk;
 import org.wso2.siddhi.core.event.stream.StreamEvent;
 import org.wso2.siddhi.core.event.stream.StreamEventCloner;
@@ -37,288 +37,164 @@ import org.wso2.siddhi.query.api.definition.AbstractDefinition;
 import org.wso2.siddhi.query.api.definition.Attribute;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
- * This is the Siddhi extension which generates the dependency graph for the spans created.
+ * This is the Siddhi extension which generates the dependency graph using request source and target information.
  */
 @Extension(
         name = "modelGenerator",
         namespace = "observe",
-        description = "This generates the dependency model based on request spans. This depends on the traceGroup " +
-                "window processor",
-        examples = @Example(description = "This travese through the grouped spans and generates the dependency model"
-                , syntax = "observe:modelGenerator(cell, serviceName, operationName, spanId, parentId, kind, traceId, "
-                + "startTime)\n"
-                + "select * \n"
+        description = "This generates the dependency model based on request source and target information",
+        examples = @Example(description = "This updates the dependency model based on the request"
+                , syntax = "observe:modelGenerator(sourceNamespace, sourceInstance, sourceComponent, "
+                + "sourceInstanceKind, destinationNamespace, destinationInstance, destinationComponent,"
+                + "destinationInstanceKind)\n"
+                + "select *\n"
                 + "insert into outputStream;")
 )
 public class ModelGenerationExtension extends StreamProcessor {
 
     private static final Logger log = Logger.getLogger(ModelGenerationExtension.class);
 
-    private ExpressionExecutor cellNameExecutor;
-    private ExpressionExecutor instanceKindExecutor;
-    private ExpressionExecutor serviceNameExecutor;
-    private ExpressionExecutor operationNameExecutor;
-    private ExpressionExecutor traceIdExecutor;
-    private ExpressionExecutor spanIdExecutor;
-    private ExpressionExecutor parentIdExecutor;
-    private ExpressionExecutor spanKindExecutor;
-    private ExpressionExecutor startTimeExecutor;
+    private ExpressionExecutor sourceNamespaceExecutor;
+    private ExpressionExecutor sourceInstanceExecutor;
+    private ExpressionExecutor sourceComponentExecutor;
+    private ExpressionExecutor sourceInstanceKindExecutor;
+    private ExpressionExecutor destinationNamespaceExecutor;
+    private ExpressionExecutor destinationInstanceExecutor;
+    private ExpressionExecutor destinationComponentExecutor;
+    private ExpressionExecutor destinationInstanceKindExecutor;
 
     @Override
-    protected void process(ComplexEventChunk<StreamEvent> complexEventChunk, Processor processor,
+    protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
                            StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater) {
+        while (streamEventChunk.hasNext()) {
+            try {
+                StreamEvent incomingStreamEvent = streamEventChunk.next();
+                String sourceNamespace = (String) sourceNamespaceExecutor.execute(incomingStreamEvent);
+                String sourceInstance = (String) sourceInstanceExecutor.execute(incomingStreamEvent);
+                String sourceComponent = (String) sourceComponentExecutor.execute(incomingStreamEvent);
+                String sourceInstanceKind = (String) sourceInstanceKindExecutor.execute(incomingStreamEvent);
+                String destinationNamespace = (String) destinationNamespaceExecutor.execute(incomingStreamEvent);
+                String destinationInstance = (String) destinationInstanceExecutor.execute(incomingStreamEvent);
+                String destinationComponent = (String) destinationComponentExecutor.execute(incomingStreamEvent);
+                String destinationInstanceKind = (String) destinationInstanceKindExecutor.execute(incomingStreamEvent);
+
+                Node sourceNode = this.getOrGenerateNode(sourceNamespace, sourceInstance, sourceComponent,
+                        sourceInstanceKind);
+                Node destinationNode = this.getOrGenerateNode(destinationNamespace, destinationInstance,
+                        destinationComponent, destinationInstanceKind);
+                ServiceHolder.getModelManager().addEdge(sourceNode, destinationNode);
+            } catch (Throwable throwable) {
+                log.error("Unexpected error occurred while processing the event in the model processor",
+                        throwable);
+            }
+        }
         try {
-            if (complexEventChunk.getFirst() != null && complexEventChunk.getFirst().getType().
-                    equals(ComplexEvent.Type.EXPIRED)) {
-                Map<String, List<SpanInfo>> spanCache = new HashMap<>();
-                String traceId = null;
-                List<SpanInfo> rootSpans = new ArrayList<>();
-                int totalSpans = 0;
-                while (complexEventChunk.hasNext()) {
-                    StreamEvent streamEvent = complexEventChunk.next();
-                    String cellName = (String) cellNameExecutor.execute(streamEvent);
-                    String instanceKind = (String) instanceKindExecutor.execute(streamEvent);
-                    String serviceName = (String) serviceNameExecutor.execute(streamEvent);
-                    String operationName = (String) operationNameExecutor.execute(streamEvent);
-                    String spanId = (String) spanIdExecutor.execute(streamEvent);
-                    String parentId = (String) parentIdExecutor.execute(streamEvent);
-                    String kind = (String) spanKindExecutor.execute(streamEvent);
-                    Long startTime = (Long) startTimeExecutor.execute(streamEvent);
-                    if (traceId == null) {
-                        traceId = (String) traceIdExecutor.execute(streamEvent);
-                    }
-                    if (kind == null || kind.isEmpty()) {
-                        kind = SpanInfo.Kind.NONE.name();
-                    }
-                    SpanInfo spanInfo = new SpanInfo(cellName, instanceKind, serviceName, operationName, spanId,
-                            parentId, SpanInfo.Kind.valueOf(kind), startTime);
-                    List<SpanInfo> childNodes = spanCache.computeIfAbsent(parentId, k -> new ArrayList<>());
-                    childNodes.add(spanInfo);
-                    spanCache.putIfAbsent(parentId, childNodes);
-                    if (spanId.equalsIgnoreCase(traceId) || parentId == null) {
-                        rootSpans.add(spanInfo);
-                    }
-                    totalSpans++;
-                }
-                if (!rootSpans.isEmpty()) {
-                    addPossibleLinkForRootSpans(rootSpans);
-                    Set<SpanInfo> rootCellSpans = findRootCellSpan(rootSpans, spanCache);
-                    traceWalk(rootCellSpans, spanCache);
-                    ServiceHolder.getModelStoreManager().storeCurrentModel();
-                } else {
-                    log.warn("Root span was not detected for the trace: " + traceId +
-                            ", total parents spans cache: " + spanCache.size() + " , totalSpans: " + totalSpans);
-                }
-            } else {
-                processor.process(complexEventChunk);
-            }
-        } catch (Throwable throwable) {
-            log.error("Unexpected error occured while processing the event in the model processor.", throwable);
+            ServiceHolder.getModelStoreManager().storeCurrentModel();
+        } catch (GraphStoreException e) {
+            log.error("Failed to persist current dependency model", e);
+        }
+        if (streamEventChunk.getFirst() != null) {
+            nextProcessor.process(streamEventChunk);
         }
     }
 
-    private void addPossibleLinkForRootSpans(List<SpanInfo> spans) {
-        Collections.sort(spans);
-        for (int i = 0; i < spans.size(); i++) {
-            SpanInfo spanInfo = spans.get(i);
-            if (spanInfo.getKind().equals(SpanInfo.Kind.CLIENT) && i + 1 < spans.size()
-                    && spans.get(i + 1).getKind().equals(SpanInfo.Kind.SERVER)) {
-                SpanInfo childSpanInfo = spans.get(i + 1);
-                if ((spanInfo.getCellName() != null && !spanInfo.getCellName().isEmpty() &&
-                        !spanInfo.getOperationName().startsWith(Constants.IGNORE_OPERATION_NAME))
-                        && (childSpanInfo.getCellName() != null && !childSpanInfo.getCellName().isEmpty() &&
-                        !childSpanInfo.getOperationName().startsWith(Constants.IGNORE_OPERATION_NAME))) {
-                    Node cellParentNode = ServiceHolder.getModelManager().getOrGenerateNode(spanInfo);
-                    Node cellChildNode = ServiceHolder.getModelManager().getOrGenerateNode(childSpanInfo);
-                    if (!cellParentNode.equals(cellChildNode) || !spanInfo.getComponentName().
-                            equalsIgnoreCase(childSpanInfo.getComponentName())) {
-                        cellChildNode.addComponent(childSpanInfo.getComponentName());
-                        ServiceHolder.getModelManager().addNode(cellChildNode);
-                        ServiceHolder.getModelManager().addLink(cellParentNode, cellChildNode,
-                                Utils.generateServiceName(spanInfo.getComponentName(),
-                                        childSpanInfo.getComponentName()));
-                    }
-                }
-            }
-        }
-
-    }
-
-    private Set<SpanInfo> findRootCellSpan(List<SpanInfo> rootSpans, Map<String, List<SpanInfo>> spanInfoMap) {
-        Set<SpanInfo> parents = new HashSet<>();
-        for (SpanInfo spanInfo : rootSpans) {
-            parents.addAll(findRootCellSpan(spanInfo, spanInfoMap));
-        }
-        return parents;
-    }
-
-    private Set<SpanInfo> findRootCellSpan(SpanInfo rootSpan, Map<String, List<SpanInfo>> spanInfoMap) {
-        Set<SpanInfo> parents = new HashSet<>();
-        if (rootSpan.getCellName() == null || rootSpan.getCellName().isEmpty()) {
-            List<SpanInfo> children = spanInfoMap.get(rootSpan.getSpanId());
-            if (children != null) {
-                Collections.sort(children);
-                for (int i = 0; i < children.size(); i++) {
-                    SpanInfo child = children.get(i);
-                    if (child.getKind().equals(SpanInfo.Kind.CLIENT) && i + 1 < children.size()
-                            && children.get(i + 1).getKind().equals(SpanInfo.Kind.SERVER)) {
-                        continue;
-                    }
-                    if (child.getCellName() != null && !child.getCellName().isEmpty()) {
-                        parents.add(child);
-                    } else {
-                        parents.addAll(findRootCellSpan(child, spanInfoMap));
-                    }
-                }
-            }
-        } else {
-            parents.add(rootSpan);
-        }
-        return parents;
-    }
-
-    private void traceWalk(Set<SpanInfo> rootSpans, Map<String, List<SpanInfo>> spanInfoMap) {
-        for (SpanInfo rootSpan : rootSpans) {
-            Node parentNode = ServiceHolder.getModelManager().getOrGenerateNode(rootSpan);
-            parentNode.addComponent(rootSpan.getComponentName());
-            ServiceHolder.getModelManager().addNode(parentNode);
-            if (spanInfoMap.get(rootSpan.getSpanId()) != null) {
-                Set<SpanInfo> linkedChildren = goDepth(parentNode, rootSpan, spanInfoMap);
-                if (!linkedChildren.isEmpty()) {
-                    traceWalk(linkedChildren, spanInfoMap);
-                }
-            }
-        }
-    }
-
-    private Set<SpanInfo> goDepth(Node cellParentNode, SpanInfo parentSpanInfo, Map<String,
-                                  List<SpanInfo>> spanInfoMap) {
-        List<SpanInfo> childSpanInfoList = spanInfoMap.get(parentSpanInfo.getSpanId());
-        Set<SpanInfo> linkedChildren = new HashSet<>();
-        if (childSpanInfoList != null) {
-            Collections.sort(childSpanInfoList);
-            for (SpanInfo childSpanInfo : childSpanInfoList) {
-                if (childSpanInfo.getCellName() != null && !childSpanInfo.getCellName().isEmpty() &&
-                        !childSpanInfo.getOperationName().startsWith(Constants.IGNORE_OPERATION_NAME)) {
-                    Node childNode = ServiceHolder.getModelManager().getOrGenerateNode(childSpanInfo);
-                    if (!childNode.equals(cellParentNode) || !parentSpanInfo.getComponentName().
-                            equalsIgnoreCase(childSpanInfo.getComponentName())) {
-                        childNode.addComponent(childSpanInfo.getComponentName());
-                        ServiceHolder.getModelManager().addNode(childNode);
-                        ServiceHolder.getModelManager().addLink(cellParentNode, childNode, Utils.generateServiceName(
-                                parentSpanInfo.getComponentName(), childSpanInfo.getComponentName()));
-                        linkedChildren.add(childSpanInfo);
-                    } else {
-                        linkedChildren.addAll(goDepth(cellParentNode, childSpanInfo, spanInfoMap));
-                    }
-                } else {
-                    linkedChildren.addAll(goDepth(cellParentNode, childSpanInfo, spanInfoMap));
-                }
-            }
-        }
-        return linkedChildren;
+    private Node getOrGenerateNode(String namespace, String instance, String component, String instanceKind) {
+        Node node = ServiceHolder.getModelManager().getOrGenerateNode(namespace, instance, component);
+        node.setInstanceKind(instanceKind);
+        return node;
     }
 
     @Override
     protected List<Attribute> init(AbstractDefinition abstractDefinition, ExpressionExecutor[] expressionExecutors,
                                    ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
-        if (expressionExecutors.length != 9) {
-            throw new SiddhiAppCreationException("Nine arguments are required");
+        if (expressionExecutors.length != 8) {
+            throw new SiddhiAppCreationException("Eight arguments are required");
         } else {
             if (expressionExecutors[0].getReturnType() == Attribute.Type.STRING) {
-                cellNameExecutor = expressionExecutors[0];
+                sourceNamespaceExecutor = expressionExecutors[0];
             } else {
-                throw new SiddhiAppCreationException("Expected a field with String return type for the instance "
-                        + "field, but found a field with return type - " + expressionExecutors[0].getReturnType());
+                throw new SiddhiAppCreationException("Expected a field with String return type for the source "
+                        + "namespace field, but found a field with return type - "
+                        + expressionExecutors[0].getReturnType());
             }
 
             if (expressionExecutors[1].getReturnType() == Attribute.Type.STRING) {
-                instanceKindExecutor = expressionExecutors[1];
+                sourceInstanceExecutor = expressionExecutors[1];
             } else {
-                throw new SiddhiAppCreationException("Expected a field with String return type for the instanceKind "
-                        + "field, but found a field with return type - " + expressionExecutors[1].getReturnType());
+                throw new SiddhiAppCreationException("Expected a field with String return type for the source "
+                        + "instance field, but found a field with return type - "
+                        + expressionExecutors[1].getReturnType());
             }
 
             if (expressionExecutors[2].getReturnType() == Attribute.Type.STRING) {
-                serviceNameExecutor = expressionExecutors[2];
+                sourceComponentExecutor = expressionExecutors[2];
             } else {
-                throw new SiddhiAppCreationException("Expected a field with Long return type for the serviceName "
-                        + "field, but found a field with return type - " + expressionExecutors[2].getReturnType());
+                throw new SiddhiAppCreationException("Expected a field with String return type for the source "
+                        + "component field, but found a field with return type - "
+                        + expressionExecutors[2].getReturnType());
             }
 
             if (expressionExecutors[3].getReturnType() == Attribute.Type.STRING) {
-                operationNameExecutor = expressionExecutors[3];
+                sourceInstanceKindExecutor = expressionExecutors[3];
             } else {
-                throw new SiddhiAppCreationException("Expected a field with Long return type for the operationName "
-                        + "field, but found a field with return type - " + expressionExecutors[3].getReturnType());
+                throw new SiddhiAppCreationException("Expected a field with Long return type for the source "
+                        + "instance kind field, but found a field with return type - "
+                        + expressionExecutors[3].getReturnType());
             }
 
             if (expressionExecutors[4].getReturnType() == Attribute.Type.STRING) {
-                spanIdExecutor = expressionExecutors[4];
+                destinationNamespaceExecutor = expressionExecutors[4];
             } else {
-                throw new SiddhiAppCreationException("Expected a field with String return type for the spanId " +
-                        "field, but found a field with return type - " + expressionExecutors[4].getReturnType());
+                throw new SiddhiAppCreationException("Expected a field with Long return type for the destination "
+                        + "namespace field, but found a field with return type - "
+                        + expressionExecutors[4].getReturnType());
             }
 
             if (expressionExecutors[5].getReturnType() == Attribute.Type.STRING) {
-                parentIdExecutor = expressionExecutors[5];
+                destinationInstanceExecutor = expressionExecutors[5];
             } else {
-                throw new SiddhiAppCreationException("Expected a field with String return type for the parentId "
-                        + "field, but found a field with return type - " + expressionExecutors[5].getReturnType());
+                throw new SiddhiAppCreationException("Expected a field with String return type for the destination "
+                        + "instance field, but found a field with return type - "
+                        + expressionExecutors[5].getReturnType());
             }
 
             if (expressionExecutors[6].getReturnType() == Attribute.Type.STRING) {
-                spanKindExecutor = expressionExecutors[6];
+                destinationComponentExecutor = expressionExecutors[6];
             } else {
-                throw new SiddhiAppCreationException("Expected a field with String return type for the " +
-                        "spanKind field, but found a field with return type - "
+                throw new SiddhiAppCreationException("Expected a field with String return type for the destination "
+                        + "component field, but found a field with return type - "
                         + expressionExecutors[6].getReturnType());
             }
 
             if (expressionExecutors[7].getReturnType() == Attribute.Type.STRING) {
-                traceIdExecutor = expressionExecutors[7];
+                destinationInstanceKindExecutor = expressionExecutors[7];
             } else {
-                throw new SiddhiAppCreationException("Expected a field with String return type for the " +
-                        "traceId field, but found a field with return type - "
+                throw new SiddhiAppCreationException("Expected a field with String return type for the destination "
+                        + "instance kind field, but found a field with return type - "
                         + expressionExecutors[7].getReturnType());
             }
-
-            if (expressionExecutors[8].getReturnType() == Attribute.Type.LONG) {
-                startTimeExecutor = expressionExecutors[8];
-            } else {
-                throw new SiddhiAppCreationException("Expected a field with long return type for the " +
-                        "startTime field, but found a field with return type - "
-                        + expressionExecutors[8].getReturnType());
-            }
         }
-        return new ArrayList<>();
+        return new ArrayList<>(0);
     }
 
     @Override
-    public void start() {
-
+    public void start() {   // Do Nothing
     }
 
     @Override
-    public void stop() {
-
+    public void stop() {    // Do Nothing
     }
 
     @Override
-    public Map<String, Object> currentState() {
+    public Map<String, Object> currentState() {     // Do Nothing
         return null;
     }
 
     @Override
-    public void restoreState(Map<String, Object> map) {
-
+    public void restoreState(Map<String, Object> map) { // Do Nothing
     }
 }
