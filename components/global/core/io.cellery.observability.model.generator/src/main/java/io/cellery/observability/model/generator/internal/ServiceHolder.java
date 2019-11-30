@@ -17,7 +17,7 @@
  */
 package io.cellery.observability.model.generator.internal;
 
-import io.cellery.observability.model.generator.ModelManager;
+import io.cellery.observability.model.generator.model.ModelManager;
 import org.wso2.carbon.datasource.core.api.DataSourceService;
 
 /**

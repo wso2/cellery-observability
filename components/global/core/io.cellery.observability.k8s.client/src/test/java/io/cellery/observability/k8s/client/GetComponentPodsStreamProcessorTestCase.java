@@ -32,7 +32,6 @@ import org.wso2.siddhi.core.exception.SiddhiAppCreationException;
 import org.wso2.siddhi.core.query.output.callback.QueryCallback;
 import org.wso2.siddhi.core.stream.input.InputHandler;
 import org.wso2.siddhi.core.util.EventPrinter;
-import org.wso2.siddhi.core.util.SiddhiTestHelper;
 import org.wso2.siddhi.core.util.persistence.InMemoryPersistenceStore;
 
 import java.net.URLEncoder;
@@ -82,7 +81,6 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-01"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 7, eventCount, TIMEOUT);
         Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
         Assert.assertEquals(eventCount.get(), 6);
         for (Event event : receivedEvents) {
@@ -119,7 +117,6 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-02"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 3, eventCount, TIMEOUT);
         Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
         Assert.assertEquals(eventCount.get(), 2);
         for (Event event : receivedEvents) {
@@ -148,7 +145,6 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-03"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 3, eventCount, TIMEOUT);
         Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
         Assert.assertEquals(eventCount.get(), 2);
         for (Event event : receivedEvents) {
@@ -177,7 +173,6 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-02"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 3, eventCount, TIMEOUT);
         Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
         Assert.assertEquals(eventCount.get(), 2);
         for (Event event : receivedEvents) {
@@ -203,7 +198,6 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-04"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 1, eventCount, TIMEOUT);
         Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
         Assert.assertEquals(eventCount.get(), 0);
     }
@@ -223,14 +217,12 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-05"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 1, eventCount, TIMEOUT);
         Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 0);
         Assert.assertEquals(eventCount.get(), 0);
 
         k8sClient.getConfiguration().setMasterUrl(originalMaster);
 
         inputHandler.send(new Object[]{"event-06"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 4, eventCount, TIMEOUT);
         Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
         Assert.assertEquals(eventCount.get(), 3);
         for (Event event : receivedEvents) {
@@ -263,7 +255,6 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-06"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 4, eventCount, TIMEOUT);
         Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
         Assert.assertEquals(eventCount.get(), 3);
         for (Event event : receivedEvents) {
@@ -298,7 +289,6 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-07"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 1, eventCount, TIMEOUT);
         Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 1);
         Assert.assertEquals(eventCount.get(), 0);
     }
@@ -308,7 +298,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
         String inStreamDefinition = "@App:name(\"test-siddhi-app\")\n" +
                 "define stream " + INPUT_STREAM + " (inputValue string);";
         String query = "@info(name = \"query\")\n" +
-                "from inputStream#k8sClient:getComponentPods(\"unexpected-value\")\n" +
+                "from " + INPUT_STREAM + "#k8sClient:getComponentPods(\"unexpected-value\")\n" +
                 "select *\n" +
                 "insert into outputStream;";
         SiddhiManager siddhiManager = new SiddhiManager();
@@ -334,7 +324,6 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
 
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
         inputHandler.send(new Object[]{"event-01"});
-        SiddhiTestHelper.waitForEvents(WAIT_TIME, 8, eventCount, TIMEOUT);
         Assert.assertEquals(k8sServer.getMockServer().getRequestCount(), 2);
         Assert.assertEquals(eventCount.get(), 7);
         for (Event event : receivedEvents) {
@@ -370,7 +359,7 @@ public class GetComponentPodsStreamProcessorTestCase extends BaseSiddhiExtension
         String inStreamDefinition = "@App:name(\"test-siddhi-app\")\n" +
                 "define stream " + INPUT_STREAM + " (inputValue string);";
         String query = "@info(name = \"query\")\n" +
-                "from inputStream#k8sClient:getComponentPods()\n" +
+                "from " + INPUT_STREAM + "#k8sClient:getComponentPods()\n" +
                 "select inputValue, namespace, instance, instanceKind, component, podName, creationTimestamp, " +
                 "nodeName\n" +
                 "insert into outputStream;";

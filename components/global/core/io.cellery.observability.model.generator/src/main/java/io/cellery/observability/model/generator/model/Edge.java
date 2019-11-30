@@ -17,40 +17,45 @@
  */
 package io.cellery.observability.model.generator.model;
 
-import io.cellery.observability.model.generator.Utils;
+import java.util.Objects;
 
 /**
- * This is the POJO of the Model edge information that is being returned to by the MSF4J services - DependencyModelAPI
+ * Represents an edge in the dependency model.
  */
 public class Edge {
-    private String source;
-    private String target;
-    private String edgeString;
+    private EdgeNode source;
+    private EdgeNode target;
 
-    public Edge(String edgeString) {
-        this.edgeString = edgeString;
-        String[] edgeElements = Utils.edgeNameElements(edgeString);
-        this.source = edgeElements[0];
-        this.target = edgeElements[1];
+    public Edge(EdgeNode source, EdgeNode target) {
+        this.source = source;
+        this.target = target;
     }
 
-    public String getSource() {
+    public EdgeNode getSource() {
         return source;
     }
 
-    public String getTarget() {
+    public EdgeNode getTarget() {
         return target;
     }
 
-    public String getEdgeString() {
-        return edgeString;
-    }
-
-    public boolean equals(Object object) {
-        return object instanceof Edge && edgeString.equalsIgnoreCase(((Edge) object).getEdgeString());
+    public boolean equals(Object anotherObject) {
+        boolean equals;
+        if (anotherObject instanceof Edge) {
+            Edge anotherEdge = (Edge) anotherObject;
+            equals = Objects.equals(this.source, anotherEdge.getSource())
+                    && Objects.equals(this.target, anotherEdge.getTarget());
+        } else {
+            equals = false;
+        }
+        return equals;
     }
 
     public int hashCode() {
-        return edgeString.hashCode();
+        return Objects.hash(this.source, this.target);
+    }
+
+    public String toString() {
+        return this.source + " --> " + this.target;
     }
 }

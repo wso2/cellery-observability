@@ -31,7 +31,7 @@ import io.cellery.observability.api.exception.UnexpectedException;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
-import io.cellery.observability.model.generator.ModelManager;
+import io.cellery.observability.model.generator.model.ModelManager;
 import org.apache.log4j.Logger;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
