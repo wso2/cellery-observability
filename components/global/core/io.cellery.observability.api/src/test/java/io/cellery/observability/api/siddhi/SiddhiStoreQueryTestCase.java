@@ -83,6 +83,7 @@ public class SiddhiStoreQueryTestCase {
                 Assert.assertEquals(actualData[j], expectedData[j]);
             }
         }
+        ServiceHolder.setSiddhiStoreQueryManager(null);
     }
 
     @Test
@@ -97,6 +98,7 @@ public class SiddhiStoreQueryTestCase {
                 .execute();
 
         Assert.assertEquals(result.length, 0);
+        ServiceHolder.setSiddhiStoreQueryManager(null);
     }
 
     @Test
@@ -112,5 +114,6 @@ public class SiddhiStoreQueryTestCase {
                 .execute();
 
         Assert.assertEquals(result.length, 0);
+        ServiceHolder.setSiddhiStoreQueryManager(null);
     }
 }

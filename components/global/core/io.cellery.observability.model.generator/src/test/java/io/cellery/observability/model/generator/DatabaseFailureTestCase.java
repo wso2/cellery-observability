@@ -23,61 +23,133 @@ import io.cellery.observability.model.generator.exception.GraphStoreException;
 import io.cellery.observability.model.generator.exception.ModelException;
 import io.cellery.observability.model.generator.internal.ModelStoreManager;
 import io.cellery.observability.model.generator.internal.ServiceHolder;
+import io.cellery.observability.model.generator.model.Model;
+import io.cellery.observability.model.generator.model.ModelManager;
+import io.cellery.observability.model.generator.model.Node;
+import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.reflect.Whitebox;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterGroups;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeGroups;
 import org.testng.annotations.Test;
+import org.wso2.carbon.config.ConfigProviderFactory;
+import org.wso2.carbon.config.provider.ConfigProvider;
+import org.wso2.carbon.datasource.core.DataSourceManager;
+import org.wso2.carbon.datasource.core.impl.DataSourceServiceImpl;
+import org.wso2.carbon.secvault.SecureVault;
 
-import java.lang.reflect.Field;
+import java.io.File;
+import java.nio.file.Paths;
+import java.util.HashSet;
 
 /**
  * This test case simulates database connection, and SQL failures.
  */
 public class DatabaseFailureTestCase {
+    private static final String CARBON_HOME_ENV = "carbon.home";
+    private static final String WSO2_RUNTIME_ENV = "wso2.runtime";
 
-    @BeforeGroups(groups = "tempConnFailure")
-    public void setFailureDatasource() throws IllegalAccessException, NoSuchFieldException {
-        Field field = ServiceHolder.getModelStoreManager().getClass().getDeclaredField("dataSource");
-        field.setAccessible(true);
-        field.set(ServiceHolder.getModelStoreManager(), new FailureDatasource(true));
+    @BeforeClass
+    public void initTestCase() {
+        String carbonHomePath = this.getClass().getResource("/").getFile();
+        System.setProperty(CARBON_HOME_ENV, carbonHomePath);
+        System.setProperty(WSO2_RUNTIME_ENV, "worker");
     }
 
-    @Test(groups = "tempConnFailure", expectedExceptions = GraphStoreException.class)
-    public void loadModelWithDatasource() throws GraphStoreException {
-        ServiceHolder.getModelManager().getGraph(System.currentTimeMillis() - 10000, System.currentTimeMillis());
+    @AfterClass
+    public void cleanUpTestCase() {
+        System.setProperty(CARBON_HOME_ENV, "");
+        System.setProperty(WSO2_RUNTIME_ENV, "");
     }
 
-    @Test(groups = "tempConnFailure", expectedExceptions = GraphStoreException.class)
-    public void persistsModel() throws GraphStoreException {
-        ServiceHolder.getModelStoreManager().persistModel(ServiceHolder.getModelManager().getDependencyGraph());
+    @BeforeGroups(groups = "connection-failure")
+    public void initTempConnFailureGroups() throws Exception {
+        // Initialize data source service
+        DataSourceServiceImpl dataSourceService = new DataSourceServiceImpl();
+        SecureVault secureVault = PowerMockito.mock(SecureVault.class);
+        ConfigProvider configProvider = ConfigProviderFactory.getConfigProvider(
+                Paths.get(System.getProperty("carbon.home"), "conf" + File.separator + "deployment.yaml"),
+                secureVault);
+        DataSourceManager dataSourceManager = DataSourceManager.getInstance();
+        dataSourceManager.initDataSources(configProvider);
+        ServiceHolder.setDataSourceService(dataSourceService);
+
+        ModelStoreManager modelStoreManager = Mockito.spy(new ModelStoreManager());
+        Whitebox.setInternalState(modelStoreManager, "dataSource", new FailureDatasource(true));
+        ServiceHolder.setModelStoreManager(modelStoreManager);
+
+        Mockito.doReturn(new Model(new HashSet<>(), new HashSet<>())).when(modelStoreManager).loadLastModel();
+        ServiceHolder.setModelManager(new ModelManager());
+        Mockito.doCallRealMethod().when(modelStoreManager).loadLastModel();
+
+        Node nodeA = new Node("default", "instance-a", "gateway");
+        ServiceHolder.getModelManager().addNode(nodeA);
+        Node nodeB = new Node("default", "instance-a", "component-a");
+        ServiceHolder.getModelManager().addNode(nodeB);
+        Node nodeC = new Node("default", "instance-a", "component-b");
+        ServiceHolder.getModelManager().addNode(nodeC);
+        ServiceHolder.getModelManager().addEdge(nodeA, nodeB);
+        ServiceHolder.getModelManager().addEdge(nodeA, nodeC);
     }
 
-    @Test(groups = "tempConnFailure", expectedExceptions = GraphStoreException.class)
-    public void storeCurrentModel() throws GraphStoreException, NoSuchFieldException, IllegalAccessException {
-        Field field = ServiceHolder.getModelStoreManager().getClass().getDeclaredField("lastModel");
-        field.setAccessible(true);
-        field.set(ServiceHolder.getModelStoreManager(), null);
+    @AfterGroups(groups = "connection-failure")
+    public void cleanUpTempConnFailureGroups() {
+        ServiceHolder.setDataSourceService(null);
+        ServiceHolder.setModelStoreManager(null);
+        ServiceHolder.setModelManager(null);
+    }
+
+    @Test(groups = "connection-failure", expectedExceptions = GraphStoreException.class)
+    public void testLoadModelWithFailingDatasource() throws GraphStoreException {
+        ServiceHolder.getModelManager().getDependencyModel(0, System.currentTimeMillis());
+    }
+
+    @Test(groups = "connection-failure", expectedExceptions = GraphStoreException.class)
+    public void testPersistsModelWithFailingDatasource() throws GraphStoreException {
+        ServiceHolder.getModelStoreManager().persistModel(
+                ServiceHolder.getModelManager().getCurrentNodes(), ServiceHolder.getModelManager().getCurrentEdges());
+    }
+
+    @Test(groups = "connection-failure", expectedExceptions = GraphStoreException.class)
+    public void testStoreCurrentModelWithFailingDatasource() throws GraphStoreException {
+        Whitebox.setInternalState(ServiceHolder.getModelStoreManager(), "lastModel", (Object) null);
         ServiceHolder.getModelStoreManager().storeCurrentModel();
     }
 
-    @Test(dependsOnGroups = "tempConnFailure", expectedExceptions = ModelException.class)
-    public void loadWithUndefinedDatasource() throws ModelException {
+    @Test(dependsOnGroups = "connection-failure", expectedExceptions = ModelException.class)
+    public void testLoadWithUndefinedDatasource() throws ModelException {
         ServiceHolder.setDataSourceService(new FailureDatasourceServiceImpl(true, null));
         ServiceHolder.setModelStoreManager(new ModelStoreManager());
         ServiceHolder.setModelManager(new ModelManager());
+
+        ServiceHolder.setDataSourceService(null);
+        ServiceHolder.setModelStoreManager(null);
+        ServiceHolder.setModelManager(null);
     }
 
-    @Test(dependsOnGroups = "tempConnFailure", expectedExceptions = ModelException.class)
-    public void loadDatabaseWithConnectionException() throws ModelException {
+    @Test(dependsOnGroups = "connection-failure", expectedExceptions = ModelException.class)
+    public void testLoadDatabaseWithConnectionException() throws ModelException {
         ServiceHolder.setDataSourceService(new FailureDatasourceServiceImpl(false,
                 new FailureDatasource(true)));
         ServiceHolder.setModelStoreManager(new ModelStoreManager());
         ServiceHolder.setModelManager(new ModelManager());
+
+        ServiceHolder.setDataSourceService(null);
+        ServiceHolder.setModelStoreManager(null);
+        ServiceHolder.setModelManager(null);
     }
 
-    @Test(dependsOnGroups = "tempConnFailure", expectedExceptions = ModelException.class)
-    public void loadDatabaseWithSQLException() throws ModelException {
+    @Test(dependsOnGroups = "connection-failure", expectedExceptions = ModelException.class)
+    public void testLoadDatabaseWithSQLException() throws ModelException {
         ServiceHolder.setDataSourceService(new FailureDatasourceServiceImpl(false,
                 new FailureDatasource(false)));
         ServiceHolder.setModelStoreManager(new ModelStoreManager());
         ServiceHolder.setModelManager(new ModelManager());
+
+        ServiceHolder.setDataSourceService(null);
+        ServiceHolder.setModelStoreManager(null);
+        ServiceHolder.setModelManager(null);
     }
 }

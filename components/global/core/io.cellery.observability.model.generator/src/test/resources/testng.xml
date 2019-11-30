@@ -21,14 +21,12 @@
 <suite name="Model generation tests">
     <test name="model-generation-tests" enabled="true" parallel="false">
         <classes>
-            <class name="io.cellery.observability.model.generator.ModelGenTestCase"/>
+            <class name="io.cellery.observability.model.generator.ModelGenerationExtensionTestCase"/>
         </classes>
     </test>
     <test name="database-failure-tests" enabled="true" parallel="false">
         <classes>
             <class name="io.cellery.observability.model.generator.DatabaseFailureTestCase"/>
-            <class name="io.cellery.observability.model.generator.TraceGroupWindowProcessorTestCase"/>
-            <class name="io.cellery.observability.model.generator.ModelGenerationExtensionTestCase"/>
         </classes>
     </test>
 </suite>

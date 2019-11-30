@@ -25,8 +25,8 @@ import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.internal.ServiceHolder;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
-import io.cellery.observability.model.generator.model.ModelManager;
 import io.cellery.observability.model.generator.internal.ModelStoreManager;
+import io.cellery.observability.model.generator.model.ModelManager;
 import org.apache.log4j.Logger;
 import org.mockito.Mockito;
 import org.powermock.modules.testng.PowerMockObjectFactory;
@@ -103,6 +103,16 @@ public class BaseAPITestCase {
             logger.debug("Stopping the Siddhi Apps");
         }
         ServiceHolder.getSiddhiStoreQueryManager().stop();
+
+        ServiceHolder.setConfigProvider(null);
+        ServiceHolder.setOidcOauthManager(null);
+        ServiceHolder.setSiddhiManager(null);
+        ServiceHolder.setMicroservicesRunner(null);
+        ServiceHolder.setSiddhiStoreQueryManager(null);
+
+        io.cellery.observability.model.generator.internal.ServiceHolder.setDataSourceService(null);
+        io.cellery.observability.model.generator.internal.ServiceHolder.setModelStoreManager(null);
+        io.cellery.observability.model.generator.internal.ServiceHolder.setModelManager(null);
     }
 
     /**

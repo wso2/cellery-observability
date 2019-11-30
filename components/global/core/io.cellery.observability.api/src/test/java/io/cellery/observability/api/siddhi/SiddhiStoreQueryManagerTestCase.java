@@ -25,6 +25,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.testng.PowerMockObjectFactory;
 import org.powermock.reflect.Whitebox;
 import org.testng.IObjectFactory;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.ObjectFactory;
 import org.testng.annotations.Test;
@@ -58,6 +59,11 @@ public class SiddhiStoreQueryManagerTestCase {
         ServiceHolder.setSiddhiManager(siddhiManager);
 
         siddhiStoreQueryManager = new SiddhiStoreQueryManager();
+    }
+
+    @AfterMethod
+    public void cleanUp() {
+        ServiceHolder.setSiddhiManager(null);
     }
 
     @Test
