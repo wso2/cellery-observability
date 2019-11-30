@@ -143,6 +143,7 @@ public class OIDCOauthManagerTestCase {
         OIDCOauthManager oidcOauthManager = new OIDCOauthManager();
         Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientId"));
         Assert.assertNull(Whitebox.getInternalState(oidcOauthManager, "clientSecret"));
+        ServiceHolder.setConfigProvider(null);
     }
 
     @Test

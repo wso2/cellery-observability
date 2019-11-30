@@ -21,6 +21,7 @@ package io.cellery.observability.api.bean;
 import io.cellery.observability.api.internal.ServiceHolder;
 import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.carbon.config.provider.ConfigProvider;
@@ -46,6 +47,11 @@ public class CelleryConfigTestCase {
         SecureVault secureVault = new SecureVaultImpl();
         ConfigProvider configProvider = new ConfigProviderImpl(configFileReader, secureVault);
         ServiceHolder.setConfigProvider(configProvider);
+    }
+
+    @AfterMethod
+    public void cleanUp() {
+        ServiceHolder.setConfigProvider(null);
     }
 
     @Test

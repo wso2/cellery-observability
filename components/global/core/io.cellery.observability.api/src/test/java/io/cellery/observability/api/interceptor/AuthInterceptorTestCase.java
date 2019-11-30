@@ -55,6 +55,7 @@ public class AuthInterceptorTestCase {
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertTrue(interceptionResult);
+        ServiceHolder.setOidcOauthManager(null);
     }
 
     @Test
@@ -71,6 +72,7 @@ public class AuthInterceptorTestCase {
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertFalse(interceptionResult);
+        ServiceHolder.setOidcOauthManager(null);
     }
 
     @Test
@@ -138,6 +140,7 @@ public class AuthInterceptorTestCase {
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertFalse(interceptionResult);
+        ServiceHolder.setOidcOauthManager(null);
     }
 
     /**
