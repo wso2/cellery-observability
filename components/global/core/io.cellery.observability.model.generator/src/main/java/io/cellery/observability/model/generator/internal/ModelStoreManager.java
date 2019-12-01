@@ -37,6 +37,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import javax.sql.DataSource;
 
@@ -226,12 +227,9 @@ public class ModelStoreManager {
                     this.persistModel(currentNodes, currentEdges);
                 }
             } else {
-                Set<Node> lastNodes = this.lastModel.getNodes();
-                Set<Edge> lastEdges = this.lastModel.getEdges();
-                if (currentEdges.size() == lastEdges.size() && currentNodes.size() == lastNodes.size()) {
-                    if (isSameNodes(currentNodes, lastNodes) && isSameEdges(currentEdges, lastEdges)) {
-                        return;
-                    }
+                if (Objects.equals(this.lastModel.getNodes(), currentNodes)
+                        && Objects.equals(this.lastModel.getEdges(), currentEdges)) {
+                    return;
                 }
                 this.persistModel(currentNodes, currentEdges);
             }
@@ -251,27 +249,5 @@ public class ModelStoreManager {
         connection.commit();
         cleanupConnection(null, statement, connection);
         this.lastModel = null;
-    }
-
-    /**
-     * Check if two sets of nodes are equal.
-     *
-     * @param nodesSetA First nodes set
-     * @param nodesSetB Second nodes set
-     * @return True if the two node sets are equal
-     */
-    private boolean isSameNodes(Set<Node> nodesSetA, Set<Node> nodesSetB) {
-        return nodesSetA.containsAll(nodesSetB);
-    }
-
-    /**
-     * Check if two sets of edges are equal.
-     *
-     * @param edgesSetA First edges set
-     * @param edgesSetB Second edges set
-     * @return True if the two edge sets are equal
-     */
-    private boolean isSameEdges(Set<Edge> edgesSetA, Set<Edge> edgesSetB) {
-        return edgesSetA.containsAll(edgesSetB);
     }
 }

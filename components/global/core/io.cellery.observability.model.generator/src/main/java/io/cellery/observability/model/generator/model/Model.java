@@ -17,6 +17,7 @@
  */
 package io.cellery.observability.model.generator.model;
 
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -47,5 +48,25 @@ public class Model {
 
     public static String getNodeFQN(String namespace, String instance, String component) {
         return namespace + NODE_FQN_SEPARATOR + instance + NODE_FQN_SEPARATOR + component;
+    }
+
+    public boolean equals(Object anotherObject) {
+        boolean equals;
+        if (anotherObject instanceof Model) {
+            Model anotherModel = (Model) anotherObject;
+            equals = Objects.equals(this.nodes, anotherModel.getNodes())
+                    && Objects.equals(this.edges, anotherModel.getEdges());
+        } else {
+            equals = false;
+        }
+        return equals;
+    }
+
+    public int hashCode() {
+        return Objects.hash(this.getNodes(), this.getEdges());
+    }
+
+    public String toString() {
+        return "Nodes: " + this.nodes.toString() + ", Edges: " + this.edges.toString();
     }
 }
