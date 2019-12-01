@@ -28,14 +28,14 @@
             <class name="io.cellery.observability.model.generator.model.ModelManagerTestCase"/>
         </classes>
     </test>
-    <test name="model-generation-tests" enabled="true" parallel="false">
+    <test name="model-store-tests" enabled="true" parallel="false">
         <classes>
-            <class name="io.cellery.observability.model.generator.ModelGenerationExtensionTestCase"/>
+            <class name="io.cellery.observability.model.generator.internal.ModelStoreManagerTestCase"/>
         </classes>
     </test>
-    <test name="database-failure-tests" enabled="true" parallel="false">
+    <test name="extension-tests" enabled="true" parallel="false">
         <classes>
-            <class name="io.cellery.observability.model.generator.DatabaseFailureTestCase"/>
+            <class name="io.cellery.observability.model.generator.ModelGenerationExtensionTestCase"/>
         </classes>
     </test>
 </suite>

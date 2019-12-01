@@ -130,21 +130,7 @@ public class ModelStoreManager {
             while (resultSet.next()) {
                 models.add(getModel(resultSet));
             }
-            if (models.isEmpty()) {
-                cleanupConnection(resultSet, statement, null);
-                statement = connection.prepareStatement("SELECT * FROM " + TABLE_NAME
-                        + " ORDER BY MODEL_TIME DESC LIMIT 1");
-                resultSet = statement.executeQuery();
-                if (resultSet.next()) {
-                    Timestamp timestamp = resultSet.getTimestamp(1);
-                    if (timestamp.getTime() < startTime) {
-                        models.add(getModel(resultSet));
-                    }
-                }
-                cleanupConnection(resultSet, statement, connection);
-            } else {
-                cleanupConnection(resultSet, statement, connection);
-            }
+            cleanupConnection(resultSet, statement, connection);
             return models;
         } catch (SQLException ex) {
             throw new GraphStoreException("Unable to load the graph from datasource : " + DATASOURCE_NAME, ex);
@@ -234,7 +220,7 @@ public class ModelStoreManager {
                 this.persistModel(currentNodes, currentEdges);
             }
         } catch (GraphStoreException e) {
-            log.error("Error occurred while handling the dependency graph persistence. ", e);
+            log.error("Error occurred while handling the dependency graph persistence", e);
             throw e;
         }
     }
@@ -242,12 +228,16 @@ public class ModelStoreManager {
     /**
      * Clear the stored model.
      */
-    public void clear() throws GraphStoreException, SQLException {
-        Connection connection = getConnection();
-        PreparedStatement statement = connection.prepareStatement("DELETE FROM " + TABLE_NAME);
-        statement.executeUpdate();
-        connection.commit();
-        cleanupConnection(null, statement, connection);
-        this.lastModel = null;
+    public void clear() throws GraphStoreException {
+        try {
+            Connection connection = getConnection();
+            PreparedStatement statement = connection.prepareStatement("DELETE FROM " + TABLE_NAME);
+            statement.executeUpdate();
+            connection.commit();
+            cleanupConnection(null, statement, connection);
+            this.lastModel = null;
+        } catch (SQLException e) {
+            throw new GraphStoreException("Failed to clear stored models", e);
+        }
     }
 }
