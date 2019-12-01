@@ -58,8 +58,8 @@ public class ModelManagerTestCase {
         Edge edgeA = new Edge(nodeA, nodeB);
         Edge edgeB = new Edge(nodeA, nodeC);
 
-        HashSet<Node> nodes = new HashSet<>(Arrays.asList(nodeA, nodeB, nodeC));
-        HashSet<Edge> edges = new HashSet<>(Arrays.asList(edgeA, edgeB));
+        Set<Node> nodes = new HashSet<>(Arrays.asList(nodeA, nodeB, nodeC));
+        Set<Edge> edges = new HashSet<>(Arrays.asList(edgeA, edgeB));
         Model model = new Model(nodes, edges);
 
         ModelStoreManager modelStoreManager = Mockito.mock(ModelStoreManager.class);
@@ -117,8 +117,8 @@ public class ModelManagerTestCase {
 
         Edge edgeA = new Edge(nodeA, nodeB);
 
-        HashSet<Node> nodes = new HashSet<>(Collections.singletonList(nodeB));
-        HashSet<Edge> edges = new HashSet<>(Collections.singletonList(edgeA));
+        Set<Node> nodes = new HashSet<>(Collections.singletonList(nodeB));
+        Set<Edge> edges = new HashSet<>(Collections.singletonList(edgeA));
         Model model = new Model(nodes, edges);
 
         ModelStoreManager modelStoreManager = Mockito.mock(ModelStoreManager.class);
@@ -137,8 +137,8 @@ public class ModelManagerTestCase {
 
         Edge edgeA = new Edge(nodeA, nodeB);
 
-        HashSet<Node> nodes = new HashSet<>(Collections.singletonList(nodeA));
-        HashSet<Edge> edges = new HashSet<>(Collections.singletonList(edgeA));
+        Set<Node> nodes = new HashSet<>(Collections.singletonList(nodeA));
+        Set<Edge> edges = new HashSet<>(Collections.singletonList(edgeA));
         Model model = new Model(nodes, edges);
 
         ModelStoreManager modelStoreManager = Mockito.mock(ModelStoreManager.class);
