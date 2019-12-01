@@ -20,7 +20,7 @@
 @App:description("Cellery Telemetry app for processing and storing http requests")
 
 @source(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
-define stream TelemetryStreamIn(requestId string, traceId string, spanId string, sourceNamespace string,
+define stream TelemetryStreamIn(requestId string, traceId string, spanId string, parentSpanId string, sourceNamespace string,
                                 sourceInstance string, sourceInstanceKind string, sourceComponent string,
                                 sourcePod string, destinationNamespace string, destinationInstance string,
                                 destinationInstanceKind string, destinationComponent string, destinationPod string,
@@ -55,11 +55,17 @@ group by
     sourceNamespace, sourceInstance, sourceComponent, destinationNamespace, destinationInstance, destinationComponent, httpResponseGroup
 aggregate every sec...year;
 
+-- Removing duplications of the metrics.
+from TelemetryStreamIn#telemetry:deduplicate(60 sec, traceId, spanId, parentSpanId, sourceNamespace, sourceInstance,
+                    sourceComponent, destinationNamespace, destinationInstance, destinationComponent, requestSizeBytes,
+                    responseDurationNanoSec, responseSizeBytes)
+insert into DeduplicatedTelemetryStream;
+
 --
 -- Storing the data received from Istio Telemetry
 --
 
-from TelemetryStreamIn
+from DeduplicatedTelemetryStream
 select
     sourceNamespace,
     sourceInstance,
@@ -69,36 +75,16 @@ select
     destinationInstance,
     destinationInstanceKind,
     destinationComponent,
-    contextReporterKind,
-    requestId,
     str:concat(convert(cast(responseCode, "int") / 100, "string"), "xx") as httpResponseGroup,
     convert(responseDurationNanoSec, "double") / 1000000 as responseTimeMilliSec,
     ifThenElse(requestSizeBytes is null, 0L, requestSizeBytes) as requestSizeBytes,
     ifThenElse(responseSizeBytes is null, 0L, responseSizeBytes) as responseSizeBytes
 insert into ProcessedTelemetryStream;
 
-from every(e1=ProcessedTelemetryStream) ->
-    not ProcessedTelemetryStream[e1.requestId == e2.requestId] for 1 minute
-    or e2=ProcessedTelemetryStream[e1.requestId == e2.requestId] within 1 minute
-select
-    e1.sourceNamespace,
-    e1.sourceInstance,
-    e1.sourceInstanceKind,
-    e1.sourceComponent,
-    e1.destinationNamespace,
-    e1.destinationInstance,
-    e1.destinationInstanceKind,
-    e1.destinationComponent,
-    ifThenElse(e1.httpResponseGroup is null, e2.httpResponseGroup, e1.httpResponseGroup) as httpResponseGroup,
-    ifThenElse(e1.responseTimeMilliSec is null, e2.responseTimeMilliSec, e1.responseTimeMilliSec) as responseTimeMilliSec,
-    ifThenElse(e1.requestSizeBytes is null, e2.requestSizeBytes, e1.requestSizeBytes) as requestSizeBytes,
-    ifThenElse(e1.responseSizeBytes is null, e2.responseSizeBytes, e1.responseSizeBytes) as responseSizeBytes
-insert into SanitizedRequestsStream;
-
-from SanitizedRequestsStream[(not httpResponseGroup is null) and (not responseTimeMilliSec is null)
+from ProcessedTelemetryStream[(not httpResponseGroup is null) and (not responseTimeMilliSec is null)
                              and (not requestSizeBytes is null) and (not responseSizeBytes is null)]
 insert into ProcessedRequestsStream;
 
-from SanitizedRequestsStream#observe:modelGenerator(sourceNamespace, sourceInstance, sourceComponent,
+from ProcessedTelemetryStream#observe:modelGenerator(sourceNamespace, sourceInstance, sourceComponent,
     sourceInstanceKind, destinationNamespace, destinationInstance, destinationComponent, destinationInstanceKind)
 insert into DummyStream;
