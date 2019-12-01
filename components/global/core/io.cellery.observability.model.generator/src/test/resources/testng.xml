@@ -19,6 +19,15 @@
 
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 <suite name="Model generation tests">
+    <test name="model-tests" enabled="true" parallel="false">
+        <classes>
+            <class name="io.cellery.observability.model.generator.model.EdgeNode"/>
+            <class name="io.cellery.observability.model.generator.model.NodeTestCase"/>
+            <class name="io.cellery.observability.model.generator.model.EdgeTestCase"/>
+            <class name="io.cellery.observability.model.generator.model.ModelTestCase"/>
+            <class name="io.cellery.observability.model.generator.model.ModelManagerTestCase"/>
+        </classes>
+    </test>
     <test name="model-generation-tests" enabled="true" parallel="false">
         <classes>
             <class name="io.cellery.observability.model.generator.ModelGenerationExtensionTestCase"/>

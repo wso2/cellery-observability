@@ -42,7 +42,7 @@ import org.wso2.carbon.secvault.SecureVault;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.HashSet;
+import java.util.Collections;
 
 /**
  * This test case simulates database connection, and SQL failures.
@@ -80,7 +80,8 @@ public class DatabaseFailureTestCase {
         Whitebox.setInternalState(modelStoreManager, "dataSource", new FailureDatasource(true));
         ServiceHolder.setModelStoreManager(modelStoreManager);
 
-        Mockito.doReturn(new Model(new HashSet<>(), new HashSet<>())).when(modelStoreManager).loadLastModel();
+        Mockito.doReturn(new Model(Collections.emptySet(), Collections.emptySet())).when(modelStoreManager)
+                .loadLastModel();
         ServiceHolder.setModelManager(new ModelManager());
         Mockito.doCallRealMethod().when(modelStoreManager).loadLastModel();
 
