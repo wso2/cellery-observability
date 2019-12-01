@@ -38,5 +38,6 @@
         <module>io.cellery.observability.model.generator</module>
         <module>io.cellery.observability.api</module>
         <module>io.cellery.observability.siddhi.apps</module>
+        <module>io.cellery.observability.telemetry.deduplicator</module>
     </modules>
 </project>

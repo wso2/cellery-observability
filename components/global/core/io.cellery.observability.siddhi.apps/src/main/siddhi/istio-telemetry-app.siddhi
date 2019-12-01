@@ -20,7 +20,7 @@
 @App:description("This receives the attributes generally received by the Istio Mixer")
 
 @source(type="runtime-agent", port="9091", @map(type="json", fail.on.missing.attribute="false"))
-define stream TelemetryStream(requestId string, traceId string, spanId string, sourceNamespace string,
+define stream TelemetryStream(requestId string, traceId string, spanId string, parentSpanId string, sourceNamespace string,
                               sourceInstance string, sourceInstanceKind string, sourceComponent string,
                               sourcePod string, destinationNamespace string, destinationInstance string,
                               destinationInstanceKind string, destinationComponent string, destinationPod string,
@@ -29,7 +29,7 @@ define stream TelemetryStream(requestId string, traceId string, spanId string, s
                               responseSizeBytes long);
 
 @sink(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
-define stream TelemetryInMemorySink(requestId string, traceId string, spanId string, sourceNamespace string,
+define stream TelemetryInMemorySink(requestId string, traceId string, spanId string, parentSpanId string, sourceNamespace string,
                                     sourceInstance string, sourceInstanceKind string, sourceComponent string,
                                     sourcePod string, destinationNamespace string, destinationInstance string,
                                     destinationInstanceKind string, destinationComponent string, destinationPod string,

@@ -27,7 +27,7 @@ define stream ZipkinStreamIn(traceId string, id string, parentId string, operati
                              spanKind string, timestamp long, duration long, tags string);
 
 @source(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
-define stream TelemetryStreamIn(requestId string, traceId string, spanId string, sourceNamespace string,
+define stream TelemetryStreamIn(requestId string, traceId string, spanId string, parentSpanId string, sourceNamespace string,
                                 sourceInstance string, sourceInstanceKind string, sourceComponent string,
                                 sourcePod string, destinationNamespace string, destinationInstance string,
                                 destinationInstanceKind string, destinationComponent string, destinationPod string,
