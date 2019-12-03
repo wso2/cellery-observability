@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint react/display-name: "off" */
 /* eslint max-lines: ["error", 600] */
 
 import "react-vis/dist/style.css";
@@ -40,6 +39,7 @@ import IconButton from "@material-ui/core/IconButton";
 import {Link} from "react-router-dom";
 import MUIDataTable from "mui-datatables";
 import React from "react";
+import StateHolder from "../common/state/stateHolder";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
@@ -48,6 +48,7 @@ import TableRow from "@material-ui/core/TableRow";
 import Timeline from "@material-ui/icons/Timeline";
 import Tooltip from "@material-ui/core/Tooltip";
 import Typography from "@material-ui/core/Typography";
+import withGlobalState from "../common/state";
 import {withStyles} from "@material-ui/core/styles";
 import {
     ChartLabel, Hint, HorizontalBarSeries, HorizontalGridLines, VerticalGridLines, XAxis, XYPlot, YAxis
@@ -133,23 +134,66 @@ class SidePanelContent extends React.Component {
         super(props);
 
         this.state = {
-            trafficTooltip: false
+            trafficGraphTooltip: false,
+            error: null
         };
     }
 
-    render = () => {
-        const {classes, summary, request, selectedInstance, selectedInstanceKind, colorGenerator, listData}
-            = this.props;
-        const {trafficTooltip} = this.state;
-        const options = {
-            download: false,
-            selectableRows: false,
-            print: false,
-            filter: false,
-            search: false,
-            viewColumns: false,
-            rowHover: false
+    calculateTotals = (metrics) => {
+        const totalMetrics = {
+            totalIncomingRequests: 0,
+            responseCounts: {
+                "0xx": 0,
+                "2xx": 0,
+                "3xx": 0,
+                "4xx": 0,
+                "5xx": 0
+            }
         };
+        Object.values(metrics).forEach((metricsDatum) => {
+            totalMetrics.totalIncomingRequests += metricsDatum.totalIncomingRequests;
+            Object.keys(totalMetrics.responseCounts).forEach((key) => {
+                totalMetrics.responseCounts[key] += metricsDatum.responseCounts[key];
+            });
+        });
+        return totalMetrics;
+    };
+
+    calculateNodeSummary = (metrics) => {
+        const {globalState} = this.props;
+        const nodeSummary = {
+            [Constants.Status.Success]: 0,
+            [Constants.Status.Warning]: 0,
+            [Constants.Status.Error]: 0,
+            [Constants.Status.Unknown]: 0
+        };
+        Object.keys(metrics).forEach((nodeName) => {
+            if (metrics[nodeName].totalIncomingRequests > 0) {
+                const totalSuccessRequests = metrics[nodeName].responseCounts["2xx"]
+                    + metrics[nodeName].responseCounts["3xx"];
+                const successPercentage = totalSuccessRequests / metrics[nodeName].totalIncomingRequests;
+
+                let status = Constants.Status.Success;
+                if (successPercentage < globalState.get(StateHolder.CONFIG).percentageRangeMinValue.warningThreshold) {
+                    status = Constants.Status.Warning;
+                }
+                if (successPercentage < globalState.get(StateHolder.CONFIG).percentageRangeMinValue.errorThreshold) {
+                    status = Constants.Status.Error;
+                }
+                if (successPercentage < 0 || successPercentage > 1) {
+                    status = Constants.Status.Unknown;
+                }
+                nodeSummary[status] += 1;
+            } else {
+                nodeSummary[Constants.Status.Unknown] += 1;
+            }
+        });
+        return nodeSummary;
+    };
+
+    render = () => {
+        const {classes, selectedInstance, selectedInstanceKind, colorGenerator, metrics} = this.props;
+        const {trafficGraphTooltip} = this.state;
 
         const columns = [
             {
@@ -184,11 +228,64 @@ class SidePanelContent extends React.Component {
             }
         ];
 
+        const unknownColor = colorGenerator.getColor(ColorGenerator.UNKNOWN);
         const successColor = colorGenerator.getColor(ColorGenerator.SUCCESS);
+        const redirectionColor = colorGenerator.getColor(ColorGenerator.REDIRECTION);
         const warningColor = colorGenerator.getColor(ColorGenerator.WARNING);
         const errorColor = colorGenerator.getColor(ColorGenerator.ERROR);
-        const redirectionColor = colorGenerator.getColor(ColorGenerator.REDIRECTION);
-        const unknownColor = colorGenerator.getColor(ColorGenerator.UNKNOWN);
+
+        const totalMetrics = this.calculateTotals(metrics);
+        const nodeSummary = this.calculateNodeSummary(metrics);
+
+        const generateHorizontalBarSeries = (title, statusCodeKey, color) => (
+            totalMetrics.responseCounts[statusCodeKey]
+                ? (
+                    <HorizontalBarSeries color={color}
+                        data={[{
+                            y: "Total",
+                            x: (totalMetrics.responseCounts[statusCodeKey] / totalMetrics.totalIncomingRequests) * 100,
+                            percentage: ((totalMetrics.responseCounts[statusCodeKey]
+                                / totalMetrics.totalIncomingRequests) * 100).toFixed(2),
+                            count: totalMetrics.responseCounts[statusCodeKey],
+                            title: title
+                        }]}
+                        onValueMouseOver={(v) => this.setState({trafficGraphTooltip: v})}
+                        onSeriesMouseOut={() => this.setState({trafficGraphTooltip: false})}
+                    />
+                )
+                : null
+        );
+        const generateBadgeTableCell = (title, statusCodeKey, color) => (
+            totalMetrics.responseCounts[statusCodeKey] > 0
+                ? (
+                    <TableCell className={classes.sidebarTableCell}>
+                        <Avatar className={classes.avatar} style={{backgroundColor: color}}>
+                            {title}
+                        </Avatar>
+                    </TableCell>
+                )
+                : null
+        );
+        const generateBadgeCountsTableCell = (statusCodeKey) => (
+            totalMetrics.responseCounts[statusCodeKey] > 0
+                ? (
+                    <TableCell className={classes.sidebarTableCell}>
+                        {((totalMetrics.responseCounts[statusCodeKey]
+                            / totalMetrics.totalIncomingRequests) * 100).toFixed(0)}%
+                    </TableCell>
+                )
+                : null
+        );
+        const generateExpansionPanelSummaryItem = (status, Icon, color) => (
+            nodeSummary[status] > 0
+                ? (
+                    <Typography className={classes.secondaryHeading}>
+                        <Icon className={classes.cellIcon} style={{color: color}}/>
+                        &nbsp;{nodeSummary[status]}
+                    </Typography>
+                )
+                : null
+        );
         return (
             <div className={classes.drawerContent}>
                 <div className={classes.sidebarContainer}>
@@ -197,10 +294,8 @@ class SidePanelContent extends React.Component {
                             ? (
                                 <div className={classes.cellNameContainer}>
                                     {
-                                        (selectedInstanceKind === Constants.InstanceKind.CELL)
-                                            ? (
-                                                <CellIcon className={classes.titleIcon} fontSize="small"/>
-                                            )
+                                        selectedInstanceKind === Constants.InstanceKind.CELL
+                                            ? <CellIcon className={classes.titleIcon} fontSize="small"/>
                                             : <CompositeIcon className={classes.titleIcon} fontSize="small"/>
                                     }
 
@@ -209,7 +304,7 @@ class SidePanelContent extends React.Component {
                                     </Typography>
                                     <Typography component={Link} to={`/instances/${selectedInstance}`}
                                         className={classes.cellName}>
-                                        {summary.topic}
+                                        {selectedInstance}
                                     </Typography>
                                 </div>
                             )
@@ -222,118 +317,23 @@ class SidePanelContent extends React.Component {
                         <TableHead>
                             <TableRow>
                                 <TableCell className={classes.sidebarTableCell}>Requests/s</TableCell>
-                                {
-                                    request.statusCodes[1].value === 0
-                                        ? null
-                                        : (
-                                            <TableCell className={classes.sidebarTableCell}>
-                                                <Avatar className={classes.avatar}
-                                                    style={{backgroundColor: successColor}}>
-                                                    OK
-                                                </Avatar>
-                                            </TableCell>
-                                        )
-                                }
-                                {
-                                    request.statusCodes[2].value === 0
-                                        ? null
-                                        : (
-                                            <TableCell className={classes.sidebarTableCell}>
-                                                <Avatar className={classes.avatar}
-                                                    style={{backgroundColor: redirectionColor}}>
-                                                    3xx
-                                                </Avatar>
-                                            </TableCell>
-                                        )
-                                }
-                                {
-                                    request.statusCodes[3].value === 0
-                                        ? null
-                                        : (
-                                            <TableCell className={classes.sidebarTableCell}>
-                                                <Avatar className={classes.avatar}
-                                                    style={{backgroundColor: warningColor}}>
-                                                    4xx
-                                                </Avatar>
-                                            </TableCell>
-                                        )
-                                }
-                                {
-                                    request.statusCodes[4].value === 0
-                                        ? null
-                                        : (
-                                            <TableCell className={classes.sidebarTableCell}>
-                                                <Avatar className={classes.avatar}
-                                                    style={{backgroundColor: errorColor}}>
-                                                    5xx
-                                                </Avatar>
-                                            </TableCell>
-                                        )
-                                }
-                                {
-                                    request.statusCodes[5].value === 0
-                                        ? null
-                                        : (
-                                            <TableCell className={classes.sidebarTableCell}>
-                                                <Avatar className={classes.avatar}
-                                                    style={{backgroundColor: unknownColor}}>
-                                                    xxx
-                                                </Avatar>
-                                            </TableCell>
-                                        )
-                                }
+                                {generateBadgeTableCell("OK", "2xx", successColor)}
+                                {generateBadgeTableCell("3xx", "3xx", redirectionColor)}
+                                {generateBadgeTableCell("4xx", "4xx", warningColor)}
+                                {generateBadgeTableCell("5xx", "5xx", errorColor)}
+                                {generateBadgeTableCell("xxx", "0xx", unknownColor)}
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             <TableRow>
                                 <TableCell className={classes.sidebarTableCell}>
-                                    {request.statusCodes[0].value}
+                                    {totalMetrics.totalIncomingRequests}
                                 </TableCell>
-                                {
-                                    request.statusCodes[1].value === 0
-                                        ? null
-                                        : (
-                                            <TableCell className={classes.sidebarTableCell}>
-                                                {request.statusCodes[1].value}%
-                                            </TableCell>
-                                        )
-                                }
-                                {
-                                    request.statusCodes[2].value === 0
-                                        ? null
-                                        : (
-                                            <TableCell className={classes.sidebarTableCell}>
-                                                {request.statusCodes[2].value}%
-                                            </TableCell>
-                                        )
-                                }
-                                {
-                                    request.statusCodes[3].value === 0
-                                        ? null
-                                        : (
-                                            <TableCell className={classes.sidebarTableCell}>
-                                                {request.statusCodes[3].value}%
-                                            </TableCell>
-                                        )
-                                }
-                                {
-                                    request.statusCodes[4].value === 0
-                                        ? null
-                                        : (
-                                            <TableCell className={classes.sidebarTableCell}>
-                                                {request.statusCodes[4].value}%
-                                            </TableCell>
-                                        )
-                                }
-                                {
-                                    request.statusCodes[5].value === 0
-                                        ? null
-                                        : (
-                                            <TableCell className={classes.sidebarTableCell}>
-                                                {request.statusCodes[5].value}%
-                                            </TableCell>
-                                        )
-                                }
+                                {generateBadgeCountsTableCell("2xx")}
+                                {generateBadgeCountsTableCell("3xx")}
+                                {generateBadgeCountsTableCell("4xx")}
+                                {generateBadgeCountsTableCell("5xx")}
+                                {generateBadgeCountsTableCell("0xx")}
                             </TableRow>
                         </TableBody>
                     </Table>
@@ -343,70 +343,20 @@ class SidePanelContent extends React.Component {
                             <HorizontalGridLines/>
                             <XAxis />
                             <YAxis />
-                            <ChartLabel
-                                text="%"
-                                className="alt-x-label"
-                                includeMargin={false}
-                                xPercent={-0.15}
-                                yPercent={1.8}
-                            />
-                            <HorizontalBarSeries color={successColor}
-                                data={[
-                                    {
-                                        y: "Total", x: request.statusCodes[1].value, title: request.statusCodes[1].key,
-                                        percentage: request.statusCodes[1].value, count: request.statusCodes[1].count
-                                    }
-                                ]}
-                                onValueMouseOver={(v) => this.setState({trafficTooltip: v})}
-                                onSeriesMouseOut={() => this.setState({trafficTooltip: false})}
-                            />
-                            <HorizontalBarSeries color={redirectionColor}
-                                data={[
-                                    {
-                                        y: "Total", x: request.statusCodes[2].value, title: request.statusCodes[2].key,
-                                        percentage: request.statusCodes[2].value, count: request.statusCodes[2].count
-                                    }
-                                ]}
-                                onValueMouseOver={(v) => this.setState({trafficTooltip: v})}
-                                onSeriesMouseOut={() => this.setState({trafficTooltip: false})}
-                            />
-                            <HorizontalBarSeries color={warningColor}
-                                data={[
-                                    {
-                                        y: "Total", x: request.statusCodes[3].value, title: request.statusCodes[3].key,
-                                        percentage: request.statusCodes[3].value, count: request.statusCodes[3].count
-                                    }
-                                ]}
-                                onValueMouseOver={(v) => this.setState({trafficTooltip: v})}
-                                onSeriesMouseOut={() => this.setState({trafficTooltip: false})}
-                            />
-                            <HorizontalBarSeries color={errorColor}
-                                data={[
-                                    {
-                                        y: "Total", x: request.statusCodes[4].value, title: request.statusCodes[4].key,
-                                        percentage: request.statusCodes[4].value, count: request.statusCodes[4].count
-                                    }
-                                ]}
-                                onValueMouseOver={(v) => this.setState({trafficTooltip: v})}
-                                onSeriesMouseOut={() => this.setState({trafficTooltip: false})}
-                            />
-                            <HorizontalBarSeries color={unknownColor}
-                                data={[
-                                    {
-                                        y: "Total", x: request.statusCodes[5].value, title: request.statusCodes[5].key,
-                                        percentage: request.statusCodes[5].value, count: request.statusCodes[5].count
-                                    }
-                                ]}
-                                onValueMouseOver={(v) => this.setState({trafficTooltip: v})}
-                                onSeriesMouseOut={() => this.setState({trafficTooltip: false})}
-                            />
+                            <ChartLabel text="%" className="alt-x-label" includeMargin={false} xPercent={-0.15}
+                                yPercent={1.8}/>
+                            {generateHorizontalBarSeries("OK", "2xx", successColor)}
+                            {generateHorizontalBarSeries("3xx", "3xx", redirectionColor)}
+                            {generateHorizontalBarSeries("4xx", "4xx", warningColor)}
+                            {generateHorizontalBarSeries("5xx", "5xx", errorColor)}
+                            {generateHorizontalBarSeries("0xx", "xxx", unknownColor)}
                             {
-                                trafficTooltip
+                                trafficGraphTooltip
                                     ? (
-                                        <Hint value={trafficTooltip}>
+                                        <Hint value={trafficGraphTooltip}>
                                             <div className="rv-hint__content">
-                                                {`${trafficTooltip.title} :
-                                                ${trafficTooltip.percentage}% (${trafficTooltip.count})`}
+                                                {`${trafficGraphTooltip.title}:
+                                                ${trafficGraphTooltip.percentage}% (${trafficGraphTooltip.count})`}
                                             </div>
                                         </Hint>
                                     )
@@ -422,66 +372,45 @@ class SidePanelContent extends React.Component {
                             : <CellsIcon className={classes.titleIcon} fontSize="small"/>
                     }
                     <Typography color="inherit" className={classes.sideBarContentTitle}>
-                        {selectedInstance ? "Components" : "Instances"} ({summary.content[0].value})
+                        {selectedInstance ? "Components" : "Instances"} ({Object.keys(metrics).length})
                     </Typography>
                     <ExpansionPanel className={classes.panel}>
                         <ExpansionPanelSummary expandIcon={<ExpandMoreIcon/>} className={classes.expansionSum}>
-                            {
-                                summary.content[1].value === 0
-                                    ? null
-                                    : (
-                                        <Typography className={classes.secondaryHeading}>
-                                            <CheckCircleOutline className={classes.cellIcon}
-                                                style={{color: successColor}}/>
-                                            &nbsp;{summary.content[1].value}
-                                        </Typography>
-                                    )
-                            }
-                            {
-                                summary.content[2].value === 0
-                                    ? null
-                                    : (
-                                        <Typography className={classes.secondaryHeading}>
-                                            <ErrorIcon className={classes.cellIcon} style={{color: warningColor}}/>
-                                            &nbsp;{summary.content[2].value}
-                                        </Typography>
-                                    )
-                            }
-                            {
-                                summary.content[3].value === 0
-                                    ? null
-                                    : (
-                                        <Typography className={classes.secondaryHeading}>
-                                            <ErrorIcon className={classes.cellIcon} style={{color: errorColor}}/>
-                                            &nbsp;{summary.content[3].value}
-                                        </Typography>
-                                    )
-                            }
-                            {
-                                summary.content[4].value === 0
-                                    ? null
-                                    : (
-                                        <Typography className={classes.secondaryHeading}>
-                                            <HelpOutlineIcon className={classes.cellIcon}
-                                                style={{color: unknownColor}}/>
-                                            &nbsp;{summary.content[4].value}
-                                        </Typography>
-                                    )
-                            }
+                            {generateExpansionPanelSummaryItem(Constants.Status.Success, CheckCircleOutline,
+                                successColor)}
+                            {generateExpansionPanelSummaryItem(Constants.Status.Warning, ErrorIcon,
+                                warningColor)}
+                            {generateExpansionPanelSummaryItem(Constants.Status.Error, ErrorIcon,
+                                errorColor)}
+                            {generateExpansionPanelSummaryItem(Constants.Status.Unknown, HelpOutlineIcon,
+                                unknownColor)}
                         </ExpansionPanelSummary>
                         <ExpansionPanelDetails className={classes.panelDetails}>
                             <div className="overviewSidebarListTable">
-                                <MUIDataTable columns={columns} options={options}
-                                    data={listData.map((datum) => [
-                                        datum[0],
+                                <MUIDataTable columns={columns}
+                                    options={{
+                                        download: false,
+                                        selectableRows: false,
+                                        print: false,
+                                        filter: false,
+                                        search: false,
+                                        viewColumns: false,
+                                        rowHover: false
+                                    }}
+                                    data={Object.keys(metrics).map((nodeName) => [
+                                        (metrics[nodeName].totalIncomingRequests > 0
+                                            ? ((metrics[nodeName].responseCounts["2xx"]
+                                                + metrics[nodeName].responseCounts["3xx"])
+                                                    / metrics[nodeName].totalIncomingRequests)
+                                            : -1),
                                         {
-                                            cell: selectedInstance ? selectedInstance : datum[1],
-                                            component: selectedInstance ? datum[1] : null
+                                            cell: selectedInstance ? selectedInstance : nodeName,
+                                            component: selectedInstance ? nodeName : null
 
                                         },
                                         {
-                                            cell: selectedInstance ? selectedInstance : datum[2],
-                                            component: selectedInstance ? datum[2] : null
+                                            cell: selectedInstance ? selectedInstance : nodeName,
+                                            component: selectedInstance ? nodeName : null
                                         }
                                     ])}/>
                             </div>
@@ -496,12 +425,20 @@ class SidePanelContent extends React.Component {
 
 SidePanelContent.propTypes = {
     classes: PropTypes.object.isRequired,
+    globalState: PropTypes.instanceOf(StateHolder).isRequired,
     colorGenerator: PropTypes.instanceOf(ColorGenerator).isRequired,
-    summary: PropTypes.object.isRequired,
-    request: PropTypes.object.isRequired,
     selectedInstance: PropTypes.string,
     selectedInstanceKind: PropTypes.string,
-    listData: PropTypes.arrayOf(PropTypes.any).isRequired
+    metrics: PropTypes.objectOf(PropTypes.shape({
+        totalIncomingRequests: PropTypes.number.isRequired,
+        responseCounts: PropTypes.shape({
+            "0xx": PropTypes.number.isRequired,
+            "2xx": PropTypes.number.isRequired,
+            "3xx": PropTypes.number.isRequired,
+            "4xx": PropTypes.number.isRequired,
+            "5xx": PropTypes.number.isRequired
+        })
+    }))
 };
 
-export default withStyles(styles, {withTheme: true})(withColor(SidePanelContent));
+export default withStyles(styles, {withTheme: true})(withGlobalState(withColor(SidePanelContent)));

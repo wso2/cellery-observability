@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-/* eslint max-lines: ["off"] */
-/* eslint max-len: ["off"] */
+/* eslint max-lines: ["error", 800] */
 
 import ArrowRightAltSharp from "@material-ui/icons/ArrowRightAltSharp";
 import Button from "@material-ui/core/Button";
@@ -39,6 +38,7 @@ import Paper from "@material-ui/core/Paper";
 import Popper from "@material-ui/core/Popper";
 import QueryUtils from "../../utils/common/queryUtils";
 import React from "react";
+import ReactDOMServer from "react-dom/server";
 import SidePanelContent from "./SidePanelContent";
 import StateHolder from "../common/state/stateHolder";
 import TopToolbar from "../common/toptoolbar";
@@ -154,96 +154,238 @@ class Overview extends React.Component {
 
     constructor(props) {
         super(props);
-
-        this.defaultState = {
-            summary: {
-                topic: "Cellery Deployment",
-                content: [
-                    {
-                        key: "Total",
-                        value: 0
-                    },
-                    {
-                        key: "Successful",
-                        value: 0
-                    },
-                    {
-                        key: "Warning",
-                        value: 0
-                    },
-                    {
-                        key: "Failed",
-                        value: 0
-                    },
-                    {
-                        key: "Unknown",
-                        value: 0
-                    }
-                ]
-            },
-            request: {
-                statusCodes: [
-                    {
-                        key: "Total",
-                        value: 0
-                    },
-                    {
-                        key: "OK",
-                        value: 0
-                    },
-                    {
-                        key: "3xx",
-                        value: 0
-                    },
-                    {
-                        key: "4xx",
-                        value: 0
-                    },
-                    {
-                        key: "5xx",
-                        value: 0
-                    },
-                    {
-                        key: "Unknown",
-                        value: 0
-                    }
-                ],
-                cellStats: []
-            },
-            healthInfo: [],
-            selectedInstance: null,
-            selectedInstanceKind: null,
-            data: {
-                nodes: null,
-                edges: null
-            },
-            error: null,
-            open: true,
-            legend: null,
-            legendOpen: false,
-            listData: [],
-            page: 0,
-            rowsPerPage: 5,
-            cellIngresses: []
-        };
-
-        const queryParams = HttpUtils.parseQueryParams(props.location.search);
         this.state = {
-            ...JSON.parse(JSON.stringify(this.defaultState)),
-            selectedInstance: queryParams.cell ? queryParams.cell : null,
-            isLoading: true
+            dependencyDiagram: {
+                nodes: [],
+                edges: []
+            },
+            metrics: {
+                overall: {},
+                selectedInstance: {}
+            },
+            selectedInstance: null,
+            isLoading: true,
+            legend: {
+                isOpen: false,
+                target: null
+            },
+            isSidePanelOpen: true
         };
     }
 
-    getCellState = (nodeId) => {
-        const healthInfo = this.defaultState.healthInfo.find((element) => element.nodeId === nodeId);
-        return healthInfo.status;
+    static getDerivedStateFromProps = (props, state) => {
+        const queryParams = HttpUtils.parseQueryParams(props.location.search);
+        return {
+            ...state,
+            selectedInstance: queryParams ? queryParams.cell : null
+        };
     };
 
-    onClickInstance = (nodeId, isUserAction) => {
-        const {globalState, history, match, location} = this.props;
-        const fromTime = QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).startTime);
-        const toTime = QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).endTime);
+    handleOnUpdate = (isUserAction, startTime, endTime) => {
+        const self = this;
+        const {globalState} = self.props;
+        const {selectedInstance} = self.state;
+        const dependencyDiagramFilter = {
+            queryStartTime: startTime.valueOf(),
+            queryEndTime: endTime.valueOf()
+        };
+        const metricsFilter = {
+            queryStartTime: startTime.valueOf(),
+            queryEndTime: endTime.valueOf(),
+            timeGranularity: QueryUtils.getTimeGranularity(startTime, endTime)
+        };
+
+        if (isUserAction) {
+            NotificationUtils.showLoadingOverlay("Loading Instance Dependencies", globalState);
+        }
+        self.setState({
+            isLoading: true
+        });
+        const apiCalls = [
+            HttpUtils.callObservabilityAPI(
+                {
+                    url: `/dependency-model/instances${HttpUtils.generateQueryParamString(dependencyDiagramFilter)}`,
+                    method: "GET"
+                },
+                globalState
+            ),
+            HttpUtils.callObservabilityAPI(
+                {
+                    url: `/k8s/instances${HttpUtils.generateQueryParamString(dependencyDiagramFilter)}`,
+                    method: "GET"
+                },
+                globalState
+            ),
+            HttpUtils.callObservabilityAPI(
+                {
+                    url: `/http-requests/instances${HttpUtils.generateQueryParamString(metricsFilter)}`,
+                    method: "GET"
+                },
+                this.props.globalState
+            )
+        ];
+        if (selectedInstance) {
+            const instanceMetricsFilter = {
+                queryStartTime: startTime.valueOf(),
+                queryEndTime: endTime.valueOf(),
+                timeGranularity: QueryUtils.getTimeGranularity(startTime, endTime),
+                instanceName: selectedInstance
+            };
+            const queryParams = HttpUtils.generateQueryParamString(instanceMetricsFilter);
+            apiCalls.push(HttpUtils.callObservabilityAPI(
+                {
+                    url: `/http-requests/instances/${selectedInstance}/components${queryParams}`,
+                    method: "GET"
+                },
+                self.props.globalState
+            ));
+        }
+        Promise.all(apiCalls).then((data) => {
+            // Extracting unique node data map
+            const ingressTypes = data[1].map((datum) => ({
+                instance: datum[0],
+                component: datum[1],
+                ingressTypes: datum[3]
+            }));
+            const nodeData = data[0].nodes.filter((nodeDatum) => Boolean(nodeDatum.instance))
+                .map((nodeDatum) => {
+                    // Extracting the ingress type for the relevant node
+                    nodeDatum.ingressTypes = ingressTypes
+                        .filter((ingressTypesDatum) => nodeDatum.instance === ingressTypesDatum.instance
+                            && nodeDatum.component === ingressTypesDatum.component)
+                        .reduce((ingressTypesSet, ingressTypesDatum) => {
+                            if (ingressTypesDatum.ingressTypes) {
+                                ingressTypesSet.add(ingressTypesDatum.ingressTypes);
+                            }
+                            return new Set(ingressTypesSet);
+                        }, new Set());
+                    return nodeDatum;
+                });
+            const nodeDataMap = {};
+            nodeData.forEach((nodeDatum) => {
+                if (!nodeDataMap[nodeDatum.instance]) {
+                    nodeDataMap[nodeDatum.instance] = {
+                        id: nodeDatum.instance,
+                        instanceKind: nodeDatum.instanceKind,
+                        ingressTypes: Array.from(nodeDatum.ingressTypes)
+                    };
+                }
+            });
+
+            // Extracting unique edge data map
+            const edgeDataMap = {};
+            data[0].edges.filter((edgeDatum) => edgeDatum.source.instance !== edgeDatum.target.instance)
+                .forEach((edgeDatum) => {
+                    edgeDataMap[`${edgeDatum.source.instance} --> ${edgeDatum.target.instance}`] = {
+                        source: edgeDatum.source.instance,
+                        target: edgeDatum.target.instance
+                    };
+                });
+
+            const dependencyDiagram = {
+                nodes: Object.values(nodeDataMap),
+                edges: Object.values(edgeDataMap)
+            };
+
+            // Calculating metrics
+            const metrics = {
+                overall: self.calculateOverallMetrics(data[2].map((datum) => ({
+                    sourceInstance: datum[0],
+                    sourceInstanceKind: datum[1],
+                    destinationInstance: datum[2],
+                    destinationInstanceKind: datum[3],
+                    httpResponseGroup: datum[4],
+                    totalResponseTimeMilliSec: datum[5],
+                    requestCount: datum[6]
+                })))
+            };
+            if (selectedInstance && data.length === 4) { // An instance had been selected
+                metrics.selectedInstance = self.calculateInstanceMetrics(data[3].map((datum) => ({
+                    sourceInstance: datum[0],
+                    sourceComponent: datum[1],
+                    destinationInstance: datum[2],
+                    destinationComponent: datum[3],
+                    httpResponseGroup: datum[4],
+                    totalResponseTimeMilliSec: datum[5],
+                    requestCount: datum[6]
+                })));
+            } else {
+                metrics.selectedInstance = {};
+            }
+            // Adding empty metrics entries for nodes without incoming metrics
+            nodeData.forEach((nodeDatum) => {
+                if (!metrics.overall[nodeDatum.instance]) {
+                    metrics.overall[nodeDatum.instance] = this.generateEmptyMetricsEntry();
+                }
+                if (selectedInstance === nodeDatum.instance && !metrics.selectedInstance[nodeDatum.component]) {
+                    metrics.selectedInstance[nodeDatum.component] = this.generateEmptyMetricsEntry();
+                }
+            });
+
+            self.setState({
+                dependencyDiagram: dependencyDiagram,
+                metrics: metrics,
+                isLoading: false
+            });
+            if (isUserAction) {
+                NotificationUtils.hideLoadingOverlay(globalState);
+            }
+        }).catch(() => {
+            self.setState({
+                isLoading: false
+            });
+            if (isUserAction) {
+                NotificationUtils.hideLoadingOverlay(globalState);
+                NotificationUtils.showNotification(
+                    "Failed to load Overview",
+                    NotificationUtils.Levels.ERROR,
+                    globalState
+                );
+            }
+        });
+    };
+
+    calculateOverallMetrics = (metricsEntries) => metricsEntries
+        .filter((metricsEntry) => metricsEntry.destinationInstance)
+        .reduce((aggregatedMetrics, currentEntry) => {
+            let aggregatedMetricsEntry = aggregatedMetrics[currentEntry.destinationInstance];
+            if (!aggregatedMetricsEntry) {
+                aggregatedMetricsEntry = this.generateEmptyMetricsEntry();
+                aggregatedMetrics[currentEntry.destinationInstance] = aggregatedMetricsEntry;
+            }
+            aggregatedMetricsEntry.totalIncomingRequests += currentEntry.requestCount;
+            aggregatedMetricsEntry.responseCounts[currentEntry.httpResponseGroup] += currentEntry.requestCount;
+            return aggregatedMetrics;
+        }, {});
+
+    calculateInstanceMetrics = (metricsEntries) => {
+        const {selectedInstance} = this.state;
+        return metricsEntries.filter((metricsDatum) => metricsDatum.destinationInstance === selectedInstance)
+            .reduce((aggregatedMetrics, currentEntry) => {
+                let aggregatedMetricsEntry = aggregatedMetrics[currentEntry.destinationComponent];
+                if (!aggregatedMetricsEntry) {
+                    aggregatedMetricsEntry = this.generateEmptyMetricsEntry();
+                    aggregatedMetrics[currentEntry.destinationComponent] = aggregatedMetricsEntry;
+                }
+                aggregatedMetricsEntry.totalIncomingRequests += currentEntry.requestCount;
+                aggregatedMetricsEntry.responseCounts[currentEntry.httpResponseGroup] += currentEntry.requestCount;
+                return aggregatedMetrics;
+            }, {});
+    };
+
+    generateEmptyMetricsEntry = () => ({
+        totalIncomingRequests: 0,
+        responseCounts: {
+            "0xx": 0,
+            "2xx": 0,
+            "3xx": 0,
+            "4xx": 0,
+            "5xx": 0
+        }
+    });
+
+    onSelectedInstanceChange = (nodeId) => {
+        const {history, match, location} = this.props;
 
         // Updating the Browser URL
         const queryParamsString = HttpUtils.generateQueryParamString({
@@ -253,516 +395,137 @@ class Overview extends React.Component {
         history.replace(match.url + queryParamsString, {
             ...location.state
         });
+    };
 
-        const search = {
-            queryStartTime: fromTime.valueOf(),
-            queryEndTime: toTime.valueOf(),
-            timeGranularity: QueryUtils.getTimeGranularity(fromTime, toTime)
-        };
-        if (isUserAction) {
-            NotificationUtils.showLoadingOverlay(`Loading ${nodeId} Cell Information`, globalState);
-        }
-        HttpUtils.callObservabilityAPI(
-            {
-                url: `/http-requests/instances/${nodeId}/components${HttpUtils.generateQueryParamString(search)}`,
-                method: "GET"
-            },
-            this.props.globalState
-        ).then((response) => {
-            const instance = this.state.data.nodes.find((element) => element.id === nodeId);
-            const componentHealth = this.getComponentHealth(instance, response);
-            const componentHealthCount = this.getHealthCount(componentHealth);
-            const statusCodeContent = this.getStatusCodeContent(nodeId, this.defaultState.request.cellStats);
-            const componentInfo = this.loadComponentsInfo(instance.components, componentHealth);
-            this.setState((prevState) => ({
-                summary: {
-                    ...prevState.summary,
-                    topic: nodeId,
-                    content: [
-                        {
-                            key: "Total",
-                            value: componentInfo.length
-                        },
-                        {
-                            key: "Successful",
-                            value: componentHealthCount.success
-                        },
-                        {
-                            key: "Warning",
-                            value: componentHealthCount.warning
-                        },
-                        {
-                            key: "Failed",
-                            value: componentHealthCount.error
-                        },
-                        {
-                            key: "Unknown",
-                            value: componentHealthCount.unknown
-                        }
-                    ]
-                },
-                data: {...prevState.data},
-                listData: componentInfo,
-                selectedInstance: instance.id,
-                selectedInstanceKind: instance.instanceKind,
-                request: {
-                    ...prevState.request,
-                    statusCodes: statusCodeContent
-                }
-            }));
-            if (isUserAction) {
-                NotificationUtils.hideLoadingOverlay(globalState);
-            }
-        }).catch((error) => {
-            this.setState({error: error});
-            if (isUserAction) {
-                NotificationUtils.hideLoadingOverlay(globalState);
-                NotificationUtils.showNotification(
-                    `Failed to load ${nodeId} request statistics`,
-                    NotificationUtils.Levels.ERROR,
-                    globalState
-                );
-            }
+    handleSidePanelOpen = () => {
+        this.setState({
+            isSidePanelOpen: true
         });
     };
 
-    getComponentHealth = (instance, responseCodeStats) => {
-        const {globalState} = this.props;
-        const config = globalState.get(StateHolder.CONFIG);
-        const healthInfo = [];
-        instance.components.forEach((component) => {
-            const total = this.getTotalComponentRequests(instance.id, component, responseCodeStats, "*");
-            if (total === 0) {
-                healthInfo.push({nodeId: component, status: Constants.Status.Unknown, percentage: -1});
-            } else {
-                const error = this.getTotalComponentRequests(instance.id, component, responseCodeStats, "5xx");
-                const successPercentage = 1 - (error / total);
-
-                if (successPercentage >= config.percentageRangeMinValue.warningThreshold) {
-                    healthInfo.push({
-                        nodeId: component,
-                        status: Constants.Status.Success,
-                        percentage: successPercentage
-                    });
-                } else if (successPercentage >= config.percentageRangeMinValue.errorThreshold) {
-                    healthInfo.push({
-                        nodeId: component,
-                        status: Constants.Status.Warning,
-                        percentage: successPercentage
-                    });
-                } else {
-                    healthInfo.push({
-                        nodeId: component,
-                        status: Constants.Status.Error,
-                        percentage: successPercentage
-                    });
-                }
-            }
+    handleSidePanelClose = () => {
+        this.setState({
+            isSidePanelOpen: false
         });
-        return healthInfo;
     };
 
-    onClickGraph = () => {
-        const {history, match, location} = this.props;
-
-        // Updating the Browser URL
-        const queryParamsString = HttpUtils.generateQueryParamString({
-            ...HttpUtils.parseQueryParams(location.search),
-            cell: undefined
-        });
-        history.replace(match.url + queryParamsString, {
-            ...location.state
-        });
-
-        const defaultState = JSON.parse(JSON.stringify(this.defaultState));
+    handleLegendButtonClick = (event) => {
+        const currentTarget = event.currentTarget;
         this.setState((prevState) => ({
-            ...prevState,
-            summary: defaultState.summary,
-            listData: this.loadCellInfo(defaultState.data.nodes),
-            selectedInstance: null,
-            selectedInstanceKind: null,
-            request: defaultState.request
+            legend: {
+                isOpen: !prevState.legend.isOpen,
+                target: currentTarget
+            }
         }));
     };
 
-    handleDrawerOpen = () => {
-        this.setState({open: true});
-    };
-
-    handleDrawerClose = () => {
-        this.setState({open: false});
-    };
-
-    loadCellInfo = (nodes) => {
-        const nodeInfo = [];
-        nodes.forEach((node) => {
-            const healthInfo = this.defaultState.healthInfo.find((element) => element.nodeId === node.id);
-            nodeInfo.push([healthInfo.percentage, node.id, node.id]);
-        });
-        return nodeInfo;
-    };
-
-    loadComponentsInfo = (components, healthInfo) => {
-        const componentInfo = [];
-        components.forEach((component) => {
-            const healthElement = healthInfo.find((element) => element.nodeId === component);
-            componentInfo.push([healthElement.percentage, component, component]);
-        });
-        return componentInfo;
-    };
-
-    callOverviewInfo = (isUserAction, fromTime, toTime) => {
-        const {colorGenerator, globalState} = this.props;
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        const {globalState} = this.props;
         const {selectedInstance} = this.state;
-        const self = this;
+        const fromTime = QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).startTime);
+        const toTime = QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).endTime);
 
-        const search = {};
-        if (fromTime && toTime) {
-            search.queryStartTime = fromTime.valueOf();
-            search.queryEndTime = toTime.valueOf();
+        if (selectedInstance !== prevState.selectedInstance) {
+            this.handleOnUpdate(true, fromTime, toTime);
         }
-
-        this.getIngressesData(search);
-        if (isUserAction) {
-            NotificationUtils.showLoadingOverlay("Loading Instance Dependencies", globalState);
-        }
-        HttpUtils.callObservabilityAPI(
-            {
-                url: `/dependency-model/instances${HttpUtils.generateQueryParamString(search)}`,
-                method: "GET"
-            },
-            globalState
-        ).then((result) => {
-            const {nodes, edges} = result;
-
-            self.defaultState.healthInfo = self.getCellHealth(nodes);
-            const healthCount = self.getHealthCount(self.defaultState.healthInfo);
-            const summaryContent = [
-                {
-                    key: "Total",
-                    value: nodes.length
-                },
-                {
-                    key: "Successful",
-                    value: healthCount.success
-                },
-                {
-                    key: "Warning",
-                    value: healthCount.warning
-                },
-                {
-                    key: "Failed",
-                    value: healthCount.error
-                },
-                {
-                    key: "Unknown",
-                    value: healthCount.unknown
-                }
-            ];
-            self.defaultState.summary.content = summaryContent;
-            self.defaultState.data.nodes = nodes;
-            self.defaultState.data.edges = edges;
-            colorGenerator.addKeys(nodes);
-            const cellList = self.loadCellInfo(nodes);
-
-
-            self.setState((prevState) => ({
-                data: {
-                    nodes: nodes,
-                    edges: edges
-                },
-                summary: {
-                    ...prevState.summary,
-                    content: summaryContent
-                },
-                listData: cellList,
-                isLoading: false // From this point onwards the underlying content is always shown in the overlay
-            }));
-            if (isUserAction) {
-                NotificationUtils.hideLoadingOverlay(globalState);
-            }
-            if (selectedInstance) {
-                self.onClickInstance(selectedInstance, isUserAction);
-            }
-        }).catch((error) => {
-            self.setState({error: error});
-            if (isUserAction) {
-                NotificationUtils.hideLoadingOverlay(globalState);
-                NotificationUtils.showNotification(
-                    "Failed to load Instance Dependencies",
-                    NotificationUtils.Levels.ERROR,
-                    globalState
-                );
-            }
-        });
-    };
-
-    getIngressesData = (searchParams) => {
-        const ingressDataArray = [];
-        const self = this;
-        HttpUtils.callObservabilityAPI(
-            {
-                url: `/k8s/instances${HttpUtils.generateQueryParamString(searchParams)}`,
-                method: "GET"
-            },
-            this.props.globalState
-        ).then((response) => {
-            const cellNameSet = new Set();
-            for (let i = 0; i < response.length; i++) {
-                const cellInfo = response[i];
-                const obj = {
-                    cellName: cellInfo[0],
-                    component: cellInfo[1],
-                    ingressTypes: cellInfo[3]
-                };
-                cellNameSet.add(obj.cellName);
-                ingressDataArray.push(obj);
-            }
-            self.setState({
-                cellIngresses: self.getCellIngresses(ingressDataArray, cellNameSet)
-            });
-        }).catch((error) => {
-            NotificationUtils.showNotification(
-                "Failed to load instance ingress types",
-                NotificationUtils.Levels.ERROR,
-                this.props.globalState
-            );
-        });
-    };
-
-    getCellIngresses = (ingressDataArray, cellNameSet) => {
-        const cellIngressArray = [];
-        cellNameSet.forEach((singleCellName) => {
-            const jsonObj = {};
-            const set = new Set();
-            const cellSpecificArray = ingressDataArray.filter((cellInfo) => cellInfo.cellName === singleCellName);
-            jsonObj.cellName = singleCellName;
-            jsonObj.ingressTypes = "";
-            cellSpecificArray.forEach((specifiCell) => {
-                if (specifiCell.ingressTypes) {
-                    const ingressTypeArray = specifiCell.ingressTypes.split(",");
-                    ingressTypeArray.forEach((ingressValue) => {
-                        set.add(ingressValue);
-                    });
-                }
-            });
-            jsonObj.ingressTypes = Array.from(set).join(", ");
-            cellIngressArray.push(jsonObj);
-        });
-        return cellIngressArray;
-    };
-
-    getHealthCount = (healthInfo) => {
-        let successCount = 0;
-        let warningCount = 0;
-        let errorCount = 0;
-        let unknownCount = 0;
-        healthInfo.forEach((info) => {
-            if (info.status === Constants.Status.Success) {
-                successCount += 1;
-            } else if (info.status === Constants.Status.Warning) {
-                warningCount += 1;
-            } else if (info.status === Constants.Status.Error) {
-                errorCount += 1;
-            } else {
-                unknownCount += 1;
-            }
-        });
-        return {success: successCount, warning: warningCount, error: errorCount, unknown: unknownCount};
-    };
-
-    getCellHealth = (nodes) => {
-        const {globalState} = this.props;
-        const config = globalState.get(StateHolder.CONFIG);
-        const healthInfo = [];
-        nodes.forEach((node) => {
-            const total = this.getTotalRequests(node.id, this.defaultState.request.cellStats, "*");
-            if (total === 0) {
-                healthInfo.push({nodeId: node.id, status: Constants.Status.Success, percentage: 1});
-            } else {
-                const error = this.getTotalRequests(node.id, this.defaultState.request.cellStats, "5xx");
-                const successPercentage = 1 - (error / total);
-                if (successPercentage >= config.percentageRangeMinValue.warningThreshold) {
-                    healthInfo.push({nodeId: node.id, status: Constants.Status.Success, percentage: successPercentage});
-                } else if (successPercentage >= config.percentageRangeMinValue.errorThreshold) {
-                    healthInfo.push({nodeId: node.id, status: Constants.Status.Warning, percentage: successPercentage});
-                } else {
-                    healthInfo.push({nodeId: node.id, status: Constants.Status.Error, percentage: successPercentage});
-                }
-            }
-        });
-        return healthInfo;
-    };
-
-    loadOverviewOnTimeUpdate = (isUserAction, fromTime, toTime) => {
-        const {globalState} = this.props;
-        const search = {
-            queryStartTime: fromTime.valueOf(),
-            queryEndTime: toTime.valueOf(),
-            timeGranularity: QueryUtils.getTimeGranularity(fromTime, toTime)
-        };
-        if (isUserAction) {
-            NotificationUtils.showLoadingOverlay("Loading Instance Metadata", globalState);
-        }
-        HttpUtils.callObservabilityAPI(
-            {
-                url: `/http-requests/instances${HttpUtils.generateQueryParamString(search)}`,
-                method: "GET"
-            },
-            this.props.globalState
-        ).then((response) => {
-            const statusCodeContent = this.getStatusCodeContent(null, response);
-            this.defaultState.request.statusCodes = statusCodeContent;
-            this.defaultState.request.cellStats = response;
-            this.setState((prevState) => ({
-                stats: {
-                    cellStats: response
-                },
-                request: {
-                    ...prevState.request,
-                    statusCodes: statusCodeContent
-                }
-            }));
-            if (isUserAction) {
-                NotificationUtils.hideLoadingOverlay(globalState);
-            }
-            this.callOverviewInfo(isUserAction, fromTime, toTime);
-        }).catch((error) => {
-            this.setState({error: error});
-            if (isUserAction) {
-                NotificationUtils.hideLoadingOverlay(globalState);
-                NotificationUtils.showNotification(
-                    "Failed to load Instance Metadata",
-                    NotificationUtils.Levels.ERROR,
-                    globalState
-                );
-            }
-        });
-    };
-
-    getStatusCodeContent = (cell, data) => {
-        const total = this.getTotalRequests(cell, data, "*");
-        const response2xx = this.getTotalRequests(cell, data, "2xx");
-        const response3xx = this.getTotalRequests(cell, data, "3xx");
-        const response4xx = this.getTotalRequests(cell, data, "4xx");
-        const response5xx = this.getTotalRequests(cell, data, "5xx");
-        const responseUnknown = total - (response2xx + response3xx + response4xx + response5xx);
-        return [
-            {
-                key: "Total",
-                value: total
-            },
-            {
-                key: "OK",
-                count: response2xx,
-                value: this.getPercentage(response2xx, total)
-            },
-            {
-                key: "3xx",
-                count: response3xx,
-                value: this.getPercentage(response3xx, total)
-            },
-            {
-                key: "4xx",
-                count: response4xx,
-                value: this.getPercentage(response4xx, total)
-            },
-            {
-                key: "5xx",
-                count: response5xx,
-                value: this.getPercentage(response5xx, total)
-            },
-            {
-                key: "Unknown",
-                count: responseUnknown,
-                value: this.getPercentage(responseUnknown, total)
-            }
-        ];
-    };
-
-    getPercentage = (responseCode, total) => {
-        if (total !== 0) {
-            return Math.round((responseCode / total) * 100);
-        }
-        return 0;
-    };
-
-    getTotalRequests = (cell, stats, responseCode) => {
-        let total = 0;
-        stats.forEach((stat) => {
-            if (stat[2] !== "") {
-                if (!cell || cell === stat[2]) {
-                    if (responseCode === "*") {
-                        total += stat[6];
-                    } else if (responseCode === stat[4]) {
-                        total += stat[6];
-                    }
-                }
-            }
-        });
-        return total;
-    };
-
-    getTotalComponentRequests = (cell, component, stats, responseCode) => {
-        let total = 0;
-        stats.forEach((stat) => {
-            if (stat[2] !== "") {
-                if (cell === stat[2] && component === stat[3]) {
-                    if (responseCode === "*") {
-                        total += stat[6];
-                    } else if (responseCode === stat[4]) {
-                        total += stat[6];
-                    }
-                }
-            }
-        });
-        return total;
-    };
-
-    handleClick = (event) => {
-        const {currentTarget} = event;
-        this.setState((state) => ({
-            legend: currentTarget,
-            legendOpen: !state.legendOpen
-        }));
-    };
+    }
 
     render = () => {
-        const {classes, theme, colorGenerator} = this.props;
-        const {open, selectedInstance, selectedInstanceKind, legend, legendOpen, isLoading} = this.state;
-        const id = legendOpen ? "legend-popper" : null;
-        const percentageVal = this.props.globalState.get(StateHolder.CONFIG).percentageRangeMinValue;
-        const isDataAvailable = this.state.data.nodes && this.state.data.nodes.length > 0;
+        const {classes, theme, colorGenerator, globalState} = this.props;
+        const {
+            selectedInstance, selectedInstanceKind, dependencyDiagram, legend, isSidePanelOpen, isLoading, metrics
+        } = this.state;
+
+        const legendId = legend.isOpen ? "legend-popper" : null;
+        const percentageRangeMinValue = this.props.globalState.get(StateHolder.CONFIG).percentageRangeMinValue;
+        const isDataAvailable = dependencyDiagram.nodes.length && dependencyDiagram.nodes.length > 0;
+
+        const getStatusForPercentage = (percentage) => {
+            let status = Constants.Status.Success;
+            if (percentage < globalState.get(StateHolder.CONFIG).percentageRangeMinValue.warningThreshold) {
+                status = Constants.Status.Warning;
+            }
+            if (percentage < globalState.get(StateHolder.CONFIG).percentageRangeMinValue.errorThreshold) {
+                status = Constants.Status.Error;
+            }
+            if (percentage < 0 || percentage > 1) {
+                status = Constants.Status.Unknown;
+            }
+            return status;
+        };
 
         const viewGenerator = (nodeId, opacity, instanceKind) => {
             const color = ColorGenerator.shadeColor(colorGenerator.getColor(nodeId), opacity);
             const outlineColor = ColorGenerator.shadeColor(color, -0.08);
             const errorColor = ColorGenerator.shadeColor(colorGenerator.getColor(ColorGenerator.ERROR), opacity);
             const warningColor = ColorGenerator.shadeColor(colorGenerator.getColor(ColorGenerator.WARNING), opacity);
-            const state = this.getCellState(nodeId);
+
+            const totalSuccessRequests = metrics.overall[nodeId].responseCounts["2xx"]
+                + metrics.overall[nodeId].responseCounts["3xx"];
+            const successPercentage = totalSuccessRequests / metrics.overall[nodeId].requestCount;
+            const state = getStatusForPercentage(successPercentage);
+
             let instanceView;
-
             if (instanceKind === Constants.InstanceKind.CELL) {
-                const successCell = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
-                    + `<path fill="${color}"  stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                    + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
-                    + "</svg>";
+                const successCell = (
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                        x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14"
+                        style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
+                        <path fill={color} stroke={(selectedInstance === nodeId) ? "#444" : outlineColor}
+                            strokeOpacity={1 - opacity} strokeWidth="0.5px"
+                            d={"M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,"
+                                + "1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,"
+                                + "10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z"}
+                            transform="translate(-0.54 -0.37)"/>
+                    </svg>
+                );
 
-                const errorCell = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
-                    + `<path fill="${color}" stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                    + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/></g>'
-                    + `<path fill="${errorColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
-                    + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
-                    + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
-                    + "</svg>";
+                const errorCell = (
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                        x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14"
+                        style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
+                        <g>
+                            <path fill={color} stroke={(selectedInstance === nodeId) ? "#444" : outlineColor}
+                                strokeOpacity={1 - opacity} strokeWidth="0.5px"
+                                d={"M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,"
+                                    + "0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,"
+                                    + "10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,"
+                                    + "0,0,8.92.84Z"}
+                                transform="translate(-0.54 -0.37)"/>
+                        </g>
+                        <path fill={errorColor} d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z"
+                            transform="translate(-0.54 -0.37)"/>
+                        <path fill="#fff"
+                            d={"M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,"
+                                + "2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z"} transform="translate(-0.54 -0.37)"/>
+                        <path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z"
+                            transform="translate(-0.54 -0.37)"/>
+                    </svg>
+                );
 
-                const warningCell = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
-                    + `<path fill="${color}" stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                    + 'stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/></g>'
-                    + `<path fill="${warningColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
-                    + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
-                    + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
-                    + "</svg>";
+                const warningCell = (
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg"
+                        xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px"
+                        viewBox="0 0 14 14" style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
+                        <g>
+                            <path fill={color}
+                                stroke={(selectedInstance === nodeId) ? "#444" : outlineColor}
+                                strokeOpacity={1 - opacity} strokeWidth="0.5px"
+                                d={"M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,"
+                                    + "1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,"
+                                    + ".41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,"
+                                    + ".41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z"}
+                                transform="translate(-0.54 -0.37)"/>
+                        </g>
+                        <path fill={warningColor} d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z"
+                            transform="translate(-0.54 -0.37)"/>
+                        <path fill="#fff" transform="translate(-0.54 -0.37)"
+                            d={"M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,"
+                                + "5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z"}/>
+                        <path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z"
+                            transform="translate(-0.54 -0.37)"/>
+                    </svg>
+                );
 
                 if (state === Constants.Status.Success || state === Constants.Status.Unknown) {
                     // Not to show any indicators if it is success threshold or status is unknown
@@ -772,31 +535,60 @@ class Overview extends React.Component {
                 } else {
                     instanceView = errorCell;
                 }
-            }
+            } else if (instanceKind === Constants.InstanceKind.COMPOSITE) {
+                const successComposite = (
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg"
+                        xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px"
+                        viewBox="0 0 14 14" style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
+                        <circle cx="6.4" cy="6.7" r="6.1" fill={color}
+                            stroke={(selectedInstance === nodeId) ? "#444" : outlineColor}
+                            strokeOpacity={1 - opacity} strokeDasharray="1.9772,0.9886" strokeWidth="0.5px"/>
+                    </svg>
+                );
 
-            if (instanceKind === Constants.InstanceKind.COMPOSITE) {
-                const successComposite = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
-                    + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
-                    + `<circle cx="6.4" cy="6.7" r="6.1" fill="${color}"  stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" stroke-dasharray="1.9772,0.9886" stroke-width="0.5px"/>`
-                    + "</svg>";
+                const errorComposite = (
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg"
+                        xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px"
+                        viewBox="0 0 14 14" style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
+                        <g>
+                            <circle cx="6.4" cy="6.7" r="6.1" fill={color}
+                                stroke={(selectedInstance === nodeId) ? "#444" : outlineColor}
+                                strokeOpacity={1 - opacity}
+                                strokeWidth="0.5px" strokeDasharray="1.9772,0.9886"/>
+                        </g>
+                        <path fill={errorColor}
+                            d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z"
+                            transform="translate(-0.54 -0.37)"/>
+                        <path fill="#fff"
+                            d={"M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,"
+                                + "1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z"}
+                            transform="translate(-0.54 -0.37)"/>
+                        <path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z"
+                            transform="translate(-0.54 -0.37)"/>
+                    </svg>
+                );
 
-                const errorComposite = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
-                    + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
-                    + `<circle cx="6.4" cy="6.7" r="6.1" fill="${color}" stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                    + ' stroke-width="0.5px" stroke-dasharray="1.9772,0.9886"/></g>'
-                    + `<path fill="${errorColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
-                    + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
-                    + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
-                    + "</svg>";
-
-                const warningComposite = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
-                    + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve"><g>'
-                    + `<circle cx="6.4" cy="6.7" r="6.1" fill="${color}" stroke="${(selectedInstance === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                    + 'stroke-width="0.5px" stroke-dasharray="1.9772,0.9886"/></g>'
-                    + `<path fill="${warningColor}" d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z" transform="translate(-0.54 -0.37)"/>`
-                    + '<path fill="#fff" d="M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z" transform="translate(-0.54 -0.37)"/>'
-                    + '<path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z" transform="translate(-0.54 -0.37)"/>'
-                    + "</svg>";
+                const warningComposite = (
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                        x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14"
+                        style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
+                        <g>
+                            <circle cx="6.4" cy="6.7" r="6.1" fill={color}
+                                stroke={(selectedInstance === nodeId) ? "#444" : outlineColor}
+                                strokeOpacity={1 - opacity}
+                                strokeWidth="0.5px" strokeDasharray="1.9772,0.9886"/>
+                        </g>
+                        <path fill={warningColor}
+                            d="M11.17.5a2.27,2.27,0,1,0,2.26,2.26A2.27,2.27,0,0,0,11.17.5Z"
+                            transform="translate(-0.54 -0.37)"/>
+                        <path fill="#fff"
+                            d={"M11.17,5.15a2.39,2.39,0,1,1,2.38-2.39A2.39,2.39,0,0,1,"
+                                + "11.17,5.15Zm0-4.53A2.14,2.14,0,1,0,13.3,2.76,2.14,2.14,0,0,0,11.17.62Z"}
+                            transform="translate(-0.54 -0.37)"/>
+                        <path fill="#fff" d="M10.86,3.64h.61v.61h-.61Zm0-2.44h.61V3h-.61Z"
+                            transform="translate(-0.54 -0.37)"/>
+                    </svg>
+                );
 
                 if (state === Constants.Status.Success || state === Constants.Status.Unknown) {
                     // Not to show any indicators if it is success threshold or status is unknown
@@ -807,31 +599,31 @@ class Overview extends React.Component {
                     instanceView = errorComposite;
                 }
             }
-
-            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(instanceView)}`;
+            const instanceViewHtml = ReactDOMServer.renderToStaticMarkup(instanceView);
+            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(instanceViewHtml)}`;
         };
 
         const renderNodeLabel = (nodeId) => {
-            const cellInfoObj = this.state.cellIngresses.find((cellIngressDatum) => cellIngressDatum.cellName === nodeId);
-            if (cellInfoObj && cellInfoObj.ingressTypes) {
-                return `${nodeId}\n<b>(${cellInfoObj.ingressTypes})</b>`;
+            const node = dependencyDiagram.nodes.find((nodeDatum) => nodeDatum.id === nodeId);
+            let nodeLabel;
+            if (node && node.ingressTypes && node.ingressTypes.size > 0) {
+                nodeLabel = `${nodeId}\n<b>(${node.ingressTypes.join(", ")})</b>`;
+            } else {
+                nodeLabel = nodeId;
             }
-            return nodeId;
+            return nodeLabel;
         };
-
-        const dataNodes = this.state.data.nodes;
-        const dataEdges = this.state.data.edges;
 
         return (
             <React.Fragment>
-                <TopToolbar title={"Overview"} onUpdate={this.loadOverviewOnTimeUpdate}/>
+                <TopToolbar title={"Overview"} onUpdate={this.handleOnUpdate}/>
                 {
                     isLoading
                         ? null
                         : (
                             <div className={classes.root}>
                                 <Paper className={classNames(classes.content, {
-                                    [classes.contentShift]: open
+                                    [classes.contentShift]: isSidePanelOpen
                                 })}>
                                     {
                                         isDataAvailable
@@ -839,14 +631,21 @@ class Overview extends React.Component {
                                                 <React.Fragment>
                                                     <div className={classes.graphContainer}>
                                                         <div className={classes.diagram}>
-                                                            <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges}
-                                                                onClickNode={(nodeId) => this.onClickInstance(nodeId, true)} viewGenerator={viewGenerator}
-                                                                onClickGraph={this.onClickGraph} selectedInstance={selectedInstance} graphType="overview" renderNodeLabel={renderNodeLabel}
-                                                            />
+                                                            <DependencyGraph id="graph-id" graphType="overview"
+                                                                nodeData={dependencyDiagram.nodes}
+                                                                edgeData={dependencyDiagram.edges}
+                                                                selectedInstance={selectedInstance}
+                                                                onClickNode={
+                                                                    (nodeId) => this.onSelectedInstanceChange(nodeId)}
+                                                                onClickGraph={
+                                                                    () => this.onSelectedInstanceChange(null)}
+                                                                viewGenerator={viewGenerator}
+                                                                renderNodeLabel={renderNodeLabel}/>
                                                         </div>
                                                     </div>
-                                                    <Button aria-describedby={id} variant="outlined"
-                                                        className={classes.btnLegend} onClick={this.handleClick}>
+                                                    <Button aria-describedby={legendId} variant="outlined"
+                                                        className={classes.btnLegend}
+                                                        onClick={this.handleLegendButtonClick}>
                                                         Legend
                                                     </Button>
                                                 </React.Fragment>
@@ -857,7 +656,8 @@ class Overview extends React.Component {
                                                 />
                                             )
                                     }
-                                    <Popper id={id} open={legendOpen} anchorEl={legend} placement="top-end" transition>
+                                    <Popper id={legendId} open={legend.isOpen} anchorEl={legend.target}
+                                        placement={"top-end"} transition>
                                         {({TransitionProps}) => (
                                             <Fade {...TransitionProps} timeout={350}>
                                                 <Paper>
@@ -865,11 +665,15 @@ class Overview extends React.Component {
                                                         <CellIcon className={classes.legendFirstEl} color="action"
                                                             fontSize="small"/>
                                                         <Typography color="inherit"
-                                                            className={classes.legendText}> {Constants.InstanceKind.CELL}</Typography>
+                                                            className={classes.legendText}> {
+                                                                Constants.InstanceKind.CELL}
+                                                        </Typography>
                                                         <CompositeIcon className={classes.legendIcon} color="action"
                                                             fontSize="small"/>
                                                         <Typography color="inherit"
-                                                            className={classes.legendText}> {Constants.InstanceKind.COMPOSITE}</Typography>
+                                                            className={classes.legendText}> {
+                                                                Constants.InstanceKind.COMPOSITE}
+                                                        </Typography>
                                                         <ArrowRightAltSharp className={classes.legendIcon}
                                                             color="action"/>
                                                         <Typography color="inherit"
@@ -879,14 +683,17 @@ class Overview extends React.Component {
                                                                 color: colorGenerator.getColor(ColorGenerator.WARNING)
                                                             }}/>
                                                         <Typography color="inherit" className={classes.legendText}>
-                                                            {Math.round((1 - percentageVal.warningThreshold) * 100)}%
-                                                            - {Math.round((1 - percentageVal.errorThreshold) * 100)}%
-                                                            Error </Typography>
+                                                            {Math.round(
+                                                                (1 - percentageRangeMinValue.warningThreshold) * 100)}%
+                                                            - {Math.round(
+                                                                (1 - percentageRangeMinValue.errorThreshold) * 100)}%
+                                                            Errors </Typography>
                                                         <Error className={classes.legendIcon} color="error"/>
                                                         <Typography color="inherit" className={classes.legendText}>
                                                             &gt;
-                                                            {Math.round((1 - percentageVal.errorThreshold) * 100)}%
-                                                            Error
+                                                            {Math.round(
+                                                                (1 - percentageRangeMinValue.errorThreshold) * 100)}%
+                                                            Errors
                                                         </Typography>
                                                     </div>
                                                 </Paper>
@@ -899,23 +706,23 @@ class Overview extends React.Component {
                                         ? (
                                             <React.Fragment>
                                                 <div className={classNames(classes.moreDetails, {
-                                                    [classes.moreDetailsShift]: open
+                                                    [classes.moreDetailsShift]: isSidePanelOpen
                                                 })}>
                                                     <IconButton color="inherit" aria-label="Open drawer"
-                                                        onClick={this.handleDrawerOpen}
-                                                        className={classNames(classes.menuButton, open && classes.hide)}
-                                                    >
+                                                        onClick={this.handleSidePanelOpen}
+                                                        className={classNames(classes.menuButton,
+                                                            isSidePanelOpen && classes.hide)}>
                                                         <MoreIcon/>
                                                     </IconButton>
                                                 </div>
 
                                                 <Drawer className={classes.drawer} variant="persistent" anchor="right"
-                                                    open={open}
+                                                    open={isSidePanelOpen}
                                                     classes={{
                                                         paper: classes.drawerPaper
                                                     }}>
                                                     <div className={classes.drawerHeader}>
-                                                        <IconButton onClick={this.handleDrawerClose}>
+                                                        <IconButton onClick={this.handleSidePanelClose}>
                                                             {
                                                                 theme.direction === "rtl"
                                                                     ? <ChevronLeftIcon/>
@@ -928,10 +735,13 @@ class Overview extends React.Component {
                                                         </Typography>
                                                     </div>
                                                     <Divider/>
-                                                    <SidePanelContent summary={this.state.summary}
-                                                        request={this.state.request} selectedInstance={selectedInstance}
-                                                        open={this.state.open} listData={this.state.listData}
-                                                        selectedInstanceKind={selectedInstanceKind}/>
+                                                    <SidePanelContent selectedInstanceKind={selectedInstanceKind}
+                                                        open={isSidePanelOpen} selectedInstance={selectedInstance}
+                                                        metrics={
+                                                            selectedInstance
+                                                                ? metrics.selectedInstance
+                                                                : metrics.overall
+                                                        }/>
                                                 </Drawer>
                                             </React.Fragment>
 

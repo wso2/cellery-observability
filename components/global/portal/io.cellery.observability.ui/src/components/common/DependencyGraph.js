@@ -147,7 +147,7 @@ class DependencyGraph extends React.Component {
         const dataEdges = [];
 
         if (nodeData) {
-            nodeData.forEach((node, index) => {
+            nodeData.forEach((node) => {
                 let label = "";
                 if (graphType === DependencyGraph.GraphType.OVERVIEW) {
                     label = renderNodeLabel(node.id);
@@ -304,8 +304,14 @@ class DependencyGraph extends React.Component {
 DependencyGraph.propTypes = {
     classes: PropTypes.object.isRequired,
     id: PropTypes.string.isRequired,
-    nodeData: PropTypes.arrayOf(PropTypes.object),
-    edgeData: PropTypes.arrayOf(PropTypes.object),
+    nodeData: PropTypes.arrayOf(PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        instanceKind: PropTypes.string.isRequired
+    })),
+    edgeData: PropTypes.arrayOf(PropTypes.shape({
+        source: PropTypes.string.isRequired,
+        target: PropTypes.string.isRequired
+    })),
     selectedInstance: PropTypes.string,
     config: PropTypes.object,
     reloadGraph: PropTypes.bool,
