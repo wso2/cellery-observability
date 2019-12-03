@@ -460,9 +460,8 @@ class Overview extends React.Component {
             const errorColor = ColorGenerator.shadeColor(colorGenerator.getColor(ColorGenerator.ERROR), opacity);
             const warningColor = ColorGenerator.shadeColor(colorGenerator.getColor(ColorGenerator.WARNING), opacity);
 
-            const totalSuccessRequests = metrics.overall[nodeId].responseCounts["2xx"]
-                + metrics.overall[nodeId].responseCounts["3xx"];
-            const successPercentage = totalSuccessRequests / metrics.overall[nodeId].requestCount;
+            const totalErrorRequests = metrics.overall[nodeId].responseCounts["5xx"];
+            const successPercentage = 1 - (totalErrorRequests / metrics.overall[nodeId].requestCount);
             const state = getStatusForPercentage(successPercentage);
 
             let instanceView;

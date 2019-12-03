@@ -169,9 +169,8 @@ class SidePanelContent extends React.Component {
         };
         Object.keys(metrics).forEach((nodeName) => {
             if (metrics[nodeName].totalIncomingRequests > 0) {
-                const totalSuccessRequests = metrics[nodeName].responseCounts["2xx"]
-                    + metrics[nodeName].responseCounts["3xx"];
-                const successPercentage = totalSuccessRequests / metrics[nodeName].totalIncomingRequests;
+                const totalErrorRequests = metrics[nodeName].responseCounts["5xx"];
+                const successPercentage = 1 - (totalErrorRequests / metrics[nodeName].totalIncomingRequests);
 
                 let status = Constants.Status.Success;
                 if (successPercentage < globalState.get(StateHolder.CONFIG).percentageRangeMinValue.warningThreshold) {
@@ -399,8 +398,7 @@ class SidePanelContent extends React.Component {
                                     }}
                                     data={Object.keys(metrics).map((nodeName) => [
                                         (metrics[nodeName].totalIncomingRequests > 0
-                                            ? ((metrics[nodeName].responseCounts["2xx"]
-                                                + metrics[nodeName].responseCounts["3xx"])
+                                            ? 1 - (metrics[nodeName].responseCounts["5xx"]
                                                     / metrics[nodeName].totalIncomingRequests)
                                             : -1),
                                         {
