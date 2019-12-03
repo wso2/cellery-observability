@@ -25,6 +25,7 @@ import InfoOutlined from "@material-ui/icons/InfoOutlined";
 import NotificationUtils from "../../../utils/common/notificationUtils";
 import QueryUtils from "../../../utils/common/queryUtils";
 import React from "react";
+import ReactDOMServer from "react-dom/server";
 import StateHolder from "../../common/state/stateHolder";
 import Typography from "@material-ui/core/Typography/Typography";
 import withGlobalState from "../../common/state";
@@ -188,10 +189,29 @@ class CellDependencyView extends React.Component {
             },
             globalState
         ).then((data) => {
+            const nodeData = {};
+            data.nodes.filter((nodeDatum) => Boolean(nodeDatum.instance))
+                .forEach((nodeDatum) => {
+                    nodeData[nodeDatum.instance] = {
+                        id: nodeDatum.instance,
+                        instanceKind: nodeDatum.instanceKind
+                    };
+                });
+
+            const edgeData = {};
+            data.edges.filter((edgeDatum) => edgeDatum.source.instance && edgeDatum.target.instance)
+                .filter((edgeDatum) => edgeDatum.source.instance !== edgeDatum.target.instance)
+                .forEach((edgeDatum) => {
+                    edgeData[`${edgeDatum.source.instance} --> ${edgeDatum.target.instance}`] = {
+                        source: edgeDatum.source.instance,
+                        target: edgeDatum.target.instance
+                    };
+                });
+
             self.setState({
                 data: {
-                    nodes: data.nodes,
-                    edges: data.edges
+                    nodes: Object.values(nodeData),
+                    edges: Object.values(edgeData)
                 }
             });
             if (isUserAction) {
@@ -225,20 +245,33 @@ class CellDependencyView extends React.Component {
 
             let instanceView;
             if (instanceKind === Constants.InstanceKind.CELL) {
-                instanceView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
-                    + `<path fill="${color}"  stroke="${(cell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                    + ' stroke-width="0.5px" d="M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z" transform="translate(-0.54 -0.37)"/>'
-                    + "</svg>";
+                instanceView = (
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                        x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14"
+                        style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
+                        <path fill={color} stroke={cell === nodeId ? "#444" : outlineColor}
+                            strokeOpacity={1 - opacity} strokeWidth="0.5px"
+                            d={"M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,"
+                                + "1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,"
+                                + "10a1.46,1.46,0,0,0,.41-1V5a1.46,1.46,0,0,0-.41-1L9.94,1.25A1.44,1.44,0,0,0,8.92.84Z"}
+                            transform="translate(-0.54 -0.37)"/>
+                    </svg>
+                );
             }
 
             if (instanceKind === Constants.InstanceKind.COMPOSITE) {
-                instanceView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
-                    + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
-                    + `<circle cx="6.4" cy="6.7" r="6.1" fill="${color}"  stroke="${(cell === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" stroke-dasharray="1.9772,0.9886" stroke-width="0.5px"/>`
-                    + "</svg>";
+                instanceView = (
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                        x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14"
+                        style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
+                        <circle cx="6.4" cy="6.7" r="6.1" fill={color} stroke={cell === nodeId ? "#444" : outlineColor}
+                            strokeOpacity={1 - opacity} strokeDasharray="1.9772,0.9886" strokeWidth="0.5px"/>
+                    </svg>
+                );
             }
 
-            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(instanceView)}`;
+            const instanceViewHtml = ReactDOMServer.renderToStaticMarkup(instanceView);
+            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(instanceViewHtml)}`;
         };
 
         const dataNodes = this.state.data.nodes;

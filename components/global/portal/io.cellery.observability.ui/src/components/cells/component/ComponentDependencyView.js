@@ -25,6 +25,7 @@ import InfoOutlined from "@material-ui/icons/InfoOutlined";
 import NotificationUtils from "../../../utils/common/notificationUtils";
 import QueryUtils from "../../../utils/common/queryUtils";
 import React from "react";
+import ReactDOMServer from "react-dom/server";
 import StateHolder from "../../common/state/stateHolder";
 import Typography from "@material-ui/core/Typography/Typography";
 import withGlobalState from "../../common/state";
@@ -195,7 +196,7 @@ class ComponentDependencyView extends React.Component {
             const edges = [];
 
             // Get selected component
-            const selectedNode = `${cell}${ComponentDependencyGraph.CELL_COMPONENT_SEPARATOR}${component}`;
+            const selectedNode = this.generateNodeFQN({instance: cell, component: component});
 
             // Adding distinct nodes
             const addNodeIfNotPresent = (nodeToBeAdded) => {
@@ -205,37 +206,39 @@ class ComponentDependencyView extends React.Component {
                 }
             };
 
-            data.edges.forEach((edge, index) => {
-                const targetKind = data.nodes.find((node) => node.id === edge.target).instanceKind;
+            const sanitizedEdges = data.edges.filter(
+                (edgeDatum) => edgeDatum.source.instance && edgeDatum.target.instance);
+            sanitizedEdges.forEach((edge) => {
+                const targetKind = data.nodes.find((node) => node.instance === edge.target.instance).instanceKind;
                 // Draw dependencies for the selected node
-                if (selectedNode === edge.source) {
+                if (cell === edge.source.instance) {
                     // If the selected node is gateway add gateway node or else add it as component
-                    if (edge.source.split(":")[1] === ComponentDependencyGraph.NodeType.GATEWAY) {
+                    if (edge.source.component === ComponentDependencyGraph.NodeType.GATEWAY) {
                         addNodeIfNotPresent({
-                            id: edge.source,
-                            label: edge.source.split(":")[1],
+                            id: this.generateNodeFQN(edge.source),
+                            label: edge.source.component,
                             group: ComponentDependencyGraph.NodeType.GATEWAY
                         });
                     } else {
                         addNodeIfNotPresent({
-                            id: edge.source,
-                            label: edge.source.split(":")[1],
+                            id: this.generateNodeFQN(edge.source),
+                            label: edge.source.component,
                             group: ComponentDependencyGraph.NodeType.COMPONENT
                         });
                     }
 
                     // If the dependent node is a cell gateway node add cell node or else add it as component
                     if (targetKind === Constants.InstanceKind.CELL) {
-                        if (edge.target.split(":")[1] === ComponentDependencyGraph.NodeType.GATEWAY) {
+                        if (edge.target.component === ComponentDependencyGraph.NodeType.GATEWAY) {
                             addNodeIfNotPresent({
-                                id: edge.target,
-                                label: edge.target.split(":")[0],
+                                id: this.generateNodeFQN(edge.target),
+                                label: edge.target.instance,
                                 group: ComponentDependencyGraph.NodeType.CELL
                             });
                         } else {
                             addNodeIfNotPresent({
-                                id: edge.target,
-                                label: edge.target.split(":")[1],
+                                id: this.generateNodeFQN(edge.target),
+                                label: edge.target.component,
                                 group: ComponentDependencyGraph.NodeType.COMPONENT
                             });
                         }
@@ -245,16 +248,16 @@ class ComponentDependencyView extends React.Component {
                      * as composite
                      */
                     } else if (targetKind === Constants.InstanceKind.COMPOSITE) {
-                        if (edge.source.split(":")[0] === edge.target.split(":")[0]) {
+                        if (edge.source.instance === edge.target.instance) {
                             addNodeIfNotPresent({
-                                id: edge.target,
-                                label: edge.target.split(":")[1],
+                                id: this.generateNodeFQN(edge.target),
+                                label: edge.target.component,
                                 group: ComponentDependencyGraph.NodeType.COMPONENT
                             });
                         } else {
                             addNodeIfNotPresent({
-                                id: edge.target,
-                                label: edge.target.split(":")[0],
+                                id: this.generateNodeFQN(edge.target),
+                                label: edge.target.instance,
                                 group: ComponentDependencyGraph.NodeType.COMPOSITE
                             });
                         }
@@ -262,26 +265,27 @@ class ComponentDependencyView extends React.Component {
                 }
 
                 // Add the other dependencies in the selected node
-                if ((selectedNode.split(":")[0] === edge.target.split(":")[0]) && !(selectedNode === edge.source)) {
+                if ((cell === edge.target.instance) && !(selectedNode === edge.source)) {
                     addNodeIfNotPresent({
-                        id: edge.target,
-                        label: edge.target.split(":")[1],
+                        id: this.generateNodeFQN(edge.target),
+                        label: edge.target.component,
                         group: ComponentDependencyGraph.NodeType.COMPONENT
                     });
                 }
 
                 edges.push({
-                    ...edge
+                    source: this.generateNodeFQN(edge.source),
+                    target: this.generateNodeFQN(edge.target)
                 });
             });
 
-            const sourceKind = data.nodes.find((node) => node.id === selectedNode).instanceKind;
+            const sourceNode = data.nodes.find((node) => node.instance === cell && node.component === component);
             self.setState({
                 data: {
                     nodes: nodes,
                     edges: edges
                 },
-                selectedInstanceKind: sourceKind
+                selectedInstanceKind: sourceNode.instanceKind
             });
 
             if (isUserAction) {
@@ -311,11 +315,13 @@ class ComponentDependencyView extends React.Component {
         }
     };
 
+    generateNodeFQN = (node) => `${node.instance}${ComponentDependencyGraph.CELL_COMPONENT_SEPARATOR}${node.component}`;
+
     render = () => {
         const {classes, cell, component, colorGenerator} = this.props;
         const {data, selectedInstanceKind} = this.state;
         const dependedNodeCount = data.nodes.length;
-        const selectedNode = `${cell}${ComponentDependencyGraph.CELL_COMPONENT_SEPARATOR}${component}`;
+        const selectedNode = this.generateNodeFQN({instance: cell, component: component});
 
 
         const viewGenerator = (group, nodeId, opacity) => {
@@ -323,50 +329,91 @@ class ComponentDependencyView extends React.Component {
             const outlineColor = ColorGenerator.shadeColor(color, -0.08);
             const componentColor = ColorGenerator.shadeColor("#999999", opacity);
 
-            let cellView;
+            let nodeView;
             if (group === ComponentDependencyGraph.NodeType.COMPONENT) {
-                cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13" style="enable-background:new 0 0 13 13" xmlSpace="preserve">'
-                    + `<path fill="${color}"  stroke="${(selectedNode === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                    + 'stroke-width="0.5px" d="M13,7a6,6,0,0,1-6,6.06A6,6,0,0,1,1,7,6,6,0,0,1,7,.94,6,6,0,0,1,13,7Z" transform="translate(-0.79 -0.69)"/>'
-                    + `<path fill="${componentColor}" stroke="#fff" stroke-width="0.1px" d="M4.37,5c-.19.11-.19.28,0,.39L6.76,6.82a.76.76,0,0,0,.69,0L9.64,5.45a.23.23,0,0,0,0-.42L7.45,3.7a.76.76,0,0,0-.69,0Z" transform="translate(-0.79 -0.69)"/>`
-                    + `<path fill="${componentColor}" stroke="#fff" stroke-width="0.1px" d="M10,5.93c0-.22-.15-.31-.34-.19L7.45,7.1a.73.73,0,0,1-.69,0L4.37,5.73c-.19-.11-.35,0-.35.2V8a.88.88,0,0,0,.33.63l2.43,1.68a.61.61,0,0,0,.65,0L9.66,8.63A.9.9,0,0,0,10,8Z" transform="translate(-0.79 -0.69)"/>`
-                    + '<text fill="#fff" font-size="1.63px" font-family="ArialMT, Arial" transform="translate(5.76 5.1) scale(0.98 1)">μ</text>'
-                    + "</svg>";
+                nodeView = (
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                        x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13"
+                        style={{enableBackground: "new 0 0 13 13"}} xmlSpace="preserve">
+                        <path fill={color} stroke={(selectedNode === nodeId) ? "#444" : outlineColor}
+                            strokeOpacity={1 - opacity} strokeWidth="0.5px" transform="translate(-0.79 -0.69)"
+                            d="M13,7a6,6,0,0,1-6,6.06A6,6,0,0,1,1,7,6,6,0,0,1,7,.94,6,6,0,0,1,13,7Z"/>
+                        <path fill={componentColor} stroke="#fff" strokeWidth="0.1px" transform="translate(-0.79 -0.69)"
+                            d={"M4.37,5c-.19.11-.19.28,0,.39L6.76,6.82a.76.76,0,0,0,.69,0L9.64,5.45a.23.23,0,0,0,"
+                                + "0-.42L7.45,3.7a.76.76,0,0,0-.69,0Z"}/>
+                        <path fill={componentColor} stroke="#fff" strokeWidth="0.1px"
+                            d={"M10,5.93c0-.22-.15-.31-.34-.19L7.45,7.1a.73.73,0,0,1-.69,0L4.37,5.73c-.19-.11-.35,"
+                                + "0-.35.2V8a.88.88,0,0,0,.33.63l2.43,1.68a.61.61,0,0,0,.65,0L9.66,8.63A.9.9,0,0,"
+                                + "0,10,8Z"} transform="translate(-0.79 -0.69)"/>
+                        <text fill="#fff" fontSize="1.63px" fontFamily="ArialMT, Arial"
+                            transform="translate(5.76 5.1) scale(0.98 1)">μ</text>
+                    </svg>
+                );
             } else if (group === ComponentDependencyGraph.NodeType.GATEWAY) {
-                cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13" style="enable-background:new 0 0 13 13" xmlSpace="preserve">'
-                    + `<path fill="${color}"  stroke="${(selectedNode === nodeId) ? "#444" : outlineColor}" stroke-opacity="${1 - opacity}" `
-                    + 'stroke-width="0.5px" d="M13,7a6,6,0,0,1-6,6.06A6,6,0,0,1,1,7,6,6,0,0,1,7,.94,6,6,0,0,1,13,7Z" transform="translate(-0.59 -0.49)"/>'
-                    + `<path fill="${componentColor}" stroke="#fff" stroke-width="0.1px" d="M6.39,6.29v1L4.6,5.47a.14.14,0,0,1,0-.21L6.39,3.47v1a.15.15,0,0,0,.15.14H9.3a.15.15,0,0,1,.14.15V6a.15.15,0,0,1-.14.15H6.54A.15.15,0,0,0,6.39,6.29ZM7.46,7.85H4.7A.15.15,0,0,0,4.56,8V9.27a.15.15,0,0,0,.14.15H7.46a.15.15,0,0,1,.15.14v1L9.4,8.74a.14.14,0,0,0,0-.21L7.61,6.74v1A.15.15,0,0,1,7.46,7.85Z" transform="translate(13.5 -0.49) rotate(90)"/>`
-                    + "</svg>";
+                nodeView = (
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                        x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13"
+                        style={{enableBackground: "new 0 0 13 13"}} xmlSpace="preserve">
+                        <path fill={color} stroke={(selectedNode === nodeId) ? "#444" : outlineColor}
+                            strokeOpacity={1 - opacity} strokeWidth="0.5px" transform="translate(-0.59 -0.49)"
+                            d="M13,7a6,6,0,0,1-6,6.06A6,6,0,0,1,1,7,6,6,0,0,1,7,.94,6,6,0,0,1,13,7Z"/>
+                        <path fill={componentColor} stroke="#fff" strokeWidth="0.1px"
+                            d={"M6.39,6.29v1L4.6,5.47a.14.14,0,0,1,0-.21L6.39,3.47v1a.15.15,0,0,0,"
+                                + ".15.14H9.3a.15.15,0,0,1,.14.15V6a.15.15,0,0,1-.14.15H6.54A.15.15,0,0,0,6.39,"
+                                + "6.29ZM7.46,7.85H4.7A.15.15,0,0,0,4.56,8V9.27a.15.15,0,0,0,.14.15H7.46a.15.15,0,"
+                                + "0,1,.15.14v1L9.4,8.74a.14.14,0,0,0,0-.21L7.61,6.74v1A.15.15,0,0,1,7.46,7.85Z"}
+                            transform="translate(13.5 -0.49) rotate(90)"/>
+                    </svg>
+                );
             } else if (group === ComponentDependencyGraph.NodeType.COMPOSITE) {
                 if (nodeId === cell) {
-                    cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
-                        + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13" style="enable-background:new 0 0 13 13" xmlSpace="preserve">'
-                        + `<circle cx="6.4" cy="6.7" r="6.1" fill="none"  stroke="${outlineColor}" stroke-opacity="${1 - opacity}" stroke-dasharray="0.3986993968486786,0.3986993968486786" stroke-width="0.1px"/>`
-                        + "</svg>";
+                    nodeView = (
+                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                            x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13"
+                            style={{enableBackground: "new 0 0 13 13"}} xmlSpace="preserve">
+                            <circle cx="6.4" cy="6.7" r="6.1" fill="none" stroke={outlineColor} strokeWidth="0.1px"
+                                strokeOpacity={1 - opacity} strokeDasharray="0.3986993968486786,0.3986993968486786"/>
+                        </svg>
+                    );
                 } else {
-                    cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"'
-                        + ' xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13" style="enable-background:new 0 0 13 13" xmlSpace="preserve">'
-                        + `<circle cx="6.4" cy="6.7" r="6.1" fill="${color}"  stroke="${outlineColor}" stroke-opacity="${1 - opacity}" stroke-dasharray="1.9772,0.9886" stroke-width="0.5px"/>`
-                        + "</svg>";
+                    nodeView = (
+                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                            x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13"
+                            style={{enableBackground: "new 0 0 13 13"}} xmlSpace="preserve">
+                            <circle cx="6.4" cy="6.7" r="6.1" fill={color} stroke={outlineColor}
+                                strokeOpacity={1 - opacity} strokeDasharray="1.9772,0.9886" strokeWidth="0.5px"/>
+                        </svg>
+                    );
                 }
             } else if (nodeId === cell) {
-                cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
-                        + `<path fill="none"  stroke="${outlineColor}" stroke-opacity="${1 - opacity}" `
-                        + ' stroke-width="0.1px" d="M9,0.8H5C4.7,0.8,4.3,1,4,1.3L1.3,4C1,4.3,0.8,4.6,0.8,5v4c0,0.4,0.2,0.7,0.4,1L4,12.8c0.3,0.3,0.6,0.4,1,0.4H9c0.4,0,0.7-0.1,1-0.4l2.8-2.8c0.3-0.3,0.4-0.6,0.4-1V5c0-0.4-0.2-0.7-0.4-1L10,1.3C9.7,1,9.3,0.8,9,0.8z"/>'
-                        + "</svg>";
+                nodeView = (
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                        x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14"
+                        style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
+                        <path fill="none" stroke={outlineColor} strokeOpacity={1 - opacity} strokeWidth="0.1px"
+                            d={"M9,0.8H5C4.7,0.8,4.3,1,4,1.3L1.3,4C1,4.3,0.8,4.6,0.8,5v4c0,0.4,0.2,0.7,0.4,"
+                                + "1L4,12.8c0.3,0.3,0.6,0.4,1,0.4H9c0.4,0,0.7-0.1,1-0.4l2.8-2.8c0.3-0.3,"
+                                + "0.4-0.6,0.4-1V5c0-0.4-0.2-0.7-0.4-1L10,1.3C9.7,1,9.3,0.8,9,0.8z"}/>
+                    </svg>
+                );
             } else {
-                cellView = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" style="enable-background:new 0 0 14 14" xmlSpace="preserve">'
-                        + `<path fill="${color}"  stroke="${outlineColor}" stroke-opacity="${1 - opacity}" `
-                        + ' stroke-width="0.5px" d="M9,0.8H5C4.7,0.8,4.3,1,4,1.3L1.3,4C1,4.3,0.8,4.6,0.8,5v4c0,0.4,0.2,0.7,0.4,1L4,12.8c0.3,0.3,0.6,0.4,1,0.4H9c0.4,0,0.7-0.1,1-0.4l2.8-2.8c0.3-0.3,0.4-0.6,0.4-1V5c0-0.4-0.2-0.7-0.4-1L10,1.3C9.7,1,9.3,0.8,9,0.8z"/>'
-                        + "</svg>";
+                nodeView = (
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                        x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14" xmlSpace="preserve"
+                        style={{enableBackground: "new 0 0 14 14"}}>
+                        <path fill={color} stroke={outlineColor} strokeOpacity={1 - opacity} strokeWidth="0.5px"
+                            d={"M9,0.8H5C4.7,0.8,4.3,1,4,1.3L1.3,4C1,4.3,0.8,4.6,0.8,5v4c0,0.4,0.2,0.7,0.4,1L4,"
+                                + "12.8c0.3,0.3,0.6,0.4,1,0.4H9c0.4,0,0.7-0.1,1-0.4l2.8-2.8c0.3-0.3,0.4-0.6,"
+                                + "0.4-1V5c0-0.4-0.2-0.7-0.4-1L10,1.3C9.7,1,9.3,0.8,9,0.8z"}/>
+                    </svg>
+                );
             }
 
-            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cellView)}`;
+            const nodeViewHtml = ReactDOMServer.renderToStaticMarkup(nodeView);
+            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(nodeViewHtml)}`;
         };
 
         let view;
-
         if (dependedNodeCount > 0) {
             view = (
                 <ErrorBoundary title={"Unable to Render"} description={"Unable to Render due to Invalid Data"}>
