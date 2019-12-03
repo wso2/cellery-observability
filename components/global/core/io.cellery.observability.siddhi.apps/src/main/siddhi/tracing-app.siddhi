@@ -108,7 +108,7 @@ select
     tags
 insert into ProcessedZipkinStream;
 
-from ProcessedZipkinStream#observe:traceGroupWindow(60 sec, traceId)#observe:modelGenerator(instance, instanceKind, serviceName, operationName, spanId, parentId, spanKind, traceId, startTime)
+from ProcessedZipkinStream
 update or insert into DistributedTracingTable
     set DistributedTracingTable.parentId = parentId,
         DistributedTracingTable.namespace = namespace,

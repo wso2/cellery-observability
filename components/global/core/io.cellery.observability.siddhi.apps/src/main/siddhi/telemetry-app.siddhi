@@ -98,3 +98,7 @@ insert into SanitizedRequestsStream;
 from SanitizedRequestsStream[(not httpResponseGroup is null) and (not responseTimeMilliSec is null)
                              and (not requestSizeBytes is null) and (not responseSizeBytes is null)]
 insert into ProcessedRequestsStream;
+
+from SanitizedRequestsStream#observe:modelGenerator(sourceNamespace, sourceInstance, sourceComponent,
+    sourceInstanceKind, destinationNamespace, destinationInstance, destinationComponent, destinationInstanceKind)
+insert into DummyStream;

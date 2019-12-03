@@ -37,10 +37,6 @@
             <artifactId>msf4j-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.cellery.observability</groupId>
             <artifactId>io.cellery.observability.model.generator</artifactId>
         </dependency>
