@@ -198,7 +198,6 @@ class ColorGenerator {
     /**
      * Shade the color.
      *
-     * @private
      * @param {string} color The generated color
      * @param {number} percentage The shade percentage
      * @returns {string} The shaded hex color
