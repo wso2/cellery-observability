@@ -41,9 +41,10 @@ type (
 			*memory.Memory     `json:"inMemory"`
 		} `json:"store"`
 		Advanced struct {
-			MaxRecordsForSingleWrite int `json:"maxRecordsForSingleWrite"`
-			BufferSizeFactor         int `json:"bufferSizeFactor"`
-			BufferTimeoutSeconds     int `json:"bufferTimeoutSeconds"`
+			RuntimeId                string `json:"runtimeId"`
+			MaxRecordsForSingleWrite int    `json:"maxRecordsForSingleWrite"`
+			BufferSizeFactor         int    `json:"bufferSizeFactor"`
+			BufferTimeoutSeconds     int    `json:"bufferTimeoutSeconds"`
 		} `json:"advanced"`
 	}
 )

@@ -37,6 +37,7 @@ type (
 		SpServerUrl string
 		HttpClient  *http.Client
 		Persister   store.Persister
+		RuntimeId   string
 	}
 
 	SpEndpoint struct {
@@ -95,9 +96,10 @@ func (publisher *Publisher) execute() error {
 }
 
 func (publisher *Publisher) publish(jsonArr string) error {
+	jsonPayload := fmt.Sprintf("{\"runtime\":\"%s\",\"data\":%s}", publisher.RuntimeId, jsonArr)
 	var buf bytes.Buffer
 	g := gzip.NewWriter(&buf)
-	if _, err := g.Write([]byte(jsonArr)); err != nil {
+	if _, err := g.Write([]byte(jsonPayload)); err != nil {
 		return fmt.Errorf("could not write to buffer : %v", err)
 	}
 	if err := g.Close(); err != nil {
