@@ -71,7 +71,7 @@ public class TelemetryEventSource extends Source {
 
     @Override
     public Class[] getOutputEventClasses() {
-        return new Class[]{String.class};
+        return new Class[]{Map.class};
     }
 
     @Override
@@ -89,38 +89,34 @@ public class TelemetryEventSource extends Source {
 
     @Override
     public void disconnect() {
-        this.stopServer();
-    }
-
-    @Override
-    public void destroy() {
-
-    }
-
-    @Override
-    public void pause() {
-
-    }
-
-    @Override
-    public void resume() {
-
-    }
-
-    @Override
-    public Map<String, Object> currentState() {
-        return null;
-    }
-
-    @Override
-    public void restoreState(Map<String, Object> map) {
-
-    }
-
-    private void stopServer() {
         if (this.httpServer != null) {
             log.info("Shutting down the http server");
             this.httpServer.stop(0);
         }
+    }
+
+    @Override
+    public void destroy() {
+        // Do Nothing
+    }
+
+    @Override
+    public void pause() {
+        // Do Nothing
+    }
+
+    @Override
+    public void resume() {
+        // Do Nothing
+    }
+
+    @Override
+    public Map<String, Object> currentState() {
+        return null;    // Do Nothing
+    }
+
+    @Override
+    public void restoreState(Map<String, Object> map) {
+        // Do Nothing
     }
 }
