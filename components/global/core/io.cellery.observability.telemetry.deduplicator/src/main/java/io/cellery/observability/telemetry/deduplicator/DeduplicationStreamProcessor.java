@@ -58,7 +58,7 @@ import java.util.Objects;
                 + " and processed forward",
         examples = {
                 @Example(
-                        syntax = "from TelemetryStream#telemetry:deduplicate(60 sec, requestId, traceId, spanId, "
+                        syntax = "from TelemetryStream#telemetry:deduplicate(60 sec, runtime, traceId, spanId, "
                                 + "parentSpanId, sourceNamespace, sourceInstance, sourceComponent, "
                                 + "destinationNamespace, destinationInstance, destinationComponent, requestSizeBytes, "
                                 + "responseDuration, responseSizeBytes)"
@@ -75,6 +75,7 @@ public class DeduplicationStreamProcessor extends StreamProcessor implements Sch
     private SiddhiAppContext siddhiAppContext;
     private volatile long lastTimestamp = 0;
 
+    private ExpressionExecutor runtimeExecutor;
     private ExpressionExecutor traceIdExecutor;
     private ExpressionExecutor spanIdExecutor;
     private ExpressionExecutor parentSpanIdExecutor;
@@ -136,6 +137,7 @@ public class DeduplicationStreamProcessor extends StreamProcessor implements Sch
     }
 
     private boolean isDuplicate(StreamEvent oldEvent, StreamEvent currentEvent) {
+        String oldEventRuntime = (String) runtimeExecutor.execute(oldEvent);
         String oldEventTraceId = (String) traceIdExecutor.execute(oldEvent);
         String oldEventSpanId = (String) spanIdExecutor.execute(oldEvent);
         String oldEventParentSpanId = (String) parentSpanIdExecutor.execute(oldEvent);
@@ -146,6 +148,7 @@ public class DeduplicationStreamProcessor extends StreamProcessor implements Sch
         String oldEventDestinationInstance = (String) destinationInstanceExecutor.execute(oldEvent);
         String oldEventDestinationComponent = (String) destinationComponentExecutor.execute(oldEvent);
 
+        String currentEventRuntime = (String) runtimeExecutor.execute(currentEvent);
         String currentEventTraceId = (String) traceIdExecutor.execute(currentEvent);
         String currentEventSpanId = (String) spanIdExecutor.execute(currentEvent);
         String currentEventParentSpanId = (String) parentSpanIdExecutor.execute(currentEvent);
@@ -156,7 +159,8 @@ public class DeduplicationStreamProcessor extends StreamProcessor implements Sch
         String currentEventDestinationInstance = (String) destinationInstanceExecutor.execute(currentEvent);
         String currentEventDestinationComponent = (String) destinationComponentExecutor.execute(currentEvent);
 
-        return Objects.equals(currentEventSourceNamespace, oldEventSourceNamespace)
+        return Objects.equals(currentEventRuntime, oldEventRuntime)
+                && Objects.equals(currentEventSourceNamespace, oldEventSourceNamespace)
                 && Objects.equals(currentEventSourceInstance, oldEventSourceInstance)
                 && Objects.equals(currentEventSourceComponent, oldEventSourceComponent)
                 && Objects.equals(currentEventDestinationNamespace, oldEventDestinationNamespace)
@@ -223,6 +227,15 @@ public class DeduplicationStreamProcessor extends StreamProcessor implements Sch
                         "UniqueTime window should have constant for time parameter but " + "found a dynamic attribute "
                                 + attributeExpressionExecutors[Constants.TIME_INTERVAL_EXECUTOR_INDEX]
                                 .getClass().getCanonicalName());
+            }
+
+            if (attributeExpressionExecutors[Constants.RUNTIME_EXECUTOR_INDEX].getReturnType()
+                    == Attribute.Type.STRING) {
+                runtimeExecutor = attributeExpressionExecutors[Constants.RUNTIME_EXECUTOR_INDEX];
+            } else {
+                throw new SiddhiAppValidationException("Expected a field with String return type for the runtime "
+                        + "field, but found a field with return type - "
+                        + attributeExpressionExecutors[Constants.RUNTIME_EXECUTOR_INDEX].getReturnType());
             }
 
             if (attributeExpressionExecutors[Constants.TRACE_ID_EXECUTOR_INDEX].getReturnType()

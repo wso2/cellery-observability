@@ -19,28 +19,25 @@
 @App:name("tracing-app")
 @App:description("Cellery Tracing Siddhi App for processing and storing trace spans")
 
-@source(type="runtime-agent", port="9411", @map(type="json", fail.on.missing.attribute="false",
-        @attributes(traceId = "traceId", id = "id", parentId = "parentId", operationName = "operationName",
-                    serviceName = "serviceName", spanKind = "spanKind", timestamp = "timestamp",
-                    duration = "duration", tags = "tags")))
-define stream ZipkinStreamIn(traceId string, id string, parentId string, operationName string, serviceName string,
-                             spanKind string, timestamp long, duration long, tags string);
+@source(type="runtime-agent", port="9411", @map(type="keyvalue", fail.on.missing.attribute="false"))
+define stream ZipkinStreamIn(runtime string, traceId string, id string, parentId string, operationName string,
+                             serviceName string, spanKind string, timestamp long, duration long, tags string);
 
 @source(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
-define stream TelemetryStreamIn(requestId string, traceId string, spanId string, parentSpanId string, sourceNamespace string,
-                                sourceInstance string, sourceInstanceKind string, sourceComponent string,
-                                sourcePod string, destinationNamespace string, destinationInstance string,
-                                destinationInstanceKind string, destinationComponent string, destinationPod string,
-                                contextReporterKind string, requestPath string, requestMethod string,
-                                requestSizeBytes long, responseCode long, responseDurationNanoSec long,
-                                responseSizeBytes long);
+define stream TelemetryStreamIn(runtime string, requestId string, traceId string, spanId string, parentSpanId string,
+                                sourceNamespace string, sourceInstance string, sourceInstanceKind string,
+                                sourceComponent string, sourcePod string, destinationNamespace string,
+                                destinationInstance string, destinationInstanceKind string, destinationComponent string,
+                                destinationPod string, contextReporterKind string, requestPath string,
+                                requestMethod string, requestSizeBytes long, responseCode long,
+                                responseDurationNanoSec long, responseSizeBytes long);
 
 @Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB", field.length="tags:8000")
-@PrimaryKey("traceId", "spanId")
+@PrimaryKey("runtime", "traceId", "spanId")
 @purge(enable="false")
-define table DistributedTracingTable(traceId string, spanId string, parentId string, namespace string, instance string,
-                                     instanceKind string, serviceName string, pod string, operationName string,
-                                     spanKind string, startTime long, duration long, tags string);
+define table DistributedTracingTable(runtime string, traceId string, spanId string, parentId string, namespace string,
+                                     instance string, instanceKind string, serviceName string, pod string,
+                                     operationName string, spanKind string, startTime long, duration long, tags string);
 
 define function extractFromServiceName[javascript] return string {
     var serviceName = data[0];
@@ -93,9 +90,10 @@ define function extractFromServiceName[javascript] return string {
 
 from ZipkinStreamIn
 select
-    traceId,
-    id as spanId,
-    parentId,
+    runtime,
+    str:replaceFirst(traceId, "^0+", "") as traceId,
+    str:replaceFirst(id, "^0+", "") as spanId,
+    ifThenElse(parentId is null, parentId, str:replaceFirst(parentId, "^0+", "")) as parentId,
     extractFromServiceName(serviceName, 4) as namespace,
     extractFromServiceName(serviceName, 1) as instance,
     extractFromServiceName(serviceName, 3) as instanceKind,
@@ -120,7 +118,8 @@ update or insert into DistributedTracingTable
         DistributedTracingTable.startTime = startTime,
         DistributedTracingTable.duration = duration,
         DistributedTracingTable.tags = tags
-    on DistributedTracingTable.traceId == traceId and DistributedTracingTable.spanId == spanId;
+    on DistributedTracingTable.runtime == runtime and DistributedTracingTable.traceId == traceId
+        and DistributedTracingTable.spanId == spanId;
 
 --
 -- Filling additional data from Telemetry
@@ -132,8 +131,9 @@ insert into FilteredTelemetryStreamIn;
 
 from FilteredTelemetryStreamIn
 select
-    traceId,
-    spanId,
+    runtime,
+    str:replaceFirst(traceId, "^0+", "") as traceId,
+    str:replaceFirst(spanId, "^0+", "") as spanId,
     ifThenElse(contextReporterKind == "inbound", "SERVER", "CLIENT") as spanKind,
     ifThenElse(contextReporterKind == "inbound", destinationNamespace, sourceNamespace) as namespace,
     ifThenElse(contextReporterKind == "inbound", destinationInstance, sourceInstance) as instance,
@@ -145,8 +145,9 @@ insert into ProcessedTelemetryDataStream;
 -- Extracting information for remote service
 from FilteredTelemetryStreamIn
 select
-    traceId,
-    spanId,
+    runtime,
+    str:replaceFirst(traceId, "^0+", "") as traceId,
+    str:replaceFirst(spanId, "^0+", "") as spanId,
     ifThenElse(contextReporterKind == "inbound", "CLIENT", "SERVER") as spanKind,
     ifThenElse(contextReporterKind == "inbound", sourceNamespace, destinationNamespace) as namespace,
     ifThenElse(contextReporterKind == "inbound", sourceInstance, destinationInstance) as instance,
@@ -157,6 +158,7 @@ insert into ProcessedTelemetryDataStream;
 
 from ProcessedTelemetryDataStream[(not serviceName is null) and (serviceName != "")]
 select
+    runtime,
     traceId,
     spanId,
     "" as parentId,
@@ -172,26 +174,8 @@ select
     "{}" as tags
 insert into ExtractedTelemetryDataStream;
 
-from every(e1=ExtractedTelemetryDataStream) ->
-    not ExtractedTelemetryDataStream[e1.traceId == e2.traceId and e1.spanId == e2.spanId] for 1 minute
-    or e2=ExtractedTelemetryDataStream[e1.traceId == e2.traceId and e1.spanId == e2.spanId] within 1 minute
-select
-    e1.traceId,
-    e1.spanId,
-    e1.parentId,
-    ifThenElse(e1.namespace is null, e2.namespace, e1.namespace) as namespace,
-    ifThenElse(e1.instance is null, e2.instance, e1.instance) as instance,
-    ifThenElse(e1.instanceKind is null, e2.instanceKind, e1.instanceKind) as instanceKind,
-    ifThenElse(e1.serviceName is null, e2.serviceName, e1.serviceName) as serviceName,
-    ifThenElse(e1.pod is null, e2.pod, e1.pod) as pod,
-    e1.operationName,
-    e1.spanKind,
-    e1.startTime,
-    e1.duration,
-    e1.tags
-insert into UniqueTelemetryDataStream;
-
-from UniqueTelemetryDataStream[(not traceId is null) and (not spanId is null)]
+from ExtractedTelemetryDataStream[(not traceId is null) and (not spanId is null)]
 update or insert into DistributedTracingTable
     set DistributedTracingTable.pod = pod
-    on DistributedTracingTable.traceId == traceId and DistributedTracingTable.spanId == spanId;
+    on DistributedTracingTable.runtime == runtime and DistributedTracingTable.traceId == traceId
+        and DistributedTracingTable.spanId == spanId;

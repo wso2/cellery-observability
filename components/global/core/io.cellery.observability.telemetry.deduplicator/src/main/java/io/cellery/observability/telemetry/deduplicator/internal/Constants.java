@@ -27,6 +27,7 @@ public class Constants {
     public static final String MAX_RESPONSE_SIZE = "maxResponseSize";
 
     public static final int TIME_INTERVAL_EXECUTOR_INDEX = 0;
+    public static final int RUNTIME_EXECUTOR_INDEX = 1;
     public static final int TRACE_ID_EXECUTOR_INDEX = 1;
     public static final int SPAN_ID_EXECUTOR_INDEX = 2;
     public static final int PARENT_SPAN_ID_EXECUTOR_INDEX = 3;

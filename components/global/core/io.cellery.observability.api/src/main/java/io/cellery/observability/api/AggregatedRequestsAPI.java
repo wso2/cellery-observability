@@ -44,9 +44,9 @@ public class AggregatedRequestsAPI {
     @Path("/instances")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getAggregatedRequestsForInstances(@QueryParam("queryStartTime") long queryStartTime,
-                                                  @QueryParam("queryEndTime") long queryEndTime,
-                                                  @DefaultValue("seconds") @QueryParam("timeGranularity")
-                                                          String timeGranularity) throws APIInvocationException {
+                                                      @QueryParam("queryEndTime") long queryEndTime,
+                                                      @DefaultValue("seconds") @QueryParam("timeGranularity")
+                                                      String timeGranularity) throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
@@ -65,12 +65,14 @@ public class AggregatedRequestsAPI {
     @Path("/instances/metrics")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMetricsForInstances(@QueryParam("queryStartTime") long queryStartTime,
-                                       @QueryParam("queryEndTime") long queryEndTime,
-                                       @DefaultValue("") @QueryParam("sourceInstance") String sourceInstance,
-                                       @DefaultValue("") @QueryParam("destinationInstance") String destinationInstance,
-                                       @DefaultValue("seconds") @QueryParam("timeGranularity") String timeGranularity,
-                                       @DefaultValue("false")
-                                       @QueryParam("includeIntraInstance") boolean includeIntraInstance)
+                                           @QueryParam("queryEndTime") long queryEndTime,
+                                           @DefaultValue("") @QueryParam("sourceInstance") String sourceInstance,
+                                           @DefaultValue("") @QueryParam("destinationInstance")
+                                                       String destinationInstance,
+                                           @DefaultValue("seconds") @QueryParam("timeGranularity")
+                                                       String timeGranularity,
+                                           @DefaultValue("false")
+                                           @QueryParam("includeIntraInstance") boolean includeIntraInstance)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES_METRICS.builder()
@@ -96,7 +98,8 @@ public class AggregatedRequestsAPI {
     @Path("/instances/metadata")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMetadataForInstances(@QueryParam("queryStartTime") long queryStartTime,
-                                        @QueryParam("queryEndTime") long queryEndTime) throws APIInvocationException {
+                                            @QueryParam("queryEndTime") long queryEndTime)
+            throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES_METADATA.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
@@ -185,7 +188,7 @@ public class AggregatedRequestsAPI {
     @Path("/instances/components/metadata")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMetadataForComponents(@QueryParam("queryStartTime") long queryStartTime,
-                                                @QueryParam("queryEndTime") long queryEndTime)
+                                             @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_COMPONENTS_METADATA.builder()
