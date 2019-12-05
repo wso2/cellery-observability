@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -115,14 +116,15 @@ public class ModelGenerationExtensionTestCase {
     @Test
     public void testSingleInstanceGraph() throws Exception {
         initializeSiddhiAppRuntime();
-        String namespace = "default";
+        String runtime = "test-runtime";
+        String namespace = "test-namespace";
         String instance = "single-instance";
-        Node helloGatewayNode = new Node(namespace, instance, "gateway");
-        Node componentANode = new Node(namespace, instance, "component-a");
-        Node componentBNode = new Node(namespace, instance, "component-b");
-        Node componentCNode = new Node(namespace, instance, "component-c");
-        Node componentDNode = new Node(namespace, instance, "component-d");
-        Node componentENode = new Node(namespace, instance, "component-e");
+        Node helloGatewayNode = new Node(runtime, namespace, instance, "gateway");
+        Node componentANode = new Node(runtime, namespace, instance, "component-a");
+        Node componentBNode = new Node(runtime, namespace, instance, "component-b");
+        Node componentCNode = new Node(runtime, namespace, instance, "component-c");
+        Node componentDNode = new Node(runtime, namespace, instance, "component-d");
+        Node componentENode = new Node(runtime, namespace, instance, "component-e");
 
         long startTime = System.currentTimeMillis() - 100;
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
@@ -155,7 +157,16 @@ public class ModelGenerationExtensionTestCase {
                     generateEdge(componentCNode, componentDNode), generateEdge(componentCNode, componentENode)));
         }
         {
-            Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(startTime, endTime, namespace);
+            Model model = ServiceHolder.getModelManager().getRuntimeDependencyMode(startTime, endTime, runtime);
+            Assert.assertEquals(model.getNodes(), asSet(helloGatewayNode, componentANode, componentBNode,
+                    componentCNode, componentDNode, componentENode));
+            Assert.assertEquals(model.getEdges(), asSet(generateEdge(helloGatewayNode, componentANode),
+                    generateEdge(helloGatewayNode, componentBNode), generateEdge(componentBNode, componentCNode),
+                    generateEdge(componentCNode, componentDNode), generateEdge(componentCNode, componentENode)));
+        }
+        {
+            Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(startTime, endTime, runtime,
+                    namespace);
             Assert.assertEquals(model.getNodes(), asSet(helloGatewayNode, componentANode, componentBNode,
                     componentCNode, componentDNode, componentENode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(helloGatewayNode, componentANode),
@@ -164,7 +175,7 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(startTime, endTime,
-                    helloGatewayNode.getNamespace(), helloGatewayNode.getInstance());
+                    helloGatewayNode.getRuntime(), helloGatewayNode.getNamespace(), helloGatewayNode.getInstance());
             Assert.assertEquals(model.getNodes(), asSet(helloGatewayNode, componentANode, componentBNode,
                     componentCNode, componentDNode, componentENode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(helloGatewayNode, componentANode),
@@ -173,7 +184,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
-                    helloGatewayNode.getNamespace(), helloGatewayNode.getInstance(), helloGatewayNode.getComponent());
+                    helloGatewayNode.getRuntime(), helloGatewayNode.getNamespace(), helloGatewayNode.getInstance(),
+                    helloGatewayNode.getComponent());
             Assert.assertEquals(model.getNodes(), asSet(helloGatewayNode, componentANode, componentBNode,
                     componentCNode, componentDNode, componentENode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(helloGatewayNode, componentANode),
@@ -182,14 +194,15 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
-                    componentCNode.getNamespace(), componentCNode.getInstance(), componentCNode.getComponent());
+                    componentCNode.getRuntime(), componentCNode.getNamespace(), componentCNode.getInstance(),
+                    componentCNode.getComponent());
             Assert.assertEquals(model.getNodes(), asSet(componentCNode, componentDNode, componentENode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(componentCNode, componentDNode),
                     generateEdge(componentCNode, componentENode)));
         }
         {
-            Node actualNode = ServiceHolder.getModelManager().getNode(helloGatewayNode.getNamespace(),
-                    helloGatewayNode.getInstance(), helloGatewayNode.getComponent());
+            Node actualNode = ServiceHolder.getModelManager().getNode(helloGatewayNode.getRuntime(),
+                    helloGatewayNode.getNamespace(), helloGatewayNode.getInstance(), helloGatewayNode.getComponent());
             Assert.assertEquals(actualNode, helloGatewayNode);
         }
     }
@@ -197,23 +210,28 @@ public class ModelGenerationExtensionTestCase {
     @Test
     public void testMultiInstanceGraph() throws Exception {
         initializeSiddhiAppRuntime();
-        String namespace = "default";
+        String runtime = "test-runtime";
+        String namespace = "test-namespace";
         String instanceA = "multi-instance-a";
         String instanceB = "multi-instance-b";
         String instanceC = "multi-instance-c";
         String instanceD = "multi-instance-d";
-        Node instanceAGatewayNode = new Node(namespace, instanceA, "gateway");
-        Node instanceAComponentANode = new Node(namespace, instanceA, "component-a");
-        Node instanceAComponentBNode = new Node(namespace, instanceA, "component-b");
-        Node instanceAComponentCNode = new Node(namespace, instanceA, "component-c");
-        Node instanceBGatewayNode = new Node(namespace, instanceB, "gateway");
-        Node instanceBComponentANode = new Node(namespace, instanceB, "component-a");
-        Node instanceBComponentBNode = new Node(namespace, instanceB, "component-b");
-        Node instanceCGatewayNode = new Node(namespace, instanceC, "gateway");
-        Node instanceCComponentANode = new Node(namespace, instanceC, "component-a");
-        Node instanceDGatewayNode = new Node(namespace, instanceD, "gateway");
-        Node instanceDComponentANode = new Node(namespace, instanceD, "component-a");
-        Node instanceDComponentBNode = new Node(namespace, instanceD, "component-b");
+        String gateway = "gateway";
+        String componentA = "component-a";
+        String componentB = "component-b";
+        String componentC = "component-c";
+        Node instanceAGatewayNode = new Node(runtime, namespace, instanceA, gateway);
+        Node instanceAComponentANode = new Node(runtime, namespace, instanceA, componentA);
+        Node instanceAComponentBNode = new Node(runtime, namespace, instanceA, componentB);
+        Node instanceAComponentCNode = new Node(runtime, namespace, instanceA, componentC);
+        Node instanceBGatewayNode = new Node(runtime, namespace, instanceB, gateway);
+        Node instanceBComponentANode = new Node(runtime, namespace, instanceB, componentA);
+        Node instanceBComponentBNode = new Node(runtime, namespace, instanceB, componentB);
+        Node instanceCGatewayNode = new Node(runtime, namespace, instanceC, gateway);
+        Node instanceCComponentANode = new Node(runtime, namespace, instanceC, componentA);
+        Node instanceDGatewayNode = new Node(runtime, namespace, instanceD, gateway);
+        Node instanceDComponentANode = new Node(runtime, namespace, instanceD, componentA);
+        Node instanceDComponentBNode = new Node(runtime, namespace, instanceD, componentB);
 
         long startTime = System.currentTimeMillis() - 100;
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
@@ -268,7 +286,26 @@ public class ModelGenerationExtensionTestCase {
                     generateEdge(instanceDComponentANode, instanceDComponentBNode)));
         }
         {
-            Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(startTime, endTime, namespace);
+            Model model = ServiceHolder.getModelManager().getRuntimeDependencyMode(startTime, endTime, runtime);
+            Assert.assertEquals(model.getNodes(), asSet(instanceAGatewayNode, instanceAComponentANode,
+                    instanceAComponentBNode, instanceAComponentCNode, instanceBGatewayNode, instanceBComponentANode,
+                    instanceBComponentBNode, instanceCGatewayNode, instanceCComponentANode, instanceDGatewayNode,
+                    instanceDComponentANode, instanceDComponentBNode));
+            Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceAGatewayNode, instanceAComponentANode),
+                    generateEdge(instanceAGatewayNode, instanceAComponentBNode),
+                    generateEdge(instanceAComponentANode, instanceAComponentCNode),
+                    generateEdge(instanceAComponentCNode, instanceBGatewayNode),
+                    generateEdge(instanceAComponentANode, instanceCGatewayNode),
+                    generateEdge(instanceBGatewayNode, instanceBComponentANode),
+                    generateEdge(instanceBComponentANode, instanceBComponentBNode),
+                    generateEdge(instanceCGatewayNode, instanceCComponentANode),
+                    generateEdge(instanceCComponentANode, instanceDGatewayNode),
+                    generateEdge(instanceDGatewayNode, instanceDComponentANode),
+                    generateEdge(instanceDComponentANode, instanceDComponentBNode)));
+        }
+        {
+            Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(startTime, endTime, runtime,
+                    namespace);
             Assert.assertEquals(model.getNodes(), asSet(instanceAGatewayNode, instanceAComponentANode,
                     instanceAComponentBNode, instanceAComponentCNode, instanceBGatewayNode, instanceBComponentANode,
                     instanceBComponentBNode, instanceCGatewayNode, instanceCComponentANode, instanceDGatewayNode,
@@ -287,7 +324,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(startTime, endTime,
-                    instanceAGatewayNode.getNamespace(), instanceAGatewayNode.getInstance());
+                    instanceAGatewayNode.getRuntime(), instanceAGatewayNode.getNamespace(),
+                    instanceAGatewayNode.getInstance());
             Assert.assertEquals(model.getNodes(), asSet(instanceAGatewayNode, instanceAComponentANode,
                     instanceAComponentBNode, instanceAComponentCNode, instanceBGatewayNode,
                     instanceCGatewayNode));
@@ -299,7 +337,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(startTime, endTime,
-                    instanceBGatewayNode.getNamespace(), instanceBGatewayNode.getInstance());
+                    instanceBGatewayNode.getRuntime(), instanceBGatewayNode.getNamespace(),
+                    instanceBGatewayNode.getInstance());
             Assert.assertEquals(model.getNodes(), asSet(instanceBGatewayNode, instanceBComponentANode,
                     instanceBComponentBNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceBGatewayNode, instanceBComponentANode),
@@ -307,7 +346,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(startTime, endTime,
-                    instanceCGatewayNode.getNamespace(), instanceCGatewayNode.getInstance());
+                    instanceCGatewayNode.getRuntime(), instanceCGatewayNode.getNamespace(),
+                    instanceCGatewayNode.getInstance());
             Assert.assertEquals(model.getNodes(), asSet(instanceCGatewayNode, instanceCComponentANode,
                     instanceDGatewayNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceCGatewayNode, instanceCComponentANode),
@@ -315,8 +355,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
-                    instanceAGatewayNode.getNamespace(), instanceAGatewayNode.getInstance(),
-                    instanceAGatewayNode.getComponent());
+                    instanceAGatewayNode.getRuntime(), instanceAGatewayNode.getNamespace(),
+                    instanceAGatewayNode.getInstance(), instanceAGatewayNode.getComponent());
             Assert.assertEquals(model.getNodes(), asSet(instanceAGatewayNode, instanceAComponentANode,
                     instanceAComponentBNode, instanceAComponentCNode, instanceBGatewayNode, instanceCGatewayNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceAGatewayNode, instanceAComponentANode),
@@ -327,8 +367,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
-                    instanceCGatewayNode.getNamespace(), instanceCGatewayNode.getInstance(),
-                    instanceCGatewayNode.getComponent());
+                    instanceCGatewayNode.getRuntime(), instanceCGatewayNode.getNamespace(),
+                    instanceCGatewayNode.getInstance(), instanceCGatewayNode.getComponent());
             Assert.assertEquals(model.getNodes(), asSet(instanceCGatewayNode, instanceCComponentANode,
                     instanceDGatewayNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceCGatewayNode, instanceCComponentANode),
@@ -336,28 +376,30 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
-                    instanceCComponentANode.getNamespace(), instanceCComponentANode.getInstance(),
-                    instanceCComponentANode.getComponent());
+                    instanceCComponentANode.getRuntime(), instanceCComponentANode.getNamespace(),
+                    instanceCComponentANode.getInstance(), instanceCComponentANode.getComponent());
             Assert.assertEquals(model.getNodes(), asSet(instanceCComponentANode, instanceDGatewayNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceCComponentANode, instanceDGatewayNode)));
         }
         {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
-                    instanceDGatewayNode.getNamespace(), instanceDGatewayNode.getInstance(),
-                    instanceDGatewayNode.getComponent());
+                    instanceDGatewayNode.getRuntime(), instanceDGatewayNode.getNamespace(),
+                    instanceDGatewayNode.getInstance(), instanceDGatewayNode.getComponent());
             Assert.assertEquals(model.getNodes(), asSet(instanceDGatewayNode, instanceDComponentANode,
                     instanceDComponentBNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceDGatewayNode, instanceDComponentANode),
                     generateEdge(instanceDComponentANode, instanceDComponentBNode)));
         }
         {
-            Node actualNode = ServiceHolder.getModelManager().getNode(instanceAComponentANode.getNamespace(),
-                    instanceAComponentANode.getInstance(), instanceAComponentANode.getComponent());
+            Node actualNode = ServiceHolder.getModelManager().getNode(instanceAComponentANode.getRuntime(),
+                    instanceAComponentANode.getNamespace(), instanceAComponentANode.getInstance(),
+                    instanceAComponentANode.getComponent());
             Assert.assertEquals(actualNode, instanceAComponentANode);
         }
         {
-            Node actualNode = ServiceHolder.getModelManager().getNode(instanceBComponentANode.getNamespace(),
-                    instanceBComponentANode.getInstance(), instanceBComponentANode.getComponent());
+            Node actualNode = ServiceHolder.getModelManager().getNode(instanceBComponentANode.getRuntime(),
+                    instanceBComponentANode.getNamespace(), instanceBComponentANode.getInstance(),
+                    instanceBComponentANode.getComponent());
             Assert.assertEquals(actualNode, instanceBComponentANode);
         }
     }
@@ -365,23 +407,28 @@ public class ModelGenerationExtensionTestCase {
     @Test
     public void testDisjointMultiInstanceGraph() throws Exception {
         initializeSiddhiAppRuntime();
-        String namespace = "default";
+        String runtime = "test-runtime";
+        String namespace = "test-namespace";
         String instanceA = "disjoint-multi-instance-a";
         String instanceB = "disjoint-multi-instance-b";
         String instanceC = "disjoint-multi-instance-c";
         String instanceD = "disjoint-multi-instance-d";
-        Node instanceAGatewayNode = new Node(namespace, instanceA, "gateway");
-        Node instanceAComponentANode = new Node(namespace, instanceA, "component-a");
-        Node instanceAComponentBNode = new Node(namespace, instanceA, "component-b");
-        Node instanceAComponentCNode = new Node(namespace, instanceA, "component-c");
-        Node instanceBGatewayNode = new Node(namespace, instanceB, "gateway");
-        Node instanceBComponentANode = new Node(namespace, instanceB, "component-a");
-        Node instanceBComponentBNode = new Node(namespace, instanceB, "component-b");
-        Node instanceCGatewayNode = new Node(namespace, instanceC, "gateway");
-        Node instanceCComponentANode = new Node(namespace, instanceC, "component-a");
-        Node instanceDGatewayNode = new Node(namespace, instanceD, "gateway");
-        Node instanceDComponentANode = new Node(namespace, instanceD, "component-a");
-        Node instanceDComponentBNode = new Node(namespace, instanceD, "component-b");
+        String gateway = "gateway";
+        String componentA = "component-a";
+        String componentB = "component-b";
+        String componentC = "component-c";
+        Node instanceAGatewayNode = new Node(runtime, namespace, instanceA, gateway);
+        Node instanceAComponentANode = new Node(runtime, namespace, instanceA, componentA);
+        Node instanceAComponentBNode = new Node(runtime, namespace, instanceA, componentB);
+        Node instanceAComponentCNode = new Node(runtime, namespace, instanceA, componentC);
+        Node instanceBGatewayNode = new Node(runtime, namespace, instanceB, gateway);
+        Node instanceBComponentANode = new Node(runtime, namespace, instanceB, componentA);
+        Node instanceBComponentBNode = new Node(runtime, namespace, instanceB, componentB);
+        Node instanceCGatewayNode = new Node(runtime, namespace, instanceC, gateway);
+        Node instanceCComponentANode = new Node(runtime, namespace, instanceC, componentA);
+        Node instanceDGatewayNode = new Node(runtime, namespace, instanceD, gateway);
+        Node instanceDComponentANode = new Node(runtime, namespace, instanceD, componentA);
+        Node instanceDComponentBNode = new Node(runtime, namespace, instanceD, componentB);
 
         long startTime = System.currentTimeMillis() - 100;
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
@@ -433,7 +480,25 @@ public class ModelGenerationExtensionTestCase {
                     generateEdge(instanceDComponentANode, instanceDComponentBNode)));
         }
         {
-            Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(startTime, endTime, namespace);
+            Model model = ServiceHolder.getModelManager().getRuntimeDependencyMode(startTime, endTime, runtime);
+            Assert.assertEquals(model.getNodes(), asSet(instanceAGatewayNode, instanceAComponentANode,
+                    instanceAComponentBNode, instanceAComponentCNode, instanceBGatewayNode, instanceBComponentANode,
+                    instanceBComponentBNode, instanceCGatewayNode, instanceCComponentANode, instanceDGatewayNode,
+                    instanceDComponentANode, instanceDComponentBNode));
+            Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceAGatewayNode, instanceAComponentANode),
+                    generateEdge(instanceAGatewayNode, instanceAComponentBNode),
+                    generateEdge(instanceAComponentANode, instanceAComponentCNode),
+                    generateEdge(instanceAComponentCNode, instanceBGatewayNode),
+                    generateEdge(instanceBGatewayNode, instanceBComponentANode),
+                    generateEdge(instanceBComponentANode, instanceBComponentBNode),
+                    generateEdge(instanceCGatewayNode, instanceCComponentANode),
+                    generateEdge(instanceCComponentANode, instanceDGatewayNode),
+                    generateEdge(instanceDGatewayNode, instanceDComponentANode),
+                    generateEdge(instanceDComponentANode, instanceDComponentBNode)));
+        }
+        {
+            Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(startTime, endTime, runtime,
+                    namespace);
             Assert.assertEquals(model.getNodes(), asSet(instanceAGatewayNode, instanceAComponentANode,
                     instanceAComponentBNode, instanceAComponentCNode, instanceBGatewayNode, instanceBComponentANode,
                     instanceBComponentBNode, instanceCGatewayNode, instanceCComponentANode, instanceDGatewayNode,
@@ -451,7 +516,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(startTime, endTime,
-                    instanceAGatewayNode.getNamespace(), instanceAGatewayNode.getInstance());
+                    instanceAGatewayNode.getRuntime(), instanceAGatewayNode.getNamespace(),
+                    instanceAGatewayNode.getInstance());
             Assert.assertEquals(model.getNodes(), asSet(instanceAGatewayNode, instanceAComponentANode,
                     instanceAComponentBNode, instanceAComponentCNode, instanceBGatewayNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceAGatewayNode, instanceAComponentANode),
@@ -461,7 +527,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(startTime, endTime,
-                    instanceBGatewayNode.getNamespace(), instanceBGatewayNode.getInstance());
+                    instanceBGatewayNode.getRuntime(), instanceBGatewayNode.getNamespace(),
+                    instanceBGatewayNode.getInstance());
             Assert.assertEquals(model.getNodes(), asSet(instanceBGatewayNode, instanceBComponentANode,
                     instanceBComponentBNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceBGatewayNode, instanceBComponentANode),
@@ -469,7 +536,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(startTime, endTime,
-                    instanceCGatewayNode.getNamespace(), instanceCGatewayNode.getInstance());
+                    instanceCGatewayNode.getRuntime(), instanceCGatewayNode.getNamespace(),
+                    instanceCGatewayNode.getInstance());
             Assert.assertEquals(model.getNodes(), asSet(instanceCGatewayNode, instanceCComponentANode,
                     instanceDGatewayNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceCGatewayNode, instanceCComponentANode),
@@ -477,8 +545,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
-                    instanceAGatewayNode.getNamespace(), instanceAGatewayNode.getInstance(),
-                    instanceAGatewayNode.getComponent());
+                    instanceAGatewayNode.getRuntime(), instanceAGatewayNode.getNamespace(),
+                    instanceAGatewayNode.getInstance(), instanceAGatewayNode.getComponent());
             Assert.assertEquals(model.getNodes(), asSet(instanceAGatewayNode, instanceAComponentANode,
                     instanceAComponentBNode, instanceAComponentCNode, instanceBGatewayNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceAGatewayNode, instanceAComponentANode),
@@ -488,8 +556,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
-                    instanceCGatewayNode.getNamespace(), instanceCGatewayNode.getInstance(),
-                    instanceCGatewayNode.getComponent());
+                    instanceCGatewayNode.getRuntime(), instanceCGatewayNode.getNamespace(),
+                    instanceCGatewayNode.getInstance(), instanceCGatewayNode.getComponent());
             Assert.assertEquals(model.getNodes(), asSet(instanceCGatewayNode, instanceCComponentANode,
                     instanceDGatewayNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceCGatewayNode, instanceCComponentANode),
@@ -497,52 +565,234 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
-                    instanceCComponentANode.getNamespace(), instanceCComponentANode.getInstance(),
-                    instanceCComponentANode.getComponent());
+                    instanceCComponentANode.getRuntime(), instanceCComponentANode.getNamespace(),
+                    instanceCComponentANode.getInstance(), instanceCComponentANode.getComponent());
             Assert.assertEquals(model.getNodes(), asSet(instanceCComponentANode, instanceDGatewayNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceCComponentANode, instanceDGatewayNode)));
         }
         {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
-                    instanceDGatewayNode.getNamespace(), instanceDGatewayNode.getInstance(),
-                    instanceDGatewayNode.getComponent());
+                    instanceDGatewayNode.getRuntime(), instanceDGatewayNode.getNamespace(),
+                    instanceDGatewayNode.getInstance(), instanceDGatewayNode.getComponent());
             Assert.assertEquals(model.getNodes(), asSet(instanceDGatewayNode, instanceDComponentANode,
                     instanceDComponentBNode));
             Assert.assertEquals(model.getEdges(), asSet(generateEdge(instanceDGatewayNode, instanceDComponentANode),
                     generateEdge(instanceDComponentANode, instanceDComponentBNode)));
         }
         {
-            Node actualNode = ServiceHolder.getModelManager().getNode(instanceCComponentANode.getNamespace(),
-                    instanceCComponentANode.getInstance(), instanceCComponentANode.getComponent());
+            Node actualNode = ServiceHolder.getModelManager().getNode(instanceCComponentANode.getRuntime(),
+                    instanceCComponentANode.getNamespace(), instanceCComponentANode.getInstance(),
+                    instanceCComponentANode.getComponent());
             Assert.assertEquals(actualNode, instanceCComponentANode);
+        }
+    }
+
+    @Test
+    public void testRuntimeSeparation() throws Exception {
+        initializeSiddhiAppRuntime();
+        String runtimeA = "test-runtime-a";
+        String runtimeB = "test-runtime-b";
+        String namespaceA = "namespace-a";
+        String namespaceB = "namespace-b";
+        String instanceA = "instance-a";
+        String instanceB = "instance-b";
+        String gateway = "gateway";
+        String componentA = "component-a";
+        String componentB = "component-b";
+        Node runtimeANamespaceAInstanceAGatewayNode = new Node(runtimeA, namespaceA, instanceA, gateway);
+        Node runtimeANamespaceAInstanceAComponentANode = new Node(runtimeA, namespaceA, instanceA, componentA);
+        Node runtimeANamespaceAInstanceBGatewayNode = new Node(runtimeA, namespaceA, instanceB, gateway);
+        Node runtimeANamespaceAInstanceBComponentANode = new Node(runtimeA, namespaceA, instanceB, componentA);
+        Node runtimeANamespaceBInstanceAGatewayNode = new Node(runtimeA, namespaceB, instanceA, gateway);
+        Node runtimeANamespaceBInstanceAComponentANode = new Node(runtimeA, namespaceB, instanceA, componentA);
+        Node runtimeANamespaceBInstanceAComponentBNode = new Node(runtimeA, namespaceB, instanceA, componentB);
+        Node runtimeBNamespaceAInstanceAGatewayNode = new Node(runtimeB, namespaceA, instanceA, gateway);
+        Node runtimeBNamespaceAInstanceAComponentANode = new Node(runtimeB, namespaceA, instanceA, componentA);
+        Node runtimeBNamespaceAInstanceAComponentBNode = new Node(runtimeB, namespaceA, instanceA, componentB);
+
+        long startTime = System.currentTimeMillis() - 100;
+        InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
+        publishEvent(inputHandler, runtimeANamespaceAInstanceAGatewayNode, runtimeANamespaceAInstanceAComponentANode);
+        publishEvent(inputHandler, runtimeANamespaceAInstanceAComponentANode, runtimeANamespaceAInstanceBGatewayNode);
+        publishEvent(inputHandler, runtimeANamespaceAInstanceBGatewayNode, runtimeANamespaceAInstanceBComponentANode);
+        publishEvent(inputHandler, runtimeANamespaceAInstanceBComponentANode, runtimeANamespaceBInstanceAGatewayNode);
+        publishEvent(inputHandler, runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentANode);
+        publishEvent(inputHandler, runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentBNode);
+        publishEvent(inputHandler, runtimeBNamespaceAInstanceAGatewayNode, runtimeBNamespaceAInstanceAComponentANode);
+        publishEvent(inputHandler, runtimeBNamespaceAInstanceAComponentANode,
+                runtimeBNamespaceAInstanceAComponentBNode);
+        long endTime = System.currentTimeMillis() + 100;
+
+        {
+            Set<Node> actualNodes = ServiceHolder.getModelManager().getCurrentNodes();
+            Set<Edge> actualEdges = ServiceHolder.getModelManager().getCurrentEdges();
+            Assert.assertEquals(actualNodes, asSet(runtimeANamespaceAInstanceAGatewayNode,
+                    runtimeANamespaceAInstanceAComponentANode,
+                    runtimeANamespaceAInstanceBGatewayNode, runtimeANamespaceAInstanceBComponentANode,
+                    runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentANode,
+                    runtimeANamespaceBInstanceAComponentBNode, runtimeBNamespaceAInstanceAGatewayNode,
+                    runtimeBNamespaceAInstanceAComponentANode, runtimeBNamespaceAInstanceAComponentBNode));
+            Assert.assertEquals(actualEdges, asSet(
+                    generateEdge(runtimeANamespaceAInstanceAGatewayNode, runtimeANamespaceAInstanceAComponentANode),
+                    generateEdge(runtimeANamespaceAInstanceAComponentANode, runtimeANamespaceAInstanceBGatewayNode),
+                    generateEdge(runtimeANamespaceAInstanceBGatewayNode, runtimeANamespaceAInstanceBComponentANode),
+                    generateEdge(runtimeANamespaceAInstanceBComponentANode, runtimeANamespaceBInstanceAGatewayNode),
+                    generateEdge(runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentANode),
+                    generateEdge(runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentBNode),
+                    generateEdge(runtimeBNamespaceAInstanceAGatewayNode, runtimeBNamespaceAInstanceAComponentANode),
+                    generateEdge(runtimeBNamespaceAInstanceAComponentANode, runtimeBNamespaceAInstanceAComponentBNode))
+            );
+        }
+        {
+            Model model = ServiceHolder.getModelManager().getDependencyModel(startTime, endTime);
+            Assert.assertEquals(model.getNodes(), asSet(runtimeANamespaceAInstanceAGatewayNode,
+                    runtimeANamespaceAInstanceAComponentANode,
+                    runtimeANamespaceAInstanceBGatewayNode, runtimeANamespaceAInstanceBComponentANode,
+                    runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentANode,
+                    runtimeANamespaceBInstanceAComponentBNode, runtimeBNamespaceAInstanceAGatewayNode,
+                    runtimeBNamespaceAInstanceAComponentANode, runtimeBNamespaceAInstanceAComponentBNode));
+            Assert.assertEquals(model.getEdges(), asSet(
+                    generateEdge(runtimeANamespaceAInstanceAGatewayNode, runtimeANamespaceAInstanceAComponentANode),
+                    generateEdge(runtimeANamespaceAInstanceAComponentANode, runtimeANamespaceAInstanceBGatewayNode),
+                    generateEdge(runtimeANamespaceAInstanceBGatewayNode, runtimeANamespaceAInstanceBComponentANode),
+                    generateEdge(runtimeANamespaceAInstanceBComponentANode, runtimeANamespaceBInstanceAGatewayNode),
+                    generateEdge(runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentANode),
+                    generateEdge(runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentBNode),
+                    generateEdge(runtimeBNamespaceAInstanceAGatewayNode, runtimeBNamespaceAInstanceAComponentANode),
+                    generateEdge(runtimeBNamespaceAInstanceAComponentANode, runtimeBNamespaceAInstanceAComponentBNode))
+            );
+        }
+        {
+            Model model = ServiceHolder.getModelManager().getRuntimeDependencyMode(startTime, endTime,
+                    runtimeANamespaceAInstanceAGatewayNode.getRuntime());
+            Assert.assertEquals(model.getNodes(), asSet(runtimeANamespaceAInstanceAGatewayNode,
+                    runtimeANamespaceAInstanceAComponentANode,
+                    runtimeANamespaceAInstanceBGatewayNode, runtimeANamespaceAInstanceBComponentANode,
+                    runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentANode,
+                    runtimeANamespaceBInstanceAComponentBNode));
+            Assert.assertEquals(model.getEdges(), asSet(
+                    generateEdge(runtimeANamespaceAInstanceAGatewayNode, runtimeANamespaceAInstanceAComponentANode),
+                    generateEdge(runtimeANamespaceAInstanceAComponentANode, runtimeANamespaceAInstanceBGatewayNode),
+                    generateEdge(runtimeANamespaceAInstanceBGatewayNode, runtimeANamespaceAInstanceBComponentANode),
+                    generateEdge(runtimeANamespaceAInstanceBComponentANode, runtimeANamespaceBInstanceAGatewayNode),
+                    generateEdge(runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentANode),
+                    generateEdge(runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentBNode)));
+        }
+        {
+            Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(startTime, endTime,
+                    runtimeANamespaceAInstanceAGatewayNode.getRuntime(),
+                    runtimeANamespaceAInstanceAGatewayNode.getNamespace());
+            Assert.assertEquals(model.getNodes(), asSet(runtimeANamespaceAInstanceAGatewayNode,
+                    runtimeANamespaceAInstanceAComponentANode,
+                    runtimeANamespaceAInstanceBGatewayNode, runtimeANamespaceAInstanceBComponentANode,
+                    runtimeANamespaceBInstanceAGatewayNode));
+            Assert.assertEquals(model.getEdges(), asSet(
+                    generateEdge(runtimeANamespaceAInstanceAGatewayNode, runtimeANamespaceAInstanceAComponentANode),
+                    generateEdge(runtimeANamespaceAInstanceAComponentANode, runtimeANamespaceAInstanceBGatewayNode),
+                    generateEdge(runtimeANamespaceAInstanceBGatewayNode, runtimeANamespaceAInstanceBComponentANode),
+                    generateEdge(runtimeANamespaceAInstanceBComponentANode, runtimeANamespaceBInstanceAGatewayNode)));
+        }
+        {
+            Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(startTime, endTime,
+                    runtimeANamespaceBInstanceAGatewayNode.getRuntime(),
+                    runtimeANamespaceBInstanceAGatewayNode.getNamespace());
+            Assert.assertEquals(model.getNodes(), asSet(runtimeANamespaceBInstanceAGatewayNode,
+                    runtimeANamespaceBInstanceAComponentANode, runtimeANamespaceBInstanceAComponentBNode));
+            Assert.assertEquals(model.getEdges(), asSet(
+                    generateEdge(runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentANode),
+                    generateEdge(runtimeANamespaceBInstanceAGatewayNode, runtimeANamespaceBInstanceAComponentBNode)));
+        }
+        {
+            Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(startTime, endTime,
+                    runtimeANamespaceAInstanceAGatewayNode.getRuntime(),
+                    runtimeANamespaceAInstanceAGatewayNode.getNamespace(),
+                    runtimeANamespaceAInstanceAGatewayNode.getInstance());
+            Assert.assertEquals(model.getNodes(), asSet(runtimeANamespaceAInstanceAGatewayNode,
+                    runtimeANamespaceAInstanceAComponentANode, runtimeANamespaceAInstanceBGatewayNode));
+            Assert.assertEquals(model.getEdges(), asSet(
+                    generateEdge(runtimeANamespaceAInstanceAGatewayNode, runtimeANamespaceAInstanceAComponentANode),
+                    generateEdge(runtimeANamespaceAInstanceAComponentANode, runtimeANamespaceAInstanceBGatewayNode)));
+        }
+        {
+            Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(startTime, endTime,
+                    runtimeANamespaceAInstanceBGatewayNode.getRuntime(),
+                    runtimeANamespaceAInstanceBGatewayNode.getNamespace(),
+                    runtimeANamespaceAInstanceBGatewayNode.getInstance());
+            Assert.assertEquals(model.getNodes(), asSet(runtimeANamespaceAInstanceBGatewayNode,
+                    runtimeANamespaceAInstanceBComponentANode, runtimeANamespaceBInstanceAGatewayNode));
+            Assert.assertEquals(model.getEdges(), asSet(
+                    generateEdge(runtimeANamespaceAInstanceBGatewayNode, runtimeANamespaceAInstanceBComponentANode),
+                    generateEdge(runtimeANamespaceAInstanceBComponentANode, runtimeANamespaceBInstanceAGatewayNode)));
+        }
+        {
+            Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
+                    runtimeANamespaceAInstanceAComponentANode.getRuntime(),
+                    runtimeANamespaceAInstanceAComponentANode.getNamespace(),
+                    runtimeANamespaceAInstanceAComponentANode.getInstance(),
+                    runtimeANamespaceAInstanceAComponentANode.getComponent());
+            Assert.assertEquals(model.getNodes(), asSet(runtimeANamespaceAInstanceAComponentANode,
+                    runtimeANamespaceAInstanceBGatewayNode));
+            Assert.assertEquals(model.getEdges(), asSet(
+                    generateEdge(runtimeANamespaceAInstanceAComponentANode, runtimeANamespaceAInstanceBGatewayNode)));
+        }
+        {
+            Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
+                    runtimeANamespaceAInstanceBComponentANode.getRuntime(),
+                    runtimeANamespaceAInstanceBComponentANode.getNamespace(),
+                    runtimeANamespaceAInstanceBComponentANode.getInstance(),
+                    runtimeANamespaceAInstanceBComponentANode.getComponent());
+            Assert.assertEquals(model.getNodes(), asSet(runtimeANamespaceAInstanceBComponentANode,
+                    runtimeANamespaceBInstanceAGatewayNode));
+            Assert.assertEquals(model.getEdges(), asSet(
+                    generateEdge(runtimeANamespaceAInstanceBComponentANode, runtimeANamespaceBInstanceAGatewayNode)));
+        }
+        {
+            Node actualNode = ServiceHolder.getModelManager().getNode(
+                    runtimeANamespaceAInstanceAComponentANode.getRuntime(),
+                    runtimeANamespaceAInstanceAComponentANode.getNamespace(),
+                    runtimeANamespaceAInstanceAComponentANode.getInstance(),
+                    runtimeANamespaceAInstanceAComponentANode.getComponent());
+            Assert.assertEquals(actualNode, runtimeANamespaceAInstanceAComponentANode);
+        }
+        {
+            Node actualNode = ServiceHolder.getModelManager().getNode(
+                    runtimeANamespaceBInstanceAComponentANode.getRuntime(),
+                    runtimeANamespaceBInstanceAComponentANode.getNamespace(),
+                    runtimeANamespaceBInstanceAComponentANode.getInstance(),
+                    runtimeANamespaceBInstanceAComponentANode.getComponent());
+            Assert.assertEquals(actualNode, runtimeANamespaceBInstanceAComponentANode);
         }
     }
 
     @Test
     public void testNamespaceSeparation() throws Exception {
         initializeSiddhiAppRuntime();
+        String runtime = "test-runtime";
         String namespaceA = "namespace-a";
         String namespaceB = "namespace-b";
-        String namespaceAInstanceA = "instance-a";
-        String namespaceAInstanceB = "instance-b";
-        String namespaceBInstanceA = "instance-a";
-        String namespaceBInstanceC = "instance-c";
-        String namespaceBInstanceD = "instance-d";
-        Node namespaceAInstanceAGatewayNode = new Node(namespaceA, namespaceAInstanceA, "gateway");
-        Node namespaceAInstanceAComponentANode = new Node(namespaceA, namespaceAInstanceA, "component-a");
-        Node namespaceAInstanceAComponentBNode = new Node(namespaceA, namespaceAInstanceA, "component-b");
-        Node namespaceAInstanceAComponentCNode = new Node(namespaceA, namespaceAInstanceA, "component-c");
-        Node namespaceAInstanceBGatewayNode = new Node(namespaceA, namespaceAInstanceB, "gateway");
-        Node namespaceAInstanceBComponentANode = new Node(namespaceA, namespaceAInstanceB, "component-a");
-        Node namespaceAInstanceBComponentBNode = new Node(namespaceA, namespaceAInstanceB, "component-b");
-        Node namespaceBInstanceAGatewayNode = new Node(namespaceB, namespaceBInstanceA, "gateway");
-        Node namespaceBInstanceAComponentANode = new Node(namespaceB, namespaceBInstanceA, "component-a");
-        Node namespaceBInstanceCGatewayNode = new Node(namespaceB, namespaceBInstanceC, "gateway");
-        Node namespaceBInstanceCComponentANode = new Node(namespaceB, namespaceBInstanceC, "component-a");
-        Node namespaceBInstanceCComponentBNode = new Node(namespaceB, namespaceBInstanceC, "component-b");
-        Node namespaceBInstanceDGatewayNode = new Node(namespaceB, namespaceBInstanceD, "gateway");
-        Node namespaceBInstanceDComponentANode = new Node(namespaceB, namespaceBInstanceD, "component-a");
-        Node namespaceBInstanceDComponentBNode = new Node(namespaceB, namespaceBInstanceD, "component-b");
+        String instanceA = "instance-a";
+        String instanceB = "instance-b";
+        String instanceC = "instance-c";
+        String instanceD = "instance-d";
+        String gateway = "gateway";
+        String componentA = "component-a";
+        String componentB = "component-b";
+        String componentC = "component-c";
+        Node namespaceAInstanceAGatewayNode = new Node(runtime, namespaceA, instanceA, gateway);
+        Node namespaceAInstanceAComponentANode = new Node(runtime, namespaceA, instanceA, componentA);
+        Node namespaceAInstanceAComponentBNode = new Node(runtime, namespaceA, instanceA, componentB);
+        Node namespaceAInstanceAComponentCNode = new Node(runtime, namespaceA, instanceA, componentC);
+        Node namespaceAInstanceBGatewayNode = new Node(runtime, namespaceA, instanceB, gateway);
+        Node namespaceAInstanceBComponentANode = new Node(runtime, namespaceA, instanceB, componentA);
+        Node namespaceAInstanceBComponentBNode = new Node(runtime, namespaceA, instanceB, componentB);
+        Node namespaceBInstanceAGatewayNode = new Node(runtime, namespaceB, instanceA, gateway);
+        Node namespaceBInstanceAComponentANode = new Node(runtime, namespaceB, instanceA, componentA);
+        Node namespaceBInstanceCGatewayNode = new Node(runtime, namespaceB, instanceC, gateway);
+        Node namespaceBInstanceCComponentANode = new Node(runtime, namespaceB, instanceC, componentA);
+        Node namespaceBInstanceCComponentBNode = new Node(runtime, namespaceB, instanceC, componentB);
+        Node namespaceBInstanceDGatewayNode = new Node(runtime, namespaceB, instanceD, gateway);
+        Node namespaceBInstanceDComponentANode = new Node(runtime, namespaceB, instanceD, componentA);
+        Node namespaceBInstanceDComponentBNode = new Node(runtime, namespaceB, instanceD, componentB);
 
         long startTime = System.currentTimeMillis() - 100;
         InputHandler inputHandler = siddhiAppRuntime.getInputHandler(INPUT_STREAM);
@@ -613,8 +863,33 @@ public class ModelGenerationExtensionTestCase {
                     generateEdge(namespaceBInstanceDComponentANode, namespaceBInstanceDComponentBNode)));
         }
         {
+            Model model = ServiceHolder.getModelManager().getRuntimeDependencyMode(startTime, endTime, runtime);
+            Assert.assertEquals(model.getNodes(), asSet(namespaceAInstanceAGatewayNode,
+                    namespaceAInstanceAComponentANode, namespaceAInstanceAComponentBNode,
+                    namespaceAInstanceAComponentCNode, namespaceAInstanceBGatewayNode,
+                    namespaceAInstanceBComponentANode, namespaceAInstanceBComponentBNode,
+                    namespaceBInstanceAGatewayNode, namespaceBInstanceAComponentANode,
+                    namespaceBInstanceCGatewayNode, namespaceBInstanceCComponentANode,
+                    namespaceBInstanceCComponentBNode, namespaceBInstanceDGatewayNode,
+                    namespaceBInstanceDComponentANode, namespaceBInstanceDComponentBNode));
+            Assert.assertEquals(model.getEdges(), asSet(
+                    generateEdge(namespaceAInstanceAGatewayNode, namespaceAInstanceAComponentANode),
+                    generateEdge(namespaceAInstanceAGatewayNode, namespaceAInstanceAComponentBNode),
+                    generateEdge(namespaceAInstanceAComponentBNode, namespaceAInstanceAComponentCNode),
+                    generateEdge(namespaceAInstanceAComponentANode, namespaceAInstanceBGatewayNode),
+                    generateEdge(namespaceAInstanceBGatewayNode, namespaceAInstanceBComponentANode),
+                    generateEdge(namespaceAInstanceBGatewayNode, namespaceAInstanceBComponentBNode),
+                    generateEdge(namespaceAInstanceBComponentBNode, namespaceBInstanceAGatewayNode),
+                    generateEdge(namespaceBInstanceAGatewayNode, namespaceBInstanceAComponentANode),
+                    generateEdge(namespaceBInstanceCGatewayNode, namespaceBInstanceCComponentANode),
+                    generateEdge(namespaceBInstanceCGatewayNode, namespaceBInstanceCComponentBNode),
+                    generateEdge(namespaceBInstanceCComponentBNode, namespaceBInstanceDGatewayNode),
+                    generateEdge(namespaceBInstanceDGatewayNode, namespaceBInstanceDComponentANode),
+                    generateEdge(namespaceBInstanceDComponentANode, namespaceBInstanceDComponentBNode)));
+        }
+        {
             Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(startTime, endTime,
-                    namespaceAInstanceAGatewayNode.getNamespace());
+                    namespaceAInstanceAGatewayNode.getRuntime(), namespaceAInstanceAGatewayNode.getNamespace());
             Assert.assertEquals(model.getNodes(), asSet(namespaceAInstanceAGatewayNode,
                     namespaceAInstanceAComponentANode, namespaceAInstanceAComponentBNode,
                     namespaceAInstanceAComponentCNode, namespaceAInstanceBGatewayNode,
@@ -631,7 +906,7 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(startTime, endTime,
-                    namespaceBInstanceAGatewayNode.getNamespace());
+                    namespaceBInstanceAGatewayNode.getRuntime(), namespaceBInstanceAGatewayNode.getNamespace());
             Assert.assertEquals(model.getNodes(), asSet(namespaceBInstanceAGatewayNode,
                     namespaceBInstanceAComponentANode, namespaceBInstanceCGatewayNode,
                     namespaceBInstanceCComponentANode, namespaceBInstanceCComponentBNode,
@@ -647,7 +922,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(startTime, endTime,
-                    namespaceAInstanceAGatewayNode.getNamespace(), namespaceAInstanceAGatewayNode.getInstance());
+                    namespaceAInstanceAGatewayNode.getRuntime(), namespaceAInstanceAGatewayNode.getNamespace(),
+                    namespaceAInstanceAGatewayNode.getInstance());
             Assert.assertEquals(model.getNodes(), asSet(namespaceAInstanceAGatewayNode,
                     namespaceAInstanceAComponentANode, namespaceAInstanceAComponentBNode,
                     namespaceAInstanceAComponentCNode, namespaceAInstanceBGatewayNode));
@@ -659,7 +935,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(startTime, endTime,
-                    namespaceAInstanceBGatewayNode.getNamespace(), namespaceAInstanceBGatewayNode.getInstance());
+                    namespaceAInstanceBGatewayNode.getRuntime(), namespaceAInstanceBGatewayNode.getNamespace(),
+                    namespaceAInstanceBGatewayNode.getInstance());
             Assert.assertEquals(model.getNodes(), asSet(namespaceAInstanceBGatewayNode,
                     namespaceAInstanceBComponentANode, namespaceAInstanceBComponentBNode,
                     namespaceBInstanceAGatewayNode));
@@ -670,8 +947,8 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
-                    namespaceAInstanceAComponentBNode.getNamespace(), namespaceAInstanceAComponentBNode.getInstance(),
-                    namespaceAInstanceAComponentBNode.getComponent());
+                    namespaceAInstanceAComponentBNode.getRuntime(), namespaceAInstanceAComponentBNode.getNamespace(),
+                    namespaceAInstanceAComponentBNode.getInstance(), namespaceAInstanceAComponentBNode.getComponent());
             Assert.assertEquals(model.getNodes(), asSet(namespaceAInstanceAComponentBNode,
                     namespaceAInstanceAComponentCNode));
             Assert.assertEquals(model.getEdges(), asSet(
@@ -679,21 +956,23 @@ public class ModelGenerationExtensionTestCase {
         }
         {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(startTime, endTime,
-                    namespaceAInstanceBComponentBNode.getNamespace(), namespaceAInstanceBComponentBNode.getInstance(),
-                    namespaceAInstanceBComponentBNode.getComponent());
+                    namespaceAInstanceBComponentBNode.getRuntime(), namespaceAInstanceBComponentBNode.getNamespace(),
+                    namespaceAInstanceBComponentBNode.getInstance(), namespaceAInstanceBComponentBNode.getComponent());
             Assert.assertEquals(model.getNodes(), asSet(namespaceAInstanceBComponentBNode,
                     namespaceBInstanceAGatewayNode));
             Assert.assertEquals(model.getEdges(), asSet(
                     generateEdge(namespaceAInstanceBComponentBNode, namespaceBInstanceAGatewayNode)));
         }
         {
-            Node actualNode = ServiceHolder.getModelManager().getNode(namespaceAInstanceAComponentANode.getNamespace(),
-                    namespaceAInstanceAComponentANode.getInstance(), namespaceAInstanceAComponentANode.getComponent());
+            Node actualNode = ServiceHolder.getModelManager().getNode(namespaceAInstanceAComponentANode.getRuntime(),
+                    namespaceAInstanceAComponentANode.getNamespace(), namespaceAInstanceAComponentANode.getInstance(),
+                    namespaceAInstanceAComponentANode.getComponent());
             Assert.assertEquals(actualNode, namespaceAInstanceAComponentANode);
         }
         {
-            Node actualNode = ServiceHolder.getModelManager().getNode(namespaceBInstanceAComponentANode.getNamespace(),
-                    namespaceBInstanceAComponentANode.getInstance(), namespaceBInstanceAComponentANode.getComponent());
+            Node actualNode = ServiceHolder.getModelManager().getNode(namespaceBInstanceAComponentANode.getRuntime(),
+                    namespaceBInstanceAComponentANode.getNamespace(), namespaceBInstanceAComponentANode.getInstance(),
+                    namespaceBInstanceAComponentANode.getComponent());
             Assert.assertEquals(actualNode, namespaceBInstanceAComponentANode);
         }
     }
@@ -812,10 +1091,12 @@ public class ModelGenerationExtensionTestCase {
      * @throws Exception If input handler throws an exception
      */
     private void publishEvent(InputHandler inputHandler, Node sourceNode, Node destinationNode) throws Exception {
-        inputHandler.send(new Object[]{sourceNode.getNamespace(), sourceNode.getInstance(),
-                sourceNode.getComponent(), sourceNode.getInstanceKind(),
-                destinationNode.getNamespace(), destinationNode.getInstance(),
-                destinationNode.getComponent(), destinationNode.getInstanceKind()});
+        if (!Objects.equals(sourceNode.getRuntime(), destinationNode.getRuntime())) {
+            throw new Exception("publishing test requests across run-times is not supported");
+        }
+        inputHandler.send(new Object[]{sourceNode.getRuntime(), sourceNode.getNamespace(), sourceNode.getInstance(),
+                sourceNode.getComponent(), sourceNode.getInstanceKind(), destinationNode.getNamespace(),
+                destinationNode.getInstance(), destinationNode.getComponent(), destinationNode.getInstanceKind()});
     }
 
     /**
@@ -838,8 +1119,10 @@ public class ModelGenerationExtensionTestCase {
      */
     private Edge generateEdge(Node sourceNode, Node targetNode) {
         return new Edge(
-                new EdgeNode(sourceNode.getNamespace(), sourceNode.getInstance(), sourceNode.getComponent()),
-                new EdgeNode(targetNode.getNamespace(), targetNode.getInstance(), targetNode.getComponent())
+                new EdgeNode(sourceNode.getRuntime(), sourceNode.getNamespace(), sourceNode.getInstance(),
+                        sourceNode.getComponent()),
+                new EdgeNode(targetNode.getRuntime(), targetNode.getNamespace(), targetNode.getInstance(),
+                        targetNode.getComponent())
         );
     }
 
@@ -847,13 +1130,13 @@ public class ModelGenerationExtensionTestCase {
      * Initialize the Siddhi App Runtime.
      */
     private void initializeSiddhiAppRuntime() {
-        String streamDefinitionAttributes = "sourceNamespace string, sourceInstance string, sourceComponent string, " +
-                "sourceInstanceKind string, destinationNamespace string, destinationInstance string, " +
-                "destinationComponent string, destinationInstanceKind string";
+        String streamDefinitionAttributes = "runtime string, sourceNamespace string, sourceInstance string, " +
+                "sourceComponent string, sourceInstanceKind string, destinationNamespace string, " +
+                "destinationInstance string, destinationComponent string, destinationInstanceKind string";
         String inStreamDefinition = "define stream inputStream(" + streamDefinitionAttributes + ");";
         String outStreamDefinition = "define stream outputStream(" + streamDefinitionAttributes + ");";
         String query = "@info(name = \"query\")\n" +
-                "from inputStream#observe:modelGenerator(sourceNamespace, sourceInstance, sourceComponent, " +
+                "from inputStream#observe:modelGenerator(runtime, sourceNamespace, sourceInstance, sourceComponent, " +
                 "sourceInstanceKind, destinationNamespace, destinationInstance, destinationComponent, " +
                 "destinationInstanceKind)\n" +
                 "select *\n" +

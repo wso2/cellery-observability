@@ -29,25 +29,44 @@ public class EdgeTestCase {
     @Test
     public void testEquality() {
         Edge edgeA = new Edge(
-                new EdgeNode("source-namespace", "source-instance", "source-component"),
-                new EdgeNode("destination-namespace", "destination-instance", "destination-component")
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
         );
         Edge edgeB = new Edge(
-                new EdgeNode("source-namespace", "source-instance", "source-component"),
-                new EdgeNode("destination-namespace", "destination-instance", "destination-component")
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
         );
         Assert.assertEquals(edgeA, edgeB);
     }
 
     @Test
-    public void testInEqualityWithMismatchedSourceNamespace() {
+    public void testInEqualityWithMismatchedSourceRuntime() {
         Edge edgeA = new Edge(
-                new EdgeNode("source-namespace", "source-instance", "source-component"),
-                new EdgeNode("destination-namespace", "destination-instance", "destination-component")
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
         );
         Edge edgeB = new Edge(
-                new EdgeNode("different-namespace", "source-instance", "source-component"),
-                new EdgeNode("destination-namespace", "destination-instance", "destination-component")
+                new EdgeNode("different-runtime", "destination-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
+        );
+        Assert.assertNotEquals(edgeA, edgeB);
+    }
+
+    @Test
+    public void testInEqualityWithMismatchedSourceNamespace() {
+        Edge edgeA = new Edge(
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
+        );
+        Edge edgeB = new Edge(
+                new EdgeNode("source-runtime", "different-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
         );
         Assert.assertNotEquals(edgeA, edgeB);
     }
@@ -55,12 +74,14 @@ public class EdgeTestCase {
     @Test
     public void testInEqualityWithMismatchedSourceInstance() {
         Edge edgeA = new Edge(
-                new EdgeNode("source-namespace", "source-instance", "source-component"),
-                new EdgeNode("destination-namespace", "destination-instance", "destination-component")
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
         );
         Edge edgeB = new Edge(
-                new EdgeNode("source-namespace", "different-instance", "source-component"),
-                new EdgeNode("destination-namespace", "destination-instance", "destination-component")
+                new EdgeNode("source-runtime", "source-namespace", "different-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
         );
         Assert.assertNotEquals(edgeA, edgeB);
     }
@@ -68,12 +89,29 @@ public class EdgeTestCase {
     @Test
     public void testInEqualityWithMismatchedSourceComponent() {
         Edge edgeA = new Edge(
-                new EdgeNode("source-namespace", "source-instance", "source-component"),
-                new EdgeNode("destination-namespace", "destination-instance", "destination-component")
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
         );
         Edge edgeB = new Edge(
-                new EdgeNode("source-namespace", "source-instance", "different-component"),
-                new EdgeNode("destination-namespace", "destination-instance", "destination-component")
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "different-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
+        );
+        Assert.assertNotEquals(edgeA, edgeB);
+    }
+
+    @Test
+    public void testInEqualityWithMismatchedDestinationRuntime() {
+        Edge edgeA = new Edge(
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
+        );
+        Edge edgeB = new Edge(
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("different-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
         );
         Assert.assertNotEquals(edgeA, edgeB);
     }
@@ -81,12 +119,14 @@ public class EdgeTestCase {
     @Test
     public void testInEqualityWithMismatchedDestinationNamespace() {
         Edge edgeA = new Edge(
-                new EdgeNode("source-namespace", "source-instance", "source-component"),
-                new EdgeNode("destination-namespace", "destination-instance", "destination-component")
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
         );
         Edge edgeB = new Edge(
-                new EdgeNode("source-namespace", "source-instance", "source-component"),
-                new EdgeNode("different-namespace", "destination-instance", "destination-component")
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "different-namespace", "destination-instance",
+                        "destination-component")
         );
         Assert.assertNotEquals(edgeA, edgeB);
     }
@@ -94,12 +134,14 @@ public class EdgeTestCase {
     @Test
     public void testInEqualityWithMismatchedDestinationInstance() {
         Edge edgeA = new Edge(
-                new EdgeNode("source-namespace", "source-instance", "source-component"),
-                new EdgeNode("destination-namespace", "destination-instance", "destination-component")
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
         );
         Edge edgeB = new Edge(
-                new EdgeNode("source-namespace", "source-instance", "source-component"),
-                new EdgeNode("destination-namespace", "different-instance", "destination-component")
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "different-instance",
+                        "destination-component")
         );
         Assert.assertNotEquals(edgeA, edgeB);
     }
@@ -107,12 +149,14 @@ public class EdgeTestCase {
     @Test
     public void testInEqualityWithMismatchedDestinationComponent() {
         Edge edgeA = new Edge(
-                new EdgeNode("source-namespace", "source-instance", "source-component"),
-                new EdgeNode("destination-namespace", "destination-instance", "destination-component")
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "destination-component")
         );
         Edge edgeB = new Edge(
-                new EdgeNode("source-namespace", "source-instance", "source-component"),
-                new EdgeNode("destination-namespace", "destination-instance", "different-component")
+                new EdgeNode("source-runtime", "source-namespace", "source-instance", "source-component"),
+                new EdgeNode("destination-runtime", "destination-namespace", "destination-instance",
+                        "different-component")
         );
         Assert.assertNotEquals(edgeA, edgeB);
     }

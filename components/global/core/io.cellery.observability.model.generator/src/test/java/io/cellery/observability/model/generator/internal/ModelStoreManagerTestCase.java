@@ -58,11 +58,11 @@ public class ModelStoreManagerTestCase {
 
     @Test
     public void testInitialization() throws Exception {
-        Node nodeA = new Node("namespace-a", "instance-a", "component-a");
+        Node nodeA = new Node("runtime-a", "namespace-a", "instance-a", "component-a");
         nodeA.setInstanceKind("Cell");
-        Node nodeB = new Node("namespace-a", "instance-b", "component-a");
+        Node nodeB = new Node("runtime-a", "namespace-a", "instance-b", "component-a");
         nodeB.setInstanceKind("Composite");
-        Node nodeC = new Node("namespace-a", "instance-c", "component-a");
+        Node nodeC = new Node("runtime-a", "namespace-a", "instance-c", "component-a");
         nodeC.setInstanceKind("Cell");
 
         Edge edgeA = new Edge(nodeA, nodeB);
@@ -165,11 +165,11 @@ public class ModelStoreManagerTestCase {
             Assert.assertNotNull(Whitebox.getInternalState(modelStoreManager, "dataSource"));
         }
         {
-            Node nodeA = new Node("namespace-a", "instance-a", "component-a");
+            Node nodeA = new Node("runtime-a", "namespace-a", "instance-a", "component-a");
             nodeA.setInstanceKind("Cell");
-            Node nodeB = new Node("namespace-a", "instance-b", "component-a");
+            Node nodeB = new Node("runtime-a", "namespace-a", "instance-b", "component-a");
             nodeB.setInstanceKind("Composite");
-            Node nodeC = new Node("namespace-a", "instance-c", "component-a");
+            Node nodeC = new Node("runtime-a", "namespace-a", "instance-c", "component-a");
             nodeC.setInstanceKind("Cell");
 
             Edge edgeA = new Edge(nodeA, nodeB);
@@ -222,11 +222,11 @@ public class ModelStoreManagerTestCase {
             Assert.assertNotNull(Whitebox.getInternalState(modelStoreManager, "dataSource"));
         }
         {
-            Node nodeA = new Node("namespace-a", "instance-a", "component-a");
+            Node nodeA = new Node("runtime-a", "namespace-a", "instance-a", "component-a");
             nodeA.setInstanceKind("Cell");
-            Node nodeB = new Node("namespace-a", "instance-b", "component-a");
+            Node nodeB = new Node("runtime-a", "namespace-a", "instance-b", "component-a");
             nodeB.setInstanceKind("Composite");
-            Node nodeC = new Node("namespace-a", "instance-c", "component-a");
+            Node nodeC = new Node("runtime-a", "namespace-a", "instance-c", "component-a");
             nodeC.setInstanceKind("Cell");
 
             Edge edgeA = new Edge(nodeA, nodeB);
@@ -294,11 +294,11 @@ public class ModelStoreManagerTestCase {
             Assert.assertNotNull(Whitebox.getInternalState(modelStoreManager, "dataSource"));
         }
         {
-            Node nodeA = new Node("namespace-a", "instance-a", "component-a");
+            Node nodeA = new Node("runtime-a", "namespace-a", "instance-a", "component-a");
             nodeA.setInstanceKind("Cell");
-            Node nodeB = new Node("namespace-a", "instance-b", "component-a");
+            Node nodeB = new Node("runtime-a", "namespace-a", "instance-b", "component-a");
             nodeB.setInstanceKind("Composite");
-            Node nodeC = new Node("namespace-a", "instance-c", "component-a");
+            Node nodeC = new Node("runtime-a", "namespace-a", "instance-c", "component-a");
             nodeC.setInstanceKind("Cell");
 
             Edge edgeA = new Edge(nodeA, nodeB);
@@ -361,11 +361,11 @@ public class ModelStoreManagerTestCase {
         }
         {
             {
-                Node nodeA = new Node("namespace-a", "instance-a", "component-a");
+                Node nodeA = new Node("runtime-a", "namespace-a", "instance-a", "component-a");
                 nodeA.setInstanceKind("Cell");
-                Node nodeB = new Node("namespace-a", "instance-b", "component-a");
+                Node nodeB = new Node("runtime-a", "namespace-a", "instance-b", "component-a");
                 nodeB.setInstanceKind("Composite");
-                Node nodeC = new Node("namespace-a", "instance-c", "component-a");
+                Node nodeC = new Node("runtime-a", "namespace-a", "instance-c", "component-a");
                 nodeC.setInstanceKind("Cell");
 
                 Edge edgeA = new Edge(nodeA, nodeB);
@@ -377,9 +377,9 @@ public class ModelStoreManagerTestCase {
                 Mockito.doReturn(lastModel).when(modelStoreManager).loadLastModel();
             }
             {
-                Node nodeA = new Node("namespace-a", "instance-a", "component-a");
+                Node nodeA = new Node("runtime-a", "namespace-a", "instance-a", "component-a");
                 nodeA.setInstanceKind("Cell");
-                Node nodeB = new Node("namespace-a", "instance-b", "component-a");
+                Node nodeB = new Node("runtime-a", "namespace-a", "instance-b", "component-a");
                 nodeB.setInstanceKind("Composite");
 
                 Edge edgeA = new Edge(nodeA, nodeB);
@@ -412,9 +412,9 @@ public class ModelStoreManagerTestCase {
         }
         {
             {
-                Node nodeA = new Node("namespace-a", "instance-a", "component-a");
+                Node nodeA = new Node("runtime-a", "namespace-a", "instance-a", "component-a");
                 nodeA.setInstanceKind("Cell");
-                Node nodeB = new Node("namespace-a", "instance-b", "component-a");
+                Node nodeB = new Node("runtime-a", "namespace-a", "instance-b", "component-a");
                 nodeB.setInstanceKind("Composite");
 
                 Edge edgeA = new Edge(nodeA, nodeB);
@@ -425,9 +425,9 @@ public class ModelStoreManagerTestCase {
                 Mockito.doReturn(lastModel).when(modelStoreManager).loadLastModel();
             }
             {
-                Node nodeA = new Node("namespace-a", "instance-a", "component-a");
+                Node nodeA = new Node("runtime-a", "namespace-a", "instance-a", "component-a");
                 nodeA.setInstanceKind("Cell");
-                Node nodeB = new Node("namespace-a", "instance-b", "component-a");
+                Node nodeB = new Node("runtime-a", "namespace-a", "instance-b", "component-a");
                 nodeB.setInstanceKind("Composite");
 
                 Edge edgeA = new Edge(nodeA, nodeB);
@@ -462,9 +462,9 @@ public class ModelStoreManagerTestCase {
             modelStoreManager = Mockito.spy(modelStoreManager);
             Mockito.doReturn(null).when(modelStoreManager).loadLastModel();
             {
-                Node nodeA = new Node("namespace-a", "instance-a", "component-a");
+                Node nodeA = new Node("runtime-a", "namespace-a", "instance-a", "component-a");
                 nodeA.setInstanceKind("Cell");
-                Node nodeB = new Node("namespace-a", "instance-b", "component-a");
+                Node nodeB = new Node("runtime-a", "namespace-a", "instance-b", "component-a");
                 nodeB.setInstanceKind("Composite");
 
                 Edge edgeA = new Edge(nodeA, nodeB);
@@ -488,11 +488,11 @@ public class ModelStoreManagerTestCase {
     public void testClear() throws Exception {
         ModelStoreManager modelStoreManager;
         {
-            Node nodeA = new Node("namespace-a", "instance-a", "component-a");
+            Node nodeA = new Node("runtime-a", "namespace-a", "instance-a", "component-a");
             nodeA.setInstanceKind("Cell");
-            Node nodeB = new Node("namespace-a", "instance-b", "component-a");
+            Node nodeB = new Node("runtime-a", "namespace-a", "instance-b", "component-a");
             nodeB.setInstanceKind("Composite");
-            Node nodeC = new Node("namespace-a", "instance-c", "component-a");
+            Node nodeC = new Node("runtime-a", "namespace-a", "instance-c", "component-a");
             nodeC.setInstanceKind("Cell");
 
             Edge edgeA = new Edge(nodeA, nodeB);

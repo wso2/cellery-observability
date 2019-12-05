@@ -58,6 +58,7 @@ public class ModelGenerationExtension extends StreamProcessor {
 
     private static final Logger log = Logger.getLogger(ModelGenerationExtension.class);
 
+    private ExpressionExecutor runtimeExecutor;
     private ExpressionExecutor sourceNamespaceExecutor;
     private ExpressionExecutor sourceInstanceExecutor;
     private ExpressionExecutor sourceComponentExecutor;
@@ -73,6 +74,7 @@ public class ModelGenerationExtension extends StreamProcessor {
         while (streamEventChunk.hasNext()) {
             try {
                 StreamEvent incomingStreamEvent = streamEventChunk.next();
+                String runtime = (String) runtimeExecutor.execute(incomingStreamEvent);
                 String sourceNamespace = (String) sourceNamespaceExecutor.execute(incomingStreamEvent);
                 String sourceInstance = (String) sourceInstanceExecutor.execute(incomingStreamEvent);
                 String sourceComponent = (String) sourceComponentExecutor.execute(incomingStreamEvent);
@@ -82,9 +84,9 @@ public class ModelGenerationExtension extends StreamProcessor {
                 String destinationComponent = (String) destinationComponentExecutor.execute(incomingStreamEvent);
                 String destinationInstanceKind = (String) destinationInstanceKindExecutor.execute(incomingStreamEvent);
 
-                Node sourceNode = this.getOrGenerateNode(sourceNamespace, sourceInstance, sourceComponent,
+                Node sourceNode = this.getOrGenerateNode(runtime, sourceNamespace, sourceInstance, sourceComponent,
                         sourceInstanceKind);
-                Node destinationNode = this.getOrGenerateNode(destinationNamespace, destinationInstance,
+                Node destinationNode = this.getOrGenerateNode(runtime, destinationNamespace, destinationInstance,
                         destinationComponent, destinationInstanceKind);
                 ServiceHolder.getModelManager().addEdge(sourceNode, destinationNode);
             } catch (Throwable throwable) {
@@ -102,8 +104,9 @@ public class ModelGenerationExtension extends StreamProcessor {
         }
     }
 
-    private Node getOrGenerateNode(String namespace, String instance, String component, String instanceKind) {
-        Node node = ServiceHolder.getModelManager().getOrGenerateNode(namespace, instance, component);
+    private Node getOrGenerateNode(String runtime, String namespace, String instance, String component,
+                                   String instanceKind) {
+        Node node = ServiceHolder.getModelManager().getOrGenerateNode(runtime, namespace, instance, component);
         node.setInstanceKind(instanceKind);
         return node;
     }
@@ -111,71 +114,79 @@ public class ModelGenerationExtension extends StreamProcessor {
     @Override
     protected List<Attribute> init(AbstractDefinition abstractDefinition, ExpressionExecutor[] expressionExecutors,
                                    ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
-        if (expressionExecutors.length != 8) {
+        if (expressionExecutors.length != 9) {
             throw new SiddhiAppCreationException("Eight arguments are required");
         } else {
             if (expressionExecutors[0].getReturnType() == Attribute.Type.STRING) {
-                sourceNamespaceExecutor = expressionExecutors[0];
+                runtimeExecutor = expressionExecutors[0];
             } else {
-                throw new SiddhiAppCreationException("Expected a field with String return type for the source "
-                        + "namespace field, but found a field with return type - "
+                throw new SiddhiAppCreationException("Expected a field with String return type for the runtime "
+                        + "field, but found a field with return type - "
                         + expressionExecutors[0].getReturnType());
             }
 
             if (expressionExecutors[1].getReturnType() == Attribute.Type.STRING) {
-                sourceInstanceExecutor = expressionExecutors[1];
+                sourceNamespaceExecutor = expressionExecutors[1];
             } else {
                 throw new SiddhiAppCreationException("Expected a field with String return type for the source "
-                        + "instance field, but found a field with return type - "
+                        + "namespace field, but found a field with return type - "
                         + expressionExecutors[1].getReturnType());
             }
 
             if (expressionExecutors[2].getReturnType() == Attribute.Type.STRING) {
-                sourceComponentExecutor = expressionExecutors[2];
+                sourceInstanceExecutor = expressionExecutors[2];
             } else {
                 throw new SiddhiAppCreationException("Expected a field with String return type for the source "
-                        + "component field, but found a field with return type - "
+                        + "instance field, but found a field with return type - "
                         + expressionExecutors[2].getReturnType());
             }
 
             if (expressionExecutors[3].getReturnType() == Attribute.Type.STRING) {
-                sourceInstanceKindExecutor = expressionExecutors[3];
+                sourceComponentExecutor = expressionExecutors[3];
             } else {
-                throw new SiddhiAppCreationException("Expected a field with Long return type for the source "
-                        + "instance kind field, but found a field with return type - "
+                throw new SiddhiAppCreationException("Expected a field with String return type for the source "
+                        + "component field, but found a field with return type - "
                         + expressionExecutors[3].getReturnType());
             }
 
             if (expressionExecutors[4].getReturnType() == Attribute.Type.STRING) {
-                destinationNamespaceExecutor = expressionExecutors[4];
+                sourceInstanceKindExecutor = expressionExecutors[4];
             } else {
-                throw new SiddhiAppCreationException("Expected a field with Long return type for the destination "
-                        + "namespace field, but found a field with return type - "
+                throw new SiddhiAppCreationException("Expected a field with Long return type for the source "
+                        + "instance kind field, but found a field with return type - "
                         + expressionExecutors[4].getReturnType());
             }
 
             if (expressionExecutors[5].getReturnType() == Attribute.Type.STRING) {
-                destinationInstanceExecutor = expressionExecutors[5];
+                destinationNamespaceExecutor = expressionExecutors[5];
             } else {
-                throw new SiddhiAppCreationException("Expected a field with String return type for the destination "
-                        + "instance field, but found a field with return type - "
+                throw new SiddhiAppCreationException("Expected a field with Long return type for the destination "
+                        + "namespace field, but found a field with return type - "
                         + expressionExecutors[5].getReturnType());
             }
 
             if (expressionExecutors[6].getReturnType() == Attribute.Type.STRING) {
-                destinationComponentExecutor = expressionExecutors[6];
+                destinationInstanceExecutor = expressionExecutors[6];
             } else {
                 throw new SiddhiAppCreationException("Expected a field with String return type for the destination "
-                        + "component field, but found a field with return type - "
+                        + "instance field, but found a field with return type - "
                         + expressionExecutors[6].getReturnType());
             }
 
             if (expressionExecutors[7].getReturnType() == Attribute.Type.STRING) {
-                destinationInstanceKindExecutor = expressionExecutors[7];
+                destinationComponentExecutor = expressionExecutors[7];
+            } else {
+                throw new SiddhiAppCreationException("Expected a field with String return type for the destination "
+                        + "component field, but found a field with return type - "
+                        + expressionExecutors[7].getReturnType());
+            }
+
+            if (expressionExecutors[8].getReturnType() == Attribute.Type.STRING) {
+                destinationInstanceKindExecutor = expressionExecutors[8];
             } else {
                 throw new SiddhiAppCreationException("Expected a field with String return type for the destination "
                         + "instance kind field, but found a field with return type - "
-                        + expressionExecutors[7].getReturnType());
+                        + expressionExecutors[8].getReturnType());
             }
         }
         return new ArrayList<>(0);
