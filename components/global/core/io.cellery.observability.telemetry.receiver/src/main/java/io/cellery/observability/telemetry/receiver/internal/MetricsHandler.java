@@ -18,6 +18,12 @@
 
 package io.cellery.observability.telemetry.receiver.internal;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.commons.io.IOUtils;
@@ -28,6 +34,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -37,6 +45,13 @@ public class MetricsHandler implements HttpHandler {
 
     private static final Logger log = Logger.getLogger(MetricsHandler.class);
     private SourceEventListener sourceEventListener;
+    private final Gson gson = new Gson();
+    private final JsonParser jsonParser = new JsonParser();
+
+    private static final String TELEMETRY_ENTRY_RUNTIME_KEY = "runtime";
+    private static final String TELEMETRY_ENTRY_DATA_KEY = "data";
+
+    private static final String RUNTIME_ATTRIBUTE = "runtime";
 
     public MetricsHandler(SourceEventListener sourceEventListener) {
         this.sourceEventListener = sourceEventListener;
@@ -45,18 +60,71 @@ public class MetricsHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
         if (httpExchange.getRequestBody() != null) {
+            String runtime = null;
             try (GZIPInputStream gis = new GZIPInputStream(httpExchange.getRequestBody());
                     BufferedReader bf = new BufferedReader(new InputStreamReader(gis, StandardCharsets.UTF_8))) {
-                    String json = IOUtils.toString(bf);
-                    if (log.isDebugEnabled()) {
-                        log.debug("Received metrics from the adapter : " + json);
+                String json = IOUtils.toString(bf);
+                if (log.isDebugEnabled()) {
+                    log.debug("Received metrics from the adapter : " + json);
+                }
+
+                JsonObject receivedTelemetryJsonObject = jsonParser.parse(json).getAsJsonObject();
+                runtime = receivedTelemetryJsonObject.getAsJsonPrimitive(TELEMETRY_ENTRY_RUNTIME_KEY)
+                        .getAsString();
+                JsonArray data = receivedTelemetryJsonObject.getAsJsonArray(TELEMETRY_ENTRY_DATA_KEY);
+
+                for (JsonElement datum : data) {
+                    JsonObject telemetryEntry = datum.getAsJsonObject();
+                    Map<String, Object> attributes = new HashMap<>();
+                    for (String key : telemetryEntry.keySet()) {
+                        attributes.put(key, this.getValue(telemetryEntry.get(key)));
                     }
-                    sourceEventListener.onEvent(json, new String[0]);
-                    httpExchange.sendResponseHeaders(200, -1);
+                    attributes.put(RUNTIME_ATTRIBUTE, runtime); // Runtime should be set last to avoid security issues
+                    log.info(attributes);
+                    sourceEventListener.onEvent(attributes, new String[0]);
+                }
+                httpExchange.sendResponseHeaders(200, -1);
+            } catch (Throwable t) {
+                log.warn("Failed to process received data"
+                        + (runtime == null ? "" : " from runtime " + runtime), t);
+                httpExchange.sendResponseHeaders(500, -1);
             }
         } else {
+            log.warn("Ignoring received request with empty data");
             httpExchange.sendResponseHeaders(500, -1);
         }
         httpExchange.close();
+    }
+
+    /**
+     * Get the actual java object for the Json Element.
+     *
+     * @param jsonElement The json element of which the value should be extracted
+     * @return The extracted value object of the json primitive
+     */
+    private Object getValue(JsonElement jsonElement) {
+        Object value;
+        if (jsonElement.isJsonPrimitive()) {
+            JsonPrimitive jsonPrimitive = jsonElement.getAsJsonPrimitive();
+            if (jsonPrimitive.isString()) {
+                value = jsonPrimitive.getAsString();
+            } else if (jsonPrimitive.isBoolean()) {
+                value = jsonPrimitive.getAsBoolean();
+            } else if (jsonPrimitive.isNumber()) {
+                double doubleValue = jsonPrimitive.getAsDouble();
+                if (doubleValue % 1 == 0) {
+                    value = (long) doubleValue;
+                } else {
+                    value = doubleValue;
+                }
+            } else {
+                value = jsonPrimitive.getAsString();
+            }
+        } else if (jsonElement.isJsonNull()) {
+            value = null;
+        } else {
+            value = gson.toJson(jsonElement);
+        }
+        return value;
     }
 }
