@@ -20,24 +20,25 @@
 @App:description("Cellery Telemetry app for processing and storing http requests")
 
 @source(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
-define stream TelemetryStreamIn(requestId string, traceId string, spanId string, parentSpanId string, sourceNamespace string,
-                                sourceInstance string, sourceInstanceKind string, sourceComponent string,
-                                sourcePod string, destinationNamespace string, destinationInstance string,
-                                destinationInstanceKind string, destinationComponent string, destinationPod string,
-                                contextReporterKind string, requestPath string, requestMethod string,
-                                requestSizeBytes long, responseCode long, responseDurationNanoSec long,
-                                responseSizeBytes long);
+define stream TelemetryStreamIn(runtime string, requestId string, traceId string, spanId string, parentSpanId string,
+                                sourceNamespace string, sourceInstance string, sourceInstanceKind string,
+                                sourceComponent string, sourcePod string, destinationNamespace string,
+                                destinationInstance string, destinationInstanceKind string, destinationComponent string,
+                                destinationPod string, contextReporterKind string, requestPath string,
+                                requestMethod string, requestSizeBytes long, responseCode long,
+                                responseDurationNanoSec long, responseSizeBytes long);
 
-define stream ProcessedRequestsStream(sourceNamespace string, sourceInstance string, sourceInstanceKind string,
-                                      sourceComponent string, destinationNamespace string, destinationInstance string,
-                                      destinationInstanceKind string, destinationComponent string,
-                                      httpResponseGroup string, responseTimeMilliSec double, requestSizeBytes long,
-                                      responseSizeBytes long);
+define stream ProcessedRequestsStream(runtime string, sourceNamespace string, sourceInstance string,
+                                      sourceInstanceKind string, sourceComponent string, destinationNamespace string,
+                                      destinationInstance string, destinationInstanceKind string,
+                                      destinationComponent string, httpResponseGroup string,
+                                      responseTimeMilliSec double, requestSizeBytes long, responseSizeBytes long);
 
-@store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB", field.length="sourceNamespace: 253, sourceInstance:253, sourceInstanceKind:9, sourceComponent:253, destinationNamespace:253, destinationInstance:253, destinationInstanceKind:9, destinationComponent: 253, httpResponseGroup:3")
+@store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB", field.length="runtime: 253, sourceNamespace: 253, sourceInstance:253, sourceInstanceKind:9, sourceComponent:253, destinationNamespace:253, destinationInstance:253, destinationInstanceKind:9, destinationComponent: 253, httpResponseGroup:3")
 @purge(enable="false")
 define aggregation RequestAggregation from ProcessedRequestsStream
 select
+    runtime,
     sourceNamespace,
     sourceInstance,
     sourceInstanceKind,
@@ -52,11 +53,13 @@ select
     sum(responseSizeBytes) as totalResponseSizeBytes,
     count() as requestCount
 group by
-    sourceNamespace, sourceInstance, sourceComponent, destinationNamespace, destinationInstance, destinationComponent, httpResponseGroup
+    runtime, sourceNamespace, sourceInstance, sourceComponent, destinationNamespace, destinationInstance,
+    destinationComponent, httpResponseGroup
 aggregate every sec...year;
 
 from TelemetryStreamIn
 select
+    runtime,
     traceId,
     spanId,
     parentSpanId,
@@ -75,13 +78,15 @@ select
 insert into PreProcessedRequestsStream;
 
 -- Removing duplications of the metrics.
-from PreProcessedRequestsStream#telemetry:deduplicate(60 sec, traceId, spanId, parentSpanId, sourceNamespace, sourceInstance,
-                    sourceComponent, destinationNamespace, destinationInstance, destinationComponent, requestSizeBytes,
-                    responseDurationNanoSec, responseSizeBytes)
-insert expired events into SanitizedTelemetryStream;
+from PreProcessedRequestsStream#telemetry:deduplicate(60 sec, runtime, traceId, spanId, parentSpanId, sourceNamespace,
+                                                      sourceInstance, sourceComponent, destinationNamespace,
+                                                      destinationInstance, destinationComponent, requestSizeBytes,
+                                                      responseDurationNanoSec, responseSizeBytes)
+insert expired events into DeDuplicatedTelemetryStream;
 
-from SanitizedTelemetryStream
+from DeDuplicatedTelemetryStream
 select
+    runtime,
     sourceNamespace,
     sourceInstance,
     sourceInstanceKind,
@@ -94,12 +99,8 @@ select
     convert(maxResponseDuration, "double") / 1000000 as responseTimeMilliSec,
     maxRequestSize as requestSizeBytes,
     maxResponseSize as responseSizeBytes
-insert into ProcessedTelemetryStream;
-
-from ProcessedTelemetryStream[(not httpResponseGroup is null) and (not responseTimeMilliSec is null)
-                             and (not requestSizeBytes is null) and (not responseSizeBytes is null)]
 insert into ProcessedRequestsStream;
 
-from ProcessedTelemetryStream#observe:modelGenerator(sourceNamespace, sourceInstance, sourceComponent,
+from ProcessedRequestsStream#observe:modelGenerator(runtime, sourceNamespace, sourceInstance, sourceComponent,
     sourceInstanceKind, destinationNamespace, destinationInstance, destinationComponent, destinationInstanceKind)
 insert into DummyStream;

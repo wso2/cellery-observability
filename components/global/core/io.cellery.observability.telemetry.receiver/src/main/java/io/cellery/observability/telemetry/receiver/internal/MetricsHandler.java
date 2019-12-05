@@ -80,7 +80,6 @@ public class MetricsHandler implements HttpHandler {
                         attributes.put(key, this.getValue(telemetryEntry.get(key)));
                     }
                     attributes.put(RUNTIME_ATTRIBUTE, runtime); // Runtime should be set last to avoid security issues
-                    log.info(attributes);
                     sourceEventListener.onEvent(attributes, new String[0]);
                 }
                 httpExchange.sendResponseHeaders(200, -1);

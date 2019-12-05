@@ -45,6 +45,7 @@ import javax.ws.rs.core.Response;
  */
 @Path("/api/traces")
 public class DistributedTracingAPI {
+    private static final JsonParser jsonParser = new JsonParser();
 
     @GET
     @Path("/metadata")
@@ -93,7 +94,7 @@ public class DistributedTracingAPI {
 
                 // Parsing the provided JSON encoded tags
                 try {
-                    JsonElement jsonElement = new JsonParser().parse(jsonEncodedTags);
+                    JsonElement jsonElement = jsonParser.parse(jsonEncodedTags);
                     if (jsonElement.isJsonObject()) {
                         JsonObject queryTagsJsonObject = jsonElement.getAsJsonObject();
                         for (Map.Entry<String, JsonElement> queryTagsJsonObjectEntry : queryTagsJsonObject.entrySet()) {
@@ -150,7 +151,7 @@ public class DistributedTracingAPI {
                         } else {
                             // To consider a traceId a single matching span is enough
                             boolean isMatch = false;
-                            JsonElement parsedJsonElement = new JsonParser().parse((String) traceIdResult[1]);
+                            JsonElement parsedJsonElement = jsonParser.parse((String) traceIdResult[1]);
                             if (parsedJsonElement.isJsonObject()) {
                                 JsonObject traceTags = parsedJsonElement.getAsJsonObject();
                                 for (Map.Entry<String, String> queryTagEntry : queryTags.entrySet()) {
