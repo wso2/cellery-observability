@@ -23,28 +23,19 @@ import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.core.config.SiddhiAppContext;
 import org.wso2.siddhi.core.event.ComplexEventChunk;
-import org.wso2.siddhi.core.event.state.StateEvent;
 import org.wso2.siddhi.core.event.stream.StreamEvent;
 import org.wso2.siddhi.core.event.stream.StreamEventCloner;
 import org.wso2.siddhi.core.event.stream.populater.ComplexEventPopulater;
 import org.wso2.siddhi.core.executor.ConstantExpressionExecutor;
 import org.wso2.siddhi.core.executor.ExpressionExecutor;
-import org.wso2.siddhi.core.executor.VariableExpressionExecutor;
 import org.wso2.siddhi.core.query.processor.Processor;
 import org.wso2.siddhi.core.query.processor.SchedulingProcessor;
 import org.wso2.siddhi.core.query.processor.stream.StreamProcessor;
-import org.wso2.siddhi.core.query.processor.stream.window.FindableProcessor;
-import org.wso2.siddhi.core.table.Table;
 import org.wso2.siddhi.core.util.Scheduler;
-import org.wso2.siddhi.core.util.collection.operator.CompiledCondition;
-import org.wso2.siddhi.core.util.collection.operator.MatchingMetaInfoHolder;
-import org.wso2.siddhi.core.util.collection.operator.Operator;
 import org.wso2.siddhi.core.util.config.ConfigReader;
-import org.wso2.siddhi.core.util.parser.OperatorParser;
 import org.wso2.siddhi.query.api.definition.AbstractDefinition;
 import org.wso2.siddhi.query.api.definition.Attribute;
 import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
-import org.wso2.siddhi.query.api.expression.Expression;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,7 +46,6 @@ import java.util.Objects;
 /**
  * The class representing deduplication stream processor implementation.
  */
-
 @Extension(
         name = "deduplicate",
         namespace = "telemetry",
@@ -71,21 +61,19 @@ import java.util.Objects;
                         syntax = "from TelemetryStream#telemetry:deduplicate(60 sec, requestId, traceId, spanId, "
                                 + "parentSpanId, sourceNamespace, sourceInstance, sourceComponent, "
                                 + "destinationNamespace, destinationInstance, destinationComponent, requestSizeBytes, "
-                                + "responseDurationNanoSec, responseSizeBytes)"
+                                + "responseDuration, responseSizeBytes)"
                                 + "insert into ProcessedTelemetryStream;",
                         description = "This window will hold every event from Telemetry stream for 60 seconds and "
                                 + "remove duplicate events received within the time interval."
                 )
         }
 )
-
-public class DeduplicationWindowExtension extends StreamProcessor implements SchedulingProcessor, FindableProcessor {
-
-    private long timeInMilliSeconds;
+public class DeduplicationStreamProcessor extends StreamProcessor implements SchedulingProcessor {
+    private long windowTimeMilliSeconds;
     private ComplexEventChunk<StreamEvent> expiredEventChunk;
     private Scheduler scheduler;
     private SiddhiAppContext siddhiAppContext;
-    private volatile long lastTimestamp = Long.MIN_VALUE;
+    private volatile long lastTimestamp = 0;
 
     private ExpressionExecutor traceIdExecutor;
     private ExpressionExecutor spanIdExecutor;
@@ -96,63 +84,58 @@ public class DeduplicationWindowExtension extends StreamProcessor implements Sch
     private ExpressionExecutor destinationNamespaceExecutor;
     private ExpressionExecutor destinationInstanceExecutor;
     private ExpressionExecutor destinationComponentExecutor;
-    private ExpressionExecutor requestSizeBytesExecutor;
-    private ExpressionExecutor responseDurationNanoSecExecutor;
-    private ExpressionExecutor responseSizeBytesExecutor;
+    private ExpressionExecutor requestSizeExecutor;
+    private ExpressionExecutor responseDurationExecutor;
+    private ExpressionExecutor responseSizeExecutor;
 
-    @Override protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
+    @Override
+    protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
             StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater) {
-        ComplexEventChunk<StreamEvent> nextProcessorEventChunk = new ComplexEventChunk<>(false);
-            synchronized (this) {
-                while (streamEventChunk.hasNext()) {
-                    StreamEvent streamEvent = streamEventChunk.next();
-                    long currentTime = siddhiAppContext.getTimestampGenerator().currentTime();
-                    StreamEvent clonedEvent = null;
+        synchronized (this) {
+            while (streamEventChunk.hasNext()) {
+                StreamEvent streamEvent = streamEventChunk.next();
+                long currentTime = siddhiAppContext.getTimestampGenerator().currentTime();
+                StreamEvent clonedEvent = null;
+                if (streamEvent.getType() == StreamEvent.Type.CURRENT) {
+                    clonedEvent = streamEventCloner.copyStreamEvent(streamEvent);
+                    clonedEvent.setType(StreamEvent.Type.EXPIRED);
+                }
+                expiredEventChunk.reset();
+                boolean isDuplicationEventFound = false;
+                while (expiredEventChunk.hasNext()) {
+                    StreamEvent expiredEvent = expiredEventChunk.next();
+                    long timeDiff = expiredEvent.getTimestamp() + windowTimeMilliSeconds - currentTime;
                     if (streamEvent.getType() == StreamEvent.Type.CURRENT) {
-                        clonedEvent = streamEventCloner.copyStreamEvent(streamEvent);
-                        clonedEvent.setType(StreamEvent.Type.EXPIRED);
-                    }
-                    expiredEventChunk.reset();
-                    boolean isDuplicationEventFound = false;
-                    while (expiredEventChunk.hasNext()) {
-                        StreamEvent expiredEvent = expiredEventChunk.next();
-                        long timeDiff = expiredEvent.getTimestamp() + timeInMilliSeconds - currentTime;
-                        if (timeDiff <= 0 || clonedEvent != null) {
-                            if (clonedEvent != null) {
-                                if (checkForDuplications(expiredEvent, clonedEvent)) {
-                                    isDuplicationEventFound = true;
-                                    this.expiredEventChunk.remove();
-                                    nextProcessorEventChunk.add(mergeEvents(expiredEvent, clonedEvent));
-                                }
-                            } else {
-                                expiredEventChunk.remove();
-                                expiredEvent.setType(StreamEvent.Type.CURRENT);
-                                nextProcessorEventChunk.add(expiredEvent);
-                                expiredEventChunk.reset();
-                            }
-                        } else {
-                            break;
+                        if (isDuplicate(expiredEvent, clonedEvent)) {
+                            isDuplicationEventFound = true;
+                            this.expiredEventChunk.remove();
+                            clonedEvent.setTimestamp(currentTime);
+                            streamEventChunk.insertBeforeCurrent(mergeEvents(expiredEvent, clonedEvent));
                         }
-                    }
-                    if (!isDuplicationEventFound) {
-                        this.expiredEventChunk.add(clonedEvent);
-                        if (lastTimestamp > Objects.requireNonNull(clonedEvent).getTimestamp()) {
-                            if (scheduler != null) {
-                                scheduler.notifyAt(clonedEvent.getTimestamp() + timeInMilliSeconds);
-                                lastTimestamp = clonedEvent.getTimestamp();
-                            }
-                        }
-                    }
-                    expiredEventChunk.reset();
-                    if (streamEvent.getType() != StreamEvent.Type.CURRENT) {
-                        streamEventChunk.remove();
+                    } else if (timeDiff <= 0) {
+                        expiredEventChunk.remove();
+                        expiredEvent.setTimestamp(currentTime);
+                        streamEventChunk.insertBeforeCurrent(mergeEvents(null, expiredEvent));
+                    } else {
+                        break;
                     }
                 }
+                if (!isDuplicationEventFound && streamEvent.getType() == StreamEvent.Type.CURRENT) {
+                    this.expiredEventChunk.add(clonedEvent);
+                    if (lastTimestamp < clonedEvent.getTimestamp()) {
+                        if (scheduler != null) {
+                            scheduler.notifyAt(clonedEvent.getTimestamp() + windowTimeMilliSeconds);
+                            lastTimestamp = clonedEvent.getTimestamp();
+                        }
+                    }
+                }
+                expiredEventChunk.reset();
             }
-            nextProcessor.process(nextProcessorEventChunk);
+        }
+        nextProcessor.process(streamEventChunk);
     }
 
-    private boolean checkForDuplications(StreamEvent oldEvent, StreamEvent currentEvent) {
+    private boolean isDuplicate(StreamEvent oldEvent, StreamEvent currentEvent) {
         String oldEventTraceId = (String) traceIdExecutor.execute(oldEvent);
         String oldEventSpanId = (String) spanIdExecutor.execute(oldEvent);
         String oldEventParentSpanId = (String) parentSpanIdExecutor.execute(oldEvent);
@@ -173,41 +156,41 @@ public class DeduplicationWindowExtension extends StreamProcessor implements Sch
         String currentEventDestinationInstance = (String) destinationInstanceExecutor.execute(currentEvent);
         String currentEventDestinationComponent = (String) destinationComponentExecutor.execute(currentEvent);
 
-        return currentEventSourceNamespace.equals(oldEventSourceNamespace)
-                && currentEventSourceInstance.equals(oldEventSourceInstance)
-                && currentEventSourceComponent.equals(oldEventSourceComponent)
-                && currentEventDestinationNamespace.equals(oldEventDestinationNamespace)
-                && currentEventDestinationInstance.equals(oldEventDestinationInstance)
-                && currentEventDestinationComponent.equals(oldEventDestinationComponent)
-                && oldEventTraceId.equals(currentEventTraceId)
-                && (oldEventSpanId.equals(currentEventParentSpanId) || oldEventParentSpanId.equals(currentEventSpanId));
+        return Objects.equals(currentEventSourceNamespace, oldEventSourceNamespace)
+                && Objects.equals(currentEventSourceInstance, oldEventSourceInstance)
+                && Objects.equals(currentEventSourceComponent, oldEventSourceComponent)
+                && Objects.equals(currentEventDestinationNamespace, oldEventDestinationNamespace)
+                && Objects.equals(currentEventDestinationInstance, oldEventDestinationInstance)
+                && Objects.equals(currentEventDestinationComponent, oldEventDestinationComponent)
+                && Objects.equals(currentEventTraceId, oldEventTraceId)
+                && (Objects.equals(currentEventParentSpanId, oldEventSpanId)
+                || Objects.equals(currentEventSpanId, oldEventParentSpanId));
     }
 
-    private StreamEvent mergeEvents(StreamEvent oldEvent,
-            StreamEvent currentEvent) {
-        Long currentEventRequestSizeBytes = (Long) requestSizeBytesExecutor.execute(currentEvent);
-        Long currentEventResponseDurationNanoSec = (Long) responseDurationNanoSecExecutor.execute(currentEvent);
-        Long currentEventResponseSizeBytes = (Long) responseSizeBytesExecutor.execute(currentEvent);
-        Long oldEventRequestSizeBytes = (Long) requestSizeBytesExecutor.execute(oldEvent);
-        Long oldEventResponseDurationNanoSec = (Long) responseDurationNanoSecExecutor.execute(oldEvent);
-        Long oldEventResponseSizeBytes = (Long) responseSizeBytesExecutor.execute(oldEvent);
+    private StreamEvent mergeEvents(StreamEvent oldEvent, StreamEvent currentEvent) {
+        Long maxRequestSizeBytes = (Long) requestSizeExecutor.execute(currentEvent);
+        Long maxResponseDuration = (Long) responseDurationExecutor.execute(currentEvent);
+        Long maxResponseSizeBytes = (Long) responseSizeExecutor.execute(currentEvent);
 
-        Long maxRequestSizeBytes = Long.max(oldEventRequestSizeBytes, currentEventRequestSizeBytes);
-        Long maxResponseDurationNanoSec = Long.max(oldEventResponseDurationNanoSec,
-                currentEventResponseDurationNanoSec);
-        Long maxResponseSizeBytes = Long.max(oldEventResponseSizeBytes, currentEventResponseSizeBytes);
+        if (oldEvent != null) {
+            Long oldEventRequestSizeBytes = (Long) requestSizeExecutor.execute(oldEvent);
+            Long oldEventResponseDuration = (Long) responseDurationExecutor.execute(oldEvent);
+            Long oldEventResponseSizeBytes = (Long) responseSizeExecutor.execute(oldEvent);
+            maxRequestSizeBytes = Long.max(oldEventRequestSizeBytes, maxRequestSizeBytes);
+            maxResponseDuration = Long.max(oldEventResponseDuration, maxResponseDuration);
+            maxResponseSizeBytes = Long.max(oldEventResponseSizeBytes, maxResponseSizeBytes);
+        }
 
-        StreamEvent mergedEvent = new StreamEvent(0, 0,
-                 Constants.OUTPUT_DATA_SIZE);
-        Object[] currentOutputs = currentEvent.getOutputData();
-        currentOutputs[Constants.REQUEST_SIZE_BYTES_INDEX] = maxRequestSizeBytes;
-        currentOutputs[Constants.RESPONSE_DURATION_NANO_SEC_INDEX] = maxResponseDurationNanoSec;
-        currentOutputs[Constants.RESPONSE_SIZE_BYTES_INDEX] = maxResponseSizeBytes;
-        mergedEvent.setOutputData(currentOutputs);
-        return mergedEvent;
+        Object[] newData = new Object[3];
+        newData[0] = maxRequestSizeBytes;
+        newData[1] = maxResponseDuration;
+        newData[2] = maxResponseSizeBytes;
+        complexEventPopulater.populateComplexEvent(currentEvent, newData);
+        return currentEvent;
     }
 
-    @Override protected List<Attribute> init(AbstractDefinition inputDefinition,
+    @Override
+    protected List<Attribute> init(AbstractDefinition inputDefinition,
             ExpressionExecutor[] attributeExpressionExecutors, ConfigReader configReader,
             SiddhiAppContext siddhiAppContext) {
         this.siddhiAppContext = siddhiAppContext;
@@ -220,13 +203,13 @@ public class DeduplicationWindowExtension extends StreamProcessor implements Sch
                     instanceof ConstantExpressionExecutor) {
                 if (attributeExpressionExecutors[Constants.TIME_INTERVAL_EXECUTOR_INDEX].getReturnType()
                         == Attribute.Type.INT) {
-                    timeInMilliSeconds = (Integer) ((ConstantExpressionExecutor)
+                    windowTimeMilliSeconds = (Integer) ((ConstantExpressionExecutor)
                             attributeExpressionExecutors[Constants.TIME_INTERVAL_EXECUTOR_INDEX])
                             .getValue();
 
                 } else if (attributeExpressionExecutors[Constants.TIME_INTERVAL_EXECUTOR_INDEX].getReturnType()
                         == Attribute.Type.LONG) {
-                    timeInMilliSeconds = (Long) ((ConstantExpressionExecutor)
+                    windowTimeMilliSeconds = (Long) ((ConstantExpressionExecutor)
                             attributeExpressionExecutors[Constants.TIME_INTERVAL_EXECUTOR_INDEX])
                             .getValue();
                 } else {
@@ -326,77 +309,71 @@ public class DeduplicationWindowExtension extends StreamProcessor implements Sch
                         + attributeExpressionExecutors[Constants.DESTINATION_COMPONENT_EXECUTOR_INDEX].getReturnType());
             }
 
-            if (attributeExpressionExecutors[Constants.REQUEST_SIZE_BYTES_EXECUTOR_INDEX].getReturnType()
+            if (attributeExpressionExecutors[Constants.REQUEST_SIZE_EXECUTOR_INDEX].getReturnType()
                     == Attribute.Type.LONG) {
-                requestSizeBytesExecutor = attributeExpressionExecutors[Constants.REQUEST_SIZE_BYTES_EXECUTOR_INDEX];
+                requestSizeExecutor = attributeExpressionExecutors[Constants.REQUEST_SIZE_EXECUTOR_INDEX];
             } else {
                 throw new SiddhiAppValidationException("Expected a field with long return type for the " +
                         "requestSizeBytes field, but found a field with return type - "
-                        + attributeExpressionExecutors[Constants.REQUEST_SIZE_BYTES_EXECUTOR_INDEX].getReturnType());
+                        + attributeExpressionExecutors[Constants.REQUEST_SIZE_EXECUTOR_INDEX].getReturnType());
             }
 
-            if (attributeExpressionExecutors[Constants.RESPONSE_DURATION_NANO_SEC_EXECUTOR_INDEX].getReturnType()
+            if (attributeExpressionExecutors[Constants.RESPONSE_DURATION_EXECUTOR_INDEX].getReturnType()
                     == Attribute.Type.LONG) {
-                responseDurationNanoSecExecutor
-                        = attributeExpressionExecutors[Constants.RESPONSE_DURATION_NANO_SEC_EXECUTOR_INDEX];
+                responseDurationExecutor
+                        = attributeExpressionExecutors[Constants.RESPONSE_DURATION_EXECUTOR_INDEX];
             } else {
                 throw new SiddhiAppValidationException("Expected a field with long return type for the " +
-                        "responseDurationNanoSec field, but found a field with return type - "
-                        + attributeExpressionExecutors[Constants.RESPONSE_DURATION_NANO_SEC_EXECUTOR_INDEX]
+                        "responseDuration field, but found a field with return type - "
+                        + attributeExpressionExecutors[Constants.RESPONSE_DURATION_EXECUTOR_INDEX]
                         .getReturnType());
             }
 
-            if (attributeExpressionExecutors[Constants.RESPONSE_SIZE_BYTES_EXECUTOR_INDEX].getReturnType()
+            if (attributeExpressionExecutors[Constants.RESPONSE_SIZE_EXECUTOR_INDEX].getReturnType()
                     == Attribute.Type.LONG) {
-                responseSizeBytesExecutor = attributeExpressionExecutors[Constants.RESPONSE_SIZE_BYTES_EXECUTOR_INDEX];
+                responseSizeExecutor = attributeExpressionExecutors[Constants.RESPONSE_SIZE_EXECUTOR_INDEX];
             } else {
                 throw new SiddhiAppValidationException("Expected a field with long return type for the " +
                         "responseSizeBytes field, but found a field with return type - "
-                        + attributeExpressionExecutors[Constants.RESPONSE_SIZE_BYTES_EXECUTOR_INDEX].getReturnType());
+                        + attributeExpressionExecutors[Constants.RESPONSE_SIZE_EXECUTOR_INDEX].getReturnType());
             }
         }
-        return new ArrayList<>();
+        List<Attribute> appendedAttributes = new ArrayList<>(3);
+        appendedAttributes.add(new Attribute(Constants.MAX_REQUEST_SIZE, Attribute.Type.LONG));
+        appendedAttributes.add(new Attribute(Constants.MAX_RESPONSE_DURATION, Attribute.Type.LONG));
+        appendedAttributes.add(new Attribute(Constants.MAX_RESPONSE_SIZE, Attribute.Type.LONG));
+        return appendedAttributes;
     }
 
-    @Override public synchronized Scheduler getScheduler() {
+    @Override
+    public synchronized Scheduler getScheduler() {
         return scheduler;
     }
 
-    @Override public synchronized void setScheduler(Scheduler scheduler) {
+    @Override
+    public synchronized void setScheduler(Scheduler scheduler) {
         this.scheduler = scheduler;
     }
 
-    @Override public synchronized StreamEvent find(StateEvent matchingEvent, CompiledCondition compiledCondition) {
-        if (compiledCondition instanceof Operator) {
-            return ((Operator) compiledCondition).find(matchingEvent, expiredEventChunk, streamEventCloner);
-        } else {
-            return null;
-        }
-    }
-
-    @Override public CompiledCondition compileCondition(Expression expression,
-            MatchingMetaInfoHolder matchingMetaInfoHolder, SiddhiAppContext siddhiAppContext,
-            List<VariableExpressionExecutor> variableExpressionExecutors, Map<String, Table> tableMap,
-            String queryName) {
-        return OperatorParser.constructOperator(expiredEventChunk, expression, matchingMetaInfoHolder, siddhiAppContext,
-                variableExpressionExecutors, tableMap, this.queryName);
-    }
-
-    @Override public void start() {
+    @Override
+    public void start() {
         //Do nothing
     }
 
-    @Override public void stop() {
+    @Override
+    public void stop() {
         //Do nothing
     }
 
-    @Override public Map<String, Object> currentState() {
+    @Override
+    public Map<String, Object> currentState() {
         Map<String, Object> state = new HashMap<>();
         state.put("expiredEventchunck", expiredEventChunk.getFirst());
         return state;
     }
 
-    @Override public void restoreState(Map<String, Object> map) {
+    @Override
+    public void restoreState(Map<String, Object> map) {
         expiredEventChunk.clear();
         expiredEventChunk.add((StreamEvent) map.get("expiredEventchunck"));
     }
