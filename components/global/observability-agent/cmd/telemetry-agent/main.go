@@ -135,6 +135,7 @@ func main() {
 		SpServerUrl: configuration.SpEndpoint.URL,
 		HttpClient:  &http.Client{},
 		Persister:   ps,
+		RuntimeId:   configuration.Advanced.RuntimeId,
 	}
 	go func() {
 		waitGroup.Add(1)

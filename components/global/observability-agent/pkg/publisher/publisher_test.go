@@ -39,6 +39,7 @@ var (
 		"\"responseDurationNanoSec\":\"695653\", \"responseTotalSize\":\"199\", \"sourceUID\":\"kubernetes://pet-be--" +
 		"controller-deployment-6f6f5768dc-n9jf7.default\", \"spanID\":\"ae295f3a4bbbe537\", \"traceID\":" +
 		"\"b55a0f7f20d36e49f8612bac4311791d\"}"
+	testRuntimeId  = "test-runtime"
 	metricsCounter int
 )
 
@@ -111,7 +112,7 @@ func TestFetchWithMockPersister(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error when decoding gzip : %v", err)
 		}
-		expectedStr := fmt.Sprintf("[%s]", testStr)
+		expectedStr := fmt.Sprintf("{\"runtime\":\"%s\",\"data\":[%s]}", testRuntimeId, testStr)
 		if buf.String() != expectedStr {
 			t.Errorf("Expected error has not been received, expected : %s, received : %s", expectedStr, buf.String())
 		}
@@ -127,6 +128,7 @@ func TestFetchWithMockPersister(t *testing.T) {
 		SpServerUrl: "http://example.com",
 		HttpClient:  client,
 		Persister:   &MockPersister{},
+		RuntimeId:   testRuntimeId,
 	}
 	err = publisher.execute()
 	if err != nil {
@@ -165,6 +167,7 @@ func TestFetchWithMockPersisterError(t *testing.T) {
 		SpServerUrl: "http://example.com",
 		HttpClient:  client,
 		Persister:   &MockPersisterError{},
+		RuntimeId:   testRuntimeId,
 	}
 	err = publisher.execute()
 	expectedErr := "failed to fetch the metrics : test error 1"
@@ -196,6 +199,7 @@ func TestFetchWithErrorFromServer(t *testing.T) {
 		SpServerUrl: "http://example.com",
 		HttpClient:  client,
 		Persister:   &MockPersister{},
+		RuntimeId:   testRuntimeId,
 	}
 	err = publisher.execute()
 	expectedErr := "failed to publish the metrics : received a bad response code from the server, received response code : 500"

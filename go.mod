@@ -22,7 +22,7 @@ require (
 	github.com/gorilla/mux v1.7.3
 	github.com/grpc-ecosystem/grpc-gateway v1.12.1 // indirect
 	github.com/jaegertracing/jaeger v0.0.0-00010101000000-000000000000
-	github.com/rs/cors v1.7.0
+	github.com/rs/cors v1.7.0 // indirect
 	github.com/rs/xid v1.2.1
 	github.com/uber/tchannel-go v1.16.0 // indirect
 	go.uber.org/zap v1.13.0
