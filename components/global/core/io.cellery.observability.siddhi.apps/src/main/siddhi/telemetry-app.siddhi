@@ -55,17 +55,32 @@ group by
     sourceNamespace, sourceInstance, sourceComponent, destinationNamespace, destinationInstance, destinationComponent, httpResponseGroup
 aggregate every sec...year;
 
+from TelemetryStreamIn
+select
+    traceId,
+    spanId,
+    parentSpanId,
+    sourceNamespace,
+    sourceInstance,
+    sourceInstanceKind,
+    sourceComponent,
+    destinationNamespace,
+    destinationInstance,
+    destinationInstanceKind,
+    destinationComponent,
+    responseCode,
+    responseDurationNanoSec,
+    ifThenElse(requestSizeBytes is null, 0L, requestSizeBytes) as requestSizeBytes,
+    ifThenElse(responseSizeBytes is null, 0L, responseSizeBytes) as responseSizeBytes
+insert into PreProcessedRequestsStream;
+
 -- Removing duplications of the metrics.
-from TelemetryStreamIn#telemetry:deduplicate(60 sec, traceId, spanId, parentSpanId, sourceNamespace, sourceInstance,
+from PreProcessedRequestsStream#telemetry:deduplicate(60 sec, traceId, spanId, parentSpanId, sourceNamespace, sourceInstance,
                     sourceComponent, destinationNamespace, destinationInstance, destinationComponent, requestSizeBytes,
                     responseDurationNanoSec, responseSizeBytes)
-insert into DeduplicatedTelemetryStream;
+insert expired events into SanitizedTelemetryStream;
 
---
--- Storing the data received from Istio Telemetry
---
-
-from DeduplicatedTelemetryStream
+from SanitizedTelemetryStream
 select
     sourceNamespace,
     sourceInstance,
@@ -75,10 +90,10 @@ select
     destinationInstance,
     destinationInstanceKind,
     destinationComponent,
-    str:concat(convert(cast(responseCode, "int") / 100, "string"), "xx") as httpResponseGroup,
-    convert(responseDurationNanoSec, "double") / 1000000 as responseTimeMilliSec,
-    ifThenElse(requestSizeBytes is null, 0L, requestSizeBytes) as requestSizeBytes,
-    ifThenElse(responseSizeBytes is null, 0L, responseSizeBytes) as responseSizeBytes
+    str:concat(convert(cast(responseCode, "long") / 100, "string"), "xx") as httpResponseGroup,
+    convert(maxResponseDuration, "double") / 1000000 as responseTimeMilliSec,
+    maxRequestSize as requestSizeBytes,
+    maxResponseSize as responseSizeBytes
 insert into ProcessedTelemetryStream;
 
 from ProcessedTelemetryStream[(not httpResponseGroup is null) and (not responseTimeMilliSec is null)
