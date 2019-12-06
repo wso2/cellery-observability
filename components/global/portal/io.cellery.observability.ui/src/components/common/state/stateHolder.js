@@ -209,7 +209,7 @@ class StateHolder {
                 self.set(StateHolder.CONFIG, configData);
                 HttpUtils.callObservabilityAPI(
                     {
-                        url: "/auth/run-times/namespaces",
+                        url: "/users/run-times/namespaces",
                         method: "GET"
                     },
                     self

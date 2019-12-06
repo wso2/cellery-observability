@@ -27,7 +27,6 @@ import org.apache.oltu.oauth2.client.request.OAuthClientRequest;
 import org.apache.oltu.oauth2.client.response.OAuthAccessTokenResponse;
 import org.apache.oltu.oauth2.common.message.types.GrantType;
 import org.json.JSONObject;
-import org.wso2.msf4j.Request;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +35,6 @@ import javax.ws.rs.OPTIONS;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
@@ -46,25 +44,7 @@ import javax.ws.rs.core.Response;
  * All endpoints in this API are unauthenticated
  */
 @Path("/api/auth")
-public class UserAuthenticationAPI {
-
-    @GET
-    @Path("/run-times/namespaces")
-    @Produces("application/json")
-    public Response getAuthorizedRunTimeNamespaces(@Context Request request) throws APIInvocationException {
-        try {
-            Object accessToken = request.getProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN);
-            if (accessToken instanceof String) {
-                Map<String, String[]> availableRunTimeNamespaces
-                        = ServiceHolder.getAuthProvider().getAuthorizedRuntimeNamespaces((String) accessToken);
-                return Response.ok().entity(availableRunTimeNamespaces).build();
-            } else {
-                return Response.status(401).build();
-            }
-        } catch (Throwable e) {
-            throw new APIInvocationException("Error while fetching authorized run-times", e);
-        }
-    }
+public class AuthenticationAPI {
 
     @GET
     @Path("/tokens/{authCode}")

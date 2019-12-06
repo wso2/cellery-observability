@@ -86,7 +86,7 @@ class UnStyledStateProvider extends React.Component {
         const content = (
             isConfigAvailable
                 ? children
-                : <NotFound title={"Failed to Load Cellery Observability Portal Configuration"}/>
+                : <NotFound title={"Failed to initialize Observability Portal Configuration"}/>
         );
         return (
             <StateContext.Provider value={this.stateHolder}>

@@ -198,7 +198,7 @@ public class BaseAPITestCase {
                 .addExceptionMapper(new APIInvocationException.Mapper(), new InvalidParamException.Mapper())
                 .deploy(
                         new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
-                        new KubernetesAPI(), new UserAuthenticationAPI(), new InstanceAPI()
+                        new KubernetesAPI(), new InstanceAPI(), new AuthenticationAPI(), new UsersAPI()
                 )
         );
         ServiceHolder.getMicroservicesRunner().start();
