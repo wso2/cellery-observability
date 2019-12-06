@@ -28,7 +28,7 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.datasource.core.api.DataSourceService;
 
 /**
- * This class acts as a ServiceComponent which specifies the services that is required by the component.
+ * This class acts as a Service Component which specifies the services that is required by the component.
  */
 @Component(
         service = ModelServiceComponent.class,
