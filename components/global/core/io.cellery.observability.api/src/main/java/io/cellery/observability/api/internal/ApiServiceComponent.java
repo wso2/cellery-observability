@@ -18,11 +18,12 @@
 package io.cellery.observability.api.internal;
 
 import io.cellery.observability.api.AggregatedRequestsAPI;
+import io.cellery.observability.api.AuthenticationAPI;
 import io.cellery.observability.api.DependencyModelAPI;
 import io.cellery.observability.api.DistributedTracingAPI;
 import io.cellery.observability.api.InstanceAPI;
 import io.cellery.observability.api.KubernetesAPI;
-import io.cellery.observability.api.UserAuthenticationAPI;
+import io.cellery.observability.api.UsersAPI;
 import io.cellery.observability.api.Utils;
 import io.cellery.observability.api.auth.OIDCOauthManager;
 import io.cellery.observability.api.exception.APIInvocationException;
@@ -89,7 +90,7 @@ public class ApiServiceComponent {
                     )
                     .deploy(
                             new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
-                            new KubernetesAPI(), new UserAuthenticationAPI(), new InstanceAPI()
+                            new KubernetesAPI(), new InstanceAPI(), new AuthenticationAPI(), new UsersAPI()
                     )
             );
             ServiceHolder.getMicroservicesRunner().start();
