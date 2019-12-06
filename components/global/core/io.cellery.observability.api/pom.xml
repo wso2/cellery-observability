@@ -41,6 +41,10 @@
             <artifactId>io.cellery.observability.model.generator</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.cellery.observability</groupId>
+            <artifactId>io.cellery.observability.auth</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>

@@ -25,6 +25,7 @@ import moment from "moment";
 class StateHolder {
 
     static USER = "user";
+    static AUTHORIZED_RUN_TIME_NAMESPACES = "authorizedRunTimeNamespaces";
     static LOADING_STATE = "loadingState";
     static NOTIFICATION_STATE = "notificationState";
     static CONFIG = "config";
@@ -68,6 +69,7 @@ class StateHolder {
          */
         const rawState = {
             [StateHolder.USER]: AuthUtils.getAuthenticatedUser(),
+            [StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES]: {},
             [StateHolder.LOADING_STATE]: {
                 loadingOverlayCount: 0,
                 message: null
@@ -79,6 +81,8 @@ class StateHolder {
             },
             [StateHolder.CONFIG]: {},
             [StateHolder.GLOBAL_FILTER]: {
+                runtime: "",
+                namespace: "",
                 startTime: filterStartTime ? filterStartTime : "now - 24 hours",
                 endTime: filterEndTime ? filterEndTime : "now",
                 dateRangeNickname: filterStartTime || filterEndTime ? null : "Last 24 hours",
@@ -195,15 +199,44 @@ class StateHolder {
      *
      * @returns {Promise<Object>} Promise which resolves when the state is loaded or rejects
      */
-    loadConfig = () => {
+    init = () => {
         const self = this;
         return new Promise((resolve, reject) => {
             HttpUtils.callAPI({
                 url: "/config",
                 method: "GET"
-            }).then((data) => {
-                self.set(StateHolder.CONFIG, data);
-                resolve(data);
+            }).then((configData) => {
+                self.set(StateHolder.CONFIG, configData);
+                HttpUtils.callObservabilityAPI(
+                    {
+                        url: "/auth/run-times/namespaces",
+                        method: "GET"
+                    },
+                    self
+                ).then((runtimeData) => {
+                    self.set(StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES, runtimeData);
+
+                    let selectedRuntime;
+                    if (runtimeData.hasOwnProperty(Constants.Runtime.LOCAL_RUNTIME_ID)) {
+                        selectedRuntime = Constants.Runtime.LOCAL_RUNTIME_ID;
+                    } else {
+                        selectedRuntime = Object.keys(runtimeData)[0];
+                    }
+                    let selectedNamespace;
+                    if (runtimeData[selectedRuntime].includes(Constants.Runtime.DEFAULT_NAMESPACE)) {
+                        selectedNamespace = Constants.Runtime.DEFAULT_NAMESPACE;
+                    } else {
+                        selectedNamespace = runtimeData[selectedRuntime][0];
+                    }
+                    self.set(StateHolder.GLOBAL_FILTER, {
+                        ...self.get(StateHolder.GLOBAL_FILTER),
+                        runtime: selectedRuntime,
+                        namespace: selectedNamespace
+                    });
+                    resolve();
+                }).catch((error) => {
+                    reject(error);
+                });
             }).catch((error) => {
                 reject(error);
             });

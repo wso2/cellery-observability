@@ -57,7 +57,7 @@ class UnStyledStateProvider extends React.Component {
     componentDidMount = () => {
         const self = this;
         self.mounted = true;
-        self.stateHolder.loadConfig()
+        self.stateHolder.init()
             .then(() => {
                 if (self.mounted) {
                     self.setState({
