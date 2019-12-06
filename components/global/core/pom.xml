@@ -37,6 +37,7 @@
         <module>io.cellery.observability.k8s.client</module>
         <module>io.cellery.observability.model.generator</module>
         <module>io.cellery.observability.api</module>
+        <module>io.cellery.observability.auth</module>
         <module>io.cellery.observability.siddhi.apps</module>
         <module>io.cellery.observability.telemetry.deduplicator</module>
     </modules>

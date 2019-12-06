@@ -61,6 +61,11 @@
             </dependency>
             <dependency>
                 <groupId>io.cellery.observability</groupId>
+                <artifactId>io.cellery.observability.auth</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.cellery.observability</groupId>
                 <artifactId>io.cellery.observability.k8s.client</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -130,6 +135,21 @@
                 <groupId>org.apache.synapse</groupId>
                 <artifactId>synapse-core</artifactId>
                 <version>${synapse.core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-log4j12</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.core</artifactId>
+                <version>${org.osgi.core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.osgi</groupId>
+                <artifactId>org.eclipse.osgi.services</artifactId>
+                <version>${equinox.osgi.services.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.fabric8</groupId>
@@ -537,6 +557,9 @@
     </pluginRepositories>
 
     <properties>
+        <equinox.osgi.services.version>3.3.100.v20120522-1822</equinox.osgi.services.version>
+        <slf4j.version>1.7.12</slf4j.version>
+        <org.osgi.core.version>6.0.0</org.osgi.core.version>
         <httpclient.version>4.3.6</httpclient.version>
         <carbon.datasource.version>1.1.4</carbon.datasource.version>
         <msf4j.version>2.6.4</msf4j.version>
