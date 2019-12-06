@@ -20,17 +20,13 @@ package io.cellery.observability.api;
 
 import io.cellery.observability.api.bean.CelleryConfig;
 import io.cellery.observability.api.exception.APIInvocationException;
-import io.cellery.observability.api.exception.OIDCProviderException;
 import io.cellery.observability.api.internal.ServiceHolder;
 import org.apache.oltu.oauth2.client.OAuthClient;
 import org.apache.oltu.oauth2.client.URLConnectionClient;
 import org.apache.oltu.oauth2.client.request.OAuthClientRequest;
 import org.apache.oltu.oauth2.client.response.OAuthAccessTokenResponse;
-import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
-import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.types.GrantType;
 import org.json.JSONObject;
-import org.wso2.carbon.config.ConfigurationException;
 import org.wso2.msf4j.Request;
 
 import java.util.HashMap;
@@ -46,15 +42,34 @@ import javax.ws.rs.core.Response;
 
 /**
  * MSF4J service for Authentication services.
+ *
+ * All endpoints in this API are unauthenticated
  */
 @Path("/api/auth")
 public class UserAuthenticationAPI {
 
     @GET
+    @Path("/run-times/namespaces")
+    @Produces("application/json")
+    public Response getAuthorizedRunTimeNamespaces(@Context Request request) throws APIInvocationException {
+        try {
+            Object accessToken = request.getProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN);
+            if (accessToken instanceof String) {
+                Map<String, String[]> availableRunTimeNamespaces
+                        = ServiceHolder.getAuthProvider().getAuthorizedRuntimeNamespaces((String) accessToken);
+                return Response.ok().entity(availableRunTimeNamespaces).build();
+            } else {
+                return Response.status(401).build();
+            }
+        } catch (Throwable e) {
+            throw new APIInvocationException("Error while fetching authorized run-times", e);
+        }
+    }
+
+    @GET
     @Path("/tokens/{authCode}")
     @Produces("application/json")
-    public Response getTokens(@PathParam("authCode") String authCode,
-                              @Context Request request) throws APIInvocationException {
+    public Response getTokens(@PathParam("authCode") String authCode) throws APIInvocationException {
         try {
             OAuthClientRequest oAuthClientRequest = OAuthClientRequest
                     .tokenLocation(CelleryConfig.getInstance().getIdpURL() + Constants.TOKEN_ENDPOINT)
@@ -67,21 +82,20 @@ public class UserAuthenticationAPI {
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
             OAuthAccessTokenResponse oAuthResponse = oAuthClient.accessToken(oAuthClientRequest);
             JSONObject jsonObj = new JSONObject(oAuthResponse.getBody());
-            Map<Object, Object> responseMap = new HashMap<>();
 
             String accessToken = oAuthResponse.getAccessToken();
             final int mid = accessToken.length() / 2;
 
-            // Splitting up access token into two parts
-            String[] tokenParts = {accessToken.substring(0, mid), accessToken.substring(mid)};
-            responseMap.put(Constants.ACCESS_TOKEN, tokenParts[0]);
+            Map<Object, Object> responseMap = new HashMap<>();
+            responseMap.put(Constants.ACCESS_TOKEN, accessToken.substring(0, mid));
             responseMap.put(Constants.ID_TOKEN, jsonObj.get(Constants.ID_TOKEN));
 
-            NewCookie cookie = new NewCookie(Constants.HTTP_ONLY_SESSION_COOKIE, tokenParts[1],
+            NewCookie cookie = new NewCookie(Constants.HTTP_ONLY_SESSION_COOKIE, accessToken.substring(mid),
                     "/", "", "", 3600, false, true);
+
             return Response.ok().cookie(cookie).entity(responseMap).build();
-        } catch (ConfigurationException | OAuthProblemException | OAuthSystemException | OIDCProviderException e) {
-            throw new APIInvocationException("Error while getting tokens from Token endpoint", e);
+        } catch (Throwable e) {
+            throw new APIInvocationException("Error while getting tokens from token endpoint", e);
         }
     }
 

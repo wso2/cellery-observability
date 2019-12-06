@@ -55,6 +55,8 @@ public class AuthInterceptorTestCase {
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertTrue(interceptionResult);
+        Mockito.verify(request, Mockito.times(1))
+                .setProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN, tokenFirstPart + tokenSecondPart);
         ServiceHolder.setOidcOauthManager(null);
     }
 
@@ -72,6 +74,8 @@ public class AuthInterceptorTestCase {
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertFalse(interceptionResult);
+        Mockito.verify(request, Mockito.times(1))
+                .setProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN, tokenFirstPart + tokenSecondPart);
         ServiceHolder.setOidcOauthManager(null);
     }
 
@@ -85,6 +89,8 @@ public class AuthInterceptorTestCase {
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertTrue(interceptionResult);
+        Mockito.verify(request, Mockito.times(0))
+                .setProperty(Mockito.eq(Constants.REQUEST_PROPERTY_ACCESS_TOKEN), Mockito.any());
     }
 
     @Test
@@ -95,6 +101,8 @@ public class AuthInterceptorTestCase {
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertFalse(interceptionResult);
+        Mockito.verify(request, Mockito.times(0))
+                .setProperty(Mockito.eq(Constants.REQUEST_PROPERTY_ACCESS_TOKEN), Mockito.any());
     }
 
     @Test
@@ -113,6 +121,8 @@ public class AuthInterceptorTestCase {
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertFalse(interceptionResult);
+        Mockito.verify(request, Mockito.times(0))
+                .setProperty(Mockito.eq(Constants.REQUEST_PROPERTY_ACCESS_TOKEN), Mockito.any());
     }
 
     @Test
@@ -123,6 +133,8 @@ public class AuthInterceptorTestCase {
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertFalse(interceptionResult);
+        Mockito.verify(request, Mockito.times(0))
+                .setProperty(Mockito.eq(Constants.REQUEST_PROPERTY_ACCESS_TOKEN), Mockito.any());
     }
 
     @Test
@@ -140,6 +152,8 @@ public class AuthInterceptorTestCase {
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertFalse(interceptionResult);
+        Mockito.verify(request, Mockito.times(1))
+                .setProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN, tokenFirstPart + tokenSecondPart);
         ServiceHolder.setOidcOauthManager(null);
     }
 

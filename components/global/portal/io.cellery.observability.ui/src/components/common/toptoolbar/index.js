@@ -66,7 +66,7 @@ const styles = (theme) => ({
         marginRight: theme.spacing.unit * 2,
         marginBottom: theme.spacing.unit * 2
     },
-    refreshTimeSelect: {
+    selectInput: {
         border: "none",
         fontSize: 14
     },
@@ -80,6 +80,14 @@ const styles = (theme) => ({
     },
     calendar: {
         marginLeft: 10
+    },
+    runtimeSelectFormControl: {
+        marginRight: theme.spacing.unit * 3
+    },
+    namespaceSelectFormControl: {
+        paddingRight: theme.spacing.unit * 3,
+        marginRight: theme.spacing.unit * 3,
+        borderRight: "2px solid #ccc"
     }
 });
 
@@ -91,6 +99,8 @@ class TopToolbar extends React.Component {
 
         const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
         this.state = {
+            runtime: globalFilter.runtime,
+            namespace: globalFilter.namespace,
             startTime: globalFilter.startTime,
             endTime: globalFilter.endTime,
             dateRangeNickname: globalFilter.dateRangeNickname,
@@ -120,9 +130,10 @@ class TopToolbar extends React.Component {
     });
 
     render = () => {
-        const {classes, title, subTitle, location, history, onUpdate} = this.props;
+        const {classes, title, subTitle, location, history, globalState, onUpdate} = this.props;
         const {
-            startTime, endTime, dateRangeNickname, refreshInterval, dateRangeSelectorAnchorElement, isAutoRefreshEnabled
+            runtime, namespace, startTime, endTime, dateRangeNickname, refreshInterval, dateRangeSelectorAnchorElement,
+            isAutoRefreshEnabled
         } = this.state;
 
         const isDateRangeSelectorOpen = Boolean(dateRangeSelectorAnchorElement);
@@ -145,12 +156,50 @@ class TopToolbar extends React.Component {
                     </Typography>
                     {
                         subTitle
-                            ? <Typography variant="subtitle1" className={classes.subTitle}>
-                                {subTitle}
-                            </Typography>
+                            ? (
+                                <Typography variant="subtitle1" className={classes.subTitle}>
+                                    {subTitle}
+                                </Typography>
+                            )
                             : null
                     }
                     <div className={classes.grow}/>
+                    <FormControl className={classes.runtimeSelectFormControl}>
+                        <Select value={runtime} inputProps={{name: "runtime", id: "runtime"}}
+                            onChange={(event) => this.setRuntime(event.target.value)}
+                            startAdornment={(
+                                <InputAdornment className={classes.startInputAdornment}
+                                    variant="filled" position="start">
+                                    Namespace
+                                </InputAdornment>
+                            )}
+                            className={classes.selectInput}>
+                            {
+                                Object.keys(globalState.get(StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES))
+                                    .map((runtimeItem) => (
+                                        <MenuItem key={runtimeItem} value={runtimeItem}>{runtimeItem}</MenuItem>
+                                    ))
+                            }
+                        </Select>
+                    </FormControl>
+                    <FormControl className={classes.namespaceSelectFormControl}>
+                        <Select value={namespace} inputProps={{name: "namespace", id: "namespace"}}
+                            onChange={(event) => this.setNamespace(event.target.value)}
+                            startAdornment={(
+                                <InputAdornment className={classes.startInputAdornment}
+                                    variant="filled" position="start">
+                                    Namespace
+                                </InputAdornment>
+                            )}
+                            className={classes.selectInput}>
+                            {
+                                globalState.get(StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES)[runtime]
+                                    .map((namespaceItem) => (
+                                        <MenuItem key={namespaceItem} value={namespaceItem}>{namespaceItem}</MenuItem>
+                                    ))
+                            }
+                        </Select>
+                    </FormControl>
                     {
                         onUpdate
                             ? (
@@ -209,7 +258,7 @@ class TopToolbar extends React.Component {
                                                                         Refresh
                                                                 </InputAdornment>
                                                             )}
-                                                            className={classes.refreshTimeSelect}>
+                                                            className={classes.selectInput}>
                                                             <MenuItem value={-1}>Off</MenuItem>
                                                             <MenuItem value={5 * 1000}>Every 5 sec</MenuItem>
                                                             <MenuItem value={10 * 1000}>Every 10 sec</MenuItem>
@@ -254,6 +303,36 @@ class TopToolbar extends React.Component {
     closeDateRangeSelector = () => {
         this.setState({
             dateRangeSelectorAnchorElement: undefined
+        });
+    };
+
+    setRuntime = (runtime) => {
+        const {globalState} = this.props;
+
+        globalState.set(StateHolder.GLOBAL_FILTER, {
+            ...globalState.get(StateHolder.GLOBAL_FILTER),
+            runtime: runtime
+        });
+
+        this.stopRefreshTask(); // Stop any existing refresh tasks (Will be restarted when the component is updated)
+        this.refresh(true);
+        this.setState({
+            runtime: runtime
+        });
+    };
+
+    setNamespace = (namespace) => {
+        const {globalState} = this.props;
+
+        globalState.set(StateHolder.GLOBAL_FILTER, {
+            ...globalState.get(StateHolder.GLOBAL_FILTER),
+            namespace: namespace
+        });
+
+        this.stopRefreshTask(); // Stop any existing refresh tasks (Will be restarted when the component is updated)
+        this.refresh(true);
+        this.setState({
+            namespace: namespace
         });
     };
 

@@ -31,6 +31,7 @@ import io.cellery.observability.api.exception.UnexpectedException;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
+import io.cellery.observability.auth.AuthProvider;
 import io.cellery.observability.model.generator.model.ModelManager;
 import org.apache.log4j.Logger;
 import org.osgi.framework.BundleContext;
@@ -177,5 +178,20 @@ public class ApiServiceComponent {
 
     protected void unsetConfigProvider(ConfigProvider configProvider) {
         ServiceHolder.setConfigProvider(null);
+    }
+
+    @Reference(
+            name = "io.cellery.observability.auth.AuthProvider",
+            service = AuthProvider.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetAuthProvider"
+    )
+    protected void setAuthProvider(AuthProvider authProvider) {
+        ServiceHolder.setAuthProvider(authProvider);
+    }
+
+    protected void unsetAuthProvider(AuthProvider authProvider) {
+        ServiceHolder.setAuthProvider(null);
     }
 }

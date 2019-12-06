@@ -40,29 +40,41 @@ public class AuthInterceptor implements RequestInterceptor {
 
     @Override
     public boolean interceptRequest(Request request, Response response) {
-        if (!HttpMethod.OPTIONS.equalsIgnoreCase(request.getHttpMethod()) &&
-                !(StringUtils.isNotEmpty(request.getUri()) && request.getUri().startsWith("/api/auth"))) {
+        if (!HttpMethod.OPTIONS.equalsIgnoreCase(request.getHttpMethod())) {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
             Cookie oAuthCookie = request.getHeaders().getCookies().get(Constants.HTTP_ONLY_SESSION_COOKIE);
             if (StringUtils.isNotEmpty(header) && oAuthCookie != null
                     && StringUtils.isNotEmpty(oAuthCookie.getValue())) {
                 String accessToken = header.split(" ")[1] + oAuthCookie.getValue();
-
-                try {
-                    if (!ServiceHolder.getOidcOauthManager().validateToken(accessToken)) {
+                request.setProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN, accessToken);
+                if (!this.isOpenApi(request)) {
+                    try {
+                        if (!ServiceHolder.getOidcOauthManager().validateToken(accessToken)) {
+                            response.setStatus(401);
+                            return false;
+                        }
+                    } catch (OIDCProviderException e) {
+                        logger.debug("Error occurred while authenticating the access token", e);
                         response.setStatus(401);
                         return false;
                     }
-                } catch (OIDCProviderException e) {
-                    logger.debug("Error occurred while authenticating the access token", e);
-                    response.setStatus(401);
-                    return false;
                 }
-            } else {
+            } else if (!this.isOpenApi(request)) {
                 response.setStatus(401);
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * Check if a request is going to an Open API.
+     * Open APIs can be accessed without proper authentication
+     *
+     * @param request The request to check
+     * @return True if the API can be accessed without authentication
+     */
+    private boolean isOpenApi(Request request) {
+        return StringUtils.isNotEmpty(request.getUri()) && request.getUri().startsWith("/api/auth");
     }
 }

@@ -19,6 +19,7 @@ package io.cellery.observability.api.internal;
 
 import io.cellery.observability.api.auth.OIDCOauthManager;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
+import io.cellery.observability.auth.AuthProvider;
 import io.cellery.observability.model.generator.model.ModelManager;
 import org.wso2.carbon.config.provider.ConfigProvider;
 import org.wso2.carbon.kernel.CarbonRuntime;
@@ -36,6 +37,7 @@ public class ServiceHolder {
     private static OIDCOauthManager oidcOauthManager;
     private static ConfigProvider configProvider;
     private static SiddhiManager siddhiManager;
+    private static AuthProvider authProvider;
 
     public static ConfigProvider getConfigProvider() {
         return configProvider;
@@ -94,5 +96,13 @@ public class ServiceHolder {
 
     public static void setSiddhiManager(SiddhiManager siddhiManager) {
         ServiceHolder.siddhiManager = siddhiManager;
+    }
+
+    public static AuthProvider getAuthProvider() {
+        return authProvider;
+    }
+
+    public static void setAuthProvider(AuthProvider authProvider) {
+        ServiceHolder.authProvider = authProvider;
     }
 }
