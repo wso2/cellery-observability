@@ -85,15 +85,17 @@ class Details extends React.Component {
             queryEndTime: queryEndTime.valueOf()
         };
 
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         const cellMetricsPromise = HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/instances/metrics/${HttpUtils.generateQueryParamString(search)}`,
+                url: `${pathPrefix}/http-requests/instances/metrics${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             }, globalState);
 
         const ingressDataPromise = HttpUtils.callObservabilityAPI(
             {
-                url: `/k8s/instances/${cell}${HttpUtils.generateQueryParamString(ingressQueryParams)}`,
+                url: `${pathPrefix}/k8s/instances/${cell}${HttpUtils.generateQueryParamString(ingressQueryParams)}`,
                 method: "GET"
             }, this.props.globalState);
 

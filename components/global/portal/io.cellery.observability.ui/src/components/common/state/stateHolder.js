@@ -197,9 +197,10 @@ class StateHolder {
     /**
      * Load the state that should be used.
      *
+     * @param {Object} queryParams The query params object in the current location
      * @returns {Promise<Object>} Promise which resolves when the state is loaded or rejects
      */
-    init = () => {
+    init = (queryParams = {}) => {
         const self = this;
         return new Promise((resolve, reject) => {
             HttpUtils.callAPI({
@@ -207,36 +208,55 @@ class StateHolder {
                 method: "GET"
             }).then((configData) => {
                 self.set(StateHolder.CONFIG, configData);
-                HttpUtils.callObservabilityAPI(
-                    {
-                        url: "/users/run-times/namespaces",
-                        method: "GET"
-                    },
-                    self
-                ).then((runtimeData) => {
-                    self.set(StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES, runtimeData);
+                const user = self.get(StateHolder.USER);
+                if (user) {
+                    HttpUtils.callObservabilityAPI(
+                        {
+                            url: "/users/runtimes/namespaces",
+                            method: "GET"
+                        },
+                        self
+                    ).then((runtimeData) => {
+                        if (runtimeData) {
+                            self.set(StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES, runtimeData);
+                        }
 
-                    let selectedRuntime;
-                    if (runtimeData.hasOwnProperty(Constants.Runtime.LOCAL_RUNTIME_ID)) {
-                        selectedRuntime = Constants.Runtime.LOCAL_RUNTIME_ID;
-                    } else {
-                        selectedRuntime = Object.keys(runtimeData)[0];
-                    }
-                    let selectedNamespace;
-                    if (runtimeData[selectedRuntime].includes(Constants.Runtime.DEFAULT_NAMESPACE)) {
-                        selectedNamespace = Constants.Runtime.DEFAULT_NAMESPACE;
-                    } else {
-                        selectedNamespace = runtimeData[selectedRuntime][0];
-                    }
-                    self.set(StateHolder.GLOBAL_FILTER, {
-                        ...self.get(StateHolder.GLOBAL_FILTER),
-                        runtime: selectedRuntime,
-                        namespace: selectedNamespace
+                        const globalFilter = self.get(StateHolder.GLOBAL_FILTER);
+                        let selectedRuntime = globalFilter.runtime;
+                        let selectedNamespace = globalFilter.namespace;
+                        if (runtimeData) {
+                            if (queryParams.globalFilterRuntime
+                                && runtimeData.hasOwnProperty(queryParams.globalFilterRuntime)) {
+                                selectedRuntime = queryParams.globalFilterRuntime;
+                            } else if (runtimeData.hasOwnProperty(Constants.Runtime.LOCAL_RUNTIME_ID)) {
+                                selectedRuntime = Constants.Runtime.LOCAL_RUNTIME_ID;
+                            } else {
+                                selectedRuntime = Object.keys(runtimeData)[0];
+                            }
+                            const selectedRuntimeData = runtimeData[selectedRuntime];
+                            if (selectedRuntime && selectedRuntimeData && selectedRuntimeData.length > 0) {
+                                if (queryParams.globalFilterNamespace
+                                    && selectedRuntimeData.includes(queryParams.globalFilterNamespace)) {
+                                    selectedNamespace = queryParams.globalFilterNamespace;
+                                } else if (selectedRuntimeData.includes(Constants.Runtime.DEFAULT_NAMESPACE)) {
+                                    selectedNamespace = Constants.Runtime.DEFAULT_NAMESPACE;
+                                } else {
+                                    selectedNamespace = selectedRuntimeData[0];
+                                }
+                            }
+                        }
+                        self.set(StateHolder.GLOBAL_FILTER, {
+                            ...globalFilter,
+                            runtime: selectedRuntime,
+                            namespace: selectedNamespace
+                        });
+                        resolve();
+                    }).catch((error) => {
+                        reject(error);
                     });
+                } else {
                     resolve();
-                }).catch((error) => {
-                    reject(error);
-                });
+                }
             }).catch((error) => {
                 reject(error);
             });

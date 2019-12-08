@@ -33,19 +33,20 @@ import javax.ws.rs.core.Response;
 /**
  * MSF4J service for fetching the dependency models.
  */
-@Path("/api/dependency-model")
+@Path("/api/runtimes/{runtime}/namespaces/{namespace}/dependency-model")
 public class DependencyModelAPI {
 
     @GET
     @Path("/instances")
     @Produces("application/json")
-    public Response getInstanceOverview(@DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
+    public Response getInstanceOverview(@PathParam("runtime") String runtime,
+                                        @PathParam("namespace") String namespace,
+                                        @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
                                         @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
         try {
-            // TODO: Read runtime and namespace from API
             Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(queryStartTime, queryEndTime,
-                    "cellery-default", "default");
+                    runtime, namespace);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
             throw new APIInvocationException("Unexpected error occurred while fetching the Instance dependency model",
@@ -56,14 +57,15 @@ public class DependencyModelAPI {
     @GET
     @Path("/instances/{instanceName}")
     @Produces("application/json")
-    public Response getInstanceDependencyView(@PathParam("instanceName") String instanceName,
+    public Response getInstanceDependencyView(@PathParam("runtime") String runtime,
+                                              @PathParam("namespace") String namespace,
+                                              @PathParam("instanceName") String instanceName,
                                               @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
                                               @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
         try {
-            // TODO: Read runtime and namespace from API
             Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(queryStartTime, queryEndTime,
-                    "cellery-default", "default", instanceName);
+                    runtime, namespace, instanceName);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
             throw new APIInvocationException("API Invocation error occurred while fetching the dependency model for " +
@@ -74,15 +76,16 @@ public class DependencyModelAPI {
     @GET
     @Path("/instances/{instanceName}/components/{componentName}")
     @Produces("application/json")
-    public Response getComponentDependencyView(@PathParam("instanceName") String instanceName,
+    public Response getComponentDependencyView(@PathParam("runtime") String runtime,
+                                               @PathParam("namespace") String namespace,
+                                               @PathParam("instanceName") String instanceName,
                                                @PathParam("componentName") String componentName,
                                                @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
                                                @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
         try {
-            // TODO: Read runtime and namespace from API
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(queryStartTime, queryEndTime,
-                    "cellery-default", "default", instanceName, componentName);
+                    runtime, namespace, instanceName, componentName);
             return Response.ok().entity(model).build();
         } catch (Throwable e) {
             throw new APIInvocationException("API Invocation error occurred while fetching the dependency model for " +

@@ -75,9 +75,11 @@ class K8sPodsList extends React.Component {
                 isLoading: true
             });
         }
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/k8s/pods${HttpUtils.generateQueryParamString(search)}`,
+                url: `${pathPrefix}/k8s/pods${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState

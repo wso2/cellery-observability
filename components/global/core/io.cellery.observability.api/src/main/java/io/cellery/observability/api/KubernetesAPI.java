@@ -34,23 +34,27 @@ import javax.ws.rs.core.Response;
 /**
  * MSF4J service for fetching K8s level information.
  */
-@Path("/api/k8s")
+@Path("/api/runtimes/{runtime}/namespaces/{namespace}/k8s")
 public class KubernetesAPI {
 
     @GET
     @Path("/pods")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getK8sPods(@DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
+    public Response getK8sPods(@PathParam("runtime") String runtime,
+                               @PathParam("namespace") String namespace,
+                               @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime,
                                @DefaultValue("") @QueryParam("instance") String instance,
                                @DefaultValue("") @QueryParam("component") String component)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_PODS_FOR_COMPONENT.builder()
-                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
-                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instance)
                     .setArg(SiddhiStoreQueryTemplates.Params.COMPONENT, component)
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .build()
                     .execute();
             return Response.ok().entity(results).build();
@@ -63,31 +67,37 @@ public class KubernetesAPI {
     @GET
     @Path("/instances")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAllInstancesInfo(@DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
+    public Response getAllInstancesInfo(@PathParam("runtime") String runtime,
+                                        @PathParam("namespace") String namespace,
+                                        @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                         @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
-        return getInstancesAndComponentsInfo(queryStartTime, queryEndTime, "", "");
+        return getInstancesAndComponentsInfo(runtime, namespace, "", "", queryStartTime, queryEndTime);
     }
 
     @GET
     @Path("/instances/{instanceName}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getInstanceInfo(@DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
-                                    @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime,
-                                    @PathParam("instanceName") String instance)
+    public Response getInstanceInfo(@PathParam("runtime") String runtime,
+                                    @PathParam("namespace") String namespace,
+                                    @PathParam("instanceName") String instance,
+                                    @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
+                                    @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
-        return getInstancesAndComponentsInfo(queryStartTime, queryEndTime, instance, "");
+        return getInstancesAndComponentsInfo(runtime, namespace, instance, "", queryStartTime, queryEndTime);
     }
 
     @GET
     @Path("/instances/{instanceName}/components/{componentName}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getComponentInfo(@DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
-                                     @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime,
+    public Response getComponentInfo(@PathParam("runtime") String runtime,
+                                     @PathParam("namespace") String namespace,
                                      @PathParam("instanceName") String instance,
-                                     @PathParam("componentName") String component)
+                                     @PathParam("componentName") String component,
+                                     @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
+                                     @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
-        return getInstancesAndComponentsInfo(queryStartTime, queryEndTime, instance, component);
+        return getInstancesAndComponentsInfo(runtime, namespace, instance, component, queryStartTime, queryEndTime);
     }
 
     @OPTIONS
@@ -96,15 +106,17 @@ public class KubernetesAPI {
         return Response.ok().build();
     }
 
-    private Response getInstancesAndComponentsInfo(long queryStartTime, long queryEndTime, String instance,
-                                                   String component)
+    private Response getInstancesAndComponentsInfo(String runtime, String namespace, String instance, String component,
+                                                   long queryStartTime, long queryEndTime)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_COMPONENTS.builder()
-                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
-                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instance)
                     .setArg(SiddhiStoreQueryTemplates.Params.COMPONENT, component)
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .build()
                     .execute();
             return Response.ok().entity(results).build();

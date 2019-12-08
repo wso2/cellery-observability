@@ -37,18 +37,23 @@ import javax.ws.rs.core.Response;
 /**
  * MSF4J service for fetching the aggregated request.
  */
-@Path("/api/http-requests")
+@Path("/api/runtimes/{runtime}/namespaces/{namespace}/http-requests")
 public class AggregatedRequestsAPI {
 
     @GET
     @Path("/instances")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAggregatedRequestsForInstances(@QueryParam("queryStartTime") long queryStartTime,
+    public Response getAggregatedRequestsForInstances(@PathParam("runtime") String runtime,
+                                                      @PathParam("namespace") String namespace,
+                                                      @QueryParam("queryStartTime") long queryStartTime,
                                                       @QueryParam("queryEndTime") long queryEndTime,
                                                       @DefaultValue("seconds") @QueryParam("timeGranularity")
-                                                      String timeGranularity) throws APIInvocationException {
+                                                                  String timeGranularity)
+            throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
@@ -64,18 +69,22 @@ public class AggregatedRequestsAPI {
     @GET
     @Path("/instances/metrics")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getMetricsForInstances(@QueryParam("queryStartTime") long queryStartTime,
+    public Response getMetricsForInstances(@PathParam("runtime") String runtime,
+                                           @PathParam("namespace") String namespace,
+                                           @QueryParam("queryStartTime") long queryStartTime,
                                            @QueryParam("queryEndTime") long queryEndTime,
+                                           @DefaultValue("seconds") @QueryParam("timeGranularity")
+                                                       String timeGranularity,
                                            @DefaultValue("") @QueryParam("sourceInstance") String sourceInstance,
                                            @DefaultValue("") @QueryParam("destinationInstance")
                                                        String destinationInstance,
-                                           @DefaultValue("seconds") @QueryParam("timeGranularity")
-                                                       String timeGranularity,
-                                           @DefaultValue("false")
-                                           @QueryParam("includeIntraInstance") boolean includeIntraInstance)
+                                           @DefaultValue("false") @QueryParam("includeIntraInstance")
+                                                       boolean includeIntraInstance)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES_METRICS.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
@@ -97,11 +106,15 @@ public class AggregatedRequestsAPI {
     @GET
     @Path("/instances/metadata")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getMetadataForInstances(@QueryParam("queryStartTime") long queryStartTime,
+    public Response getMetadataForInstances(@PathParam("runtime") String runtime,
+                                            @PathParam("namespace") String namespace,
+                                            @QueryParam("queryStartTime") long queryStartTime,
                                             @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES_METADATA.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .build()
@@ -123,18 +136,22 @@ public class AggregatedRequestsAPI {
     @GET
     @Path("/instances/{instanceName}/components")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAggregatedRequestsForComponents(@PathParam("instanceName") String instanceName,
+    public Response getAggregatedRequestsForComponents(@PathParam("runtime") String runtime,
+                                                       @PathParam("namespace") String namespace,
+                                                       @PathParam("instanceName") String instanceName,
                                                        @QueryParam("queryStartTime") long queryStartTime,
                                                        @QueryParam("queryEndTime") long queryEndTime,
-                                                       @DefaultValue("seconds")
-                                                       @QueryParam("timeGranularity") String timeGranularity)
+                                                       @DefaultValue("seconds") @QueryParam("timeGranularity")
+                                                                   String timeGranularity)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCE_COMPONENTS.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
+                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instanceName)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
-                    .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instanceName)
                     .build()
                     .execute();
             return Response.ok().entity(results).build();
@@ -147,22 +164,26 @@ public class AggregatedRequestsAPI {
     @GET
     @Path("/instances/components/metrics")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getMetricsForComponents(@QueryParam("queryStartTime") long queryStartTime,
+    public Response getMetricsForComponents(@PathParam("runtime") String runtime,
+                                            @PathParam("namespace") String namespace,
+                                            @QueryParam("queryStartTime") long queryStartTime,
                                             @QueryParam("queryEndTime") long queryEndTime,
+                                            @DefaultValue("seconds") @QueryParam("timeGranularity")
+                                                        String timeGranularity,
                                             @DefaultValue("") @QueryParam("sourceInstance") String sourceInstance,
-                                            @DefaultValue("")
-                                            @QueryParam("sourceComponent") String sourceComponent,
+                                            @DefaultValue("") @QueryParam("sourceComponent")
+                                                        String sourceComponent,
                                             @DefaultValue("") @QueryParam("destinationInstance")
                                                         String destinationInstance,
-                                            @DefaultValue("")
-                                            @QueryParam("destinationComponent") String destinationComponent,
-                                            @DefaultValue("seconds")
-                                            @QueryParam("timeGranularity") String timeGranularity,
-                                            @DefaultValue("false")
-                                            @QueryParam("includeIntraInstance") boolean includeIntraInstance)
+                                            @DefaultValue("") @QueryParam("destinationComponent")
+                                                        String destinationComponent,
+                                            @DefaultValue("false") @QueryParam("includeIntraInstance")
+                                                        boolean includeIntraInstance)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_COMPONENTS_METRICS.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
@@ -187,11 +208,15 @@ public class AggregatedRequestsAPI {
     @GET
     @Path("/instances/components/metadata")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getMetadataForComponents(@QueryParam("queryStartTime") long queryStartTime,
+    public Response getMetadataForComponents(@PathParam("runtime") String runtime,
+                                             @PathParam("namespace") String namespace,
+                                             @QueryParam("queryStartTime") long queryStartTime,
                                              @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_COMPONENTS_METADATA.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .build()

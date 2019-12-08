@@ -177,6 +177,8 @@ class MainAppBar extends React.Component {
 
         const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
         const queryParams = HttpUtils.parseQueryParams(location.search);
+        queryParams.globalFilterRuntime = globalFilter.runtime;
+        queryParams.globalFilterNamespace = globalFilter.namespace;
         queryParams.globalFilterStartTime = QueryUtils.parseTime(globalFilter.startTime).valueOf();
         queryParams.globalFilterEndTime = QueryUtils.parseTime(globalFilter.endTime).valueOf();
 

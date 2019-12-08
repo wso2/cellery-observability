@@ -18,6 +18,7 @@
 
 package io.cellery.observability.api;
 
+import com.google.gson.JsonObject;
 import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.internal.ServiceHolder;
 import org.wso2.msf4j.Request;
@@ -37,7 +38,7 @@ import javax.ws.rs.core.Response;
 public class UsersAPI {
 
     @GET
-    @Path("/run-times/namespaces")
+    @Path("/runtimes/namespaces")
     @Produces("application/json")
     public Response getAuthorizedRunTimeNamespaces(@Context Request request) throws APIInvocationException {
         try {
@@ -47,10 +48,10 @@ public class UsersAPI {
                         = ServiceHolder.getAuthProvider().getAuthorizedRuntimeNamespaces((String) accessToken);
                 return Response.ok().entity(availableRunTimeNamespaces).build();
             } else {
-                return Response.status(401).build();
+                return Response.ok().entity(new JsonObject()).build();
             }
         } catch (Throwable e) {
-            throw new APIInvocationException("Error while fetching authorized run-times", e);
+            throw new APIInvocationException("Error while fetching authorized runtimes", e);
         }
     }
 

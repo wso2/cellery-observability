@@ -69,43 +69,42 @@ class Details extends React.Component {
         const {globalState, cell, component} = this.props;
         const self = this;
 
-        const search = {
-            queryStartTime: queryStartTime.valueOf(),
-            queryEndTime: queryEndTime.valueOf(),
-            destinationInstance: cell,
-            destinationComponent: component,
-            includeIntraInstance: true
-        };
-
-        const ingressQueryParams = {
-            queryStartTime: queryStartTime.valueOf(),
-            queryEndTime: queryEndTime.valueOf()
-        };
-
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Component Info", globalState);
             self.setState({
                 isLoading: true
             });
         }
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
+        const httpRequestQueryParams = HttpUtils.generateQueryParamString({
+            queryStartTime: queryStartTime.valueOf(),
+            queryEndTime: queryEndTime.valueOf(),
+            destinationInstance: cell,
+            destinationComponent: component,
+            includeIntraInstance: true
+        });
         const componentMetricPromise = HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/instances/components/metrics/${HttpUtils.generateQueryParamString(search)}`,
+                url: `${pathPrefix}/http-requests/instances/components/metrics${httpRequestQueryParams}`,
                 method: "GET"
             },
             globalState
         );
-        const generatedQueryParam = HttpUtils.generateQueryParamString(ingressQueryParams);
-        const IngressDataPromise = HttpUtils.callObservabilityAPI(
+        const ingressQueryParams = HttpUtils.generateQueryParamString({
+            queryStartTime: queryStartTime.valueOf(),
+            queryEndTime: queryEndTime.valueOf()
+        });
+        const ingressDataPromise = HttpUtils.callObservabilityAPI(
             {
-                url: `/k8s/instances/${cell}/components/${component}${generatedQueryParam}`,
+                url: `${pathPrefix}/k8s/instances/${cell}/components/${component}${ingressQueryParams}`,
                 method: "GET"
             },
             globalState
         );
-        Promise.all([componentMetricPromise, IngressDataPromise]).then((data) => {
-            const ingressData = data[1];
+        Promise.all([componentMetricPromise, ingressDataPromise]).then((data) => {
             self.loadComponentInfo(data[0]);
+            const ingressData = data[1];
             for (let i = 0; i < ingressData.length; i++) {
                 const responseData = ingressData[i];
                 self.setState({

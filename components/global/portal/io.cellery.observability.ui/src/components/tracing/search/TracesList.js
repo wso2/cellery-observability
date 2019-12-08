@@ -229,9 +229,11 @@ class TracesList extends React.PureComponent {
                 isLoading: true
             });
         }
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/traces/search${HttpUtils.generateQueryParamString(search)}`,
+                url: `${pathPrefix}/tracing/search${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState

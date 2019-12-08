@@ -61,9 +61,11 @@ class CellList extends React.Component {
                 isLoading: true
             });
         }
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/instances${HttpUtils.generateQueryParamString(search)}`,
+                url: `${pathPrefix}/http-requests/instances${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState
