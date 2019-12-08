@@ -1092,7 +1092,7 @@ public class ModelGenerationExtensionTestCase {
      */
     private void publishEvent(InputHandler inputHandler, Node sourceNode, Node destinationNode) throws Exception {
         if (!Objects.equals(sourceNode.getRuntime(), destinationNode.getRuntime())) {
-            throw new Exception("publishing test requests across run-times is not supported");
+            throw new Exception("publishing test requests across runtimes is not supported");
         }
         inputHandler.send(new Object[]{sourceNode.getRuntime(), sourceNode.getNamespace(), sourceNode.getInstance(),
                 sourceNode.getComponent(), sourceNode.getInstanceKind(), destinationNode.getNamespace(),

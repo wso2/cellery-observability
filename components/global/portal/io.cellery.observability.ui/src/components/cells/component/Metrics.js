@@ -128,10 +128,10 @@ class Metrics extends React.Component {
         const {globalState, cell, component} = this.props;
         const self = this;
 
-        const search = {
+        const searchQueryParams = HttpUtils.generateQueryParamString({
             queryStartTime: queryStartTime,
             queryEndTime: queryEndTime
-        };
+        });
 
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Component Info", globalState);
@@ -139,9 +139,11 @@ class Metrics extends React.Component {
                 loadingCount: prevState.loadingCount + 1
             }));
         }
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/instances/components/metadata${HttpUtils.generateQueryParamString(search)}`,
+                url: `${pathPrefix}/http-requests/instances/components/metadata${searchQueryParams}`,
                 method: "GET"
             },
             globalState
@@ -202,6 +204,7 @@ class Metrics extends React.Component {
             search.sourceInstance = cell;
             search.sourceComponent = component;
         }
+        const searchQueryParams = HttpUtils.generateQueryParamString(search);
 
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Component Metrics", globalState);
@@ -209,9 +212,11 @@ class Metrics extends React.Component {
                 loadingCount: prevState.loadingCount + 1
             }));
         }
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/instances/components/metrics${HttpUtils.generateQueryParamString(search)}`,
+                url: `${pathPrefix}/http-requests/instances/components/metrics${searchQueryParams}`,
                 method: "GET"
             },
             globalState

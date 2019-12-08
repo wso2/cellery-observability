@@ -57,10 +57,10 @@ class ComponentList extends React.Component {
         const {globalState, cell} = this.props;
         const self = this;
 
-        const search = {
+        const searchQueryParams = HttpUtils.generateQueryParamString({
             queryStartTime: queryStartTime.valueOf(),
             queryEndTime: queryEndTime.valueOf()
-        };
+        });
 
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Component Info", globalState);
@@ -68,9 +68,11 @@ class ComponentList extends React.Component {
                 isLoading: true
             });
         }
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/instances/${cell}/components/${HttpUtils.generateQueryParamString(search)}`,
+                url: `${pathPrefix}/http-requests/instances/${cell}/components${searchQueryParams}`,
                 method: "GET"
             },
             globalState

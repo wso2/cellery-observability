@@ -182,9 +182,11 @@ class CellDependencyView extends React.Component {
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Instance Dependency Graph", globalState);
         }
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/dependency-model/instances/${cell}${HttpUtils.generateQueryParamString(search)}`,
+                url: `${pathPrefix}/dependency-model/instances/${cell}${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState

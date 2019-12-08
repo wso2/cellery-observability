@@ -185,15 +185,15 @@ class Overview extends React.Component {
         const self = this;
         const {globalState} = self.props;
         const {selectedInstance} = self.state;
-        const dependencyDiagramFilter = {
+        const dependencyDiagramFilter = HttpUtils.generateQueryParamString({
             queryStartTime: startTime.valueOf(),
             queryEndTime: endTime.valueOf()
-        };
-        const metricsFilter = {
+        });
+        const metricsFilter = HttpUtils.generateQueryParamString({
             queryStartTime: startTime.valueOf(),
             queryEndTime: endTime.valueOf(),
             timeGranularity: QueryUtils.getTimeGranularity(startTime, endTime)
-        };
+        });
 
         if (isUserAction) {
             NotificationUtils.showLoadingOverlay("Loading Instance Dependencies", globalState);
@@ -201,24 +201,26 @@ class Overview extends React.Component {
         self.setState({
             isLoading: true
         });
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         const apiCalls = [
             HttpUtils.callObservabilityAPI(
                 {
-                    url: `/dependency-model/instances${HttpUtils.generateQueryParamString(dependencyDiagramFilter)}`,
+                    url: `${pathPrefix}/dependency-model/instances${dependencyDiagramFilter}`,
                     method: "GET"
                 },
                 globalState
             ),
             HttpUtils.callObservabilityAPI(
                 {
-                    url: `/k8s/instances${HttpUtils.generateQueryParamString(dependencyDiagramFilter)}`,
+                    url: `${pathPrefix}/k8s/instances${dependencyDiagramFilter}`,
                     method: "GET"
                 },
                 globalState
             ),
             HttpUtils.callObservabilityAPI(
                 {
-                    url: `/http-requests/instances${HttpUtils.generateQueryParamString(metricsFilter)}`,
+                    url: `${pathPrefix}/http-requests/instances${metricsFilter}`,
                     method: "GET"
                 },
                 this.props.globalState
@@ -234,7 +236,7 @@ class Overview extends React.Component {
             const queryParams = HttpUtils.generateQueryParamString(instanceMetricsFilter);
             apiCalls.push(HttpUtils.callObservabilityAPI(
                 {
-                    url: `/http-requests/instances/${selectedInstance}/components${queryParams}`,
+                    url: `${pathPrefix}/http-requests/instances/${selectedInstance}/components${queryParams}`,
                     method: "GET"
                 },
                 self.props.globalState

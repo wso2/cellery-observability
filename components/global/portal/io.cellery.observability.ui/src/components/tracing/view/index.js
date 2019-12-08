@@ -96,9 +96,11 @@ class View extends React.Component {
         self.setState({
             isLoading: true
         });
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/traces/${traceId}`,
+                url: `${pathPrefix}/tracing/traces/${traceId}`,
                 method: "GET"
             },
             globalState
@@ -200,7 +202,7 @@ class View extends React.Component {
                     title={traceTree
                         ? (traceTree.instance ? `${traceTree.instance}:` : "") + traceTree.serviceName
                         : "Distributed Tracing"}
-                    subTitle={traceTree ? traceTree.operationName : ""}/>
+                    subTitle={traceTree ? traceTree.operationName : ""} hideNamespaceSelector={true}/>
                 <Paper className={classes.container}>
                     <Tabs value={selectedTabIndex} indicatorColor="primary"
                         onChange={this.handleTabChange} className={classes.tabs}>

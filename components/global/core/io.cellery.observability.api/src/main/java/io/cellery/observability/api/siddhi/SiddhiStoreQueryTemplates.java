@@ -29,6 +29,8 @@ public enum SiddhiStoreQueryTemplates {
      */
 
     REQUEST_AGGREGATION_INSTANCES("from RequestAggregation\n" +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and sourceNamespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and destinationNamespace == \"${" + Params.NAMESPACE + "}\"\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"${" + Params.TIME_GRANULARITY + "}\"\n" +
             "select sourceInstance, sourceInstanceKind, destinationInstance, destinationInstanceKind, " +
@@ -37,13 +39,17 @@ public enum SiddhiStoreQueryTemplates {
             "group by sourceInstance, destinationInstance, httpResponseGroup"
     ),
     REQUEST_AGGREGATION_INSTANCES_METADATA("from RequestAggregation\n" +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and sourceNamespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and destinationNamespace == \"${" + Params.NAMESPACE + "}\"\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"seconds\"\n" +
             "select sourceInstance, destinationInstance\n" +
             "group by sourceInstance, destinationInstance"
     ),
     REQUEST_AGGREGATION_INSTANCES_METRICS("from RequestAggregation\n" +
-            "on (\"${" + Params.SOURCE_INSTANCE + "}\" == \"\" " +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and sourceNamespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and destinationNamespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and (\"${" + Params.SOURCE_INSTANCE + "}\" == \"\" " +
             "or sourceInstance == \"${" + Params.SOURCE_INSTANCE + "}\") " +
             "and (\"${" + Params.DESTINATION_INSTANCE + "}\" == \"\" " +
             "or destinationInstance == \"${" + Params.DESTINATION_INSTANCE + "}\") " +
@@ -56,8 +62,10 @@ public enum SiddhiStoreQueryTemplates {
             "group by AGG_TIMESTAMP, httpResponseGroup"
     ),
     REQUEST_AGGREGATION_INSTANCE_COMPONENTS("from RequestAggregation\n" +
-            "on sourceInstance == \"${" + Params.INSTANCE + "}\" " +
-            "or destinationInstance == \"${" + Params.INSTANCE + "}\"\n" +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and sourceNamespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and destinationNamespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and (sourceInstance == \"${" + Params.INSTANCE + "}\" " +
+            "or destinationInstance == \"${" + Params.INSTANCE + "}\")\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"${" + Params.TIME_GRANULARITY + "}\"\n" +
             "select sourceInstance, sourceComponent, destinationInstance, destinationComponent, httpResponseGroup, " +
@@ -66,13 +74,17 @@ public enum SiddhiStoreQueryTemplates {
             "group by sourceInstance, sourceComponent, destinationInstance, destinationComponent, httpResponseGroup"
     ),
     REQUEST_AGGREGATION_COMPONENTS_METADATA("from RequestAggregation\n" +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and sourceNamespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and destinationNamespace == \"${" + Params.NAMESPACE + "}\"\n" +
             "within ${" + Params.QUERY_START_TIME + "}L, ${" + Params.QUERY_END_TIME + "}L\n" +
             "per \"seconds\"\n" +
             "select sourceInstance, sourceComponent, destinationInstance, destinationComponent\n" +
             "group by sourceInstance, sourceComponent, destinationInstance, destinationComponent"
     ),
     REQUEST_AGGREGATION_COMPONENTS_METRICS("from RequestAggregation\n" +
-            "on (\"${" + Params.SOURCE_INSTANCE + "}\" == \"\" " +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and sourceNamespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and destinationNamespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and (\"${" + Params.SOURCE_INSTANCE + "}\" == \"\" " +
             "or sourceInstance == \"${" + Params.SOURCE_INSTANCE + "}\") " +
             "and (\"${" + Params.SOURCE_COMPONENT + "}\" == \"\" " +
             "or sourceComponent == \"${" + Params.SOURCE_COMPONENT + "}\") " +
@@ -89,59 +101,67 @@ public enum SiddhiStoreQueryTemplates {
             "group by AGG_TIMESTAMP, httpResponseGroup"
     ),
     DISTRIBUTED_TRACING_METADATA("from DistributedTracingTable\n" +
-            "on (${" + Params.QUERY_START_TIME + "}L == -1L or startTime >= ${" + Params.QUERY_START_TIME + "}L) " +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and namespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and (${" + Params.QUERY_START_TIME + "}L == -1L or startTime >= ${" + Params.QUERY_START_TIME + "}L) " +
             "and (${" + Params.QUERY_END_TIME + "}L == -1L or startTime <= ${" + Params.QUERY_END_TIME + "}L)\n" +
             "select instance, serviceName, operationName\n" +
             "group by instance, serviceName, operationName"
     ),
     DISTRIBUTED_TRACING_SEARCH_GET_TRACE_IDS("from DistributedTracingTable\n" +
-            "on (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
-            "and (\"${" + Params.SERVICE_NAME + "}\" == \"\" or " +
-            "serviceName == \"${" + Params.SERVICE_NAME + "}\") " +
-            "and (\"${" + Params.OPERATION_NAME + "}\" == \"\" or " +
-            "operationName == \"${" + Params.OPERATION_NAME + "}\") " +
-            "and (${" + Params.MIN_DURATION + "}L == -1L or duration >= ${" + Params.MIN_DURATION + "}L)\n" +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and namespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and (\"${" + Params.INSTANCE + "}\" == \"\" " +
+            "or instance == \"${" + Params.INSTANCE + "}\") " +
+            "and (\"${" + Params.SERVICE_NAME + "}\" == \"\" " +
+            "or serviceName == \"${" + Params.SERVICE_NAME + "}\") " +
+            "and (\"${" + Params.OPERATION_NAME + "}\" == \"\" " +
+            "or operationName == \"${" + Params.OPERATION_NAME + "}\")\n" +
             "select traceId\n" +
             "group by traceId\n" +
             "order by startTime desc"
     ),
     DISTRIBUTED_TRACING_SEARCH_GET_TRACE_IDS_WITH_TAGS("from DistributedTracingTable\n" +
-            "on (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and namespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and (\"${" + Params.INSTANCE + "}\" == \"\" " +
+            "or instance == \"${" + Params.INSTANCE + "}\") " +
             "and (\"${" + Params.SERVICE_NAME + "}\" == \"\" or " +
             "serviceName == \"${" + Params.SERVICE_NAME + "}\") " +
             "and (\"${" + Params.OPERATION_NAME + "}\" == \"\" or " +
-            "operationName == \"${" + Params.OPERATION_NAME + "}\") " +
-            "and (${" + Params.MIN_DURATION + "}L == -1L or duration >= ${" + Params.MIN_DURATION + "}L)\n" +
+            "operationName == \"${" + Params.OPERATION_NAME + "}\")\n" +
             "select traceId, tags\n" +
             "order by startTime desc"
     ),
     DISTRIBUTED_TRACING_SEARCH_GET_TRACE_IDS_WITH_VALID_ROOT_SPANS("from DistributedTracingTable\n" +
-            "on parentId is null " +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and namespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and parentId is null " +
             "and (${" + Params.QUERY_START_TIME + "}L == -1L or startTime >= ${" + Params.QUERY_START_TIME + "}L) " +
-            "and (${" + Params.QUERY_END_TIME + "}L == -1L or startTime <= ${" + Params.QUERY_END_TIME + "}L)\n" +
+            "and (${" + Params.QUERY_END_TIME + "}L == -1L or startTime <= ${" + Params.QUERY_END_TIME + "}L) " +
+            "and (${" + Params.MIN_DURATION + "}L == -1L or duration >= ${" + Params.MIN_DURATION + "}L) " +
+            "and (${" + Params.MAX_DURATION + "}L == -1L or duration <= ${" + Params.MAX_DURATION + "}L)\n" +
             "select traceId\n" +
             "group by traceId\n" +
             "order by startTime desc"
     ),
     DISTRIBUTED_TRACING_SEARCH_GET_ROOT_SPAN_METADATA("from DistributedTracingTable\n" +
-            "on parentId is null and (${" + Params.CONDITION + "})\n" +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and namespace == \"${" + Params.NAMESPACE + "}\" " +
+            "and parentId is null and (${" + Params.CONDITION + "})\n" +
             "select traceId, instance, serviceName, operationName, startTime, duration\n" +
             "group by traceId\n" +
             "order by startTime desc"
     ),
     DISTRIBUTED_TRACING_SEARCH_GET_MULTIPLE_INSTANCE_SERVICE_COUNTS("from DistributedTracingTable\n" +
-            "on ${" + Params.CONDITION + "}\n" +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and (${" + Params.CONDITION + "})\n" +
             "select traceId, instance, serviceName, count() as count\n" +
             "group by traceId, instance, serviceName\n" +
             "order by startTime desc"
     ),
     DISTRIBUTED_TRACING_GET_TRACE("from DistributedTracingTable\n" +
-            "on traceId == \"${" + Params.TRACE_ID + "}\"\n" +
+            "on runtime == \"${" + Params.RUNTIME + "}\" and traceId == \"${" + Params.TRACE_ID + "}\"\n" +
             "select traceId, spanId, parentId, namespace, instance, instanceKind, serviceName, pod, operationName, " +
             "spanKind, startTime, duration, tags"
     ),
     K8S_GET_PODS_FOR_COMPONENT("from K8sPodInfoTable\n" +
-            "on (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
+            "on (\"${" + Params.NAMESPACE + "}\" == \"\" or namespace == \"${" + Params.NAMESPACE + "}\") " +
+            "and (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
             "and (\"${" + Params.COMPONENT + "}\" == \"\" or component == \"${" + Params.COMPONENT + "}\") " +
             "and ((${" + Params.QUERY_START_TIME + "}L == -1L and ${" + Params.QUERY_END_TIME + "}L == -1L) " +
             "or ((creationTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
@@ -153,7 +173,8 @@ public enum SiddhiStoreQueryTemplates {
             "select instance, component, podName, creationTimestamp, lastKnownAliveTimestamp, nodeName"
     ),
     K8S_GET_INSTANCES("from K8sComponentInfoTable\n" +
-            "on (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
+            "on (\"${" + Params.NAMESPACE + "}\" == \"\" or namespace == \"${" + Params.NAMESPACE + "}\") " +
+            "and (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
             "and ((${" + Params.QUERY_START_TIME + "}L == -1L and ${" + Params.QUERY_END_TIME + "}L == -1L) " +
             "or ((creationTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
             "and creationTimestamp <= ${" + Params.QUERY_END_TIME + "}L) " +
@@ -165,7 +186,8 @@ public enum SiddhiStoreQueryTemplates {
             "group by instance"
     ),
     K8S_GET_COMPONENTS("from K8sComponentInfoTable\n" +
-            "on (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
+            "on (\"${" + Params.NAMESPACE + "}\" == \"\" or namespace == \"${" + Params.NAMESPACE + "}\") " +
+            "and (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
             "and (\"${" + Params.COMPONENT + "}\" == \"\" or component == \"${" + Params.COMPONENT + "}\") " +
             "and ((${" + Params.QUERY_START_TIME + "}L == -1L and ${" + Params.QUERY_END_TIME + "}L == -1L) " +
             "or ((creationTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
@@ -201,6 +223,8 @@ public enum SiddhiStoreQueryTemplates {
         public static final String SOURCE_COMPONENT = "sourceComponent";
         public static final String DESTINATION_INSTANCE = "destinationInstance";
         public static final String DESTINATION_COMPONENT = "destinationComponent";
+        public static final String RUNTIME = "runtime";
+        public static final String NAMESPACE = "namespace";
         public static final String CONDITION = "condition";     // Should be used with caution considering SQL injection
 
         // Tracing specific Params

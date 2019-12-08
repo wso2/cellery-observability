@@ -100,12 +100,12 @@ class Cell extends React.Component {
 
     handleOnUpdate = (isUserAction, startTime, endTime) => {
         if (this.tabContentRef.current && this.tabContentRef.current.update) {
-            this.loadInstanceInfo(isUserAction);
+            this.loadInstanceInfo(isUserAction, startTime, endTime);
             this.tabContentRef.current.update(isUserAction, startTime, endTime);
         }
     };
 
-    loadInstanceInfo = (isUserAction) => {
+    loadInstanceInfo = (isUserAction, queryStartTime, queryEndTime) => {
         const self = this;
         const {globalState, match} = self.props;
         const cellName = match.params.cellName;
@@ -116,9 +116,15 @@ class Cell extends React.Component {
                 isLoading: true
             });
         }
+        const searchQueryParams = HttpUtils.generateQueryParamString({
+            queryStartTime: queryStartTime.valueOf(),
+            queryEndTime: queryEndTime.valueOf()
+        });
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/instances/${cellName}`,
+                url: `${pathPrefix}/instances/${cellName}${searchQueryParams}`,
                 method: "GET"
             },
             globalState

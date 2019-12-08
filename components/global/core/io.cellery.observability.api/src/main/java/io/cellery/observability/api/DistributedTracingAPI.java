@@ -43,18 +43,22 @@ import javax.ws.rs.core.Response;
 /**
  * MSF4J service for fetching distributed tracing data.
  */
-@Path("/api/traces")
+@Path("/api/runtimes/{runtime}/namespaces/{namespace}/tracing")
 public class DistributedTracingAPI {
     private static final JsonParser jsonParser = new JsonParser();
 
     @GET
     @Path("/metadata")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getMetadata(@DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
+    public Response getMetadata(@PathParam("runtime") String runtime,
+                                @PathParam("namespace") String namespace,
+                                @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                 @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_METADATA.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .build()
@@ -68,7 +72,9 @@ public class DistributedTracingAPI {
     @GET
     @Path("/search")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response search(@DefaultValue("") @QueryParam("instance") String instance,
+    public Response search(@PathParam("runtime") String runtime,
+                           @PathParam("namespace") String namespace,
+                           @DefaultValue("") @QueryParam("instance") String instance,
                            @DefaultValue("") @QueryParam("serviceName") String serviceName,
                            @DefaultValue("") @QueryParam("operationName") String operationName,
                            @DefaultValue("-1") @QueryParam("minDuration") long minDuration,
@@ -116,10 +122,11 @@ public class DistributedTracingAPI {
             }
 
             Object[][] traceIdResults = siddhiStoreQueryTemplates.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
+                    .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instance)
                     .setArg(SiddhiStoreQueryTemplates.Params.SERVICE_NAME, serviceName)
                     .setArg(SiddhiStoreQueryTemplates.Params.OPERATION_NAME, operationName)
-                    .setArg(SiddhiStoreQueryTemplates.Params.MIN_DURATION, minDuration)
                     .build()
                     .execute();
 
@@ -127,13 +134,17 @@ public class DistributedTracingAPI {
             if (traceIdResults.length > 0) {
                 /*
                  * The root span trace Ids list is fetched for validating whether the traces have roots as well as to
-                 * ensure that the query start time and end time matches properly
+                 * ensure that the query start time, end time and minimum duration matches properly
                  */
                 Object[][] fullRootSpansResult
                         = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_TRACE_IDS_WITH_VALID_ROOT_SPANS
                             .builder()
+                            .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
+                            .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                             .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                             .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
+                            .setArg(SiddhiStoreQueryTemplates.Params.MIN_DURATION, minDuration)
+                            .setArg(SiddhiStoreQueryTemplates.Params.MAX_DURATION, maxDuration)
                             .build()
                             .execute();
                 List<String> fullRootSpansList = new ArrayList<>(fullRootSpansResult.length);
@@ -182,6 +193,8 @@ public class DistributedTracingAPI {
             if (traceIds.size() > 0) {
                 rootSpanResults = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_ROOT_SPAN_METADATA
                         .builder()
+                        .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
+                        .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                         .setArg(
                                 SiddhiStoreQueryTemplates.Params.CONDITION,
                                 Utils.generateSiddhiMatchConditionForMultipleValues(
@@ -200,6 +213,7 @@ public class DistributedTracingAPI {
                     spanCountResults =
                             SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_SEARCH_GET_MULTIPLE_INSTANCE_SERVICE_COUNTS
                                     .builder()
+                                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
                                     .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
                                             Utils.generateSiddhiMatchConditionForMultipleValues("traceId",
                                                     rootSpanResultIds))
@@ -226,11 +240,14 @@ public class DistributedTracingAPI {
     }
 
     @GET
-    @Path("/{traceId}")
+    @Path("/traces/{traceId}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getTraceByTraceId(@PathParam("traceId") String traceId) throws APIInvocationException {
+    public Response getTraceByTraceId(@PathParam("runtime") String runtime,
+                                      @PathParam("namespace") String namespace,
+                                      @PathParam("traceId") String traceId) throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_GET_TRACE.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TRACE_ID, traceId)
                     .build()
                     .execute();

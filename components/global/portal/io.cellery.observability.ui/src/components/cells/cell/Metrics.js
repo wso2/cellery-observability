@@ -128,9 +128,11 @@ class Metrics extends React.Component {
                 loadingCount: prevState.loadingCount + 1
             }));
         }
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/instances/metadata${HttpUtils.generateQueryParamString(search)}`,
+                url: `${pathPrefix}/http-requests/instances/metadata${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState
@@ -188,9 +190,11 @@ class Metrics extends React.Component {
                 loadingCount: prevState.loadingCount + 1
             }));
         }
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/http-requests/instances/metrics${HttpUtils.generateQueryParamString(search)}`,
+                url: `${pathPrefix}/http-requests/instances/metrics${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState

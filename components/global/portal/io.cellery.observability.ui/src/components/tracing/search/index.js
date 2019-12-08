@@ -284,9 +284,11 @@ class TraceSearch extends React.Component {
                 isLoading: true
             });
         }
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `/traces/metadata${HttpUtils.generateQueryParamString(filter)}`,
+                url: `${pathPrefix}/tracing/metadata${HttpUtils.generateQueryParamString(filter)}`,
                 method: "GET"
             },
             globalState

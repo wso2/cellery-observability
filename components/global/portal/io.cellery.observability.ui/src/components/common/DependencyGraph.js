@@ -24,7 +24,7 @@ import vis from "vis";
 import {withStyles} from "@material-ui/core/styles/index";
 import * as PropTypes from "prop-types";
 
-const styles = (theme) => ({
+const styles = () => ({
     graph: {
         width: "100%",
         height: "100%"
@@ -306,7 +306,7 @@ DependencyGraph.propTypes = {
     id: PropTypes.string.isRequired,
     nodeData: PropTypes.arrayOf(PropTypes.shape({
         id: PropTypes.string.isRequired,
-        instanceKind: PropTypes.string.isRequired
+        instanceKind: PropTypes.string
     })),
     edgeData: PropTypes.arrayOf(PropTypes.shape({
         source: PropTypes.string.isRequired,

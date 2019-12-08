@@ -30,10 +30,12 @@ import Select from "@material-ui/core/Select/Select";
 import Toolbar from "@material-ui/core/Toolbar/Toolbar";
 import Tooltip from "@material-ui/core/Tooltip";
 import Typography from "@material-ui/core/Typography/Typography";
+import classNames from "classnames";
 import {withRouter} from "react-router-dom";
 import {withStyles} from "@material-ui/core";
 import withGlobalState, {StateHolder} from "../state";
 import * as PropTypes from "prop-types";
+import HttpUtils from "../../../utils/api/httpUtils";
 
 const styles = (theme) => ({
     container: {
@@ -85,8 +87,10 @@ const styles = (theme) => ({
         marginRight: theme.spacing.unit * 3
     },
     namespaceSelectFormControl: {
+        marginRight: theme.spacing.unit * 3
+    },
+    namespaceSelectWithTimeSelectorsSeparator: {
         paddingRight: theme.spacing.unit * 3,
-        marginRight: theme.spacing.unit * 3,
         borderRight: "2px solid #ccc"
     }
 });
@@ -130,13 +134,14 @@ class TopToolbar extends React.Component {
     });
 
     render = () => {
-        const {classes, title, subTitle, location, history, globalState, onUpdate} = this.props;
+        const {classes, title, subTitle, hideNamespaceSelector, location, history, globalState, onUpdate} = this.props;
         const {
             runtime, namespace, startTime, endTime, dateRangeNickname, refreshInterval, dateRangeSelectorAnchorElement,
             isAutoRefreshEnabled
         } = this.state;
 
         const isDateRangeSelectorOpen = Boolean(dateRangeSelectorAnchorElement);
+        const authorizedRuntimeNamespaces = globalState.get(StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES);
         return (
             <div className={classes.container}>
                 <Toolbar disableGutters={true}>
@@ -170,36 +175,51 @@ class TopToolbar extends React.Component {
                             startAdornment={(
                                 <InputAdornment className={classes.startInputAdornment}
                                     variant="filled" position="start">
-                                    Namespace
+                                    Runtime
                                 </InputAdornment>
                             )}
                             className={classes.selectInput}>
                             {
-                                Object.keys(globalState.get(StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES))
+                                Object.keys(authorizedRuntimeNamespaces)
                                     .map((runtimeItem) => (
                                         <MenuItem key={runtimeItem} value={runtimeItem}>{runtimeItem}</MenuItem>
                                     ))
                             }
                         </Select>
                     </FormControl>
-                    <FormControl className={classes.namespaceSelectFormControl}>
-                        <Select value={namespace} inputProps={{name: "namespace", id: "namespace"}}
-                            onChange={(event) => this.setNamespace(event.target.value)}
-                            startAdornment={(
-                                <InputAdornment className={classes.startInputAdornment}
-                                    variant="filled" position="start">
-                                    Namespace
-                                </InputAdornment>
-                            )}
-                            className={classes.selectInput}>
-                            {
-                                globalState.get(StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES)[runtime]
-                                    .map((namespaceItem) => (
-                                        <MenuItem key={namespaceItem} value={namespaceItem}>{namespaceItem}</MenuItem>
-                                    ))
-                            }
-                        </Select>
-                    </FormControl>
+                    {
+                        hideNamespaceSelector
+                            ? null
+                            : (
+                                <FormControl className={classNames({
+                                    [classes.namespaceSelectFormControl]: true,
+                                    [classes.namespaceSelectWithTimeSelectorsSeparator]: Boolean(onUpdate)
+                                })}>
+                                    <Select value={namespace} inputProps={{name: "namespace", id: "namespace"}}
+                                        onChange={(event) => this.setNamespace(event.target.value)}
+                                        startAdornment={(
+                                            <InputAdornment className={classes.startInputAdornment}
+                                                variant="filled" position="start">
+                                                    Namespace
+                                            </InputAdornment>
+                                        )}
+                                        className={classes.selectInput}>
+                                        {
+                                            runtime && authorizedRuntimeNamespaces[runtime]
+                                                ? (
+                                                    authorizedRuntimeNamespaces[runtime]
+                                                        .map((namespaceItem) => (
+                                                            <MenuItem key={namespaceItem} value={namespaceItem}>
+                                                                {namespaceItem}
+                                                            </MenuItem>
+                                                        ))
+                                                )
+                                                : null
+                                        }
+                                    </Select>
+                                </FormControl>
+                            )
+                    }
                     {
                         onUpdate
                             ? (
@@ -306,12 +326,26 @@ class TopToolbar extends React.Component {
         });
     };
 
+    /**
+     * Set the runtime for which all the dashboard items will be limited to.
+     *
+     * @param {string} runtime The runtime to limit the dashboard
+     */
     setRuntime = (runtime) => {
-        const {globalState} = this.props;
+        const {globalState, location, match, history} = this.props;
 
         globalState.set(StateHolder.GLOBAL_FILTER, {
             ...globalState.get(StateHolder.GLOBAL_FILTER),
             runtime: runtime
+        });
+
+        // Removing Query Params provided for overriding time range
+        const queryParamsString = HttpUtils.generateQueryParamString({
+            ...HttpUtils.parseQueryParams(location.search),
+            globalFilterRuntime: undefined
+        });
+        history.replace(match.url + queryParamsString, {
+            ...location.state
         });
 
         this.stopRefreshTask(); // Stop any existing refresh tasks (Will be restarted when the component is updated)
@@ -321,12 +355,26 @@ class TopToolbar extends React.Component {
         });
     };
 
+    /**
+     * Set the namespace for which all the dashboard items will be limited to.
+     *
+     * @param {string} namespace The namespace to limit the dashboard
+     */
     setNamespace = (namespace) => {
-        const {globalState} = this.props;
+        const {globalState, location, match, history} = this.props;
 
         globalState.set(StateHolder.GLOBAL_FILTER, {
             ...globalState.get(StateHolder.GLOBAL_FILTER),
             namespace: namespace
+        });
+
+        // Removing Query Params provided for overriding time range
+        const queryParamsString = HttpUtils.generateQueryParamString({
+            ...HttpUtils.parseQueryParams(location.search),
+            globalFilterNamespace: undefined
+        });
+        history.replace(match.url + queryParamsString, {
+            ...location.state
         });
 
         this.stopRefreshTask(); // Stop any existing refresh tasks (Will be restarted when the component is updated)
@@ -344,13 +392,23 @@ class TopToolbar extends React.Component {
      * @param {string} dateRangeNickname The new date range nickname to be set
      */
     setTimePeriod = (startTime, endTime, dateRangeNickname) => {
-        const {globalState} = this.props;
+        const {globalState, location, match, history} = this.props;
 
         globalState.set(StateHolder.GLOBAL_FILTER, {
             ...globalState.get(StateHolder.GLOBAL_FILTER),
             startTime: startTime,
             endTime: endTime,
             dateRangeNickname: dateRangeNickname
+        });
+
+        // Removing Query Params provided for overriding time range
+        const queryParamsString = HttpUtils.generateQueryParamString({
+            ...HttpUtils.parseQueryParams(location.search),
+            globalFilterStartTime: undefined,
+            globalFilterEndTime: undefined
+        });
+        history.replace(match.url + queryParamsString, {
+            ...location.state
         });
 
         this.stopRefreshTask(); // Stop any existing refresh tasks (Will be restarted when the component is updated)
@@ -444,6 +502,7 @@ TopToolbar.propTypes = {
     onUpdate: PropTypes.func,
     title: PropTypes.string.isRequired,
     subTitle: PropTypes.string,
+    hideNamespaceSelector: PropTypes.bool,
     classes: PropTypes.object.isRequired,
     globalState: PropTypes.instanceOf(StateHolder).isRequired,
     history: PropTypes.shape({

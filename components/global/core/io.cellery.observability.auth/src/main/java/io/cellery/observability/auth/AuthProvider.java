@@ -29,12 +29,12 @@ public interface AuthProvider {
     // TODO: Move all auth to this module and rethink this interface
 
     /**
-     * Get a map of the authorized run-time namespaces for a user.
+     * Get a map of the authorized runtime namespaces for a user.
      * The keys of the map are runtimes while the value for each runtime contains an array of namespaces
      * the user has access to in the namespaces.
      *
      * @param accessToken The access token sent for the action
-     * @return The map of authorized run-time namespaces
+     * @return The map of authorized runtime namespaces
      */
     Map<String, String[]> getAuthorizedRuntimeNamespaces(String accessToken);
 }

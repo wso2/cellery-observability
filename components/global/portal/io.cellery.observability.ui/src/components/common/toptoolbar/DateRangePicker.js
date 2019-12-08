@@ -396,16 +396,6 @@ class DateRangePicker extends React.Component {
         const {onRangeChange, history, location, match} = this.props;
         const {startTime, endTime} = this.state;
 
-        // Removing Query Params provided for overriding time range
-        const queryParamsString = HttpUtils.generateQueryParamString({
-            ...HttpUtils.parseQueryParams(location.search),
-            globalFilterStartTime: undefined,
-            globalFilterEndTime: undefined
-        });
-        history.replace(match.url + queryParamsString, {
-            ...location.state
-        });
-
         onRangeChange(
             newStartTime ? newStartTime : startTime,
             newEndTime ? newEndTime : endTime,
