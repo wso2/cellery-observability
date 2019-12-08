@@ -50,10 +50,6 @@
             <artifactId>io.cellery.observability.telemetry.deduplicator</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.zipkin.zipkin2</groupId>
-            <artifactId>zipkin</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.wso2.extension.siddhi.io.http</groupId>
             <artifactId>siddhi-io-http</artifactId>
         </dependency>

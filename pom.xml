@@ -187,11 +187,6 @@
                 <version>${brave.open.tracing.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.zipkin.zipkin2</groupId>
-                <artifactId>zipkin</artifactId>
-                <version>${zipkin.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.zipkin.reporter2</groupId>
                 <artifactId>zipkin-reporter</artifactId>
                 <version>${zipkin.reporter.version}</version>
@@ -200,11 +195,6 @@
                 <groupId>io.zipkin.reporter2</groupId>
                 <artifactId>zipkin-sender-urlconnection</artifactId>
                 <version>${zipkin.reporter.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.thrift</groupId>
-                <artifactId>libthrift</artifactId>
-                <version>${thrift.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.opencensus</groupId>
@@ -576,7 +566,6 @@
         <brave.open.tracing.version>0.29.0</brave.open.tracing.version>
         <zipkin.version>2.11.6</zipkin.version>
         <zipkin.reporter.version>2.5.0</zipkin.reporter.version>
-        <thrift.version>0.10.0</thrift.version>
         <fabric8.kubernetes.version>4.3.0</fabric8.kubernetes.version>
         <com.squareup.okhttp3>3.14.1</com.squareup.okhttp3>
         <adal4j.version>1.6.0</adal4j.version>
