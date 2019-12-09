@@ -2,6 +2,8 @@ name: Push
 on: [push]
 jobs:
   build:
+    # TODO: Remove below condition once GitHub actions are enabled
+    if: false
     runs-on: ubuntu-18.04
     steps:
     - name: Cloning repository
