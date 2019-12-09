@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
+/* eslint max-lines: ["error", 600] */
+
 import ArrowBack from "@material-ui/icons/ArrowBack";
 import Button from "@material-ui/core/Button";
 import CalendarToday from "@material-ui/icons/CalendarTodayOutlined";
 import DateRangePicker from "./DateRangePicker";
 import FormControl from "@material-ui/core/FormControl/FormControl";
+import HttpUtils from "../../../utils/api/httpUtils";
 import IconButton from "@material-ui/core/IconButton/IconButton";
 import InputAdornment from "@material-ui/core/InputAdornment/InputAdornment";
 import MenuItem from "@material-ui/core/MenuItem/MenuItem";
@@ -35,7 +38,6 @@ import {withRouter} from "react-router-dom";
 import {withStyles} from "@material-ui/core";
 import withGlobalState, {StateHolder} from "../state";
 import * as PropTypes from "prop-types";
-import HttpUtils from "../../../utils/api/httpUtils";
 
 const styles = (theme) => ({
     container: {
@@ -510,6 +512,9 @@ TopToolbar.propTypes = {
     }),
     location: PropTypes.shape({
         state: PropTypes.any
+    }).isRequired,
+    match: PropTypes.shape({
+        url: PropTypes.string.isRequired
     }).isRequired
 };
 

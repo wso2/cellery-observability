@@ -26,7 +26,6 @@ import Divider from "@material-ui/core/Divider";
 import FormControl from "@material-ui/core/FormControl/FormControl";
 import FormControlLabel from "@material-ui/core/FormControlLabel/FormControlLabel";
 import Grid from "@material-ui/core/Grid/Grid";
-import HttpUtils from "../../../utils/api/httpUtils";
 import InputLabel from "@material-ui/core/InputLabel/InputLabel";
 import QueryUtils from "../../../utils/common/queryUtils";
 import React from "react";
@@ -393,7 +392,7 @@ class DateRangePicker extends React.Component {
      * @param {string} newDateRangeNickname The new date range nickname to be applied
      */
     applyDateRange = (newStartTime = "", newEndTime = "", newDateRangeNickname = "") => {
-        const {onRangeChange, history, location, match} = this.props;
+        const {onRangeChange} = this.props;
         const {startTime, endTime} = this.state;
 
         onRangeChange(
