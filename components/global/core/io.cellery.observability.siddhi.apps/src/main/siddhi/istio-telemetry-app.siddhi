@@ -24,9 +24,9 @@ define stream TelemetryStream(runtime string, requestId string, traceId string, 
                               sourceNamespace string, sourceInstance string, sourceInstanceKind string,
                               sourceComponent string, sourcePod string, destinationNamespace string,
                               destinationInstance string, destinationInstanceKind string, destinationComponent string,
-                              destinationPod string, contextReporterKind string, requestPath string,
+                              destinationPod string, reporterKind string, requestPath string,
                               requestMethod string, requestSizeBytes long, responseCode long,
-                              responseDurationNanoSec long, responseSizeBytes long);
+                              responseDurationNanoSec long, responseSizeBytes long, reporterUID string);
 
 @sink(type="inMemory", topic="istio-mixer-report", @map(type="passThrough"))
 define stream TelemetryInMemorySink(runtime string, requestId string, traceId string, spanId string,
@@ -34,9 +34,9 @@ define stream TelemetryInMemorySink(runtime string, requestId string, traceId st
                                     sourceInstanceKind string, sourceComponent string, sourcePod string,
                                     destinationNamespace string, destinationInstance string,
                                     destinationInstanceKind string, destinationComponent string, destinationPod string,
-                                    contextReporterKind string, requestPath string, requestMethod string,
+                                    reporterKind string, requestPath string, requestMethod string,
                                     requestSizeBytes long, responseCode long, responseDurationNanoSec long,
-                                    responseSizeBytes long);
+                                    responseSizeBytes long, reporterUID string);
 
 -- Storing the required attributes in a in memory sink (To be accessed from other siddhi apps)
 -- When updating the used attributes from the received attributes the stream definitions needs to be updated in all
