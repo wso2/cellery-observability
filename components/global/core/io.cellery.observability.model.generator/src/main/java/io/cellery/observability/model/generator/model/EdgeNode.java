@@ -24,20 +24,14 @@ import java.util.Objects;
  * Represents the node (source or target) in a edge.
  */
 public class EdgeNode {
-    private String runtime;
     private String namespace;
     private String instance;
     private String component;
 
-    public EdgeNode(String runtime, String namespace, String instance, String component) {
-        this.runtime = runtime;
+    public EdgeNode(String namespace, String instance, String component) {
         this.namespace = namespace;
         this.instance = instance;
         this.component = component;
-    }
-
-    public String getRuntime() {
-        return runtime;
     }
 
     public String getNamespace() {
@@ -60,8 +54,7 @@ public class EdgeNode {
         boolean equals;
         if (anotherObject instanceof EdgeNode) {
             EdgeNode anotherEdgeNode = (EdgeNode) anotherObject;
-            equals = Objects.equals(this.runtime, anotherEdgeNode.getRuntime())
-                    && Objects.equals(this.namespace, anotherEdgeNode.getNamespace())
+            equals = Objects.equals(this.namespace, anotherEdgeNode.getNamespace())
                     && Objects.equals(this.instance, anotherEdgeNode.getInstance())
                     && Objects.equals(this.component, anotherEdgeNode.getComponent());
         } else {
@@ -71,7 +64,7 @@ public class EdgeNode {
     }
 
     public int hashCode() {
-        return Objects.hash(this.runtime, this.namespace, this.instance, this.component);
+        return Objects.hash(this.namespace, this.instance, this.component);
     }
 
     public String toString() {

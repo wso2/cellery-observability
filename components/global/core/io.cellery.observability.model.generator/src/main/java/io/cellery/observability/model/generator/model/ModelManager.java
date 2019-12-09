@@ -38,21 +38,19 @@ import java.util.stream.Collectors;
  * This is the Manager, singleton class which performs the operations in the in memory dependency tree.
  */
 public class ModelManager {
-    private MutableNetwork<Node, Edge> dependencyGraph;
-    private Map<String, Node> nodeCache = new HashMap<>();
+    private Map<String, MutableNetwork<Node, Edge>> dependencyGraphs;
+    private Map<String, Map<String, Node>> nodeCache = new HashMap<>();
 
     public ModelManager() throws ModelException {
         try {
-            this.dependencyGraph = NetworkBuilder.directed()
-                    .allowsParallelEdges(true)
-                    .expectedNodeCount(100000)
-                    .expectedEdgeCount(1000000)
-                    .build();
+            this.dependencyGraphs = new HashMap<>();
 
-            Model model = ServiceHolder.getModelStoreManager().loadLastModel();
-            if (model != null) {
-                addNodes(model.getNodes());
-                addEdges(model.getEdges());
+            Map<String, Model> models = ServiceHolder.getModelStoreManager().loadLastModels();
+            if (models != null) {
+                for (Map.Entry<String, Model> modelEntry : models.entrySet()) {
+                    addNodes(modelEntry.getKey(), modelEntry.getValue().getNodes());
+                    addEdges(modelEntry.getKey(), modelEntry.getValue().getEdges());
+                }
             }
         } catch (GraphStoreException e) {
             throw new ModelException("Unable to load already persisted model", e);
@@ -60,13 +58,28 @@ public class ModelManager {
     }
 
     /**
+     * Get the existing dependency graph for a runtime.
+     *
+     * @param runtime The runtime of which the dependency graph should be fetched
+     * @return The dependency graph
+     */
+    private MutableNetwork<Node, Edge> getOrGenerateDependencyGraph(String runtime) {
+        return this.dependencyGraphs.computeIfAbsent(runtime, k -> NetworkBuilder.directed()
+                .allowsParallelEdges(true)
+                .expectedNodeCount(100000)
+                .expectedEdgeCount(1000000)
+                .build());
+    }
+
+    /**
      * Add a set of nodes to the dependency model.
      *
-     * @param nodes The set of nodes to be added
+     * @param runtime The runtime to which the nodes should be added
+     * @param nodes   The set of nodes to be added
      */
-    private void addNodes(Set<Node> nodes) {
+    private void addNodes(String runtime, Set<Node> nodes) {
         for (Node node : nodes) {
-            this.addNode(node);
+            this.addNode(runtime, node);
         }
     }
 
@@ -74,17 +87,18 @@ public class ModelManager {
      * Add a set of edges to the dependency model.
      * Expects that the relevant nodes had been already added.
      *
-     * @param edges The set of edges to be added.
+     * @param runtime The runtime to which the edges should be added
+     * @param edges   The set of edges to which the edges should be added
      * @throws ModelException If source or target node was not added before adding a particular edge
      */
-    private void addEdges(Set<Edge> edges) throws ModelException {
+    private void addEdges(String runtime, Set<Edge> edges) throws ModelException {
         for (Edge edge : edges) {
-            Node sourceNode = getNode(edge.getSource().getRuntime(), edge.getSource().getNamespace(),
+            Node sourceNode = getNode(runtime, edge.getSource().getNamespace(),
                     edge.getSource().getInstance(), edge.getSource().getComponent());
-            Node targetNode = getNode(edge.getTarget().getRuntime(), edge.getTarget().getNamespace(),
+            Node targetNode = getNode(runtime, edge.getTarget().getNamespace(),
                     edge.getTarget().getInstance(), edge.getTarget().getComponent());
             if (sourceNode != null && targetNode != null) {
-                this.dependencyGraph.addEdge(sourceNode, targetNode, edge);
+                this.getOrGenerateDependencyGraph(runtime).addEdge(sourceNode, targetNode, edge);
             } else {
                 String msg = "";
                 if (sourceNode == null) {
@@ -108,15 +122,16 @@ public class ModelManager {
      * @return The node in the dependency graph or null if not present
      */
     public Node getNode(String runtime, String namespace, String instance, String component) {
-        String nodeFQN = Model.getNodeFQN(runtime, namespace, instance, component);
-        Node cachedNode = this.nodeCache.get(nodeFQN);
+        String nodeFQN = Model.getNodeFQN(namespace, instance, component);
+        Node cachedNode = this.nodeCache.computeIfAbsent(runtime, k -> new HashMap<>()).get(nodeFQN);
         if (cachedNode == null) {
-            Optional<Node> requiredNode = this.dependencyGraph.nodes()
+            Optional<Node> requiredNode = this.getOrGenerateDependencyGraph(runtime).nodes()
                     .stream()
                     .filter(node -> Objects.equals(node.getFQN(), nodeFQN))
                     .findAny();
             if (requiredNode.isPresent()) {
-                this.nodeCache.put(requiredNode.get().getFQN(), requiredNode.get());
+                Map<String, Node> runtimeNodes = this.nodeCache.computeIfAbsent(runtime, k -> new HashMap<>());
+                runtimeNodes.put(requiredNode.get().getFQN(), requiredNode.get());
                 return requiredNode.get();
             } else {
                 return null;
@@ -137,8 +152,8 @@ public class ModelManager {
     public Node getOrGenerateNode(String runtime, String namespace, String instance, String component) {
         Node node = this.getNode(runtime, namespace, instance, component);
         if (node == null) {
-            node = new Node(runtime, namespace, instance, component);
-            this.addNode(node);
+            node = new Node(namespace, instance, component);
+            this.addNode(runtime, node);
         }
         return node;
     }
@@ -146,11 +161,13 @@ public class ModelManager {
     /**
      * Add a node to the dependency graph.
      *
-     * @param node The node to be added.
+     * @param runtime The runtime to which the node should be added
+     * @param node    The node to be added
      */
-    public void addNode(Node node) {
-        this.dependencyGraph.addNode(node);
-        this.nodeCache.put(node.getFQN(), node);
+    public void addNode(String runtime, Node node) {
+        this.getOrGenerateDependencyGraph(runtime).addNode(node);
+        Map<String, Node> runtimeNodes = this.nodeCache.computeIfAbsent(runtime, k -> new HashMap<>());
+        runtimeNodes.put(node.getFQN(), node);
     }
 
     /**
@@ -159,21 +176,12 @@ public class ModelManager {
      * @param source The source node of the edge
      * @param target The target node of the edge
      */
-    public void addEdge(Node source, Node target) {
-        EdgeNode sourceEdgeNode = new EdgeNode(source.getRuntime(), source.getNamespace(), source.getInstance(),
+    public void addEdge(String runtime, Node source, Node target) {
+        EdgeNode sourceEdgeNode = new EdgeNode(source.getNamespace(), source.getInstance(),
                 source.getComponent());
-        EdgeNode targetEdgeNode = new EdgeNode(target.getRuntime(), target.getNamespace(), target.getInstance(),
+        EdgeNode targetEdgeNode = new EdgeNode(target.getNamespace(), target.getInstance(),
                 target.getComponent());
-        this.dependencyGraph.addEdge(source, target, new Edge(sourceEdgeNode, targetEdgeNode));
-    }
-
-    /**
-     * Get the edges in the current dependency model.
-     *
-     * @return The nodes in the current dependency model used by the Model Manager.
-     */
-    public Set<Edge> getCurrentEdges() {
-        return dependencyGraph.edges();
+        this.getOrGenerateDependencyGraph(runtime).addEdge(source, target, new Edge(sourceEdgeNode, targetEdgeNode));
     }
 
     /**
@@ -181,21 +189,14 @@ public class ModelManager {
      *
      * @return The edges in the current dependency model used by the Model Manager.
      */
-    public Set<Node> getCurrentNodes() {
-        return dependencyGraph.nodes();
-    }
-
-    /**
-     * Get the union dependency model within a given time period.
-     *
-     * @param startTime The start time of the time period
-     * @param endTime The end time of the time period
-     * @return The union dependency mode
-     * @throws GraphStoreException If loading the model failed
-     */
-    public Model getDependencyModel(long startTime, long endTime) throws GraphStoreException {
-        List<Model> models = ServiceHolder.getModelStoreManager().loadModel(startTime, endTime);
-        return getMergedModel(models);
+    public Map<String, Model> getCurrentRuntimeModels() {
+        Map<String, Model> runtimeModels = new HashMap<>();
+        for (Map.Entry<String, MutableNetwork<Node, Edge>> dependencyGraphEntry : dependencyGraphs.entrySet()) {
+            MutableNetwork<Node, Edge> dependencyGraph = dependencyGraphEntry.getValue();
+            runtimeModels.put(dependencyGraphEntry.getKey(),
+                    new Model(dependencyGraph.nodes(), dependencyGraph.edges()));
+        }
+        return runtimeModels;
     }
 
     /**
@@ -207,18 +208,9 @@ public class ModelManager {
      * @return The union dependency mode
      * @throws GraphStoreException If loading the model failed
      */
-    public Model getRuntimeDependencyMode(long startTime, long endTime, String runtime) throws GraphStoreException {
-        Model completeModel = this.getDependencyModel(startTime, endTime);
-        Model partialModel = new Model(new HashSet<>(), new HashSet<>());
-        List<Node> instanceNodes = completeModel.getNodes()
-                .stream()
-                .filter((node) -> Objects.equals(node.getRuntime(), runtime))
-                .collect(Collectors.toList());
-        for (Node instanceNode : instanceNodes) {
-            extractPartialModel(completeModel, partialModel, instanceNode,
-                    (edge) -> Objects.equals(edge.getSource().getRuntime(), runtime));
-        }
-        return partialModel;
+    public Model getRuntimeDependencyModel(long startTime, long endTime, String runtime) throws GraphStoreException {
+        List<Model> models = ServiceHolder.getModelStoreManager().loadModels(startTime, endTime, runtime);
+        return getMergedModel(models);
     }
 
     /**
@@ -233,17 +225,15 @@ public class ModelManager {
      */
     public Model getNamespaceDependencyModel(long startTime, long endTime, String runtime, String namespace)
             throws GraphStoreException {
-        Model completeModel = this.getDependencyModel(startTime, endTime);
+        Model completeModel = this.getRuntimeDependencyModel(startTime, endTime, runtime);
         Model partialModel = new Model(new HashSet<>(), new HashSet<>());
         List<Node> instanceNodes = completeModel.getNodes()
                 .stream()
-                .filter((node) -> Objects.equals(node.getRuntime(), runtime)
-                        && Objects.equals(node.getNamespace(), namespace))
+                .filter((node) -> Objects.equals(node.getNamespace(), namespace))
                 .collect(Collectors.toList());
         for (Node instanceNode : instanceNodes) {
             extractPartialModel(completeModel, partialModel, instanceNode,
-                    (edge) -> Objects.equals(edge.getSource().getRuntime(), runtime)
-                            && Objects.equals(edge.getSource().getNamespace(), namespace));
+                    (edge) -> Objects.equals(edge.getSource().getNamespace(), namespace));
         }
         return partialModel;
     }
@@ -261,18 +251,16 @@ public class ModelManager {
      */
     public Model getInstanceDependencyModel(long startTime, long endTime, String runtime, String namespace,
                                             String instance) throws GraphStoreException {
-        Model completeModel = this.getDependencyModel(startTime, endTime);
+        Model completeModel = this.getRuntimeDependencyModel(startTime, endTime, runtime);
         Model partialModel = new Model(new HashSet<>(), new HashSet<>());
         List<Node> instanceNodes = completeModel.getNodes()
                 .stream()
-                .filter((node) -> Objects.equals(node.getRuntime(), runtime)
-                        && Objects.equals(node.getNamespace(), namespace)
+                .filter((node) -> Objects.equals(node.getNamespace(), namespace)
                         && Objects.equals(node.getInstance(), instance))
                 .collect(Collectors.toList());
         for (Node instanceNode : instanceNodes) {
             extractPartialModel(completeModel, partialModel, instanceNode,
-                    (edge) -> Objects.equals(edge.getSource().getRuntime(), runtime)
-                            && Objects.equals(edge.getSource().getNamespace(), namespace)
+                    (edge) -> Objects.equals(edge.getSource().getNamespace(), namespace)
                             && Objects.equals(edge.getSource().getInstance(), instance));
         }
         return partialModel;
@@ -292,19 +280,17 @@ public class ModelManager {
      */
     public Model getComponentDependencyModel(long startTime, long endTime, String runtime, String namespace,
                                              String instance, String component) throws GraphStoreException {
-        Model completeModel = this.getDependencyModel(startTime, endTime);
+        Model completeModel = this.getRuntimeDependencyModel(startTime, endTime, runtime);
         Model partialModel = new Model(new HashSet<>(), new HashSet<>());
         Optional<Node> componentNode = completeModel.getNodes()
                 .stream()
-                .filter((node) -> Objects.equals(node.getRuntime(), runtime)
-                        && Objects.equals(node.getNamespace(), namespace)
+                .filter((node) -> Objects.equals(node.getNamespace(), namespace)
                         && Objects.equals(node.getInstance(), instance)
                         && Objects.equals(node.getComponent(), component))
                 .findAny();
         componentNode.ifPresent(node -> extractPartialModel(
                 completeModel, partialModel, node,
-                (edge -> Objects.equals(edge.getSource().getRuntime(), runtime)
-                        && Objects.equals(edge.getSource().getNamespace(), namespace)
+                (edge -> Objects.equals(edge.getSource().getNamespace(), namespace)
                         && Objects.equals(edge.getSource().getInstance(), instance))));
         return partialModel;
     }

@@ -43,11 +43,11 @@ public class Model {
     }
 
     public static String getNodeFQN(EdgeNode node) {
-        return Model.getNodeFQN(node.getRuntime(), node.getNamespace(), node.getInstance(), node.getComponent());
+        return Model.getNodeFQN(node.getNamespace(), node.getInstance(), node.getComponent());
     }
 
-    public static String getNodeFQN(String runtime, String namespace, String instance, String component) {
-        return runtime + NODE_FQN_SEPARATOR + namespace + NODE_FQN_SEPARATOR + instance + NODE_FQN_SEPARATOR
+    public static String getNodeFQN(String namespace, String instance, String component) {
+        return namespace + NODE_FQN_SEPARATOR + instance + NODE_FQN_SEPARATOR
                 + component;
     }
 

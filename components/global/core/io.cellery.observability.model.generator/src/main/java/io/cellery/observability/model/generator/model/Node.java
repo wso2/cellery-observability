@@ -23,8 +23,8 @@ package io.cellery.observability.model.generator.model;
 public class Node extends EdgeNode {
     private String instanceKind;
 
-    public Node(String runtime, String namespace, String instance, String component) {
-        super(runtime, namespace, instance, component);
+    public Node(String namespace, String instance, String component) {
+        super(namespace, instance, component);
     }
 
     public void setInstanceKind(String instanceKind) {
