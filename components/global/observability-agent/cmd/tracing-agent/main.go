@@ -25,17 +25,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/config"
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/publisher"
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/signals"
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/store"
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/store/database"
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/store/file"
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/store/memory"
-	tracing_receiver "github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/tracing-receiver"
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/writer"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/config"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/publisher"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/signals"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/store"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/store/database"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/store/file"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/store/memory"
+	tracing_receiver "cellery.io/cellery-observability/components/global/observability-agent/pkg/tracing-receiver"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/writer"
 
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/logging"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/logging"
 )
 
 const (

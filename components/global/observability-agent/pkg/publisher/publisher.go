@@ -27,7 +27,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/store"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/store"
 )
 
 type (

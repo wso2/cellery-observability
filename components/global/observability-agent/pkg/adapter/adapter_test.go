@@ -31,7 +31,7 @@ import (
 	"istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/template/metric"
 
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/logging"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/logging"
 )
 
 type (

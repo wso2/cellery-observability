@@ -42,3 +42,6 @@ vendor/
 
 # OS
 .DS_Store
+
+# Go vendor
+/vendor

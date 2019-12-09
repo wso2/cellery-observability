@@ -23,12 +23,12 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/store/database"
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/store/file"
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/store/memory"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/store/database"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/store/file"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/store/memory"
 
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/adapter"
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/publisher"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/adapter"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/publisher"
 )
 
 type (
