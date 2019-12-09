@@ -31,7 +31,7 @@
     <dependencies>
         <dependency>
             <groupId>io.cellery.observability</groupId>
-            <artifactId>io.cellery.observability.telemetry.receiver</artifactId>
+            <artifactId>io.cellery.observability.agent.receiver</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -178,7 +178,7 @@
                             <includeScope>runtime</includeScope>
                             <outputDirectory>${project.build.directory}/files/non-osgi/</outputDirectory>
                             <excludeArtifactIds>
-                                io.cellery.observability.telemetry.receiver, commons-io,
+                                io.cellery.observability.agent.receiver, commons-io,
                                 io.cellery.observability.tracing.receiver, io.cellery.observability.api,
                                 io.cellery.observability.auth, io.cellery.observability.model.generator, siddhi-io-http,
                                 siddhi-store-rdbms, io.cellery.observability.k8s.client, joda-time, zipkin, client-java,

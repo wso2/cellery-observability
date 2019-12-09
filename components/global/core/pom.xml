@@ -32,7 +32,7 @@
 
     <modules>
         <module>io.cellery.observability.tracing.synapse.handler</module>
-        <module>io.cellery.observability.telemetry.receiver</module>
+        <module>io.cellery.observability.agent.receiver</module>
         <module>io.cellery.observability.k8s.client</module>
         <module>io.cellery.observability.model.generator</module>
         <module>io.cellery.observability.api</module>

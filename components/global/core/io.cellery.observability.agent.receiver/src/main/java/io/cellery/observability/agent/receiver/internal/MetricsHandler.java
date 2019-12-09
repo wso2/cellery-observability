@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.cellery.observability.telemetry.receiver.internal;
+package io.cellery.observability.agent.receiver.internal;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
