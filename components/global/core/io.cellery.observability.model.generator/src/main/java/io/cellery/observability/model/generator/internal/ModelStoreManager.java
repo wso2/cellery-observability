@@ -84,8 +84,7 @@ public class ModelStoreManager {
                 " (RUNTIME VARCHAR(255) NOT NULL, " +
                 "MODEL_TIMESTAMP TIMESTAMP NOT NULL, " +
                 "NODES TEXT NOT NULL, " +
-                "EDGES TEXT NOT NULL," +
-                "PRIMARY KEY (RUNTIME, MODEL_TIMESTAMP))");
+                "EDGES TEXT NOT NULL)");
         statement.execute();
         cleanupConnection(null, statement, connection);
     }

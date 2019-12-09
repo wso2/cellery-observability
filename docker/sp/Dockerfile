@@ -28,5 +28,8 @@ RUN rm ${WSO2_SERVER_HOME}/lib/siddhi-store-rdbms-4.0.35.jar
 # Copy the osgified jars
 COPY --chown=wso2carbon:wso2 ${CELLERY_TARGET_FILES}/lib/*.jar ${WSO2_SERVER_HOME}/lib/
 
+# Remove unused Siddhi App (Added in default pack)
+RUN rm ${WSO2_SERVER_HOME}/wso2/worker/deployment/siddhi-files/TestSiddhiApp.siddhi
+
 # Expose ports
 EXPOSE 9090 9443 9712 9612 7711 7611 9091 9411 9092 9123

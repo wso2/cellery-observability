@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* eslint max-lines: ["off"] */
+/* eslint max-lines: ["error", 700] */
 
 import "vis/dist/vis-timeline-graph2d.min.css";
 import "./TimelineView.css";
