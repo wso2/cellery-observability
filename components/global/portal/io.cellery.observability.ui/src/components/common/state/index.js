@@ -52,12 +52,26 @@ class UnStyledStateProvider extends React.Component {
 
         const queryParams = HttpUtils.parseQueryParams(props.location.search);
         this.stateHolder = new StateHolder(queryParams);
+        this.stateHolder.addListener(StateHolder.USER, this.handleUserChange);
     }
 
-    componentDidMount = () => {
+    handleUserChange = () => {
+        this.initStateHolder();
+    };
+
+    componentDidMount() {
+        this.initStateHolder();
+    }
+
+    initStateHolder = () => {
         const self = this;
         const queryParams = HttpUtils.parseQueryParams(self.props.location.search);
         self.mounted = true;
+        self.setState({
+            isLoading: true,
+            isConfigAvailable: false
+
+        });
         self.stateHolder.init(queryParams)
             .then(() => {
                 if (self.mounted) {
