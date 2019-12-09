@@ -1,4 +1,5 @@
-if: type = pull_request
+# TODO: Uncomment condition once github actions are enabled
+#if: type = pull_request
 dist: trusty
 language: go
 jdk:
