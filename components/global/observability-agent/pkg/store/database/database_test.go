@@ -24,7 +24,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/logging"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/logging"
 )
 
 var (

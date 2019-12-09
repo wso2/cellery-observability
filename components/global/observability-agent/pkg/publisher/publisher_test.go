@@ -28,8 +28,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/logging"
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/store"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/logging"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/store"
 )
 
 var (

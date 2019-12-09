@@ -39,3 +39,6 @@ hs_err_pid*
 
 # OS
 .DS_Store
+
+# Go vendor
+/vendor

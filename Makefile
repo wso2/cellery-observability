@@ -15,10 +15,9 @@
 #  under the License.
 
 PROJECT_ROOT := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
-PROJECT_PKG := github.com/cellery-io/mesh-observability
+PROJECT_PKG := cellery.io/cellery-observability
 DOCKER_REPO ?= wso2cellery
 DOCKER_IMAGE_TAG ?= latest
-
 
 all: clean init build docker
 

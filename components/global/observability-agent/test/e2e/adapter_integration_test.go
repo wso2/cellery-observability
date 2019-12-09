@@ -28,8 +28,8 @@ import (
 
 	adapterIntegration "istio.io/istio/mixer/pkg/adapter/test"
 
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/adapter"
-	"github.com/cellery-io/mesh-observability/components/global/observability-agent/pkg/logging"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/adapter"
+	"cellery.io/cellery-observability/components/global/observability-agent/pkg/logging"
 )
 
 const defaultAdapterPort int = 9091

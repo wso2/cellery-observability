@@ -1,4 +1,4 @@
-module github.com/cellery-io/mesh-observability
+module cellery.io/cellery-observability
 
 go 1.12
 
