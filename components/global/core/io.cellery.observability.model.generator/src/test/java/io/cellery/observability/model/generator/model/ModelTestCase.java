@@ -32,51 +32,51 @@ public class ModelTestCase {
 
     @Test
     public void testNodeFQNEquality() {
-        EdgeNode nodeA = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
-        EdgeNode nodeB = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
+        EdgeNode nodeA = new EdgeNode("test-namespace", "test-instance", "test-component");
+        EdgeNode nodeB = new EdgeNode("test-namespace", "test-instance", "test-component");
         Assert.assertEquals(nodeA.getFQN(), nodeB.getFQN());
     }
 
     @Test
     public void testNodeFQNInEqualityWithMismatchedNamespace() {
-        EdgeNode nodeA = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
-        EdgeNode nodeB = new EdgeNode("test-runtime", "different-namespace", "test-instance", "test-component");
+        EdgeNode nodeA = new EdgeNode("test-namespace", "test-instance", "test-component");
+        EdgeNode nodeB = new EdgeNode("different-namespace", "test-instance", "test-component");
         Assert.assertNotEquals(nodeA.getFQN(), nodeB.getFQN());
     }
 
     @Test
     public void testNodeFQNInEqualityWithMismatchedInstance() {
-        EdgeNode nodeA = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
-        EdgeNode nodeB = new EdgeNode("test-runtime", "test-namespace", "different-instance", "test-component");
+        EdgeNode nodeA = new EdgeNode("test-namespace", "test-instance", "test-component");
+        EdgeNode nodeB = new EdgeNode("test-namespace", "different-instance", "test-component");
         Assert.assertNotEquals(nodeA.getFQN(), nodeB.getFQN());
     }
 
     @Test
     public void testNodeFQNInEqualityWithMismatchedComponent() {
-        EdgeNode nodeA = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
-        EdgeNode nodeB = new EdgeNode("test-runtime", "test-namespace", "test-instance", "different-component");
+        EdgeNode nodeA = new EdgeNode("test-namespace", "test-instance", "test-component");
+        EdgeNode nodeB = new EdgeNode("test-namespace", "test-instance", "different-component");
         Assert.assertNotEquals(nodeA.getFQN(), nodeB.getFQN());
     }
 
     @Test
     public void testGetNodeFQNWithSeparateParameters() {
-        Node nodeA = new Node("test-runtime", "test-namespace", "test-instance", "test-component");
+        Node nodeA = new Node("test-namespace", "test-instance", "test-component");
         nodeA.setInstanceKind("Cell");
-        Assert.assertEquals(Model.getNodeFQN(nodeA.getRuntime(), nodeA.getNamespace(), nodeA.getInstance(),
-                nodeA.getComponent()), Model.getNodeFQN(nodeA));
+        Assert.assertEquals(Model.getNodeFQN(nodeA.getNamespace(), nodeA.getInstance(), nodeA.getComponent()),
+                Model.getNodeFQN(nodeA));
     }
 
     @Test
     public void testModelEquality() {
         Model modelA;
         {
-            Node nodeA = new Node("test-runtime", "namespace-a", "instance-a", "component-a");
+            Node nodeA = new Node("namespace-a", "instance-a", "component-a");
             nodeA.setInstanceKind("Cell");
-            Node nodeB = new Node("test-runtime", "namespace-a", "instance-b", "component-a");
+            Node nodeB = new Node("namespace-a", "instance-b", "component-a");
             nodeB.setInstanceKind("Composite");
-            Node nodeC = new Node("test-runtime", "namespace-a", "instance-c", "component-a");
+            Node nodeC = new Node("namespace-a", "instance-c", "component-a");
             nodeC.setInstanceKind("Cell");
-            Node nodeD = new Node("test-runtime", "namespace-b", "instance-a", "component-a");
+            Node nodeD = new Node("namespace-b", "instance-a", "component-a");
             nodeD.setInstanceKind("Cell");
 
             Edge edgeA = new Edge(nodeA, nodeB);
@@ -88,13 +88,13 @@ public class ModelTestCase {
         }
         Model modelB;
         {
-            Node nodeA = new Node("test-runtime", "namespace-a", "instance-a", "component-a");
+            Node nodeA = new Node("namespace-a", "instance-a", "component-a");
             nodeA.setInstanceKind("Cell");
-            Node nodeB = new Node("test-runtime", "namespace-a", "instance-b", "component-a");
+            Node nodeB = new Node("namespace-a", "instance-b", "component-a");
             nodeB.setInstanceKind("Composite");
-            Node nodeC = new Node("test-runtime", "namespace-a", "instance-c", "component-a");
+            Node nodeC = new Node("namespace-a", "instance-c", "component-a");
             nodeC.setInstanceKind("Cell");
-            Node nodeD = new Node("test-runtime", "namespace-b", "instance-a", "component-a");
+            Node nodeD = new Node("namespace-b", "instance-a", "component-a");
             nodeD.setInstanceKind("Cell");
 
             Edge edgeA = new Edge(nodeA, nodeB);
@@ -111,11 +111,11 @@ public class ModelTestCase {
     public void testModelInEqualityWithMismatchedNodes() {
         Model modelA;
         {
-            Node nodeA = new Node("test-runtime", "namespace-a", "instance-a", "component-a");
+            Node nodeA = new Node("namespace-a", "instance-a", "component-a");
             nodeA.setInstanceKind("Cell");
-            Node nodeB = new Node("test-runtime", "namespace-a", "instance-b", "component-a");
+            Node nodeB = new Node("namespace-a", "instance-b", "component-a");
             nodeB.setInstanceKind("Composite");
-            Node nodeC = new Node("test-runtime", "namespace-a", "instance-c", "component-a");
+            Node nodeC = new Node("namespace-a", "instance-c", "component-a");
             nodeC.setInstanceKind("Cell");
 
             Edge edgeA = new Edge(nodeA, nodeB);
@@ -125,9 +125,9 @@ public class ModelTestCase {
         }
         Model modelB;
         {
-            Node nodeA = new Node("test-runtime", "namespace-a", "instance-a", "component-a");
+            Node nodeA = new Node("namespace-a", "instance-a", "component-a");
             nodeA.setInstanceKind("Cell");
-            Node nodeB = new Node("test-runtime", "namespace-a", "instance-b", "component-a");
+            Node nodeB = new Node("namespace-a", "instance-b", "component-a");
             nodeB.setInstanceKind("Composite");
 
             Edge edgeA = new Edge(nodeA, nodeB);
@@ -142,11 +142,11 @@ public class ModelTestCase {
     public void testModelInEqualityWithMismatchedEdges() {
         Model modelA;
         {
-            Node nodeA = new Node("test-runtime", "namespace-a", "instance-a", "component-a");
+            Node nodeA = new Node("namespace-a", "instance-a", "component-a");
             nodeA.setInstanceKind("Cell");
-            Node nodeB = new Node("test-runtime", "namespace-a", "instance-b", "component-a");
+            Node nodeB = new Node("namespace-a", "instance-b", "component-a");
             nodeB.setInstanceKind("Composite");
-            Node nodeC = new Node("test-runtime", "namespace-a", "instance-c", "component-a");
+            Node nodeC = new Node("namespace-a", "instance-c", "component-a");
             nodeC.setInstanceKind("Cell");
 
             Edge edgeA = new Edge(nodeA, nodeB);
@@ -157,11 +157,11 @@ public class ModelTestCase {
         }
         Model modelB;
         {
-            Node nodeA = new Node("test-runtime", "namespace-a", "instance-a", "component-a");
+            Node nodeA = new Node("namespace-a", "instance-a", "component-a");
             nodeA.setInstanceKind("Cell");
-            Node nodeB = new Node("test-runtime", "namespace-a", "instance-b", "component-a");
+            Node nodeB = new Node("namespace-a", "instance-b", "component-a");
             nodeB.setInstanceKind("Composite");
-            Node nodeC = new Node("test-runtime", "namespace-a", "instance-c", "component-a");
+            Node nodeC = new Node("namespace-a", "instance-c", "component-a");
             nodeC.setInstanceKind("Cell");
 
             Edge edgeA = new Edge(nodeA, nodeB);

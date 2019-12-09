@@ -88,7 +88,7 @@ public class ModelGenerationExtension extends StreamProcessor {
                         sourceInstanceKind);
                 Node destinationNode = this.getOrGenerateNode(runtime, destinationNamespace, destinationInstance,
                         destinationComponent, destinationInstanceKind);
-                ServiceHolder.getModelManager().addEdge(sourceNode, destinationNode);
+                ServiceHolder.getModelManager().addEdge(runtime, sourceNode, destinationNode);
             } catch (Throwable throwable) {
                 log.error("Unexpected error occurred while processing the event in the model processor",
                         throwable);

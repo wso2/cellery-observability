@@ -28,65 +28,56 @@ public class NodeTestCase {
 
     @Test
     public void testNodeEquality() {
-        Node nodeA = new Node("test-runtime", "test-namespace", "test-instance", "test-component");
+        Node nodeA = new Node("test-namespace", "test-instance", "test-component");
         nodeA.setInstanceKind("Cell");
-        Node nodeB = new Node("test-runtime", "test-namespace", "test-instance", "test-component");
+        Node nodeB = new Node("test-namespace", "test-instance", "test-component");
         nodeB.setInstanceKind("Cell");
         Assert.assertEquals(nodeA, nodeB);
     }
 
     @Test
     public void testNodeEqualityWithMismatchedInstanceKind() {
-        Node nodeA = new Node("test-runtime", "test-namespace", "test-instance", "test-component");
+        Node nodeA = new Node("test-namespace", "test-instance", "test-component");
         nodeA.setInstanceKind("Cell");
-        Node nodeB = new Node("test-runtime", "test-namespace", "test-instance", "test-component");
+        Node nodeB = new Node("test-namespace", "test-instance", "test-component");
         nodeB.setInstanceKind("Composite");
         Assert.assertEquals(nodeA, nodeB);
     }
 
     @Test
-    public void testNodeInEqualityWithMismatchedRuntime() {
-        Node nodeA = new Node("test-runtime", "test-namespace", "test-instance", "test-component");
-        nodeA.setInstanceKind("Cell");
-        Node nodeB = new Node("different-runtime", "test-namespace", "test-instance", "test-component");
-        nodeB.setInstanceKind("Cell");
-        Assert.assertNotEquals(nodeA, nodeB);
-    }
-
-    @Test
     public void testNodeInEqualityWithMismatchedNamespace() {
-        Node nodeA = new Node("test-runtime", "test-namespace", "test-instance", "test-component");
+        Node nodeA = new Node("test-namespace", "test-instance", "test-component");
         nodeA.setInstanceKind("Cell");
-        Node nodeB = new Node("test-runtime", "different-namespace", "test-instance", "test-component");
+        Node nodeB = new Node("different-namespace", "test-instance", "test-component");
         nodeB.setInstanceKind("Cell");
         Assert.assertNotEquals(nodeA, nodeB);
     }
 
     @Test
     public void testNodeInEqualityWithMismatchedInstance() {
-        Node nodeA = new Node("test-runtime", "test-namespace", "test-instance", "test-component");
+        Node nodeA = new Node("test-namespace", "test-instance", "test-component");
         nodeA.setInstanceKind("Cell");
-        Node nodeB = new Node("test-runtime", "test-namespace", "different-instance", "test-component");
+        Node nodeB = new Node("test-namespace", "different-instance", "test-component");
         nodeB.setInstanceKind("Cell");
         Assert.assertNotEquals(nodeA, nodeB);
     }
 
     @Test
     public void testNodeInEqualityWithMismatchedComponent() {
-        Node nodeA = new Node("test-runtime", "test-namespace", "test-instance", "test-component");
+        Node nodeA = new Node("test-namespace", "test-instance", "test-component");
         nodeA.setInstanceKind("Cell");
-        Node nodeB = new Node("test-runtime", "test-namespace", "test-instance", "different-component");
+        Node nodeB = new Node("test-namespace", "test-instance", "different-component");
         nodeB.setInstanceKind("Cell");
         Assert.assertNotEquals(nodeA, nodeB);
     }
 
     @Test
     public void testNodeFQN() {
-        Node nodeA = new Node("test-runtime", "test-namespace", "test-instance", "test-component");
+        Node nodeA = new Node("test-namespace", "test-instance", "test-component");
         nodeA.setInstanceKind("Cell");
         Assert.assertEquals(Model.getNodeFQN(nodeA), nodeA.getFQN());
 
-        Node nodeB = new Node("test-runtime", "test-namespace", "test-instance", "test-component");
+        Node nodeB = new Node("test-namespace", "test-instance", "test-component");
         nodeB.setInstanceKind("Composite");
         Assert.assertEquals(Model.getNodeFQN(nodeB), nodeB.getFQN());
     }

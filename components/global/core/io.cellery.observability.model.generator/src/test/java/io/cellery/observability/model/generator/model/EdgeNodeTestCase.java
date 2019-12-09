@@ -28,45 +28,38 @@ public class EdgeNodeTestCase {
 
     @Test
     public void testNodeEquality() {
-        EdgeNode nodeA = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
-        EdgeNode nodeB = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
+        EdgeNode nodeA = new EdgeNode("test-namespace", "test-instance", "test-component");
+        EdgeNode nodeB = new EdgeNode("test-namespace", "test-instance", "test-component");
         Assert.assertEquals(nodeA, nodeB);
     }
 
     @Test
-    public void testNodeInEqualityWithMismatchedRuntime() {
-        EdgeNode nodeA = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
-        EdgeNode nodeB = new EdgeNode("different-runtime", "test-namespace", "test-instance", "test-component");
-        Assert.assertNotEquals(nodeA, nodeB);
-    }
-
-    @Test
     public void testNodeInEqualityWithMismatchedNamespace() {
-        EdgeNode nodeA = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
-        EdgeNode nodeB = new EdgeNode("test-runtime", "different-namespace", "test-instance", "test-component");
+        EdgeNode nodeA = new EdgeNode("test-namespace", "test-instance", "test-component");
+        EdgeNode nodeB = new EdgeNode("different-namespace", "test-instance", "test-component");
         Assert.assertNotEquals(nodeA, nodeB);
     }
 
     @Test
     public void testNodeInEqualityWithMismatchedInstance() {
-        EdgeNode nodeA = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
-        EdgeNode nodeB = new EdgeNode("test-runtime", "test-namespace", "different-instance", "test-component");
+        EdgeNode nodeA = new EdgeNode("test-namespace", "test-instance", "test-component");
+        EdgeNode nodeB = new EdgeNode("test-namespace", "different-instance", "test-component");
         Assert.assertNotEquals(nodeA, nodeB);
     }
 
     @Test
     public void testNodeInEqualityWithMismatchedComponent() {
-        EdgeNode nodeA = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
-        EdgeNode nodeB = new EdgeNode("test-runtime", "test-namespace", "test-instance", "different-component");
+        EdgeNode nodeA = new EdgeNode("test-namespace", "test-instance", "test-component");
+        EdgeNode nodeB = new EdgeNode("test-namespace", "test-instance", "different-component");
         Assert.assertNotEquals(nodeA, nodeB);
     }
 
     @Test
     public void testNodeFQN() {
-        EdgeNode nodeA = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
+        EdgeNode nodeA = new EdgeNode("test-namespace", "test-instance", "test-component");
         Assert.assertEquals(Model.getNodeFQN(nodeA), nodeA.getFQN());
 
-        EdgeNode nodeB = new EdgeNode("test-runtime", "test-namespace", "test-instance", "test-component");
+        EdgeNode nodeB = new EdgeNode("test-namespace", "test-instance", "test-component");
         Assert.assertEquals(Model.getNodeFQN(nodeB), nodeB.getFQN());
     }
 }
