@@ -17,10 +17,10 @@
  *
  */
 
-package io.cellery.observability.telemetry.receiver;
+package io.cellery.observability.agent.receiver;
 
 import com.sun.net.httpserver.HttpServer;
-import io.cellery.observability.telemetry.receiver.internal.MetricsHandler;
+import io.cellery.observability.agent.receiver.internal.MetricsHandler;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;

@@ -16,7 +16,7 @@
  *  under the License.
  *
  */
-package io.cellery.observability.telemetry.receiver;
+package io.cellery.observability.agent.receiver;
 
 /**
  * This class hold the Constants for the Telemetry Receiver component.

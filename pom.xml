@@ -46,7 +46,7 @@
             </dependency>
             <dependency>
                 <groupId>io.cellery.observability</groupId>
-                <artifactId>io.cellery.observability.telemetry.receiver</artifactId>
+                <artifactId>io.cellery.observability.agent.receiver</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
