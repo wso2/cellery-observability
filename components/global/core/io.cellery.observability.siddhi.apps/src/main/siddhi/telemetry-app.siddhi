@@ -24,9 +24,9 @@ define stream TelemetryStreamIn(runtime string, requestId string, traceId string
                                 sourceNamespace string, sourceInstance string, sourceInstanceKind string,
                                 sourceComponent string, sourcePod string, destinationNamespace string,
                                 destinationInstance string, destinationInstanceKind string, destinationComponent string,
-                                destinationPod string, contextReporterKind string, requestPath string,
+                                destinationPod string, reporterKind string, requestPath string,
                                 requestMethod string, requestSizeBytes long, responseCode long,
-                                responseDurationNanoSec long, responseSizeBytes long);
+                                responseDurationNanoSec long, responseSizeBytes long, reporterUID string);
 
 define stream ProcessedRequestsStream(runtime string, sourceNamespace string, sourceInstance string,
                                       sourceInstanceKind string, sourceComponent string, destinationNamespace string,
@@ -57,7 +57,7 @@ group by
     destinationComponent, httpResponseGroup
 aggregate every sec...year;
 
-from TelemetryStreamIn
+from TelemetryStreamIn[not str:regexp(reporterUID, "kubernetes:\\/\\/[a-z0-9]+(-[a-z0-9]+)*--gateway-deployment-[^\\.-]+-[^\\.-]+\\.[^\\.]+")]
 select
     runtime,
     traceId,
@@ -75,13 +75,48 @@ select
     responseDurationNanoSec,
     ifThenElse(requestSizeBytes is null, 0L, requestSizeBytes) as requestSizeBytes,
     ifThenElse(responseSizeBytes is null, 0L, responseSizeBytes) as responseSizeBytes
-insert into PreProcessedRequestsStream;
+insert into SanitizedRequestsStream;
+
+-- There are no duplicates for the gateway (Since telemetry reported by the gateway is ignored)
+from SanitizedRequestsStream[sourceComponent != "gateway" and destinationComponent != "gateway"]
+insert into NonGatewayRequestsStream;
+
+from SanitizedRequestsStream[sourceComponent == "gateway" or destinationComponent == "gateway"]
+select
+    runtime,
+    sourceNamespace,
+    sourceInstance,
+    sourceInstanceKind,
+    sourceComponent,
+    destinationNamespace,
+    destinationInstance,
+    destinationInstanceKind,
+    destinationComponent,
+    responseCode,
+    responseDurationNanoSec,
+    requestSizeBytes,
+    responseSizeBytes
+insert into DeDuplicatedTelemetryStream;
 
 -- Removing duplications of the metrics.
-from PreProcessedRequestsStream#telemetry:deduplicate(60 sec, runtime, traceId, spanId, parentSpanId, sourceNamespace,
+from NonGatewayRequestsStream#telemetry:deduplicate(60 sec, runtime, traceId, spanId, parentSpanId, sourceNamespace,
                                                       sourceInstance, sourceComponent, destinationNamespace,
                                                       destinationInstance, destinationComponent, requestSizeBytes,
                                                       responseDurationNanoSec, responseSizeBytes)
+select
+    runtime,
+    sourceNamespace,
+    sourceInstance,
+    sourceInstanceKind,
+    sourceComponent,
+    destinationNamespace,
+    destinationInstance,
+    destinationInstanceKind,
+    destinationComponent,
+    responseCode,
+    maxResponseDuration as responseDurationNanoSec,
+    maxRequestSize as requestSizeBytes,
+    maxResponseSize as responseSizeBytes
 insert expired events into DeDuplicatedTelemetryStream;
 
 from DeDuplicatedTelemetryStream
@@ -96,9 +131,9 @@ select
     destinationInstanceKind,
     destinationComponent,
     str:concat(convert(cast(responseCode, "long") / 100, "string"), "xx") as httpResponseGroup,
-    convert(maxResponseDuration, "double") / 1000000 as responseTimeMilliSec,
-    maxRequestSize as requestSizeBytes,
-    maxResponseSize as responseSizeBytes
+    convert(responseDurationNanoSec, "double") / 1000000 as responseTimeMilliSec,
+    requestSizeBytes,
+    responseSizeBytes
 insert into ProcessedRequestsStream;
 
 from ProcessedRequestsStream#observe:modelGenerator(runtime, sourceNamespace, sourceInstance, sourceComponent,

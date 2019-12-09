@@ -28,9 +28,9 @@ define stream TelemetryStreamIn(runtime string, requestId string, traceId string
                                 sourceNamespace string, sourceInstance string, sourceInstanceKind string,
                                 sourceComponent string, sourcePod string, destinationNamespace string,
                                 destinationInstance string, destinationInstanceKind string, destinationComponent string,
-                                destinationPod string, contextReporterKind string, requestPath string,
+                                destinationPod string, reporterKind string, requestPath string,
                                 requestMethod string, requestSizeBytes long, responseCode long,
-                                responseDurationNanoSec long, responseSizeBytes long);
+                                responseDurationNanoSec long, responseSizeBytes long, reporterUID string);
 
 @Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB", field.length="tags:8000")
 @PrimaryKey("runtime", "traceId", "spanId")
@@ -134,12 +134,12 @@ select
     runtime,
     str:replaceFirst(traceId, "^0+", "") as traceId,
     str:replaceFirst(spanId, "^0+", "") as spanId,
-    ifThenElse(contextReporterKind == "inbound", "SERVER", "CLIENT") as spanKind,
-    ifThenElse(contextReporterKind == "inbound", destinationNamespace, sourceNamespace) as namespace,
-    ifThenElse(contextReporterKind == "inbound", destinationInstance, sourceInstance) as instance,
-    ifThenElse(contextReporterKind == "inbound", destinationInstanceKind, sourceInstanceKind) as instanceKind,
-    ifThenElse(contextReporterKind == "inbound", destinationComponent, sourceComponent) as serviceName,
-    ifThenElse(contextReporterKind == "inbound", destinationPod, sourcePod) as pod
+    ifThenElse(reporterKind == "inbound", "SERVER", "CLIENT") as spanKind,
+    ifThenElse(reporterKind == "inbound", destinationNamespace, sourceNamespace) as namespace,
+    ifThenElse(reporterKind == "inbound", destinationInstance, sourceInstance) as instance,
+    ifThenElse(reporterKind == "inbound", destinationInstanceKind, sourceInstanceKind) as instanceKind,
+    ifThenElse(reporterKind == "inbound", destinationComponent, sourceComponent) as serviceName,
+    ifThenElse(reporterKind == "inbound", destinationPod, sourcePod) as pod
 insert into ProcessedTelemetryDataStream;
 
 -- Extracting information for remote service
@@ -148,12 +148,12 @@ select
     runtime,
     str:replaceFirst(traceId, "^0+", "") as traceId,
     str:replaceFirst(spanId, "^0+", "") as spanId,
-    ifThenElse(contextReporterKind == "inbound", "CLIENT", "SERVER") as spanKind,
-    ifThenElse(contextReporterKind == "inbound", sourceNamespace, destinationNamespace) as namespace,
-    ifThenElse(contextReporterKind == "inbound", sourceInstance, destinationInstance) as instance,
-    ifThenElse(contextReporterKind == "inbound", sourceInstanceKind, destinationInstanceKind) as instanceKind,
-    ifThenElse(contextReporterKind == "inbound", sourceComponent, destinationComponent) as serviceName,
-    ifThenElse(contextReporterKind == "inbound", sourcePod, destinationPod) as pod
+    ifThenElse(reporterKind == "inbound", "CLIENT", "SERVER") as spanKind,
+    ifThenElse(reporterKind == "inbound", sourceNamespace, destinationNamespace) as namespace,
+    ifThenElse(reporterKind == "inbound", sourceInstance, destinationInstance) as instance,
+    ifThenElse(reporterKind == "inbound", sourceInstanceKind, destinationInstanceKind) as instanceKind,
+    ifThenElse(reporterKind == "inbound", sourceComponent, destinationComponent) as serviceName,
+    ifThenElse(reporterKind == "inbound", sourcePod, destinationPod) as pod
 insert into ProcessedTelemetryDataStream;
 
 from ProcessedTelemetryDataStream[(not serviceName is null) and (serviceName != "")]
