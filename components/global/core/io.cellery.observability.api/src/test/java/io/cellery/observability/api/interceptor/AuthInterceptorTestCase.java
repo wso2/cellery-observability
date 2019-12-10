@@ -19,9 +19,9 @@
 package io.cellery.observability.api.interceptor;
 
 import io.cellery.observability.api.Constants;
-import io.cellery.observability.api.auth.OIDCOauthManager;
-import io.cellery.observability.api.exception.OIDCProviderException;
 import io.cellery.observability.api.internal.ServiceHolder;
+import io.cellery.observability.auth.AuthenticationProvider;
+import io.cellery.observability.auth.exception.AuthProviderException;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -49,15 +49,15 @@ public class AuthInterceptorTestCase {
         Request request = mockRequest(tokenFirstPart, tokenSecondPart);
         Response response = Mockito.mock(Response.class);
 
-        OIDCOauthManager oidcOauthManager = Mockito.mock(OIDCOauthManager.class);
-        Mockito.when(oidcOauthManager.validateToken(tokenFirstPart + tokenSecondPart)).thenReturn(true);
-        ServiceHolder.setOidcOauthManager(oidcOauthManager);
+        AuthenticationProvider authenticationProvider = Mockito.mock(AuthenticationProvider.class);
+        Mockito.when(authenticationProvider.validateToken(tokenFirstPart + tokenSecondPart)).thenReturn(true);
+        ServiceHolder.setAuthenticationProvider(authenticationProvider);
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertTrue(interceptionResult);
         Mockito.verify(request, Mockito.times(1))
                 .setProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN, tokenFirstPart + tokenSecondPart);
-        ServiceHolder.setOidcOauthManager(null);
+        ServiceHolder.setAuthenticationProvider(null);
     }
 
     @Test
@@ -68,15 +68,15 @@ public class AuthInterceptorTestCase {
         Request request = mockRequest(tokenFirstPart, tokenSecondPart);
         Response response = Mockito.mock(Response.class);
 
-        OIDCOauthManager oidcOauthManager = Mockito.mock(OIDCOauthManager.class);
-        Mockito.when(oidcOauthManager.validateToken(tokenFirstPart + tokenSecondPart)).thenReturn(false);
-        ServiceHolder.setOidcOauthManager(oidcOauthManager);
+        AuthenticationProvider authenticationProvider = Mockito.mock(AuthenticationProvider.class);
+        Mockito.when(authenticationProvider.validateToken(tokenFirstPart + tokenSecondPart)).thenReturn(false);
+        ServiceHolder.setAuthenticationProvider(authenticationProvider);
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertFalse(interceptionResult);
         Mockito.verify(request, Mockito.times(1))
                 .setProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN, tokenFirstPart + tokenSecondPart);
-        ServiceHolder.setOidcOauthManager(null);
+        ServiceHolder.setAuthenticationProvider(null);
     }
 
     @Test
@@ -145,16 +145,16 @@ public class AuthInterceptorTestCase {
         Request request = mockRequest(tokenFirstPart, tokenSecondPart);
         Response response = Mockito.mock(Response.class);
 
-        OIDCOauthManager oidcOauthManager = Mockito.mock(OIDCOauthManager.class);
-        Mockito.when(oidcOauthManager.validateToken(tokenFirstPart + tokenSecondPart))
-                .thenThrow(new OIDCProviderException("Test Exception"));
-        ServiceHolder.setOidcOauthManager(oidcOauthManager);
+        AuthenticationProvider authenticationProvider = Mockito.mock(AuthenticationProvider.class);
+        Mockito.when(authenticationProvider.validateToken(tokenFirstPart + tokenSecondPart))
+                .thenThrow(new AuthProviderException("Test Exception"));
+        ServiceHolder.setAuthenticationProvider(authenticationProvider);
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertFalse(interceptionResult);
         Mockito.verify(request, Mockito.times(1))
                 .setProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN, tokenFirstPart + tokenSecondPart);
-        ServiceHolder.setOidcOauthManager(null);
+        ServiceHolder.setAuthenticationProvider(null);
     }
 
     /**

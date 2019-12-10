@@ -24,14 +24,13 @@ import io.cellery.observability.api.DistributedTracingAPI;
 import io.cellery.observability.api.InstanceAPI;
 import io.cellery.observability.api.KubernetesAPI;
 import io.cellery.observability.api.UsersAPI;
-import io.cellery.observability.api.Utils;
-import io.cellery.observability.api.auth.OIDCOauthManager;
 import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.exception.InvalidParamException;
 import io.cellery.observability.api.exception.UnexpectedException;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
+import io.cellery.observability.auth.AuthenticationProvider;
 import io.cellery.observability.auth.AuthorizationProvider;
 import io.cellery.observability.model.generator.model.ModelManager;
 import org.apache.log4j.Logger;
@@ -42,9 +41,9 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
-import org.wso2.carbon.config.provider.ConfigProvider;
 import org.wso2.carbon.datasource.core.api.DataSourceService;
 import org.wso2.carbon.kernel.CarbonRuntime;
+import org.wso2.extension.siddhi.store.rdbms.RDBMSEventTable;
 import org.wso2.msf4j.MicroservicesRunner;
 import org.wso2.siddhi.core.SiddhiManager;
 
@@ -73,9 +72,9 @@ public class ApiServiceComponent {
     @Activate
     protected void start(BundleContext bundleContext) throws Exception {
         try {
-            Utils.disableSSLVerification();
-            ServiceHolder.setOidcOauthManager(new OIDCOauthManager());
-            ServiceHolder.setSiddhiManager(new SiddhiManager());
+            SiddhiManager siddhiManager = new SiddhiManager();
+            siddhiManager.setExtension("store:rdbms", RDBMSEventTable.class);
+            ServiceHolder.setSiddhiManager(siddhiManager);
 
             // Starting the Siddhi Manager
             ServiceHolder.setSiddhiStoreQueryManager(new SiddhiStoreQueryManager());
@@ -167,18 +166,18 @@ public class ApiServiceComponent {
     }
 
     @Reference(
-            name = "carbon.config.provider",
-            service = ConfigProvider.class,
+            name = "io.cellery.observability.auth.AuthenticationProvider",
+            service = AuthenticationProvider.class,
             cardinality = ReferenceCardinality.MANDATORY,
             policy = ReferencePolicy.DYNAMIC,
-            unbind = "unsetConfigProvider"
+            unbind = "unsetAuthenticationProvider"
     )
-    protected void setConfigProvider(ConfigProvider configProvider) {
-        ServiceHolder.setConfigProvider(configProvider);
+    protected void setAuthenticationProvider(AuthenticationProvider authenticationProvider) {
+        ServiceHolder.setAuthenticationProvider(authenticationProvider);
     }
 
-    protected void unsetConfigProvider(ConfigProvider configProvider) {
-        ServiceHolder.setConfigProvider(null);
+    protected void unsetAuthenticationProvider(AuthenticationProvider authenticationProvider) {
+        ServiceHolder.setAuthenticationProvider(null);
     }
 
     @Reference(

@@ -18,12 +18,18 @@
 
 package io.cellery.observability.auth.internal;
 
+import io.cellery.observability.auth.AuthenticationProvider;
 import io.cellery.observability.auth.AuthorizationProvider;
 import io.cellery.observability.auth.CelleryLocalAuthProvider;
+import io.cellery.observability.auth.Utils;
 import org.apache.log4j.Logger;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.wso2.carbon.config.provider.ConfigProvider;
 
 /**
  * This class acts as a Service Component which specifies the services that is required by the component.
@@ -36,12 +42,29 @@ public class AuthServiceComponent {
     private static final Logger log = Logger.getLogger(AuthServiceComponent.class);
 
     @Activate
-    protected void start(BundleContext bundleContext) {
+    protected void start(BundleContext bundleContext) throws Exception {
         try {
+            Utils.disableSSLVerification();
+            bundleContext.registerService(AuthenticationProvider.class.getName(), new AuthenticationProvider(), null);
             bundleContext.registerService(AuthorizationProvider.class.getName(), new CelleryLocalAuthProvider(), null);
         } catch (Throwable throwable) {
             log.error("Error occurred while activating the model generation bundle", throwable);
             throw throwable;
         }
+    }
+
+    @Reference(
+            name = "carbon.config.provider",
+            service = ConfigProvider.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetConfigProvider"
+    )
+    protected void setConfigProvider(ConfigProvider configProvider) {
+        ServiceHolder.setConfigProvider(configProvider);
+    }
+
+    protected void unsetConfigProvider(ConfigProvider configProvider) {
+        ServiceHolder.setConfigProvider(null);
     }
 }

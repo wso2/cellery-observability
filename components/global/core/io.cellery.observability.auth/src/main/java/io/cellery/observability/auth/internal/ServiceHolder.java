@@ -16,18 +16,24 @@
  * under the License.
  */
 
-package io.cellery.observability.api.exception;
+package io.cellery.observability.auth.internal;
+
+import org.wso2.carbon.config.provider.ConfigProvider;
 
 /**
- * Internal generic error in the OIDC Manager.
+ * This is a static class which holds the references of the OSGI services registered.
  */
-public class OIDCProviderException extends Exception {
+public class ServiceHolder {
+    private static ConfigProvider configProvider;
 
-    public OIDCProviderException(String message, Throwable e) {
-        super(message, e);
+    public static ConfigProvider getConfigProvider() {
+        return configProvider;
     }
 
-    public OIDCProviderException(String message) {
-        super(message);
+    public static void setConfigProvider(ConfigProvider configProvider) {
+        ServiceHolder.configProvider = configProvider;
+    }
+
+    private ServiceHolder() {   // Prevent initialization
     }
 }

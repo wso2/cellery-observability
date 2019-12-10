@@ -15,9 +15,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package io.cellery.observability.api.bean;
+package io.cellery.observability.auth;
 
-import io.cellery.observability.api.internal.ServiceHolder;
+import io.cellery.observability.auth.internal.ServiceHolder;
 import org.wso2.carbon.config.ConfigurationException;
 import org.wso2.carbon.config.annotation.Configuration;
 import org.wso2.carbon.config.annotation.Element;
@@ -26,9 +26,9 @@ import org.wso2.carbon.config.annotation.Element;
  * This bean class is used to read cellery config.
  */
 @Configuration(namespace = "celleryObservabilityPortal", description = "Cellery Configuration Parameters")
-public class CelleryConfig {
+public class AuthConfig {
 
-    private static volatile CelleryConfig celleryConfig;
+    private static volatile AuthConfig authConfig;
 
     @Element(description = "dashboardURL")
     private String dashboardURL = "";
@@ -58,11 +58,11 @@ public class CelleryConfig {
         return idpAdminPassword;
     }
 
-    public static CelleryConfig getInstance() throws ConfigurationException {
-        if (celleryConfig == null) {
-            celleryConfig = ServiceHolder.getConfigProvider().getConfigurationObject(CelleryConfig.class);
+    public static AuthConfig getInstance() throws ConfigurationException {
+        if (authConfig == null) {
+            authConfig = ServiceHolder.getConfigProvider().getConfigurationObject(AuthConfig.class);
         }
-        return celleryConfig;
+        return authConfig;
     }
 
 }

@@ -19,8 +19,8 @@
 package io.cellery.observability.api.interceptor;
 
 import io.cellery.observability.api.Constants;
-import io.cellery.observability.api.exception.OIDCProviderException;
 import io.cellery.observability.api.internal.ServiceHolder;
+import io.cellery.observability.auth.exception.AuthProviderException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.wso2.msf4j.Request;
@@ -49,11 +49,11 @@ public class AuthInterceptor implements RequestInterceptor {
                 request.setProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN, accessToken);
                 if (!this.isOpenApi(request)) {
                     try {
-                        if (!ServiceHolder.getOidcOauthManager().validateToken(accessToken)) {
+                        if (!ServiceHolder.getAuthenticationProvider().validateToken(accessToken)) {
                             response.setStatus(401);
                             return false;
                         }
-                    } catch (OIDCProviderException e) {
+                    } catch (AuthProviderException e) {
                         logger.debug("Error occurred while authenticating the access token", e);
                         response.setStatus(401);
                         return false;

@@ -19,16 +19,11 @@
 
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 <suite name="Core API Test Suite">
-    <test name="api-supporting-classes-tests" enabled="true" parallel="false">
+    <test name="auth-tests" enabled="true" parallel="false">
         <classes>
-            <class name="io.cellery.observability.api.UtilsTestCase"/>
-            <class name="io.cellery.observability.api.siddhi.SiddhiStoreQueryTestCase"/>
-            <class name="io.cellery.observability.api.siddhi.SiddhiStoreQueryTemplatesTestCase"/>
-            <class name="io.cellery.observability.api.siddhi.SiddhiStoreQueryManagerTestCase"/>
-            <class name="io.cellery.observability.api.interceptor.CORSInterceptorTestCase"/>
-            <class name="io.cellery.observability.api.interceptor.AuthInterceptorTestCase"/>
-            <class name="io.cellery.observability.api.exception.APIInvocationExceptionTestCase"/>
-            <class name="io.cellery.observability.api.exception.InvalidParamExceptionTestCase"/>
+            <class name="io.cellery.observability.auth.AuthConfigTestCase"/>
+            <class name="io.cellery.observability.auth.AuthenticationProviderTestCase"/>
+            <class name="io.cellery.observability.auth.UtilsTestCase"/>
         </classes>
     </test>
 </suite>
