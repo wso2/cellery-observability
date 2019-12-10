@@ -41,12 +41,14 @@ public class InstanceAPI {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getInstancesList(@PathParam("namespace") String namespace,
+    public Response getInstancesList(@PathParam("runtime") String runtime,
+                                     @PathParam("namespace") String namespace,
                                      @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                      @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_INSTANCES.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
                     .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, "")
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
@@ -62,13 +64,15 @@ public class InstanceAPI {
     @GET
     @Path("/{instanceName}/components")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getInstanceComponents(@PathParam("namespace") String namespace,
+    public Response getInstanceComponents(@PathParam("runtime") String runtime,
+                                          @PathParam("namespace") String namespace,
                                           @PathParam("instanceName") String instanceName,
                                           @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                           @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_COMPONENTS.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
                     .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instanceName)
                     .setArg(SiddhiStoreQueryTemplates.Params.COMPONENT, "")
@@ -85,7 +89,8 @@ public class InstanceAPI {
     @GET
     @Path("/{instanceName}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getInstance(@PathParam("namespace") String namespace,
+    public Response getInstance(@PathParam("runtime") String runtime,
+                                @PathParam("namespace") String namespace,
                                 @PathParam("instanceName") String instanceName,
                                 @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                 @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
@@ -93,6 +98,7 @@ public class InstanceAPI {
         try {
             JsonObject instanceInfo = new JsonObject();
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_INSTANCES.builder()
+                    .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
                     .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.INSTANCE, instanceName)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)

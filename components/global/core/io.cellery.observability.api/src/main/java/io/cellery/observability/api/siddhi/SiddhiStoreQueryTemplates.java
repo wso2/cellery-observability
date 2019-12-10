@@ -160,7 +160,8 @@ public enum SiddhiStoreQueryTemplates {
             "spanKind, startTime, duration, tags"
     ),
     K8S_GET_PODS_FOR_COMPONENT("from K8sPodInfoTable\n" +
-            "on (\"${" + Params.NAMESPACE + "}\" == \"\" or namespace == \"${" + Params.NAMESPACE + "}\") " +
+            "on (\"${" + Params.RUNTIME + "}\" == \"\" or runtime == \"${" + Params.RUNTIME + "}\") " +
+            "and (\"${" + Params.NAMESPACE + "}\" == \"\" or namespace == \"${" + Params.NAMESPACE + "}\") " +
             "and (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
             "and (\"${" + Params.COMPONENT + "}\" == \"\" or component == \"${" + Params.COMPONENT + "}\") " +
             "and ((${" + Params.QUERY_START_TIME + "}L == -1L and ${" + Params.QUERY_END_TIME + "}L == -1L) " +
@@ -173,7 +174,8 @@ public enum SiddhiStoreQueryTemplates {
             "select instance, component, podName, creationTimestamp, lastKnownAliveTimestamp, nodeName"
     ),
     K8S_GET_INSTANCES("from K8sComponentInfoTable\n" +
-            "on (\"${" + Params.NAMESPACE + "}\" == \"\" or namespace == \"${" + Params.NAMESPACE + "}\") " +
+            "on (\"${" + Params.RUNTIME + "}\" == \"\" or runtime == \"${" + Params.RUNTIME + "}\") " +
+            "and (\"${" + Params.NAMESPACE + "}\" == \"\" or namespace == \"${" + Params.NAMESPACE + "}\") " +
             "and (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
             "and ((${" + Params.QUERY_START_TIME + "}L == -1L and ${" + Params.QUERY_END_TIME + "}L == -1L) " +
             "or ((creationTimestamp >= ${" + Params.QUERY_START_TIME + "}L " +
@@ -186,7 +188,8 @@ public enum SiddhiStoreQueryTemplates {
             "group by instance"
     ),
     K8S_GET_COMPONENTS("from K8sComponentInfoTable\n" +
-            "on (\"${" + Params.NAMESPACE + "}\" == \"\" or namespace == \"${" + Params.NAMESPACE + "}\") " +
+            "on (\"${" + Params.RUNTIME + "}\" == \"\" or runtime == \"${" + Params.RUNTIME + "}\") " +
+            "and (\"${" + Params.NAMESPACE + "}\" == \"\" or namespace == \"${" + Params.NAMESPACE + "}\") " +
             "and (\"${" + Params.INSTANCE + "}\" == \"\" or instance == \"${" + Params.INSTANCE + "}\") " +
             "and (\"${" + Params.COMPONENT + "}\" == \"\" or component == \"${" + Params.COMPONENT + "}\") " +
             "and ((${" + Params.QUERY_START_TIME + "}L == -1L and ${" + Params.QUERY_END_TIME + "}L == -1L) " +

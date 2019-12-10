@@ -24,9 +24,9 @@ define stream TelemetryStreamIn(runtime string, requestId string, traceId string
                                 sourceNamespace string, sourceInstance string, sourceInstanceKind string,
                                 sourceComponent string, sourcePod string, destinationNamespace string,
                                 destinationInstance string, destinationInstanceKind string, destinationComponent string,
-                                destinationPod string, reporterKind string, requestPath string,
-                                requestMethod string, requestSizeBytes long, responseCode long,
-                                responseDurationNanoSec long, responseSizeBytes long, reporterUID string);
+                                destinationPod string, requestPath string, requestMethod string, requestSizeBytes long,
+                                responseCode long, responseDurationNanoSec long, responseSizeBytes long,
+                                reporterUID string, reporterKind string);
 
 define stream ProcessedRequestsStream(runtime string, sourceNamespace string, sourceInstance string,
                                       sourceInstanceKind string, sourceComponent string, destinationNamespace string,
