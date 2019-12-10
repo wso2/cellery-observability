@@ -1,3 +1,5 @@
+// +build !windows
+
 /*
  * Copyright (c) 2018 WSO2 Inc. (http:www.wso2.org) All Rights Reserved.
  *
@@ -15,8 +17,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-// +build !windows
 
 package signals
 
