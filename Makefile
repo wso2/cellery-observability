@@ -72,6 +72,7 @@ build: build.observability-agent
 build.observability-agent:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./components/global/observability-agent/target/telemetry-agent ./components/global/observability-agent/cmd/telemetry-agent/
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./components/global/observability-agent/target/tracing-agent ./components/global/observability-agent/cmd/tracing-agent/
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./components/global/observability-agent/target/kube-agent ./components/global/observability-agent/cmd/kube-agent/
 
 
 .PHONY: test
@@ -100,6 +101,11 @@ docker:
 	cp ./components/global/observability-agent/target/tracing-agent ./docker/tracing-agent/target/tracing-agent
 	cd docker/tracing-agent; \
 	docker build -t ${DOCKER_REPO}/tracing-agent:${DOCKER_IMAGE_TAG} .
+	@rm -rf ./docker/kube-agent/target
+	@mkdir ./docker/kube-agent/target
+	cp ./components/global/observability-agent/target/kube-agent ./docker/kube-agent/target/kube-agent
+	cd docker/kube-agent; \
+	docker build -t ${DOCKER_REPO}/kube-agent:${DOCKER_IMAGE_TAG} .
 
 
 .PHONY: docker-push
@@ -108,3 +114,4 @@ docker-push: docker
 	docker push $(DOCKER_REPO)/observability-portal:$(DOCKER_IMAGE_TAG)
 	docker push $(DOCKER_REPO)/telemetry-agent:$(DOCKER_IMAGE_TAG)
 	docker push $(DOCKER_REPO)/tracing-agent:$(DOCKER_IMAGE_TAG)
+	docker push $(DOCKER_REPO)/kube-agent:$(DOCKER_IMAGE_TAG)
