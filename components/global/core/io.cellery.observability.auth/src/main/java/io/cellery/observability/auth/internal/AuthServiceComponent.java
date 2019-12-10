@@ -18,7 +18,7 @@
 
 package io.cellery.observability.auth.internal;
 
-import io.cellery.observability.auth.AuthProvider;
+import io.cellery.observability.auth.AuthorizationProvider;
 import io.cellery.observability.auth.CelleryLocalAuthProvider;
 import org.apache.log4j.Logger;
 import org.osgi.framework.BundleContext;
@@ -38,7 +38,7 @@ public class AuthServiceComponent {
     @Activate
     protected void start(BundleContext bundleContext) {
         try {
-            bundleContext.registerService(AuthProvider.class.getName(), new CelleryLocalAuthProvider(), null);
+            bundleContext.registerService(AuthorizationProvider.class.getName(), new CelleryLocalAuthProvider(), null);
         } catch (Throwable throwable) {
             log.error("Error occurred while activating the model generation bundle", throwable);
             throw throwable;

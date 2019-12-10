@@ -29,7 +29,7 @@ import java.util.Map;
  * Cellery default local auth provider.
  * This assumes that the user has access to all the namespaces.
  */
-public class CelleryLocalAuthProvider implements AuthProvider {
+public class CelleryLocalAuthProvider implements AuthorizationProvider {
     private static final String LOCAL_RUNTIME_ID = "cellery-default";
 
     private final KubernetesClient k8sClient;
