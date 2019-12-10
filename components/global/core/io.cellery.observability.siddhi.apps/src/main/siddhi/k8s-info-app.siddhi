@@ -1,0 +1,100 @@
+/*
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+@App:name("k8s-info-app")
+@App:description("This collects Kubernetes related information from runtime agents and stores them in the relevant data sources")
+
+@source(type="k8s-component-pods", @map(type="keyvalue", fail.on.missing.attribute="false"))
+define stream K8sPodEventSourceStream(namespace string, instance string, component string, podName string,
+                                      instanceKind string, creationTimestamp long, deletionTimestamp long,
+                                      nodeName string, status string, action string);
+
+@source(type="k8s-components", @map(type="keyvalue", fail.on.missing.attribute="false"))
+define stream K8sComponentEventSourceStream(namespace string, instance String, component string, instanceKind string,
+                                            creationTimestamp long, ingressTypes string, action string);
+
+@Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB")
+@PrimaryKey("runtime", "namespace", "instance", "component", "podName")
+@purge(enable="false")
+define table K8sPodInfoTable(runtime string, namespace string, instance string, component string, podName string,
+                             creationTimestamp long, lastKnownAliveTimestamp long, nodeName string);
+
+@Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB")
+@PrimaryKey("runtime", "namespace", "instance","component")
+@purge(enable="false")
+define table K8sComponentInfoTable(runtime string, namespace string, instance string, component string,
+                                   instanceKind string, creationTimestamp long, lastKnownAliveTimestamp long,
+                                   ingressTypes string);
+
+define stream K8sComponentPodStream(runtime string, namespace string, instance string, component string, podName string,
+                                    instanceKind string, creationTimestamp long, lastKnownAliveTimestamp long,
+                                    nodeName string, status string, action string);
+
+-- Collecting Pod info
+
+from K8sPodEventSourceStream
+select
+    "cellery-default" as runtime, namespace, instance, component, podName, instanceKind, creationTimestamp,
+    deletionTimestamp as lastKnownAliveTimestamp, nodeName, status, action
+insert into K8sComponentPodStream;
+
+from K8sComponentPodStream[action == "" or action == "DELETED"]
+select
+    runtime, namespace, instance, component, podName, creationTimestamp, lastKnownAliveTimestamp, nodeName
+insert into K8sPodInfoStream;
+
+from K8sComponentPodStream[action == "CREATED"]
+select
+    runtime, namespace, instance, component, podName, creationTimestamp, creationTimestamp as lastKnownAliveTimestamp,
+    nodeName
+insert into K8sPodInfoStream;
+
+from K8sComponentPodStream[action == "MODIFIED" or action == "ERROR"]
+select
+    runtime, namespace, instance, component, podName, creationTimestamp,
+    time:timestampInMilliseconds() as lastKnownAliveTimestamp, nodeName
+insert into K8sPodInfoStream;
+
+-- Inserting Pod info to the K8sPodInfoTable
+
+from K8sPodInfoStream
+update or insert into K8sPodInfoTable
+    set K8sPodInfoTable.creationTimestamp = creationTimestamp,
+        K8sPodInfoTable.lastKnownAliveTimestamp = lastKnownAliveTimestamp,
+        K8sPodInfoTable.nodeName = nodeName
+    on K8sPodInfoTable.runtime == runtime
+        and K8sPodInfoTable.namespace == namespace
+        and K8sPodInfoTable.instance == instance
+        and K8sPodInfoTable.component == component
+        and K8sPodInfoTable.podName == podName;
+
+-- Collecting Component Info and inserting info to the K8sComponentInfoTable
+
+from K8sComponentEventSourceStream
+select
+    "cellery-default" as runtime, namespace, instance, component, instanceKind, creationTimestamp,
+    time:timestampInMilliseconds() as lastKnownAliveTimestamp, ingressTypes
+update or insert into K8sComponentInfoTable
+    set K8sComponentInfoTable.instanceKind = instanceKind,
+        K8sComponentInfoTable.creationTimestamp = creationTimestamp,
+        K8sComponentInfoTable.lastKnownAliveTimestamp = lastKnownAliveTimestamp,
+        K8sComponentInfoTable.ingressTypes = ingressTypes
+    on K8sComponentInfoTable.runtime == runtime
+        and K8sComponentInfoTable.namespace == namespace
+        and K8sComponentInfoTable.instance == instance
+        and K8sComponentInfoTable.component == component;

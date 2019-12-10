@@ -40,22 +40,30 @@ import java.util.Map;
 /**
  * This class implements the event source, where the received telemetry attributes can be injected to streams.
  */
-@Extension(name = "runtime-agent", namespace = "source",
+@Extension(
+        name = "runtime-agent",
+        namespace = "source",
         description = "Observability runtime agent data receiver for Cellery",
         parameters = {
-                @Parameter(name = "port",
+                @Parameter(
+                        name = "port",
                         description = "The port which the service should be started on. Default is 9091",
-                        type = {DataType.INT},
-                        optional = true,
-                        defaultValue = "9091"),
+                        type = {DataType.INT}
+                )
         },
         examples = {
-                @Example(syntax = "this is synatax",
-                        description = "some desc")
+                @Example(
+                        syntax = "@source(type='runtime-agent', @map(type='keyvalue', " +
+                                "fail.on.missing.attribute='false'))\n" +
+                                "define stream K8sPodEvents (instance string, kind string, component string, " +
+                                "podName string, creationTimestamp long, deletionTimestamp long, nodeName string, " +
+                                "status string, action string)",
+                        description = "This will listen for data published by agents deployed on different runtimes"
+                )
         }
 )
-public class TelemetryEventSource extends Source {
-    private static final Logger log = Logger.getLogger(TelemetryEventSource.class);
+public class RuntimeAgentEventSource extends Source {
+    private static final Logger log = Logger.getLogger(RuntimeAgentEventSource.class);
 
     private SourceEventListener sourceEventListener;
     private int port;

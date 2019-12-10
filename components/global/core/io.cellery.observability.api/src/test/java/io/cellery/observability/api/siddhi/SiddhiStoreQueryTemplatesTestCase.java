@@ -413,6 +413,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
 
     @Test
     public void testK8sGetPodsForComponentTemplate() {
+        final String runtime = "test-runtime";
         final String namespace = "test-namespace";
         final String instance = "pet-be";
         final String component = "catalog";
@@ -420,6 +421,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         final long queryEndTime = 21234322;
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.K8S_GET_PODS_FOR_COMPONENT.builder()
+                .setArg(Params.RUNTIME, runtime)
                 .setArg(Params.NAMESPACE, namespace)
                 .setArg(Params.INSTANCE, instance)
                 .setArg(Params.COMPONENT, component)
@@ -429,7 +431,8 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from K8sPodInfoTable\n" +
-                "on (\"" + namespace + "\" == \"\" or namespace == \"" + namespace + "\") " +
+                "on (\"" + runtime + "\" == \"\" or runtime == \"" + runtime + "\") " +
+                "and (\"" + namespace + "\" == \"\" or namespace == \"" + namespace + "\") " +
                 "and (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
                 "and (\"" + component + "\" == \"\" or component == \"catalog\") " +
                 "and ((" + queryStartTime + "L == -1L and " + queryEndTime + "L == -1L) " +
@@ -445,12 +448,14 @@ public class SiddhiStoreQueryTemplatesTestCase {
 
     @Test
     public void testK8sGetInstancesTemplate() {
+        final String runtime = "test-runtime";
         final String namespace = "test-namespace";
         final String instance = "pet-be";
         final long queryStartTime = 243423;
         final long queryEndTime = 21234322;
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.K8S_GET_INSTANCES.builder()
+                .setArg(Params.RUNTIME, runtime)
                 .setArg(Params.NAMESPACE, namespace)
                 .setArg(Params.INSTANCE, instance)
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
@@ -459,7 +464,8 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from K8sComponentInfoTable\n" +
-                "on (\"" + namespace + "\" == \"\" or namespace == \"" + namespace + "\") " +
+                "on (\"" + runtime + "\" == \"\" or runtime == \"" + runtime + "\") " +
+                "and (\"" + namespace + "\" == \"\" or namespace == \"" + namespace + "\") " +
                 "and (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
                 "and ((" + queryStartTime + "L == -1L and " + queryEndTime + "L == -1L) " +
                 "or ((creationTimestamp >= " + queryStartTime + "L " +
@@ -475,6 +481,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
 
     @Test
     public void testK8sGetComponentsTemplate() {
+        final String runtime = "test-runtime";
         final String namespace = "test-namespace";
         final String instance = "pet-be";
         final String component = "catalog";
@@ -482,6 +489,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         final long queryEndTime = 21234322;
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.K8S_GET_COMPONENTS.builder()
+                .setArg(Params.RUNTIME, runtime)
                 .setArg(Params.NAMESPACE, namespace)
                 .setArg(Params.INSTANCE, instance)
                 .setArg(Params.COMPONENT, component)
@@ -491,7 +499,8 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from K8sComponentInfoTable\n" +
-                "on (\"" + namespace + "\" == \"\" or namespace == \"" + namespace + "\") " +
+                "on (\"" + runtime + "\" == \"\" or runtime == \"" + runtime + "\") " +
+                "and (\"" + namespace + "\" == \"\" or namespace == \"" + namespace + "\") " +
                 "and (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
                 "and (\"" + component + "\" == \"\" or component == \"" + component + "\") " +
                 "and ((" + queryStartTime + "L == -1L and " + queryEndTime + "L == -1L) " +
