@@ -16,9 +16,9 @@
  * under the License.
  */
 
-package io.cellery.observability.api.bean;
+package io.cellery.observability.auth;
 
-import io.cellery.observability.api.internal.ServiceHolder;
+import io.cellery.observability.auth.internal.ServiceHolder;
 import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -37,7 +37,7 @@ import java.nio.file.Paths;
 /**
  * Test Cases for Cellery Config.
  */
-public class CelleryConfigTestCase {
+public class AuthConfigTestCase {
 
     @BeforeMethod
     public void init() {
@@ -56,19 +56,19 @@ public class CelleryConfigTestCase {
 
     @Test
     public void testLoadConfig() throws Exception {
-        Whitebox.setInternalState(CelleryConfig.class, "celleryConfig", (Object) null);
-        CelleryConfig celleryConfig = CelleryConfig.getInstance();
-        Assert.assertNotNull(celleryConfig);
-        Assert.assertEquals("https://idp.cellery-system", celleryConfig.getIdpURL());
-        Assert.assertEquals("http://cellery-dashboard", celleryConfig.getDashboardURL());
-        Assert.assertEquals("testadmin", celleryConfig.getIdpAdminUsername());
-        Assert.assertEquals("testpass", celleryConfig.getIdpAdminPassword());
+        Whitebox.setInternalState(AuthConfig.class, "authConfig", (Object) null);
+        AuthConfig authConfig = AuthConfig.getInstance();
+        Assert.assertNotNull(authConfig);
+        Assert.assertEquals("https://idp.cellery-system", authConfig.getIdpURL());
+        Assert.assertEquals("http://cellery-dashboard", authConfig.getDashboardURL());
+        Assert.assertEquals("testadmin", authConfig.getIdpAdminUsername());
+        Assert.assertEquals("testpass", authConfig.getIdpAdminPassword());
     }
 
     @Test
     public void testAccessLoadedConfig() throws Exception {
-        Whitebox.setInternalState(CelleryConfig.class, "celleryConfig", (Object) null);
-        CelleryConfig initialCelleryConfig = CelleryConfig.getInstance();
-        Assert.assertSame(CelleryConfig.getInstance(), initialCelleryConfig);
+        Whitebox.setInternalState(AuthConfig.class, "authConfig", (Object) null);
+        AuthConfig initialAuthConfig = AuthConfig.getInstance();
+        Assert.assertSame(AuthConfig.getInstance(), initialAuthConfig);
     }
 }

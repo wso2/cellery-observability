@@ -57,16 +57,8 @@
             <artifactId>org.wso2.carbon.datasource.core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpcore</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.oltu.oauth2</groupId>
-            <artifactId>org.apache.oltu.oauth2.client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.wso2.carbon.config</groupId>
-            <artifactId>org.wso2.carbon.config</artifactId>
+            <groupId>org.wso2.extension.siddhi.store.rdbms</groupId>
+            <artifactId>siddhi-store-rdbms</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -93,11 +85,6 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.wso2.extension.siddhi.store.rdbms</groupId>
-            <artifactId>siddhi-store-rdbms</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- Test dependencies end here -->
@@ -133,7 +120,7 @@
                                         <limit>
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.40</minimum>
+                                            <minimum>0.25</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

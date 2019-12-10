@@ -28,7 +28,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>io.cellery.observability.ui</artifactId>
     <version>0.5.1-SNAPSHOT</version>
-    <name>Cellery Observability Components - Global Plane - Portal</name>
+    <name>Cellery Observability Components - Global Plane - Portal - UI</name>
     <packaging>pom</packaging>
 
     <build>

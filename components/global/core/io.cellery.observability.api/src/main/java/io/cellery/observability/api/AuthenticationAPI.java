@@ -18,15 +18,16 @@
 
 package io.cellery.observability.api;
 
-import io.cellery.observability.api.bean.CelleryConfig;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.internal.ServiceHolder;
+import io.cellery.observability.auth.AuthConfig;
 import org.apache.oltu.oauth2.client.OAuthClient;
 import org.apache.oltu.oauth2.client.URLConnectionClient;
 import org.apache.oltu.oauth2.client.request.OAuthClientRequest;
 import org.apache.oltu.oauth2.client.response.OAuthAccessTokenResponse;
 import org.apache.oltu.oauth2.common.message.types.GrantType;
-import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +46,7 @@ import javax.ws.rs.core.Response;
  */
 @Path("/api/auth")
 public class AuthenticationAPI {
+    private static final JsonParser jsonParser = new JsonParser();
 
     @GET
     @Path("/tokens/{authCode}")
@@ -52,16 +54,16 @@ public class AuthenticationAPI {
     public Response getTokens(@PathParam("authCode") String authCode) throws APIInvocationException {
         try {
             OAuthClientRequest oAuthClientRequest = OAuthClientRequest
-                    .tokenLocation(CelleryConfig.getInstance().getIdpURL() + Constants.TOKEN_ENDPOINT)
+                    .tokenLocation(AuthConfig.getInstance().getIdpURL() + Constants.TOKEN_ENDPOINT)
                     .setGrantType(GrantType.AUTHORIZATION_CODE)
-                    .setClientId(ServiceHolder.getOidcOauthManager().getClientId())
-                    .setClientSecret(ServiceHolder.getOidcOauthManager().getClientSecret())
-                    .setRedirectURI(CelleryConfig.getInstance().getDashboardURL())
+                    .setClientId(ServiceHolder.getAuthenticationProvider().getClientId())
+                    .setClientSecret(ServiceHolder.getAuthenticationProvider().getClientSecret())
+                    .setRedirectURI(AuthConfig.getInstance().getDashboardURL())
                     .setCode(authCode).buildBodyMessage();
 
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
             OAuthAccessTokenResponse oAuthResponse = oAuthClient.accessToken(oAuthClientRequest);
-            JSONObject jsonObj = new JSONObject(oAuthResponse.getBody());
+            JsonObject jsonObj = jsonParser.parse(oAuthResponse.getBody()).getAsJsonObject();
 
             String accessToken = oAuthResponse.getAccessToken();
             final int mid = accessToken.length() / 2;
@@ -84,7 +86,7 @@ public class AuthenticationAPI {
     @Produces("application/json")
     public Response getCredentials() throws APIInvocationException {
         try {
-            return Response.ok().entity(ServiceHolder.getOidcOauthManager().getClientId()).build();
+            return Response.ok().entity(ServiceHolder.getAuthenticationProvider().getClientId()).build();
         } catch (Throwable e) {
             throw new APIInvocationException("Error while getting Client ID for Observability Portal", e);
         }

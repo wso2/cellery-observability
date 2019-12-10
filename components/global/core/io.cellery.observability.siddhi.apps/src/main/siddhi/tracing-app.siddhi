@@ -132,36 +132,38 @@ insert into FilteredTelemetryStreamIn;
 from FilteredTelemetryStreamIn
 select
     runtime,
-    str:replaceFirst(traceId, "^0+", "") as traceId,
-    str:replaceFirst(spanId, "^0+", "") as spanId,
+    traceId,
+    spanId,
+    parentSpanId,
     ifThenElse(reporterKind == "inbound", "SERVER", "CLIENT") as spanKind,
     ifThenElse(reporterKind == "inbound", destinationNamespace, sourceNamespace) as namespace,
     ifThenElse(reporterKind == "inbound", destinationInstance, sourceInstance) as instance,
     ifThenElse(reporterKind == "inbound", destinationInstanceKind, sourceInstanceKind) as instanceKind,
     ifThenElse(reporterKind == "inbound", destinationComponent, sourceComponent) as serviceName,
     ifThenElse(reporterKind == "inbound", destinationPod, sourcePod) as pod
-insert into ProcessedTelemetryDataStream;
+insert into MergedTelemetryDataStream;
 
 -- Extracting information for remote service
 from FilteredTelemetryStreamIn
 select
     runtime,
-    str:replaceFirst(traceId, "^0+", "") as traceId,
-    str:replaceFirst(spanId, "^0+", "") as spanId,
+    traceId,
+    spanId,
+    parentSpanId,
     ifThenElse(reporterKind == "inbound", "CLIENT", "SERVER") as spanKind,
     ifThenElse(reporterKind == "inbound", sourceNamespace, destinationNamespace) as namespace,
     ifThenElse(reporterKind == "inbound", sourceInstance, destinationInstance) as instance,
     ifThenElse(reporterKind == "inbound", sourceInstanceKind, destinationInstanceKind) as instanceKind,
     ifThenElse(reporterKind == "inbound", sourceComponent, destinationComponent) as serviceName,
     ifThenElse(reporterKind == "inbound", sourcePod, destinationPod) as pod
-insert into ProcessedTelemetryDataStream;
+insert into MergedTelemetryDataStream;
 
-from ProcessedTelemetryDataStream[(not serviceName is null) and (serviceName != "")]
+from MergedTelemetryDataStream[(not serviceName is null) and (serviceName != "")]
 select
     runtime,
-    traceId,
-    spanId,
-    "" as parentId,
+    str:replaceFirst(traceId, "^0+", "") as traceId,
+    str:replaceFirst(spanId, "^0+", "") as spanId,
+    ifThenElse(parentSpanId is null, parentSpanId, str:replaceFirst(parentSpanId, "^0+", "")) as parentId,
     namespace,
     ifThenElse(instance is null, extractFromServiceName(serviceName, 1), instance) as instance,
     instanceKind,
@@ -172,9 +174,9 @@ select
     0L as startTime,
     0L as duration,
     "{}" as tags
-insert into ExtractedTelemetryDataStream;
+insert into ProcessedTelemetryDataStream;
 
-from ExtractedTelemetryDataStream[(not traceId is null) and (not spanId is null)]
+from ProcessedTelemetryDataStream[(not traceId is null) and (not spanId is null)]
 update or insert into DistributedTracingTable
     set DistributedTracingTable.pod = pod
     on DistributedTracingTable.runtime == runtime and DistributedTracingTable.traceId == traceId

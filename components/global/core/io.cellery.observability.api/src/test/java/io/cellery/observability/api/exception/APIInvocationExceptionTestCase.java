@@ -18,7 +18,8 @@
 
 package io.cellery.observability.api.exception;
 
-import org.json.JSONObject;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -30,6 +31,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 public class APIInvocationExceptionTestCase {
+    private static final JsonParser jsonParser = new JsonParser();
 
     @Test
     public void testMappingWithAPIInvocationException() {
@@ -38,13 +40,13 @@ public class APIInvocationExceptionTestCase {
                 new Exception("Test Root Cause"));
 
         Response response = apiExceptionMapper.toResponse(exception);
-        JSONObject responseBodyJson = new JSONObject(response.getEntity().toString());
+        JsonObject responseBodyJson = jsonParser.parse(response.getEntity().toString()).getAsJsonObject();
         Map<String, List<String>> headersMap = Whitebox.getInternalState(response, "headers");
         List<String> contentTypeHeader = headersMap.get(HttpHeaders.CONTENT_TYPE);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(responseBodyJson.getString("status"), "Error");
-        Assert.assertEquals(responseBodyJson.getString("message"), "Test Exception");
+        Assert.assertEquals(responseBodyJson.get("status").getAsString(), "Error");
+        Assert.assertEquals(responseBodyJson.get("message").getAsString(), "Test Exception");
         Assert.assertEquals(response.getStatus(), Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
         Assert.assertEquals(contentTypeHeader.size(), 1);
         Assert.assertEquals(contentTypeHeader.get(0), MediaType.APPLICATION_JSON);
