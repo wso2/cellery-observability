@@ -45,7 +45,7 @@ public class UsersAPI {
             Object accessToken = request.getProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN);
             if (accessToken instanceof String) {
                 Map<String, String[]> availableRunTimeNamespaces
-                        = ServiceHolder.getAuthProvider().getAuthorizedRuntimeNamespaces((String) accessToken);
+                        = ServiceHolder.getAuthorizationProvider().getAuthorizedRuntimeNamespaces((String) accessToken);
                 return Response.ok().entity(availableRunTimeNamespaces).build();
             } else {
                 return Response.ok().entity(new JsonObject()).build();

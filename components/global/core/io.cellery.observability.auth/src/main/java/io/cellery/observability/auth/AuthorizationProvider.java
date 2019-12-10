@@ -25,7 +25,7 @@ import java.util.Map;
  *
  * This can be implemented to override the auth behaviour of Cellery Observability.
  */
-public interface AuthProvider {
+public interface AuthorizationProvider {
     // TODO: Move all auth to this module and rethink this interface
 
     /**
