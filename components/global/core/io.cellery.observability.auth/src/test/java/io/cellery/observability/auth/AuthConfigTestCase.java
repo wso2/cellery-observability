@@ -59,10 +59,10 @@ public class AuthConfigTestCase {
         Whitebox.setInternalState(AuthConfig.class, "authConfig", (Object) null);
         AuthConfig authConfig = AuthConfig.getInstance();
         Assert.assertNotNull(authConfig);
-        Assert.assertEquals("https://idp.cellery-system", authConfig.getIdpURL());
-        Assert.assertEquals("http://cellery-dashboard", authConfig.getDashboardURL());
-        Assert.assertEquals("testadmin", authConfig.getIdpAdminUsername());
-        Assert.assertEquals("testpass", authConfig.getIdpAdminPassword());
+        Assert.assertEquals("https://idp.cellery-system", authConfig.getIdpUrl());
+        Assert.assertEquals("http://cellery-dashboard", authConfig.getCallbackUrl());
+        Assert.assertEquals("testadmin", authConfig.getIdpUsername());
+        Assert.assertEquals("testpass", authConfig.getIdpPassword());
     }
 
     @Test

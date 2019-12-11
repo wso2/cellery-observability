@@ -129,12 +129,12 @@ public class AuthenticationProvider {
     private JsonObject createClientWithDcr() throws AuthProviderException {
         try {
             JsonArray callbackUris = new JsonArray(1);
-            callbackUris.add(AuthConfig.getInstance().getDashboardURL());
+            callbackUris.add(AuthConfig.getInstance().getCallbackUrl());
 
             JsonArray grants = new JsonArray(1);
             grants.add(Constants.OIDC_AUTHORIZATION_CODE_KEY);
 
-            String dcrEp = AuthConfig.getInstance().getIdpURL() + Constants.OIDC_REGISTER_ENDPOINT;
+            String dcrEp = AuthConfig.getInstance().getIdpUrl() + Constants.OIDC_REGISTER_ENDPOINT;
             JsonObject clientJson = new JsonObject();
             clientJson.addProperty(Constants.OIDC_EXT_PARAM_CLIENT_ID_KEY, Constants.CELLERY_CLIENT_ID);
             clientJson.addProperty(Constants.OIDC_CLIENT_NAME_KEY, Constants.CELLERY_APPLICATION_NAME);
@@ -168,7 +168,7 @@ public class AuthenticationProvider {
      */
     private JsonObject retrieveExistingClientCredentials() throws AuthProviderException {
         try {
-            String dcrEp = AuthConfig.getInstance().getIdpURL() + Constants.OIDC_REGISTER_ENDPOINT;
+            String dcrEp = AuthConfig.getInstance().getIdpUrl() + Constants.OIDC_REGISTER_ENDPOINT;
             HttpGet request = new HttpGet(dcrEp + "?"
                     + Constants.OIDC_CLIENT_NAME_KEY + "=" + Constants.CELLERY_APPLICATION_NAME);
             request.setHeader(Constants.HEADER_AUTHORIZATION, getEncodedIdpAdminCredentials());
@@ -202,7 +202,7 @@ public class AuthenticationProvider {
             List<NameValuePair> params = new ArrayList<>();
             params.add(new BasicNameValuePair("token", token));
 
-            String introspectEP = AuthConfig.getInstance().getIdpURL() + Constants.OIDC_INTROSPECT_ENDPOINT;
+            String introspectEP = AuthConfig.getInstance().getIdpUrl() + Constants.OIDC_INTROSPECT_ENDPOINT;
             HttpPost request = new HttpPost(introspectEP);
             request.setHeader(Constants.HEADER_AUTHORIZATION, getEncodedIdpAdminCredentials());
             request.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8.name()));
@@ -233,8 +233,8 @@ public class AuthenticationProvider {
      * @return the String value of encoded credential is returned
      */
     private String getEncodedIdpAdminCredentials() throws ConfigurationException {
-        String authString = AuthConfig.getInstance().getIdpAdminUsername() + ":"
-                + AuthConfig.getInstance().getIdpAdminPassword();
+        String authString = AuthConfig.getInstance().getIdpUsername() + ":"
+                + AuthConfig.getInstance().getIdpPassword();
         byte[] authEncBytes = Base64.encodeBase64(authString.getBytes(Charset.forName(StandardCharsets.UTF_8.name())));
         String authStringEnc = new String(authEncBytes, Charset.forName(StandardCharsets.UTF_8.name()));
         return BASIC_AUTH + authStringEnc;

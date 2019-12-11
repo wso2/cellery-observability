@@ -54,11 +54,11 @@ public class AuthenticationAPI {
     public Response getTokens(@PathParam("authCode") String authCode) throws APIInvocationException {
         try {
             OAuthClientRequest oAuthClientRequest = OAuthClientRequest
-                    .tokenLocation(AuthConfig.getInstance().getIdpURL() + Constants.TOKEN_ENDPOINT)
+                    .tokenLocation(AuthConfig.getInstance().getIdpUrl() + Constants.TOKEN_ENDPOINT)
                     .setGrantType(GrantType.AUTHORIZATION_CODE)
                     .setClientId(ServiceHolder.getAuthenticationProvider().getClientId())
                     .setClientSecret(ServiceHolder.getAuthenticationProvider().getClientSecret())
-                    .setRedirectURI(AuthConfig.getInstance().getDashboardURL())
+                    .setRedirectURI(AuthConfig.getInstance().getCallbackUrl())
                     .setCode(authCode).buildBodyMessage();
 
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());

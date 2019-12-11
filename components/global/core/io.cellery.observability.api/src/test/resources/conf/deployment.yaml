@@ -21,15 +21,15 @@ wso2.carbon:
     # port offset
     offset: 9000
 
-celleryObservabilityPortal:
+cellery.observability.auth:
   # Cellery Dashboard URL
-  dashboardURL: http://cellery-dashboard
-  # IDP URL
-  idpURL: https://idp.cellery-system
-  # Default username for IDP client registeration and token introspection
-  idpAdminUsername: testadmin
-  # Default password for IDP client registeration and token introspection
-  idpAdminPassword: testpass
+  callbackUrl: http://cellery-dashboard
+  # IdP URL
+  idpUrl: https://idp.cellery-system
+  # Username for IdP
+  idpUsername: testadmin
+  # Password for IdP
+  idpPassword: testpass
 
 # Datasource Configurations
 wso2.datasources:
