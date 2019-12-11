@@ -23,39 +23,42 @@ import org.wso2.carbon.config.annotation.Configuration;
 import org.wso2.carbon.config.annotation.Element;
 
 /**
- * This bean class is used to read cellery config.
+ * This bean class is used to read cellery auth config.
  */
-@Configuration(namespace = "celleryObservabilityPortal", description = "Cellery Configuration Parameters")
+@Configuration(
+        namespace = "cellery.observability.auth",
+        description = "Cellery Auth Configuration"
+)
 public class AuthConfig {
 
     private static volatile AuthConfig authConfig;
 
-    @Element(description = "dashboardURL")
-    private String dashboardURL = "";
+    @Element(description = "callbackUrl")
+    private String callbackUrl = "";
 
-    @Element(description = "idpURL")
-    private String idpURL = "";
+    @Element(description = "idpUrl")
+    private String idpUrl = "";
 
-    @Element(description = "idpAdminUsername")
-    private String idpAdminUsername = "";
+    @Element(description = "idpUsername")
+    private String idpUsername = "";
 
-    @Element(description = "idpAdminPassword")
-    private String idpAdminPassword = "";
+    @Element(description = "idpPassword")
+    private String idpPassword = "";
 
-    public String getDashboardURL() {
-        return dashboardURL;
+    public String getCallbackUrl() {
+        return callbackUrl;
     }
 
-    public String getIdpURL() {
-        return idpURL;
+    public String getIdpUrl() {
+        return idpUrl;
     }
 
-    public String getIdpAdminUsername() {
-        return idpAdminUsername;
+    public String getIdpUsername() {
+        return idpUsername;
     }
 
-    public String getIdpAdminPassword() {
-        return idpAdminPassword;
+    public String getIdpPassword() {
+        return idpPassword;
     }
 
     public static AuthConfig getInstance() throws ConfigurationException {
