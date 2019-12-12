@@ -21,7 +21,7 @@ package io.cellery.observability.api.exception;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import io.cellery.observability.api.AggregatedRequestsAPI;
+import io.cellery.observability.api.HttpRequestsAPI;
 import org.apache.log4j.Logger;
 
 import javax.ws.rs.core.HttpHeaders;
@@ -36,7 +36,7 @@ import javax.ws.rs.ext.ExceptionMapper;
  */
 abstract class BaseExceptionMapper<E extends Throwable> implements ExceptionMapper<E> {
 
-    private static final Logger log = Logger.getLogger(AggregatedRequestsAPI.class);
+    private static final Logger log = Logger.getLogger(HttpRequestsAPI.class);
     private Gson gson = new Gson();
 
     private static final String STATUS = "status";

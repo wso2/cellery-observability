@@ -21,9 +21,9 @@ package io.cellery.observability.api;
 import com.google.gson.JsonObject;
 import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.internal.ServiceHolder;
+import io.cellery.observability.auth.Permission;
 import org.wso2.msf4j.Request;
 
-import java.util.Map;
 import javax.ws.rs.GET;
 import javax.ws.rs.OPTIONS;
 import javax.ws.rs.Path;
@@ -34,18 +34,18 @@ import javax.ws.rs.core.Response;
 /**
  * MSF4J service for User services.
  */
-@Path("/api/users")
-public class UsersAPI {
+@Path("/api/user")
+public class UserAPI {
 
     @GET
-    @Path("/runtimes/namespaces")
+    @Path("/permissions")
     @Produces("application/json")
     public Response getAuthorizedRunTimeNamespaces(@Context Request request) throws APIInvocationException {
         try {
             Object accessToken = request.getProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN);
             if (accessToken instanceof String) {
-                Map<String, String[]> availableRunTimeNamespaces
-                        = ServiceHolder.getAuthorizationProvider().getAuthorizedRuntimeNamespaces((String) accessToken);
+                Permission[] availableRunTimeNamespaces
+                        = ServiceHolder.getAuthProvider().getAllAllowedPermissions((String) accessToken);
                 return Response.ok().entity(availableRunTimeNamespaces).build();
             } else {
                 return Response.ok().entity(new JsonObject()).build();

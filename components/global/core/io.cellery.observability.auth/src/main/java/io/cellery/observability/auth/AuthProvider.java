@@ -18,23 +18,31 @@
 
 package io.cellery.observability.auth;
 
-import java.util.Map;
+import io.cellery.observability.auth.exception.AuthProviderException;
 
 /**
  * Auth Provider interface used for authentication and authorization in Cellery.
  *
  * This can be implemented to override the auth behaviour of Cellery Observability.
  */
-public interface AuthorizationProvider {
-    // TODO: Move all auth to this module and rethink this interface
+public interface AuthProvider {
 
     /**
-     * Get a map of the authorized runtime namespaces for a user.
-     * The keys of the map are runtimes while the value for each runtime contains an array of namespaces
-     * the user has access to in the namespaces.
+     * Validate the token.
+     *
+     * @param token The token of which the validity should be checked
+     * @param requiredPermission The permission required by the user
+     * @return True if the token is valid
+     * @throws AuthProviderException if validating the token fails
+     */
+    boolean isTokenValid(String token, Permission requiredPermission) throws AuthProviderException;
+
+    /**
+     * Get an array of all the permissions allowed for a user.
      *
      * @param accessToken The access token sent for the action
      * @return The map of authorized runtime namespaces
+     * @throws AuthProviderException if checking the authorized runtime namespaces failed
      */
-    Map<String, String[]> getAuthorizedRuntimeNamespaces(String accessToken);
+    Permission[] getAllAllowedPermissions(String accessToken) throws AuthProviderException;
 }

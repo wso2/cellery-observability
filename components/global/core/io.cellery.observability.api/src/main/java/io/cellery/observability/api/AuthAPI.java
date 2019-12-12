@@ -45,7 +45,7 @@ import javax.ws.rs.core.Response;
  * All endpoints in this API are unauthenticated
  */
 @Path("/api/auth")
-public class AuthenticationAPI {
+public class AuthAPI {
     private static final JsonParser jsonParser = new JsonParser();
 
     @GET
@@ -56,8 +56,8 @@ public class AuthenticationAPI {
             OAuthClientRequest oAuthClientRequest = OAuthClientRequest
                     .tokenLocation(AuthConfig.getInstance().getIdpUrl() + Constants.TOKEN_ENDPOINT)
                     .setGrantType(GrantType.AUTHORIZATION_CODE)
-                    .setClientId(ServiceHolder.getAuthenticationProvider().getClientId())
-                    .setClientSecret(ServiceHolder.getAuthenticationProvider().getClientSecret())
+                    .setClientId(ServiceHolder.getDcrProvider().getClientId())
+                    .setClientSecret(ServiceHolder.getDcrProvider().getClientSecret())
                     .setRedirectURI(AuthConfig.getInstance().getCallbackUrl())
                     .setCode(authCode).buildBodyMessage();
 
@@ -86,7 +86,7 @@ public class AuthenticationAPI {
     @Produces("application/json")
     public Response getCredentials() throws APIInvocationException {
         try {
-            return Response.ok().entity(ServiceHolder.getAuthenticationProvider().getClientId()).build();
+            return Response.ok().entity(ServiceHolder.getDcrProvider().getClientId()).build();
         } catch (Throwable e) {
             throw new APIInvocationException("Error while getting Client ID for Observability Portal", e);
         }

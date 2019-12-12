@@ -67,10 +67,10 @@ describe("ConfigHolder", () => {
             expect(user.value).toEqual(loggedInUser);
         }
         {
-            const authorizedNamespaces = stateHolder.state[StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES];
+            const authorizedNamespaces = stateHolder.state[StateHolder.USER_PERMISSIONS];
             expect(authorizedNamespaces).not.toBeUndefined();
             expect(Object.keys(authorizedNamespaces)).toHaveLength(1);
-            expect(authorizedNamespaces.value).toEqual({});
+            expect(authorizedNamespaces.value).toEqual([]);
         }
     };
 

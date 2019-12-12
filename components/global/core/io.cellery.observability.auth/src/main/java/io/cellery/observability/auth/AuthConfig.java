@@ -45,6 +45,9 @@ public class AuthConfig {
     @Element(description = "idpPassword")
     private String idpPassword = "";
 
+    @Element(description = "authProvider")
+    private String authProvider = CelleryAuthProvider.class.getName();
+
     public String getCallbackUrl() {
         return callbackUrl;
     }
@@ -59,6 +62,10 @@ public class AuthConfig {
 
     public String getIdpPassword() {
         return idpPassword;
+    }
+
+    public String getAuthProvider() {
+        return authProvider;
     }
 
     public static AuthConfig getInstance() throws ConfigurationException {

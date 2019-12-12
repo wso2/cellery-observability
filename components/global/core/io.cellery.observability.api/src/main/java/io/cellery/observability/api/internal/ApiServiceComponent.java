@@ -17,21 +17,21 @@
  */
 package io.cellery.observability.api.internal;
 
-import io.cellery.observability.api.AggregatedRequestsAPI;
-import io.cellery.observability.api.AuthenticationAPI;
+import io.cellery.observability.api.AuthAPI;
 import io.cellery.observability.api.DependencyModelAPI;
 import io.cellery.observability.api.DistributedTracingAPI;
+import io.cellery.observability.api.HttpRequestsAPI;
 import io.cellery.observability.api.InstanceAPI;
 import io.cellery.observability.api.KubernetesAPI;
-import io.cellery.observability.api.UsersAPI;
+import io.cellery.observability.api.UserAPI;
 import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.exception.InvalidParamException;
 import io.cellery.observability.api.exception.UnexpectedException;
 import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
-import io.cellery.observability.auth.AuthenticationProvider;
-import io.cellery.observability.auth.AuthorizationProvider;
+import io.cellery.observability.auth.AuthProvider;
+import io.cellery.observability.auth.DcrProvider;
 import io.cellery.observability.model.generator.model.ModelManager;
 import org.apache.log4j.Logger;
 import org.osgi.framework.BundleContext;
@@ -88,8 +88,8 @@ public class ApiServiceComponent {
                             new UnexpectedException.Mapper()
                     )
                     .deploy(
-                            new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
-                            new KubernetesAPI(), new InstanceAPI(), new AuthenticationAPI(), new UsersAPI()
+                            new DependencyModelAPI(), new HttpRequestsAPI(), new DistributedTracingAPI(),
+                            new KubernetesAPI(), new InstanceAPI(), new AuthAPI(), new UserAPI()
                     )
             );
             ServiceHolder.getMicroservicesRunner().start();
@@ -166,32 +166,32 @@ public class ApiServiceComponent {
     }
 
     @Reference(
-            name = "io.cellery.observability.auth.AuthenticationProvider",
-            service = AuthenticationProvider.class,
+            name = "io.cellery.observability.auth.DcrProvider",
+            service = DcrProvider.class,
             cardinality = ReferenceCardinality.MANDATORY,
             policy = ReferencePolicy.DYNAMIC,
-            unbind = "unsetAuthenticationProvider"
+            unbind = "unsetDcrProvider"
     )
-    protected void setAuthenticationProvider(AuthenticationProvider authenticationProvider) {
-        ServiceHolder.setAuthenticationProvider(authenticationProvider);
+    protected void setDcrProvider(DcrProvider dcrProvider) {
+        ServiceHolder.setDcrProvider(dcrProvider);
     }
 
-    protected void unsetAuthenticationProvider(AuthenticationProvider authenticationProvider) {
-        ServiceHolder.setAuthenticationProvider(null);
+    protected void unsetDcrProvider(DcrProvider dcrProvider) {
+        ServiceHolder.setDcrProvider(null);
     }
 
     @Reference(
-            name = "io.cellery.observability.auth.AuthorizationProvider",
-            service = AuthorizationProvider.class,
+            name = "io.cellery.observability.auth.AuthProvider",
+            service = AuthProvider.class,
             cardinality = ReferenceCardinality.MANDATORY,
             policy = ReferencePolicy.DYNAMIC,
             unbind = "unsetAuthProvider"
     )
-    protected void setAuthProvider(AuthorizationProvider authorizationProvider) {
-        ServiceHolder.setAuthorizationProvider(authorizationProvider);
+    protected void setAuthProvider(AuthProvider authProvider) {
+        ServiceHolder.setAuthProvider(authProvider);
     }
 
-    protected void unsetAuthProvider(AuthorizationProvider authorizationProvider) {
-        ServiceHolder.setAuthorizationProvider(null);
+    protected void unsetAuthProvider(AuthProvider authProvider) {
+        ServiceHolder.setAuthProvider(null);
     }
 }

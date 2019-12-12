@@ -143,7 +143,12 @@ class TopToolbar extends React.Component {
         } = this.state;
 
         const isDateRangeSelectorOpen = Boolean(dateRangeSelectorAnchorElement);
-        const authorizedRuntimeNamespaces = globalState.get(StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES);
+        const userReadPermissions = globalState.get(StateHolder.USER_PERMISSIONS)
+            .filter((permission) => permission.actions.includes("API_GET"));
+        const allowedRuntimes = Array.from(new Set(userReadPermissions.map((permission) => permission.runtime)));
+        const allowedNamespaces = Array.from(new Set(userReadPermissions
+            .filter((permission) => permission.runtime === runtime)
+            .map((permission) => permission.namespace)));
         return (
             <div className={classes.container}>
                 <Toolbar disableGutters={true}>
@@ -182,10 +187,10 @@ class TopToolbar extends React.Component {
                             )}
                             className={classes.selectInput}>
                             {
-                                Object.keys(authorizedRuntimeNamespaces)
-                                    .map((runtimeItem) => (
-                                        <MenuItem key={runtimeItem} value={runtimeItem}>{runtimeItem}</MenuItem>
-                                    ))
+
+                                allowedRuntimes.map((runtimeItem) => (
+                                    <MenuItem key={runtimeItem} value={runtimeItem}>{runtimeItem}</MenuItem>
+                                ))
                             }
                         </Select>
                     </FormControl>
@@ -207,16 +212,12 @@ class TopToolbar extends React.Component {
                                         )}
                                         className={classes.selectInput}>
                                         {
-                                            runtime && authorizedRuntimeNamespaces[runtime]
-                                                ? (
-                                                    authorizedRuntimeNamespaces[runtime]
-                                                        .map((namespaceItem) => (
-                                                            <MenuItem key={namespaceItem} value={namespaceItem}>
-                                                                {namespaceItem}
-                                                            </MenuItem>
-                                                        ))
-                                                )
-                                                : null
+                                            allowedNamespaces
+                                                .map((namespaceItem) => (
+                                                    <MenuItem key={namespaceItem} value={namespaceItem}>
+                                                        {namespaceItem}
+                                                    </MenuItem>
+                                                ))
                                         }
                                     </Select>
                                 </FormControl>
