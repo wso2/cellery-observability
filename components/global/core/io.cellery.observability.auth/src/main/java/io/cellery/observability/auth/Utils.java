@@ -18,6 +18,7 @@
 
 package io.cellery.observability.auth;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.HttpClient;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -28,6 +29,8 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
@@ -40,6 +43,7 @@ import javax.net.ssl.X509TrustManager;
  * Auth related utilities.
  */
 public class Utils {
+    private static final String BASIC_AUTH_PREFIX = "Basic ";
 
     /**
      * Get a HTTP Client which bypasses the SSL checks.
@@ -105,6 +109,19 @@ public class Utils {
         context.init(null, trustManagers, new java.security.SecureRandom());
         HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
         HttpsURLConnection.setDefaultHostnameVerifier((string, sslSession) -> true);
+    }
+
+    /**
+     * Get the Base64 encoded IdP Admin Credentials.
+     *
+     * @param username username
+     * @param password password
+     * @return Basic auth header value for the provided username and password
+     */
+    public static String generateBasicAuthHeaderValue(String username, String password) {
+        String authString = username + ":" + password;
+        byte[] authEncBytes = Base64.encodeBase64(authString.getBytes(Charset.forName(StandardCharsets.UTF_8.name())));
+        return BASIC_AUTH_PREFIX + new String(authEncBytes, Charset.forName(StandardCharsets.UTF_8.name()));
     }
 
     private Utils() {   // Prevent initialization

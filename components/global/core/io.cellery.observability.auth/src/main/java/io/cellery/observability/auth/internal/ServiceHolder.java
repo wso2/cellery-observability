@@ -18,6 +18,7 @@
 
 package io.cellery.observability.auth.internal;
 
+import io.cellery.observability.auth.DcrProvider;
 import org.wso2.carbon.config.provider.ConfigProvider;
 
 /**
@@ -25,6 +26,7 @@ import org.wso2.carbon.config.provider.ConfigProvider;
  */
 public class ServiceHolder {
     private static ConfigProvider configProvider;
+    private static DcrProvider dcrProvider;
 
     public static ConfigProvider getConfigProvider() {
         return configProvider;
@@ -32,6 +34,14 @@ public class ServiceHolder {
 
     public static void setConfigProvider(ConfigProvider configProvider) {
         ServiceHolder.configProvider = configProvider;
+    }
+
+    public static DcrProvider getDcrProvider() {
+        return dcrProvider;
+    }
+
+    public static void setDcrProvider(DcrProvider dcrProvider) {
+        ServiceHolder.dcrProvider = dcrProvider;
     }
 
     private ServiceHolder() {   // Prevent initialization

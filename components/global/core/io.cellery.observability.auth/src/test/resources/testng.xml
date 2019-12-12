@@ -22,7 +22,7 @@
     <test name="auth-tests" enabled="true" parallel="false">
         <classes>
             <class name="io.cellery.observability.auth.AuthConfigTestCase"/>
-            <class name="io.cellery.observability.auth.AuthenticationProviderTestCase"/>
+            <class name="io.cellery.observability.auth.DcrProviderTestCase"/>
             <class name="io.cellery.observability.auth.UtilsTestCase"/>
         </classes>
     </test>

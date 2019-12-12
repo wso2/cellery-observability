@@ -20,7 +20,8 @@ package io.cellery.observability.api.interceptor;
 
 import io.cellery.observability.api.Constants;
 import io.cellery.observability.api.internal.ServiceHolder;
-import io.cellery.observability.auth.AuthenticationProvider;
+import io.cellery.observability.auth.AuthProvider;
+import io.cellery.observability.auth.Permission;
 import io.cellery.observability.auth.exception.AuthProviderException;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -46,18 +47,19 @@ public class AuthInterceptorTestCase {
         String tokenFirstPart = "token-first-part";
         String tokenSecondPart = "token-second-part";
         AuthInterceptor authInterceptor = new AuthInterceptor();
-        Request request = mockRequest(tokenFirstPart, tokenSecondPart);
+        Request request = mockRequest("/api/runtimes/test/namespaces/foo/hello", tokenFirstPart, tokenSecondPart);
         Response response = Mockito.mock(Response.class);
 
-        AuthenticationProvider authenticationProvider = Mockito.mock(AuthenticationProvider.class);
-        Mockito.when(authenticationProvider.validateToken(tokenFirstPart + tokenSecondPart)).thenReturn(true);
-        ServiceHolder.setAuthenticationProvider(authenticationProvider);
+        AuthProvider authProvider = Mockito.mock(AuthProvider.class);
+        Mockito.when(authProvider.isTokenValid(Mockito.eq(tokenFirstPart + tokenSecondPart),
+                Mockito.any(Permission.class))).thenReturn(true);
+        ServiceHolder.setAuthProvider(authProvider);
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertTrue(interceptionResult);
         Mockito.verify(request, Mockito.times(1))
                 .setProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN, tokenFirstPart + tokenSecondPart);
-        ServiceHolder.setAuthenticationProvider(null);
+        ServiceHolder.setDcrProvider(null);
     }
 
     @Test
@@ -65,18 +67,19 @@ public class AuthInterceptorTestCase {
         String tokenFirstPart = "invalid-token-first-part";
         String tokenSecondPart = "invalid-token-second-part";
         AuthInterceptor authInterceptor = new AuthInterceptor();
-        Request request = mockRequest(tokenFirstPart, tokenSecondPart);
+        Request request = mockRequest("/api/runtimes/test/namespaces/foo/hello", tokenFirstPart, tokenSecondPart);
         Response response = Mockito.mock(Response.class);
 
-        AuthenticationProvider authenticationProvider = Mockito.mock(AuthenticationProvider.class);
-        Mockito.when(authenticationProvider.validateToken(tokenFirstPart + tokenSecondPart)).thenReturn(false);
-        ServiceHolder.setAuthenticationProvider(authenticationProvider);
+        AuthProvider authProvider = Mockito.mock(AuthProvider.class);
+        Mockito.when(authProvider.isTokenValid(Mockito.eq(tokenFirstPart + tokenSecondPart),
+                Mockito.any(Permission.class))).thenReturn(false);
+        ServiceHolder.setAuthProvider(authProvider);
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertFalse(interceptionResult);
         Mockito.verify(request, Mockito.times(1))
                 .setProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN, tokenFirstPart + tokenSecondPart);
-        ServiceHolder.setAuthenticationProvider(null);
+        ServiceHolder.setDcrProvider(null);
     }
 
     @Test
@@ -96,7 +99,7 @@ public class AuthInterceptorTestCase {
     @Test
     public void testInterceptionWithoutAuthorizationHeader() {
         AuthInterceptor authInterceptor = new AuthInterceptor();
-        Request request = mockRequest(null, "token-second-part");
+        Request request = mockRequest("/api/runtimes/test/namespaces/foo/hello", null, "token-second-part");
         Response response = Mockito.mock(Response.class);
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
@@ -128,7 +131,7 @@ public class AuthInterceptorTestCase {
     @Test
     public void testInterceptionWithoutOAuthCookieValue() {
         AuthInterceptor authInterceptor = new AuthInterceptor();
-        Request request = mockRequest("token-first-part", null);
+        Request request = mockRequest("/api/runtimes/test1/namespaces/bar/user", "token-first-part", null);
         Response response = Mockito.mock(Response.class);
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
@@ -142,29 +145,30 @@ public class AuthInterceptorTestCase {
         String tokenFirstPart = "token-first-part";
         String tokenSecondPart = "token-second-part";
         AuthInterceptor authInterceptor = new AuthInterceptor();
-        Request request = mockRequest(tokenFirstPart, tokenSecondPart);
+        Request request = mockRequest("/api/runtimes/test/hello", tokenFirstPart, tokenSecondPart);
         Response response = Mockito.mock(Response.class);
 
-        AuthenticationProvider authenticationProvider = Mockito.mock(AuthenticationProvider.class);
-        Mockito.when(authenticationProvider.validateToken(tokenFirstPart + tokenSecondPart))
-                .thenThrow(new AuthProviderException("Test Exception"));
-        ServiceHolder.setAuthenticationProvider(authenticationProvider);
+        AuthProvider authProvider = Mockito.mock(AuthProvider.class);
+        Mockito.when(authProvider.isTokenValid(Mockito.eq(tokenFirstPart + tokenSecondPart),
+                Mockito.any(Permission.class))).thenThrow(new AuthProviderException("Test Exception"));
+        ServiceHolder.setAuthProvider(authProvider);
 
         boolean interceptionResult = authInterceptor.interceptRequest(request, response);
         Assert.assertFalse(interceptionResult);
         Mockito.verify(request, Mockito.times(1))
                 .setProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN, tokenFirstPart + tokenSecondPart);
-        ServiceHolder.setAuthenticationProvider(null);
+        ServiceHolder.setDcrProvider(null);
     }
 
     /**
      * Mock a request for the interceptor.
      *
+     * @param uri The uri the request is sent to
      * @param tokenFirstPart The first part of the partial token
      * @param tokenSecondPart The second part of the partial token
      * @return The mocked request
      */
-    private Request mockRequest(String tokenFirstPart, String tokenSecondPart) {
+    private Request mockRequest(String uri, String tokenFirstPart, String tokenSecondPart) {
         HttpHeaders httpHeaders = Mockito.mock(HttpHeaders.class);
         Map<String, Cookie> cookiesMap = new HashMap<>();
         Cookie oAuthCookie = Mockito.mock(Cookie.class);
@@ -175,6 +179,7 @@ public class AuthInterceptorTestCase {
         Mockito.when(httpHeaders.getCookies()).thenReturn(cookiesMap);
 
         Request request = Mockito.mock(Request.class);
+        Mockito.when(request.getUri()).thenReturn(uri);
         Mockito.when(request.getHttpMethod()).thenReturn(HttpMethod.GET);
         Mockito.when(request.getHeaders()).thenReturn(httpHeaders);
         if (tokenFirstPart != null) {

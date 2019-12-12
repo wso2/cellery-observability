@@ -30,6 +30,8 @@ cellery.observability.auth:
   idpUsername: testadmin
   # Password for IdP
   idpPassword: testpass
+  # Auth provider class to be used
+  authProvider: io.cellery.observability.auth.CelleryAuthProvider
 
 # Datasource Configurations
 wso2.datasources:

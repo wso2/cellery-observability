@@ -63,6 +63,7 @@ public class AuthConfigTestCase {
         Assert.assertEquals("http://cellery-dashboard", authConfig.getCallbackUrl());
         Assert.assertEquals("testadmin", authConfig.getIdpUsername());
         Assert.assertEquals("testpass", authConfig.getIdpPassword());
+        Assert.assertEquals("io.cellery.observability.auth.CelleryAuthProvider", authConfig.getAuthProvider());
     }
 
     @Test

@@ -18,8 +18,8 @@
 package io.cellery.observability.api.internal;
 
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
-import io.cellery.observability.auth.AuthenticationProvider;
-import io.cellery.observability.auth.AuthorizationProvider;
+import io.cellery.observability.auth.AuthProvider;
+import io.cellery.observability.auth.DcrProvider;
 import io.cellery.observability.model.generator.model.ModelManager;
 import org.wso2.carbon.kernel.CarbonRuntime;
 import org.wso2.msf4j.MicroservicesRunner;
@@ -34,8 +34,8 @@ public class ServiceHolder {
     private static ModelManager modelManager;
     private static SiddhiStoreQueryManager siddhiStoreQueryManager;
     private static SiddhiManager siddhiManager;
-    private static AuthenticationProvider authenticationProvider;
-    private static AuthorizationProvider authorizationProvider;
+    private static DcrProvider dcrProvider;
+    private static AuthProvider authProvider;
 
     public static CarbonRuntime getCarbonRuntime() {
         return carbonRuntime;
@@ -77,20 +77,20 @@ public class ServiceHolder {
         ServiceHolder.siddhiManager = siddhiManager;
     }
 
-    public static AuthenticationProvider getAuthenticationProvider() {
-        return authenticationProvider;
+    public static DcrProvider getDcrProvider() {
+        return dcrProvider;
     }
 
-    public static void setAuthenticationProvider(AuthenticationProvider authenticationProvider) {
-        ServiceHolder.authenticationProvider = authenticationProvider;
+    public static void setDcrProvider(DcrProvider dcrProvider) {
+        ServiceHolder.dcrProvider = dcrProvider;
     }
 
-    public static AuthorizationProvider getAuthorizationProvider() {
-        return authorizationProvider;
+    public static AuthProvider getAuthProvider() {
+        return authProvider;
     }
 
-    public static void setAuthorizationProvider(AuthorizationProvider authorizationProvider) {
-        ServiceHolder.authorizationProvider = authorizationProvider;
+    public static void setAuthProvider(AuthProvider authProvider) {
+        ServiceHolder.authProvider = authProvider;
     }
 
     private ServiceHolder() {   // Prevent initialization

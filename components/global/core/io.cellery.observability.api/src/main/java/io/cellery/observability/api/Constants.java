@@ -36,23 +36,8 @@ public class Constants {
     public static final String ALL_ORIGIN = "*";
     public static final String ORIGIN = "Origin";
 
-    public static final String IDP_REGISTERATION_ENDPOINT = "/api/identity/oauth2/dcr/v1.1/register";
-    public static final String CLIENT_NAME_PARAM = "client_name";
     public static final String TOKEN_ENDPOINT = "/oauth2/token";
     public static final String ACCESS_TOKEN = "access_token";
-    public static final String AUTHORIZATION_CODE = "authorization_code";
-    public static final String CALL_BACK_URL = "redirect_uris";
-    public static final String CLIENT_NAME = "client_name";
-    public static final String APPLICATION_NAME = "cellery-observability-portal";
-    public static final String GRANT_TYPE = "grant_types";
-    public static final String AUTHORIZATION = "Authorization";
-    public static final String CONTENT_TYPE = "content-type";
-    public static final String APPLICATION_JSON = "application/json";
-    public static final String INTROSPECT_ENDPOINT = "/oauth2/introspect";
     public static final String ID_TOKEN = "id_token";
-    public static final String CLIENT_ID_TXT = "client_id";
-    public static final String CLIENT_SECRET_TXT = "client_secret";
-    public static final String EXT_PARAM_CLIENT_ID = "ext_param_client_id";
     public static final String HTTP_ONLY_SESSION_COOKIE = "OASID";
-    public static final String STANDARD_CLIENT_ID = "celleryobs_0001";
 }

@@ -38,7 +38,7 @@ import javax.ws.rs.core.Response;
  * MSF4J service for fetching the aggregated request.
  */
 @Path("/api/runtimes/{runtime}/namespaces/{namespace}/http-requests")
-public class AggregatedRequestsAPI {
+public class HttpRequestsAPI {
 
     @GET
     @Path("/instances")

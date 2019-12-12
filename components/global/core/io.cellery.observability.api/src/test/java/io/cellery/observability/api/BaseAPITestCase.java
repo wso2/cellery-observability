@@ -24,7 +24,9 @@ import io.cellery.observability.api.interceptor.AuthInterceptor;
 import io.cellery.observability.api.interceptor.CORSInterceptor;
 import io.cellery.observability.api.internal.ServiceHolder;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryManager;
-import io.cellery.observability.auth.AuthenticationProvider;
+import io.cellery.observability.auth.AuthProvider;
+import io.cellery.observability.auth.DcrProvider;
+import io.cellery.observability.auth.Permission;
 import io.cellery.observability.model.generator.internal.ModelStoreManager;
 import io.cellery.observability.model.generator.model.ModelManager;
 import org.apache.log4j.Logger;
@@ -80,7 +82,8 @@ public class BaseAPITestCase {
         initializeEnvironment();
         initializeConfigProvider();
         initializeDataSources();
-        initializeAuthenticationProvider();
+        initializeDcrProvider();
+        initializeAuthProvider();
         initializeModelManager();
         if (logger.isDebugEnabled()) {
             logger.debug("Initialized Model Manager");
@@ -106,7 +109,7 @@ public class BaseAPITestCase {
         }
         ServiceHolder.getSiddhiStoreQueryManager().stop();
 
-        ServiceHolder.setAuthenticationProvider(null);
+        ServiceHolder.setDcrProvider(null);
         ServiceHolder.setSiddhiManager(null);
         ServiceHolder.setMicroservicesRunner(null);
         ServiceHolder.setSiddhiStoreQueryManager(null);
@@ -152,12 +155,23 @@ public class BaseAPITestCase {
      *
      * @throws Exception if stubbing validate token fails
      */
-    private void initializeAuthenticationProvider() throws Exception {
-        AuthenticationProvider authenticationProvider = Mockito.mock(AuthenticationProvider.class);
-        Mockito.when(authenticationProvider.validateToken(AUTH_HEADER_TOKEN + COOKIE_TOKEN)).thenReturn(true);
-        Mockito.when(authenticationProvider.getClientId()).thenReturn(CLIENT_ID);
-        Mockito.when(authenticationProvider.getClientSecret()).thenReturn(CLIENT_SECRET);
-        ServiceHolder.setAuthenticationProvider(authenticationProvider);
+    private void initializeDcrProvider() throws Exception {
+        DcrProvider dcrProvider = Mockito.mock(DcrProvider.class);
+        Mockito.when(dcrProvider.getClientId()).thenReturn(CLIENT_ID);
+        Mockito.when(dcrProvider.getClientSecret()).thenReturn(CLIENT_SECRET);
+        ServiceHolder.setDcrProvider(dcrProvider);
+    }
+
+    /**
+     * Initialize Open ID Connect OAuth Manager to allow all requests.
+     *
+     * @throws Exception if stubbing validate token fails
+     */
+    private void initializeAuthProvider() throws Exception {
+        AuthProvider authProvider = Mockito.mock(AuthProvider.class);
+        Mockito.when(authProvider.isTokenValid(AUTH_HEADER_TOKEN + COOKIE_TOKEN, Mockito.any(Permission.class)))
+                .thenReturn(true);
+        ServiceHolder.setAuthProvider(authProvider);
     }
 
     /**
@@ -197,8 +211,8 @@ public class BaseAPITestCase {
                 .addGlobalRequestInterceptor(new CORSInterceptor(), new AuthInterceptor())
                 .addExceptionMapper(new APIInvocationException.Mapper(), new InvalidParamException.Mapper())
                 .deploy(
-                        new DependencyModelAPI(), new AggregatedRequestsAPI(), new DistributedTracingAPI(),
-                        new KubernetesAPI(), new InstanceAPI(), new AuthenticationAPI(), new UsersAPI()
+                        new DependencyModelAPI(), new HttpRequestsAPI(), new DistributedTracingAPI(),
+                        new KubernetesAPI(), new InstanceAPI(), new AuthAPI(), new UserAPI()
                 )
         );
         ServiceHolder.getMicroservicesRunner().start();

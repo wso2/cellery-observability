@@ -25,7 +25,7 @@ import moment from "moment";
 class StateHolder {
 
     static USER = "user";
-    static AUTHORIZED_RUN_TIME_NAMESPACES = "authorizedRunTimeNamespaces";
+    static USER_PERMISSIONS = "userPermissions";
     static LOADING_STATE = "loadingState";
     static NOTIFICATION_STATE = "notificationState";
     static CONFIG = "config";
@@ -69,7 +69,7 @@ class StateHolder {
          */
         const rawState = {
             [StateHolder.USER]: AuthUtils.getAuthenticatedUser(),
-            [StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES]: {},
+            [StateHolder.USER_PERMISSIONS]: [],
             [StateHolder.LOADING_STATE]: {
                 loadingOverlayCount: 0,
                 message: null
@@ -212,36 +212,45 @@ class StateHolder {
                 if (user) {
                     HttpUtils.callObservabilityAPI(
                         {
-                            url: "/users/runtimes/namespaces",
+                            url: "/user/permissions",
                             method: "GET"
                         },
                         self
-                    ).then((runtimeData) => {
-                        if (runtimeData) {
-                            self.set(StateHolder.AUTHORIZED_RUN_TIME_NAMESPACES, runtimeData);
+                    ).then((userPermissions) => {
+                        if (userPermissions) {
+                            self.set(StateHolder.USER_PERMISSIONS, userPermissions);
                         }
 
                         const globalFilter = self.get(StateHolder.GLOBAL_FILTER);
                         let selectedRuntime = globalFilter.runtime;
                         let selectedNamespace = globalFilter.namespace;
-                        if (runtimeData) {
-                            if (queryParams.globalFilterRuntime
-                                && runtimeData.hasOwnProperty(queryParams.globalFilterRuntime)) {
-                                selectedRuntime = queryParams.globalFilterRuntime;
-                            } else if (runtimeData.hasOwnProperty(Constants.Runtime.LOCAL_RUNTIME_ID)) {
-                                selectedRuntime = Constants.Runtime.LOCAL_RUNTIME_ID;
-                            } else {
-                                selectedRuntime = Object.keys(runtimeData)[0];
+                        if (userPermissions) {
+                            const userReadPermissions = userPermissions
+                                .filter((permission) => permission.actions.includes("API_GET"));
+                            const allowedRuntimes = Array.from(new Set(userReadPermissions
+                                .map((permission) => permission.runtime)));
+                            if (allowedRuntimes.length > 0) {
+                                if (queryParams.globalFilterRuntime
+                                    && allowedRuntimes.includes(queryParams.globalFilterRuntime)) {
+                                    selectedRuntime = queryParams.globalFilterRuntime;
+                                } else if (allowedRuntimes.includes(Constants.Runtime.LOCAL_RUNTIME_ID)) {
+                                    selectedRuntime = Constants.Runtime.LOCAL_RUNTIME_ID;
+                                } else {
+                                    selectedRuntime = allowedRuntimes[0];
+                                }
                             }
-                            const selectedRuntimeData = runtimeData[selectedRuntime];
-                            if (selectedRuntime && selectedRuntimeData && selectedRuntimeData.length > 0) {
+
+                            const allowedNamespaces = Array.from(new Set(userReadPermissions
+                                .filter((permission) => permission.runtime === selectedRuntime)
+                                .map((permission) => permission.namespace)));
+                            if (selectedRuntime && allowedNamespaces.length > 0) {
                                 if (queryParams.globalFilterNamespace
-                                    && selectedRuntimeData.includes(queryParams.globalFilterNamespace)) {
+                                    && allowedNamespaces.includes(queryParams.globalFilterNamespace)) {
                                     selectedNamespace = queryParams.globalFilterNamespace;
-                                } else if (selectedRuntimeData.includes(Constants.Runtime.DEFAULT_NAMESPACE)) {
+                                } else if (allowedNamespaces.includes(Constants.Runtime.DEFAULT_NAMESPACE)) {
                                     selectedNamespace = Constants.Runtime.DEFAULT_NAMESPACE;
                                 } else {
-                                    selectedNamespace = selectedRuntimeData[0];
+                                    selectedNamespace = allowedNamespaces[0];
                                 }
                             }
                         }

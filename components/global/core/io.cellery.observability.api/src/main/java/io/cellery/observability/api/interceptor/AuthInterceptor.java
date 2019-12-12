@@ -20,6 +20,7 @@ package io.cellery.observability.api.interceptor;
 
 import io.cellery.observability.api.Constants;
 import io.cellery.observability.api.internal.ServiceHolder;
+import io.cellery.observability.auth.Permission;
 import io.cellery.observability.auth.exception.AuthProviderException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
@@ -27,6 +28,9 @@ import org.wso2.msf4j.Request;
 import org.wso2.msf4j.Response;
 import org.wso2.msf4j.interceptor.RequestInterceptor;
 
+import java.util.Collections;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.HttpHeaders;
@@ -35,8 +39,9 @@ import javax.ws.rs.core.HttpHeaders;
  * This class is used for securing backend APIs with Access Token.
  */
 public class AuthInterceptor implements RequestInterceptor {
-
     private static final Logger logger = Logger.getLogger(AuthInterceptor.class);
+
+    public static final Pattern API_URI_PATTERN = Pattern.compile("^/api/runtimes/([^/:?]+)(?:/namespaces/([^/:?]+))?");
 
     @Override
     public boolean interceptRequest(Request request, Response response) {
@@ -49,7 +54,8 @@ public class AuthInterceptor implements RequestInterceptor {
                 request.setProperty(Constants.REQUEST_PROPERTY_ACCESS_TOKEN, accessToken);
                 if (!this.isOpenApi(request)) {
                     try {
-                        if (!ServiceHolder.getAuthenticationProvider().validateToken(accessToken)) {
+                        Permission requiredPermission = this.getRequiredPermission(request);
+                        if (!ServiceHolder.getAuthProvider().isTokenValid(accessToken, requiredPermission)) {
                             response.setStatus(401);
                             return false;
                         }
@@ -76,5 +82,26 @@ public class AuthInterceptor implements RequestInterceptor {
      */
     private boolean isOpenApi(Request request) {
         return StringUtils.isNotEmpty(request.getUri()) && request.getUri().startsWith("/api/auth");
+    }
+
+    /**
+     * Get the required permission for a given request.
+     *
+     * @param request The request for which the required permissions should be identified
+     * @return The required permission
+     */
+    private Permission getRequiredPermission(Request request) {
+        Matcher matcher = API_URI_PATTERN.matcher(request.getUri());
+        String runtime = StringUtils.EMPTY;
+        String namespace = StringUtils.EMPTY;
+        if (matcher.find()) {
+            if (matcher.groupCount() >= 1) {
+                runtime = matcher.group(0);
+            }
+            if (matcher.groupCount() >= 2) {
+                namespace = matcher.group(1);
+            }
+        }
+        return new Permission(runtime, namespace, Collections.singletonList(Permission.Action.API_GET));
     }
 }

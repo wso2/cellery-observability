@@ -18,9 +18,10 @@
 
 package io.cellery.observability.auth.internal;
 
-import io.cellery.observability.auth.AuthenticationProvider;
-import io.cellery.observability.auth.AuthorizationProvider;
-import io.cellery.observability.auth.CelleryLocalAuthProvider;
+import io.cellery.observability.auth.AuthConfig;
+import io.cellery.observability.auth.AuthProvider;
+import io.cellery.observability.auth.CelleryAuthProvider;
+import io.cellery.observability.auth.DcrProvider;
 import io.cellery.observability.auth.Utils;
 import org.apache.log4j.Logger;
 import org.osgi.framework.BundleContext;
@@ -30,6 +31,8 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.config.provider.ConfigProvider;
+
+import java.lang.reflect.Constructor;
 
 /**
  * This class acts as a Service Component which specifies the services that is required by the component.
@@ -45,8 +48,25 @@ public class AuthServiceComponent {
     protected void start(BundleContext bundleContext) throws Exception {
         try {
             Utils.disableSSLVerification();
-            bundleContext.registerService(AuthenticationProvider.class.getName(), new AuthenticationProvider(), null);
-            bundleContext.registerService(AuthorizationProvider.class.getName(), new CelleryLocalAuthProvider(), null);
+
+            DcrProvider dcrProvider = new DcrProvider();
+            ServiceHolder.setDcrProvider(dcrProvider);
+
+            Class<?> authProviderClass = Class.forName(AuthConfig.getInstance().getAuthProvider());
+            Constructor<?> authProviderConstructor = authProviderClass.getConstructor();
+            Object authProviderObject = authProviderConstructor.newInstance();
+            AuthProvider authProvider;
+            if (authProviderObject instanceof AuthProvider) {
+                authProvider = (AuthProvider) authProviderObject;
+                log.info("Using " + authProviderClass.getName() + " as the Auth Provider");
+            } else {
+                authProvider = new CelleryAuthProvider();
+                log.warn("Using default Cellery Auth Provider since " + authProviderClass.getName()
+                        + " is not an instance of " + AuthProvider.class);
+            }
+
+            bundleContext.registerService(DcrProvider.class.getName(), dcrProvider, null);
+            bundleContext.registerService(AuthProvider.class.getName(), authProvider, null);
         } catch (Throwable throwable) {
             log.error("Error occurred while activating the model generation bundle", throwable);
             throw throwable;
