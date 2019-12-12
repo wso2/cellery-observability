@@ -18,6 +18,9 @@
 
 package io.cellery.observability.auth;
 
+import io.cellery.observability.auth.exception.AuthProviderException;
+import io.cellery.observability.auth.internal.AuthConfig;
+import io.cellery.observability.auth.internal.ServiceHolder;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.HttpClient;
 import org.apache.http.config.Registry;
@@ -28,6 +31,14 @@ import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.apache.oltu.oauth2.client.OAuthClient;
+import org.apache.oltu.oauth2.client.URLConnectionClient;
+import org.apache.oltu.oauth2.client.request.OAuthClientRequest;
+import org.apache.oltu.oauth2.client.response.OAuthAccessTokenResponse;
+import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
+import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
+import org.apache.oltu.oauth2.common.message.types.GrantType;
+import org.wso2.carbon.config.ConfigurationException;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -42,7 +53,7 @@ import javax.net.ssl.X509TrustManager;
 /**
  * Auth related utilities.
  */
-public class Utils {
+public class AuthUtils {
     private static final String BASIC_AUTH_PREFIX = "Basic ";
 
     /**
@@ -112,6 +123,31 @@ public class Utils {
     }
 
     /**
+     * Exchange auth code for tokens.
+     *
+     * @param authCode The auth code to exchange tokens for
+     * @return The OAuth access token response received
+     * @throws AuthProviderException if Cellery auth failure occurs
+     * @throws ConfigurationException if fetching configuration fails
+     * @throws OAuthSystemException if OAuth exchange fails
+     * @throws OAuthProblemException if fetching access token fails
+     */
+    public static OAuthAccessTokenResponse exchangeAuthCode(String authCode)
+            throws AuthProviderException, ConfigurationException, OAuthSystemException, OAuthProblemException {
+        OAuthClientRequest oAuthClientRequest = OAuthClientRequest
+                .tokenLocation(AuthConfig.getInstance().getIdpUrl()
+                        + AuthConfig.getInstance().getIdpOidcTokenEndpoint())
+                .setGrantType(GrantType.AUTHORIZATION_CODE)
+                .setClientId(ServiceHolder.getDcrProvider().getClientId())
+                .setClientSecret(ServiceHolder.getDcrProvider().getClientSecret())
+                .setRedirectURI(AuthConfig.getInstance().getPortalHomeUrl())
+                .setCode(authCode).buildBodyMessage();
+
+        OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
+        return oAuthClient.accessToken(oAuthClientRequest);
+    }
+
+    /**
      * Get the Base64 encoded IdP Admin Credentials.
      *
      * @param username username
@@ -124,6 +160,6 @@ public class Utils {
         return BASIC_AUTH_PREFIX + new String(authEncBytes, Charset.forName(StandardCharsets.UTF_8.name()));
     }
 
-    private Utils() {   // Prevent initialization
+    private AuthUtils() {   // Prevent initialization
     }
 }

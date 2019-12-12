@@ -22,12 +22,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.internal.ServiceHolder;
-import io.cellery.observability.auth.AuthConfig;
-import org.apache.oltu.oauth2.client.OAuthClient;
-import org.apache.oltu.oauth2.client.URLConnectionClient;
-import org.apache.oltu.oauth2.client.request.OAuthClientRequest;
+import io.cellery.observability.auth.AuthUtils;
 import org.apache.oltu.oauth2.client.response.OAuthAccessTokenResponse;
-import org.apache.oltu.oauth2.common.message.types.GrantType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -53,24 +49,16 @@ public class AuthAPI {
     @Produces("application/json")
     public Response getTokens(@PathParam("authCode") String authCode) throws APIInvocationException {
         try {
-            OAuthClientRequest oAuthClientRequest = OAuthClientRequest
-                    .tokenLocation(AuthConfig.getInstance().getIdpUrl() + Constants.TOKEN_ENDPOINT)
-                    .setGrantType(GrantType.AUTHORIZATION_CODE)
-                    .setClientId(ServiceHolder.getDcrProvider().getClientId())
-                    .setClientSecret(ServiceHolder.getDcrProvider().getClientSecret())
-                    .setRedirectURI(AuthConfig.getInstance().getCallbackUrl())
-                    .setCode(authCode).buildBodyMessage();
-
-            OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
-            OAuthAccessTokenResponse oAuthResponse = oAuthClient.accessToken(oAuthClientRequest);
+            OAuthAccessTokenResponse oAuthResponse = AuthUtils.exchangeAuthCode(authCode);
             JsonObject jsonObj = jsonParser.parse(oAuthResponse.getBody()).getAsJsonObject();
-
             String accessToken = oAuthResponse.getAccessToken();
+            String idToken = jsonObj.get(Constants.ID_TOKEN).getAsString();
+
             final int mid = accessToken.length() / 2;
 
             Map<Object, Object> responseMap = new HashMap<>();
             responseMap.put(Constants.ACCESS_TOKEN, accessToken.substring(0, mid));
-            responseMap.put(Constants.ID_TOKEN, jsonObj.get(Constants.ID_TOKEN));
+            responseMap.put(Constants.ID_TOKEN, idToken);
 
             NewCookie cookie = new NewCookie(Constants.HTTP_ONLY_SESSION_COOKIE, accessToken.substring(mid),
                     "/", "", "", 3600, false, true);

@@ -21,6 +21,7 @@ package io.cellery.observability.auth;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.cellery.observability.auth.exception.AuthProviderException;
+import io.cellery.observability.auth.internal.AuthConfig;
 import io.cellery.observability.auth.internal.ServiceHolder;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -53,14 +54,16 @@ import java.security.NoSuchAlgorithmException;
 /**
  * Test Cases for OIDC OAuth Manager
  */
-@PrepareForTest({Utils.class, AuthConfig.class, DcrProvider.class, EntityUtils.class})
+@PrepareForTest({AuthUtils.class, DcrProvider.class, EntityUtils.class})
 @PowerMockIgnore("org.apache.log4j.*")
 public class DcrProviderTestCase {
     private static final JsonParser jsonParser = new JsonParser();
-    private static final String CALLBACK_URL = "http://cellery-dashboard";
     private static final String IDP_URL = "http://idp.cellery-system:9443";
     private static final String IDP_USERNAME = "testadminuser";
     private static final String IDP_PASSWORD = "testadminpass";
+    private static final String CALLBACK_URL = "http://cellery-dashboard";
+    private static final String CLIENT_ID = "celleryobs_0001";
+    private static final String CLIENT_NAME = "cellery-observability-portal";
     private static final String AUTH_PROVIDER = CelleryAuthProvider.class.getName();
 
     @ObjectFactory
@@ -71,10 +74,12 @@ public class DcrProviderTestCase {
     @BeforeClass
     public void initTestCase() {
         AuthConfig authConfig = new AuthConfig();
-        Whitebox.setInternalState(authConfig, "callbackUrl", CALLBACK_URL);
+        Whitebox.setInternalState(authConfig, "portalHomeUrl", CALLBACK_URL);
         Whitebox.setInternalState(authConfig, "idpUrl", IDP_URL);
         Whitebox.setInternalState(authConfig, "idpUsername", IDP_USERNAME);
         Whitebox.setInternalState(authConfig, "idpPassword", IDP_PASSWORD);
+        Whitebox.setInternalState(authConfig, "dcrClientId", CLIENT_ID);
+        Whitebox.setInternalState(authConfig, "dcrClientName", CLIENT_NAME);
         Whitebox.setInternalState(authConfig, "authProvider", AUTH_PROVIDER);
         Whitebox.setInternalState(AuthConfig.class, "authConfig", authConfig);
     }
@@ -89,7 +94,8 @@ public class DcrProviderTestCase {
                 .thenAnswer(invocation -> {
                     HttpUriRequest request = invocation.getArgumentAt(0, HttpUriRequest.class);
                     Assert.assertEquals(request.getMethod(), "POST");
-                    Assert.assertEquals(request.getURI().getRawPath(), Constants.OIDC_REGISTER_ENDPOINT);
+                    Assert.assertEquals(request.getURI().getRawPath(),
+                            AuthConfig.getInstance().getIdpDcrRegisterEndpoint());
                     Assert.assertEquals(request.getURI().getHost(), "idp.cellery-system");
                     Assert.assertEquals(request.getURI().getPort(), 9443);
 
@@ -107,9 +113,9 @@ public class DcrProviderTestCase {
                             requestBodyJson.getAsJsonArray(Constants.OIDC_CALLBACK_URL_KEY).get(0).getAsString(),
                             CALLBACK_URL);
                     Assert.assertEquals(requestBodyJson.get(Constants.OIDC_CLIENT_NAME_KEY).getAsString(),
-                            Constants.CELLERY_APPLICATION_NAME);
+                            AuthConfig.getInstance().getDcrClientName());
                     Assert.assertEquals(requestBodyJson.get(Constants.OIDC_EXT_PARAM_CLIENT_ID_KEY).getAsString(),
-                            Constants.CELLERY_CLIENT_ID);
+                            AuthConfig.getInstance().getDcrClientId());
 
                     Assert.assertEquals(request.getFirstHeader(Constants.HEADER_AUTHORIZATION).getValue(),
                             "Basic dGVzdGFkbWludXNlcjp0ZXN0YWRtaW5wYXNz");
@@ -122,9 +128,10 @@ public class DcrProviderTestCase {
                     return TestUtils.generateHttpResponse(responseJson, 200);
                 });
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient()).thenReturn(httpClient);
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient()).thenReturn(httpClient);
 
         DcrProvider dcrProvider = new DcrProvider();
 
@@ -150,9 +157,10 @@ public class DcrProviderTestCase {
         HttpClient httpClient = Mockito.mock(HttpClient.class);
         Mockito.when(httpClient.execute(Mockito.any(HttpPost.class)))
                 .thenThrow(new IOException("Test Exception"));
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient()).thenReturn(httpClient);
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient()).thenReturn(httpClient);
 
         DcrProvider dcrProvider = new DcrProvider();
         Assert.assertNull(Whitebox.getInternalState(dcrProvider, "clientId"));
@@ -161,9 +169,10 @@ public class DcrProviderTestCase {
 
     @Test
     public void testInitializationWithTrustAllClientThrowingKeyManagementException() throws Exception {
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient()).thenThrow(new KeyManagementException("Test Exception"));
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient()).thenThrow(new KeyManagementException("Test Exception"));
 
         DcrProvider dcrProvider = new DcrProvider();
         Assert.assertNull(Whitebox.getInternalState(dcrProvider, "clientId"));
@@ -172,9 +181,10 @@ public class DcrProviderTestCase {
 
     @Test
     public void testInitializationWithTrustAllClientThrowingNoSuchAlgorithmException() throws Exception {
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient()).thenThrow(new NoSuchAlgorithmException("Test Exception"));
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient()).thenThrow(new NoSuchAlgorithmException("Test Exception"));
 
         DcrProvider dcrProvider = new DcrProvider();
         Assert.assertNull(Whitebox.getInternalState(dcrProvider, "clientId"));
@@ -193,9 +203,10 @@ public class DcrProviderTestCase {
                     return response;
                 });
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient()).thenReturn(httpClient);
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient()).thenReturn(httpClient);
 
         DcrProvider dcrProvider = new DcrProvider();
         Assert.assertNull(Whitebox.getInternalState(dcrProvider, "clientId"));
@@ -217,9 +228,10 @@ public class DcrProviderTestCase {
                     return response;
                 });
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient()).thenReturn(httpClient);
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient()).thenReturn(httpClient);
 
         DcrProvider dcrProvider = new DcrProvider();
         Assert.assertNull(Whitebox.getInternalState(dcrProvider, "clientId"));
@@ -245,11 +257,12 @@ public class DcrProviderTestCase {
                 .thenAnswer(invocation -> {
                     HttpUriRequest request = invocation.getArgumentAt(0, HttpUriRequest.class);
                     Assert.assertEquals(request.getMethod(), "GET");
-                    Assert.assertEquals(request.getURI().getRawPath(), Constants.OIDC_REGISTER_ENDPOINT);
+                    Assert.assertEquals(request.getURI().getRawPath(),
+                            AuthConfig.getInstance().getIdpDcrRegisterEndpoint());
                     Assert.assertEquals(request.getURI().getHost(), "idp.cellery-system");
                     Assert.assertEquals(request.getURI().getPort(), 9443);
                     Assert.assertEquals(request.getURI().getQuery(),
-                            Constants.OIDC_CLIENT_NAME_KEY + "=" + Constants.CELLERY_APPLICATION_NAME);
+                            Constants.OIDC_CLIENT_NAME_KEY + "=" + AuthConfig.getInstance().getDcrClientName());
 
                     Assert.assertEquals(request.getFirstHeader(Constants.HEADER_AUTHORIZATION).getValue(),
                             "Basic dGVzdGFkbWludXNlcjp0ZXN0YWRtaW5wYXNz");
@@ -260,9 +273,10 @@ public class DcrProviderTestCase {
                     return TestUtils.generateHttpResponse(responseJson, 200);
                 });
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient)
                 .thenReturn(getExistingCredentialsHttpClient);
 
@@ -292,9 +306,10 @@ public class DcrProviderTestCase {
                     return TestUtils.generateHttpResponse(responseJson, 500);
                 });
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient)
                 .thenReturn(getExistingCredentialsHttpClient);
 
@@ -322,9 +337,10 @@ public class DcrProviderTestCase {
                     return TestUtils.generateHttpResponse(responseJson, 200);
                 });
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient)
                 .thenReturn(getExistingCredentialsHttpClient);
 
@@ -347,9 +363,10 @@ public class DcrProviderTestCase {
         HttpClient getExistingCredentialsHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(getExistingCredentialsHttpClient.execute(Mockito.any(HttpPost.class)))
                 .thenThrow(new IOException("Test Exception"));
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient)
                 .thenReturn(getExistingCredentialsHttpClient);
 
@@ -369,9 +386,10 @@ public class DcrProviderTestCase {
                     return TestUtils.generateHttpResponse(responseJson, 200);
                 });
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient)
                 .thenThrow(new KeyManagementException("Test Exception"));
 
@@ -391,9 +409,10 @@ public class DcrProviderTestCase {
                     return TestUtils.generateHttpResponse(responseJson, 200);
                 });
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient)
                 .thenThrow(new NoSuchAlgorithmException("Test Exception"));
 
@@ -423,9 +442,10 @@ public class DcrProviderTestCase {
                     return response;
                 });
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient)
                 .thenReturn(getExistingCredentialsHttpClient);
 
@@ -458,9 +478,10 @@ public class DcrProviderTestCase {
                     return response;
                 });
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString())).thenCallRealMethod();
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient)
                 .thenReturn(getExistingCredentialsHttpClient);
 
@@ -554,7 +575,7 @@ public class DcrProviderTestCase {
                 Assert.assertEquals(Whitebox.getInternalState(dcrProvider, "clientId"), clientId);
                 Assert.assertEquals(Whitebox.getInternalState(dcrProvider, "clientSecret"),
                         clientSecret.toCharArray());
-            } catch (AuthProviderException e) {
+            } catch (AuthProviderException | ConfigurationException e) {
                 Assert.fail("Unexpected failure", e);
             }
         });
@@ -655,7 +676,7 @@ public class DcrProviderTestCase {
                 Assert.assertEquals(Whitebox.getInternalState(dcrProvider, "clientId"), clientId);
                 Assert.assertEquals(Whitebox.getInternalState(dcrProvider, "clientSecret"),
                         clientSecret.toCharArray());
-            } catch (AuthProviderException e) {
+            } catch (AuthProviderException | ConfigurationException e) {
                 Assert.fail("Unexpected failure", e);
             }
         });

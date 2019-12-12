@@ -22,9 +22,6 @@ package io.cellery.observability.auth;
  * Constants related to Cellery Auth.
  */
 public class Constants {
-    public static final String CELLERY_APPLICATION_NAME = "cellery-observability-portal";
-    public static final String CELLERY_CLIENT_ID = "celleryobs_0001";
-
     public static final String OIDC_CLIENT_ID_KEY = "client_id";
     public static final String OIDC_CLIENT_SECRET_KEY = "client_secret";
     public static final String OIDC_AUTHORIZATION_CODE_KEY = "authorization_code";
@@ -32,9 +29,6 @@ public class Constants {
     public static final String OIDC_CLIENT_NAME_KEY = "client_name";
     public static final String OIDC_GRANT_TYPES_KEY = "grant_types";
     public static final String OIDC_EXT_PARAM_CLIENT_ID_KEY = "ext_param_client_id";
-
-    public static final String OIDC_REGISTER_ENDPOINT = "/api/identity/oauth2/dcr/v1.1/register";
-    public static final String OIDC_INTROSPECT_ENDPOINT = "/oauth2/introspect";
 
     public static final String HEADER_AUTHORIZATION = "Authorization";
     public static final String HEADER_CONTENT_TYPE = "Content-Type";

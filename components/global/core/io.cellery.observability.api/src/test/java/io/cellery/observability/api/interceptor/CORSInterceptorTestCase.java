@@ -43,17 +43,17 @@ public class CORSInterceptorTestCase {
 
         Assert.assertTrue(interceptionResult);
         Mockito.verify(response, Mockito.times(1))
-                .setHeader(Constants.ACCESS_CONTROL_ALLOW_METHODS, HttpMethod.GET + "," + HttpMethod.POST +
+                .setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_METHODS, HttpMethod.GET + "," + HttpMethod.POST +
                         "," + HttpMethod.PUT + "," + HttpMethod.DELETE);
         Mockito.verify(response, Mockito.times(1))
-                .setHeader(Constants.ACCESS_CONTROL_MAX_AGE, Constants.MAX_AGE);
+                .setHeader(Constants.HEADER_ACCESS_CONTROL_MAX_AGE, Constants.MAX_AGE);
         Mockito.verify(response, Mockito.times(1))
-                .setHeader(Constants.ACCESS_CONTROL_ALLOW_HEADERS,
+                .setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_HEADERS,
                         HttpHeaders.CONTENT_TYPE + "," + HttpHeaders.AUTHORIZATION);
         Mockito.verify(response, Mockito.times(1))
-                .setHeader(Constants.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+                .setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
         Mockito.verify(response, Mockito.times(1))
-                .setHeader(Constants.ACCESS_CONTROL_ALLOW_ORIGIN, Constants.ALL_ORIGIN);
+                .setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, Constants.ALL_ORIGINS);
     }
 
     @Test
@@ -62,22 +62,22 @@ public class CORSInterceptorTestCase {
         CORSInterceptor corsInterceptor = new CORSInterceptor();
         Request request = Mockito.mock(Request.class);
         Response response = Mockito.mock(Response.class);
-        Mockito.when(request.getHeader(Constants.ORIGIN)).thenReturn(origin);
+        Mockito.when(request.getHeader(Constants.HEADER_ORIGIN)).thenReturn(origin);
 
         boolean interceptionResult = corsInterceptor.interceptRequest(request, response);
 
         Assert.assertTrue(interceptionResult);
         Mockito.verify(response, Mockito.times(1))
-                .setHeader(Constants.ACCESS_CONTROL_ALLOW_METHODS, HttpMethod.GET + "," + HttpMethod.POST +
+                .setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_METHODS, HttpMethod.GET + "," + HttpMethod.POST +
                         "," + HttpMethod.PUT + "," + HttpMethod.DELETE);
         Mockito.verify(response, Mockito.times(1))
-                .setHeader(Constants.ACCESS_CONTROL_MAX_AGE, Constants.MAX_AGE);
+                .setHeader(Constants.HEADER_ACCESS_CONTROL_MAX_AGE, Constants.MAX_AGE);
         Mockito.verify(response, Mockito.times(1))
-                .setHeader(Constants.ACCESS_CONTROL_ALLOW_HEADERS,
+                .setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_HEADERS,
                         HttpHeaders.CONTENT_TYPE + "," + HttpHeaders.AUTHORIZATION);
         Mockito.verify(response, Mockito.times(1))
-                .setHeader(Constants.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+                .setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
         Mockito.verify(response, Mockito.times(1))
-                .setHeader(Constants.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+                .setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, origin);
     }
 }
