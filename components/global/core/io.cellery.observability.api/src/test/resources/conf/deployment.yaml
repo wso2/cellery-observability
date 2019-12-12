@@ -22,14 +22,27 @@ wso2.carbon:
     offset: 9000
 
 cellery.observability.auth:
-  # Cellery Dashboard URL
-  callbackUrl: http://cellery-dashboard
   # IdP URL
   idpUrl: https://idp.cellery-system
   # Username for IdP
   idpUsername: testadmin
   # Password for IdP
   idpPassword: testpass
+  # Cellery Dashboard URL
+  portalHomeUrl: http://cellery-dashboard
+
+  # Cellery auth advanced Configurations starts here
+
+  # Cellery Observability Client ID used in DCR or Client credentials retrieval
+  dcrClientId: celleryobs_0001
+  # Cellery Observability Client ID used in DCR or Client credentials retrieval
+  dcrClientName: cellery-observability-portal
+  # Idp Dynamic Client Registration endpoint (prefixed with IdP URL when used)
+  idpDcrRegisterEndpoint: /api/identity/oauth2/dcr/v1.1/register
+  # Idp OIDC introspect endpoint (prefixed with IdP URL when used)
+  idpOidcIntrospectEndpoint: /oauth2/introspect
+  # IdP OIDC token endpoint (prefixed with IdP URL when used)
+  idpOidcTokenEndpoint: /oauth2/token
   # Auth provider class to be used
   authProvider: io.cellery.observability.auth.CelleryAuthProvider
 

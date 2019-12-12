@@ -23,6 +23,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.cellery.observability.auth.exception.AuthProviderException;
+import io.cellery.observability.auth.internal.AuthConfig;
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
 import org.apache.http.client.HttpClient;
@@ -55,7 +56,7 @@ public class DcrProvider {
     public DcrProvider() {
         try {
             retrieveClientCredentials();
-        } catch (AuthProviderException e) {
+        } catch (AuthProviderException | ConfigurationException e) {
             logger.warn("Fetching Client Credentials failed due to IDP unavailability, " +
                     "will be re-attempted when a user logs in");
         }
@@ -67,7 +68,7 @@ public class DcrProvider {
      * @return Client Id
      * @throws AuthProviderException if fetching client id failed
      */
-    public String getClientId() throws AuthProviderException {
+    public String getClientId() throws AuthProviderException, ConfigurationException {
         if (this.clientId == null) {
             synchronized (this) {
                 retrieveClientCredentials();
@@ -82,7 +83,7 @@ public class DcrProvider {
      * @return Client secret
      * @throws AuthProviderException if fetching client secret failed
      */
-    public String getClientSecret() throws AuthProviderException {
+    public String getClientSecret() throws AuthProviderException, ConfigurationException {
         if (this.clientSecret == null) {
             synchronized (this) {
                 retrieveClientCredentials();
@@ -97,12 +98,12 @@ public class DcrProvider {
      *
      * @throws AuthProviderException if getting the Client Credentials fails
      */
-    private void retrieveClientCredentials() throws AuthProviderException {
+    private void retrieveClientCredentials() throws AuthProviderException, ConfigurationException {
         if (this.clientId == null || this.clientSecret == null) {
             JsonObject jsonObject = createNewClient();
             if (jsonObject.has(ERROR)) {
                 logger.info("Fetching the credentials of the already existing client "
-                        + Constants.CELLERY_APPLICATION_NAME);
+                        + AuthConfig.getInstance().getDcrClientName());
                 jsonObject = retrieveExistingClientCredentials();
             }
 
@@ -120,29 +121,29 @@ public class DcrProvider {
     private JsonObject createNewClient() throws AuthProviderException {
         try {
             JsonArray callbackUris = new JsonArray(1);
-            callbackUris.add(AuthConfig.getInstance().getCallbackUrl());
+            callbackUris.add(AuthConfig.getInstance().getPortalHomeUrl());
 
             JsonArray grants = new JsonArray(1);
             grants.add(Constants.OIDC_AUTHORIZATION_CODE_KEY);
 
-            String dcrEp = AuthConfig.getInstance().getIdpUrl() + Constants.OIDC_REGISTER_ENDPOINT;
+            String dcrEp = AuthConfig.getInstance().getIdpUrl() + AuthConfig.getInstance().getIdpDcrRegisterEndpoint();
             JsonObject clientJson = new JsonObject();
-            clientJson.addProperty(Constants.OIDC_EXT_PARAM_CLIENT_ID_KEY, Constants.CELLERY_CLIENT_ID);
-            clientJson.addProperty(Constants.OIDC_CLIENT_NAME_KEY, Constants.CELLERY_APPLICATION_NAME);
+            clientJson.addProperty(Constants.OIDC_EXT_PARAM_CLIENT_ID_KEY, AuthConfig.getInstance().getDcrClientId());
+            clientJson.addProperty(Constants.OIDC_CLIENT_NAME_KEY, AuthConfig.getInstance().getDcrClientName());
             clientJson.add(Constants.OIDC_CALLBACK_URL_KEY, callbackUris);
             clientJson.add(Constants.OIDC_GRANT_TYPES_KEY, grants);
 
             StringEntity requestEntity = new StringEntity(gson.toJson(clientJson), ContentType.APPLICATION_JSON);
 
             HttpPost request = new HttpPost(dcrEp);
-            request.setHeader(Constants.HEADER_AUTHORIZATION, Utils.generateBasicAuthHeaderValue(
+            request.setHeader(Constants.HEADER_AUTHORIZATION, AuthUtils.generateBasicAuthHeaderValue(
                     AuthConfig.getInstance().getIdpUsername(), AuthConfig.getInstance().getIdpPassword()));
             request.setHeader(Constants.HEADER_CONTENT_TYPE, Constants.CONTENT_TYPE_APPLICATION_JSON);
             request.setEntity(requestEntity);
 
-            HttpClient client = Utils.getTrustAllClient();
+            HttpClient client = AuthUtils.getTrustAllClient();
             if (logger.isDebugEnabled()) {
-                logger.debug("Creating new Client " + Constants.CELLERY_APPLICATION_NAME);
+                logger.debug("Creating new Client " + AuthConfig.getInstance().getDcrClientName());
             }
             HttpResponse response = client.execute(request);
             return jsonParser.parse(EntityUtils.toString(response.getEntity())).getAsJsonObject();
@@ -158,15 +159,15 @@ public class DcrProvider {
      * @return the credentials returned in JSON format
      * @throws AuthProviderException if retrieving existing client credentials fails
      */
-    private JsonObject retrieveExistingClientCredentials() throws AuthProviderException {
+    private JsonObject retrieveExistingClientCredentials() throws AuthProviderException, ConfigurationException {
         try {
-            String dcrEp = AuthConfig.getInstance().getIdpUrl() + Constants.OIDC_REGISTER_ENDPOINT;
+            String dcrEp = AuthConfig.getInstance().getIdpUrl() + AuthConfig.getInstance().getIdpDcrRegisterEndpoint();
             HttpGet request = new HttpGet(dcrEp + "?"
-                    + Constants.OIDC_CLIENT_NAME_KEY + "=" + Constants.CELLERY_APPLICATION_NAME);
-            request.setHeader(Constants.HEADER_AUTHORIZATION, Utils.generateBasicAuthHeaderValue(
+                    + Constants.OIDC_CLIENT_NAME_KEY + "=" + AuthConfig.getInstance().getDcrClientName());
+            request.setHeader(Constants.HEADER_AUTHORIZATION, AuthUtils.generateBasicAuthHeaderValue(
                     AuthConfig.getInstance().getIdpUsername(), AuthConfig.getInstance().getIdpPassword()));
 
-            HttpClient client = Utils.getTrustAllClient();
+            HttpClient client = AuthUtils.getTrustAllClient();
             HttpResponse response = client.execute(request);
             String result = EntityUtils.toString(response.getEntity());
 
@@ -179,7 +180,7 @@ public class DcrProvider {
         } catch (IOException | ParseException | NoSuchAlgorithmException | KeyManagementException |
                 ConfigurationException e) {
             throw new AuthProviderException("Error occurred while retrieving the client credentials with name " +
-                    Constants.CELLERY_APPLICATION_NAME, e);
+                    AuthConfig.getInstance().getDcrClientName(), e);
         }
     }
 }

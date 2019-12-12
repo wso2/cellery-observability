@@ -26,18 +26,17 @@ public class Constants {
 
     public static final String REQUEST_PROPERTY_ACCESS_TOKEN = "ACCESS_TOKEN";
 
-    public static final String ACCESS_CONTROL_ALLOW_ORIGIN = "Access-Control-Allow-Origin";
-    public static final String ACCESS_CONTROL_ALLOW_METHODS = "Access-Control-Allow-Methods";
-    public static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
-    public static final String ACCESS_CONTROL_MAX_AGE = "Access-Control-Max-Age";
-    public static final String ACCESS_CONTROL_ALLOW_CREDENTIALS = "Access-Control-Allow-Credentials";
+    public static final String HEADER_ACCESS_CONTROL_ALLOW_ORIGIN = "Access-Control-Allow-Origin";
+    public static final String HEADER_ACCESS_CONTROL_ALLOW_METHODS = "Access-Control-Allow-Methods";
+    public static final String HEADER_ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
+    public static final String HEADER_ACCESS_CONTROL_MAX_AGE = "Access-Control-Max-Age";
+    public static final String HEADER_ACCESS_CONTROL_ALLOW_CREDENTIALS = "Access-Control-Allow-Credentials";
+    public static final String HEADER_ORIGIN = "Origin";
+
     public static final String MAX_AGE = "3600";
+    public static final String ALL_ORIGINS = "*";
 
-    public static final String ALL_ORIGIN = "*";
-    public static final String ORIGIN = "Origin";
-
-    public static final String TOKEN_ENDPOINT = "/oauth2/token";
     public static final String ACCESS_TOKEN = "access_token";
     public static final String ID_TOKEN = "id_token";
-    public static final String HTTP_ONLY_SESSION_COOKIE = "OASID";
+    public static final String HTTP_ONLY_SESSION_COOKIE = "oasid";
 }

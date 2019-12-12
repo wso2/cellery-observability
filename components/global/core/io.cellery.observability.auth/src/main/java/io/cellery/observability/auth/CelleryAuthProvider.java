@@ -22,9 +22,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.cellery.observability.auth.Permission.Action;
 import io.cellery.observability.auth.exception.AuthProviderException;
+import io.cellery.observability.auth.internal.AuthConfig;
+import io.cellery.observability.auth.internal.K8sClientHolder;
 import io.fabric8.kubernetes.api.model.NamespaceList;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.ParseException;
@@ -60,12 +60,6 @@ public class CelleryAuthProvider implements AuthProvider {
             Action.DATA_PUBLISH
     );
 
-    private final KubernetesClient k8sClient;
-
-    public CelleryAuthProvider() {
-        k8sClient = new DefaultKubernetesClient();
-    }
-
     @Override
     public boolean isTokenValid(String token, Permission requiredPermission) throws AuthProviderException {
         // The required permission is ignored as all actions are allowed by default by Cellery Auth Provider
@@ -75,7 +69,7 @@ public class CelleryAuthProvider implements AuthProvider {
     @Override
     public Permission[] getAllAllowedPermissions(String accessToken) {
         // Granting all permissions to all the namespaces in the local runtime
-        NamespaceList namespaceList = k8sClient.namespaces().list();
+        NamespaceList namespaceList = K8sClientHolder.getClient().namespaces().list();
         Permission[] permissions;
         if (namespaceList != null) {
             permissions = namespaceList.getItems()
@@ -100,13 +94,14 @@ public class CelleryAuthProvider implements AuthProvider {
             List<NameValuePair> params = new ArrayList<>();
             params.add(new BasicNameValuePair("token", token));
 
-            String introspectEP = AuthConfig.getInstance().getIdpUrl() + Constants.OIDC_INTROSPECT_ENDPOINT;
+            String introspectEP = AuthConfig.getInstance().getIdpUrl()
+                    + AuthConfig.getInstance().getIdpOidcIntrospectEndpoint();
             HttpPost request = new HttpPost(introspectEP);
-            request.setHeader(Constants.HEADER_AUTHORIZATION, Utils.generateBasicAuthHeaderValue(
+            request.setHeader(Constants.HEADER_AUTHORIZATION, AuthUtils.generateBasicAuthHeaderValue(
                     AuthConfig.getInstance().getIdpUsername(), AuthConfig.getInstance().getIdpPassword()));
             request.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8.name()));
 
-            HttpClient client = Utils.getTrustAllClient();
+            HttpClient client = AuthUtils.getTrustAllClient();
             HttpResponse response = client.execute(request);
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode >= 200 && statusCode < 400) {

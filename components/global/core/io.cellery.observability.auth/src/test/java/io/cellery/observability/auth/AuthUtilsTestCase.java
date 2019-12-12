@@ -52,7 +52,7 @@ import javax.net.ssl.X509TrustManager;
  */
 @PrepareForTest(HttpsURLConnection.class)
 @PowerMockIgnore({"org.apache.log4j.*", "javax.net.ssl.*"})
-public class UtilsTestCase {
+public class AuthUtilsTestCase {
 
     @ObjectFactory
     public IObjectFactory getObjectFactory() {
@@ -61,7 +61,7 @@ public class UtilsTestCase {
 
     @Test
     public void testGetTrustAllClient() throws KeyManagementException, NoSuchAlgorithmException, CertificateException {
-        HttpClient httpClient = Utils.getTrustAllClient();
+        HttpClient httpClient = AuthUtils.getTrustAllClient();
 
         BasicHttpClientConnectionManager connectionManager =
                 Whitebox.getInternalState(httpClient, "connManager");
@@ -108,7 +108,7 @@ public class UtilsTestCase {
                 .when(HttpsURLConnection.class, "setDefaultHostnameVerifier",
                         Mockito.any(HostnameVerifier.class));
 
-        Utils.disableSSLVerification();
+        AuthUtils.disableSSLVerification();
         sslSocketFactory = sslSocketFactoryHolder[0];
         hostnameVerifier = hostnameVerifierHolder[0];
 

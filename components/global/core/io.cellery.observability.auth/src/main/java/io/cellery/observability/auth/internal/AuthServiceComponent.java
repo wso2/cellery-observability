@@ -18,11 +18,10 @@
 
 package io.cellery.observability.auth.internal;
 
-import io.cellery.observability.auth.AuthConfig;
 import io.cellery.observability.auth.AuthProvider;
+import io.cellery.observability.auth.AuthUtils;
 import io.cellery.observability.auth.CelleryAuthProvider;
 import io.cellery.observability.auth.DcrProvider;
-import io.cellery.observability.auth.Utils;
 import org.apache.log4j.Logger;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -47,7 +46,7 @@ public class AuthServiceComponent {
     @Activate
     protected void start(BundleContext bundleContext) throws Exception {
         try {
-            Utils.disableSSLVerification();
+            AuthUtils.disableSSLVerification();
 
             DcrProvider dcrProvider = new DcrProvider();
             ServiceHolder.setDcrProvider(dcrProvider);

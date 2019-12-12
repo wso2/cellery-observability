@@ -37,16 +37,17 @@ public class CORSInterceptor implements RequestInterceptor {
 
     @Override
     public boolean interceptRequest(Request request, Response response) {
-        response.setHeader(Constants.ACCESS_CONTROL_ALLOW_METHODS, HttpMethod.GET + "," + HttpMethod.POST +
+        response.setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_METHODS, HttpMethod.GET + "," + HttpMethod.POST +
                 "," + HttpMethod.PUT + "," + HttpMethod.DELETE);
-        response.setHeader(Constants.ACCESS_CONTROL_MAX_AGE, Constants.MAX_AGE);
-        response.setHeader(Constants.ACCESS_CONTROL_ALLOW_HEADERS,
+        response.setHeader(Constants.HEADER_ACCESS_CONTROL_MAX_AGE, Constants.MAX_AGE);
+        response.setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_HEADERS,
                 HttpHeaders.CONTENT_TYPE + "," + HttpHeaders.AUTHORIZATION);
-        response.setHeader(Constants.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
-        if (StringUtils.isNotBlank(request.getHeader(Constants.ORIGIN))) {
-            response.setHeader(Constants.ACCESS_CONTROL_ALLOW_ORIGIN, request.getHeader(Constants.ORIGIN));
+        response.setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+        if (StringUtils.isNotBlank(request.getHeader(Constants.HEADER_ORIGIN))) {
+            response.setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_ORIGIN,
+                    request.getHeader(Constants.HEADER_ORIGIN));
         } else {
-            response.setHeader(Constants.ACCESS_CONTROL_ALLOW_ORIGIN, Constants.ALL_ORIGIN);
+            response.setHeader(Constants.HEADER_ACCESS_CONTROL_ALLOW_ORIGIN, Constants.ALL_ORIGINS);
         }
         return true;
     }

@@ -20,6 +20,12 @@ package io.cellery.observability.auth;
 
 import com.google.gson.JsonObject;
 import io.cellery.observability.auth.exception.AuthProviderException;
+import io.cellery.observability.auth.internal.AuthConfig;
+import io.cellery.observability.auth.internal.K8sClientHolder;
+import io.fabric8.kubernetes.api.model.NamespaceListBuilder;
+import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -28,10 +34,20 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.util.EntityUtils;
+import org.apache.log4j.Logger;
 import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.testng.PowerMockObjectFactory;
 import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
+import org.testng.IObjectFactory;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.ObjectFactory;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -39,25 +55,70 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 
+@PrepareForTest({AuthUtils.class, CelleryAuthProvider.class, EntityUtils.class})
+@PowerMockIgnore({"org.apache.log4j.*", "sun.security.ssl.*", "io.fabric8.*"})
 public class CelleryAuthProviderTestCase {
-    private static final Permission mockPermission = Mockito.mock(Permission.class);
+    private static final Logger logger = Logger.getLogger(CelleryAuthProviderTestCase.class.getName());
+
+    private static final String CALLBACK_URL = "http://cellery-dashboard";
+    private static final String IDP_URL = "http://idp.cellery-system:9443";
+    private static final String IDP_USERNAME = "testadminuser";
+    private static final String IDP_PASSWORD = "testadminpass";
+    private static final String AUTH_PROVIDER = CelleryAuthProvider.class.getName();
+
+    private Permission mockPermission;
+    private KubernetesClient k8sClient;
+    private KubernetesServer k8sServer;
+
+    @ObjectFactory
+    public IObjectFactory getObjectFactory() {
+        return new PowerMockObjectFactory();
+    }
+
+    @BeforeClass
+    public void initTestCase() {
+        mockPermission = Mockito.mock(Permission.class);
+
+        AuthConfig authConfig = new AuthConfig();
+        Whitebox.setInternalState(authConfig, "portalHomeUrl", CALLBACK_URL);
+        Whitebox.setInternalState(authConfig, "idpUrl", IDP_URL);
+        Whitebox.setInternalState(authConfig, "idpUsername", IDP_USERNAME);
+        Whitebox.setInternalState(authConfig, "idpPassword", IDP_PASSWORD);
+        Whitebox.setInternalState(authConfig, "authProvider", AUTH_PROVIDER);
+        Whitebox.setInternalState(AuthConfig.class, "authConfig", authConfig);
+    }
+
+    @BeforeMethod
+    public void init() {
+        k8sServer = new KubernetesServer(true, false);
+        k8sServer.before();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Started K8s Mock Server");
+        }
+
+        k8sClient = k8sServer.getClient();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Initialized the K8s Client for the K8s Mock Server");
+        }
+        Whitebox.setInternalState(K8sClientHolder.class, "client", k8sClient);
+    }
+
+    @AfterMethod
+    public void cleanupBaseSiddhiExtensionTestCase() {
+        k8sClient.close();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Closed the K8s Client");
+        }
+        k8sServer.after();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Closed the K8s Mock Server");
+        }
+    }
 
     @Test
     public void testValidateToken() throws Exception {
-        String clientId = "testClientId3";
-        String clientSecret = "ksdfkwnrb32";
+        expectAndReturnNamespaces("test-namespace-a", "test-namespace-b");
 
-        HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
-        Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
-                .thenAnswer(invocation -> {
-                    JsonObject responseJson = new JsonObject();
-                    responseJson.addProperty(Constants.OIDC_CLIENT_ID_KEY, clientId);
-                    responseJson.addProperty(Constants.OIDC_CLIENT_SECRET_KEY, clientSecret);
-                    return TestUtils.generateHttpResponse(responseJson, 200);
-                });
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.getTrustAllClient())
-                .thenReturn(createClientHttpClient);
         CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
 
         HttpClient validationHttpClient = Mockito.mock(HttpClient.class);
@@ -65,7 +126,8 @@ public class CelleryAuthProviderTestCase {
                 .thenAnswer(invocation -> {
                     HttpUriRequest request = invocation.getArgumentAt(0, HttpUriRequest.class);
                     Assert.assertEquals(request.getMethod(), "POST");
-                    Assert.assertEquals(request.getURI().getRawPath(), Constants.OIDC_INTROSPECT_ENDPOINT);
+                    Assert.assertEquals(request.getURI().getRawPath(),
+                            AuthConfig.getInstance().getIdpOidcIntrospectEndpoint());
                     Assert.assertEquals(request.getURI().getHost(), "idp.cellery-system");
                     Assert.assertEquals(request.getURI().getPort(), 9443);
 
@@ -81,9 +143,11 @@ public class CelleryAuthProviderTestCase {
                     responseJson.addProperty("active", true);
                     return TestUtils.generateHttpResponse(responseJson, 200);
                 });
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(validationHttpClient);
+        Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
+                .thenCallRealMethod();
 
         Assert.assertTrue(celleryAuthProvider.isTokenValid("test token 1", mockPermission));
     }
@@ -92,6 +156,7 @@ public class CelleryAuthProviderTestCase {
     public void testValidateTokenWithInvalidToken() throws Exception {
         String clientId = "testClientId4";
         String clientSecret = "sdf345fsdf432";
+        expectAndReturnNamespaces("test-namespace-a", "test-namespace-b");
 
         HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -101,8 +166,8 @@ public class CelleryAuthProviderTestCase {
                     responseJson.addProperty(Constants.OIDC_CLIENT_SECRET_KEY, clientSecret);
                     return TestUtils.generateHttpResponse(responseJson, 200);
                 });
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient);
         CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
 
@@ -113,8 +178,8 @@ public class CelleryAuthProviderTestCase {
                     responseJson.addProperty("active", false);
                     return TestUtils.generateHttpResponse(responseJson, 200);
                 });
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(validationHttpClient);
 
         Assert.assertFalse(celleryAuthProvider.isTokenValid("test token 2", mockPermission));
@@ -124,6 +189,7 @@ public class CelleryAuthProviderTestCase {
     public void testValidateTokenWith1xxStatusCode() throws Exception {
         String clientId = "testClientId5";
         String clientSecret = "4ngdjrk4j432";
+        expectAndReturnNamespaces("test-namespace-a", "test-namespace-b");
 
         HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -133,8 +199,8 @@ public class CelleryAuthProviderTestCase {
                     responseJson.addProperty(Constants.OIDC_CLIENT_SECRET_KEY, clientSecret);
                     return TestUtils.generateHttpResponse(responseJson, 200);
                 });
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient);
         CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
 
@@ -147,8 +213,8 @@ public class CelleryAuthProviderTestCase {
                         JsonObject responseJson = new JsonObject();
                         return TestUtils.generateHttpResponse(responseJson, statusCode);
                     });
-            PowerMockito.mockStatic(Utils.class);
-            Mockito.when(Utils.getTrustAllClient())
+            PowerMockito.mockStatic(AuthUtils.class);
+            Mockito.when(AuthUtils.getTrustAllClient())
                     .thenReturn(validationHttpClient);
             Assert.assertFalse(celleryAuthProvider.isTokenValid("test token 3-" + i, mockPermission));
         }
@@ -158,6 +224,7 @@ public class CelleryAuthProviderTestCase {
     public void testValidateTokenWithSuccessStatusCode() throws Exception {
         String clientId = "testClientId6";
         String clientSecret = "i4nsdfm4fn44";
+        expectAndReturnNamespaces("test-namespace-a", "test-namespace-b");
 
         HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -167,8 +234,8 @@ public class CelleryAuthProviderTestCase {
                     responseJson.addProperty(Constants.OIDC_CLIENT_SECRET_KEY, clientSecret);
                     return TestUtils.generateHttpResponse(responseJson, 200);
                 });
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient);
         CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
 
@@ -182,8 +249,8 @@ public class CelleryAuthProviderTestCase {
                         responseJson.addProperty("active", false);
                         return TestUtils.generateHttpResponse(responseJson, statusCode);
                     });
-            PowerMockito.mockStatic(Utils.class);
-            Mockito.when(Utils.getTrustAllClient())
+            PowerMockito.mockStatic(AuthUtils.class);
+            Mockito.when(AuthUtils.getTrustAllClient())
                     .thenReturn(validationHttpClient);
             Assert.assertFalse(celleryAuthProvider.isTokenValid("test token 4-" + i, mockPermission));
         }
@@ -193,6 +260,7 @@ public class CelleryAuthProviderTestCase {
     public void testValidateTokenWithErrorStatusCode() throws Exception {
         String clientId = "testClientId7";
         String clientSecret = "unkjvnfwervsd";
+        expectAndReturnNamespaces("test-namespace-a", "test-namespace-b");
 
         HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -202,8 +270,8 @@ public class CelleryAuthProviderTestCase {
                     responseJson.addProperty(Constants.OIDC_CLIENT_SECRET_KEY, clientSecret);
                     return TestUtils.generateHttpResponse(responseJson, 200);
                 });
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.getTrustAllClient())
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient);
         CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
 
@@ -216,8 +284,8 @@ public class CelleryAuthProviderTestCase {
                         JsonObject responseJson = new JsonObject();
                         return TestUtils.generateHttpResponse(responseJson, statusCode);
                     });
-            PowerMockito.mockStatic(Utils.class);
-            Mockito.when(Utils.getTrustAllClient())
+            PowerMockito.mockStatic(AuthUtils.class);
+            Mockito.when(AuthUtils.getTrustAllClient())
                     .thenReturn(validationHttpClient);
             Assert.assertFalse(celleryAuthProvider.isTokenValid("test token 5-" + i, mockPermission));
         }
@@ -225,25 +293,14 @@ public class CelleryAuthProviderTestCase {
 
     @Test(expectedExceptions = AuthProviderException.class)
     public void testValidateTokenWithHttpRequestThrowingIOException() throws Exception {
-        String clientId = "testClientId8";
-        String clientSecret = "m34uniscrf4rv";
-
-        HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
-        Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
-                .thenAnswer(invocation -> {
-                    JsonObject responseJson = new JsonObject();
-                    responseJson.addProperty(Constants.OIDC_CLIENT_ID_KEY, clientId);
-                    responseJson.addProperty(Constants.OIDC_CLIENT_SECRET_KEY, clientSecret);
-                    return TestUtils.generateHttpResponse(responseJson, 200);
-                });
+        expectAndReturnNamespaces("test-namespace-a", "test-namespace-b");
 
         HttpClient validationHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(validationHttpClient.execute(Mockito.any(HttpPost.class)))
                 .thenThrow(new IOException("Test Exception"));
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.getTrustAllClient())
-                .thenReturn(createClientHttpClient)
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(validationHttpClient);
         CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
         celleryAuthProvider.isTokenValid("test token 6", mockPermission);
@@ -251,21 +308,10 @@ public class CelleryAuthProviderTestCase {
 
     @Test(expectedExceptions = AuthProviderException.class)
     public void testValidateTokenWithTrustAllClientThrowingKeyManagementException() throws Exception {
-        String clientId = "testClientId9";
-        String clientSecret = "4unifhbs4hbr4";
+        expectAndReturnNamespaces("test-namespace-a", "test-namespace-b");
 
-        HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
-        Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
-                .thenAnswer(invocation -> {
-                    JsonObject responseJson = new JsonObject();
-                    responseJson.addProperty(Constants.OIDC_CLIENT_ID_KEY, clientId);
-                    responseJson.addProperty(Constants.OIDC_CLIENT_SECRET_KEY, clientSecret);
-                    return TestUtils.generateHttpResponse(responseJson, 200);
-                });
-
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.getTrustAllClient())
-                .thenReturn(createClientHttpClient)
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenThrow(new KeyManagementException("Test Exception"));
         CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
         celleryAuthProvider.isTokenValid("test token 7", mockPermission);
@@ -275,19 +321,10 @@ public class CelleryAuthProviderTestCase {
     public void testValidateTokenWithTrustAllClientThrowingNoSuchAlgorithmException() throws Exception {
         String clientId = "testClientId10";
         String clientSecret = "niu43nfhref4f4";
+        expectAndReturnNamespaces("test-namespace-a", "test-namespace-b");
 
-        HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
-        Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
-                .thenAnswer(invocation -> {
-                    JsonObject responseJson = new JsonObject();
-                    responseJson.addProperty(Constants.OIDC_CLIENT_ID_KEY, clientId);
-                    responseJson.addProperty(Constants.OIDC_CLIENT_SECRET_KEY, clientSecret);
-                    return TestUtils.generateHttpResponse(responseJson, 200);
-                });
-
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.getTrustAllClient())
-                .thenReturn(createClientHttpClient)
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenThrow(new NoSuchAlgorithmException("Test Exception"));
         CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
         celleryAuthProvider.isTokenValid("test token 8", mockPermission);
@@ -295,17 +332,7 @@ public class CelleryAuthProviderTestCase {
 
     @Test(expectedExceptions = AuthProviderException.class)
     public void testValidateTokenWithGetContentThrowingIOException() throws Exception {
-        String clientId = "testClientId11";
-        String clientSecret = "452nkjnkjbr44r";
-
-        HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
-        Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
-                .thenAnswer(invocation -> {
-                    JsonObject responseJson = new JsonObject();
-                    responseJson.addProperty(Constants.OIDC_CLIENT_ID_KEY, clientId);
-                    responseJson.addProperty(Constants.OIDC_CLIENT_SECRET_KEY, clientSecret);
-                    return TestUtils.generateHttpResponse(responseJson, 200);
-                });
+        expectAndReturnNamespaces("test-namespace-a", "test-namespace-b");
 
         HttpClient getExistingCredentialsHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(getExistingCredentialsHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -321,9 +348,8 @@ public class CelleryAuthProviderTestCase {
                     return response;
                 });
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.getTrustAllClient())
-                .thenReturn(createClientHttpClient)
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(getExistingCredentialsHttpClient);
         CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
         celleryAuthProvider.isTokenValid("test token 9", mockPermission);
@@ -331,17 +357,7 @@ public class CelleryAuthProviderTestCase {
 
     @Test(expectedExceptions = AuthProviderException.class)
     public void testValidateTokenWithEntityUtilsThrowingParseException() throws Exception {
-        String clientId = "testClientId12";
-        String clientSecret = "0345ihver43r43";
-
-        HttpClient createClientHttpClient = Mockito.mock(HttpClient.class);
-        Mockito.when(createClientHttpClient.execute(Mockito.any(HttpPost.class)))
-                .thenAnswer(invocation -> {
-                    JsonObject responseJson = new JsonObject();
-                    responseJson.addProperty(Constants.OIDC_CLIENT_ID_KEY, clientId);
-                    responseJson.addProperty(Constants.OIDC_CLIENT_SECRET_KEY, clientSecret);
-                    return TestUtils.generateHttpResponse(responseJson, 200);
-                });
+        expectAndReturnNamespaces("test-namespace-a", "test-namespace-b");
 
         HttpClient getExistingCredentialsHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(getExistingCredentialsHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -360,13 +376,30 @@ public class CelleryAuthProviderTestCase {
                     return response;
                 });
 
-        PowerMockito.mockStatic(Utils.class);
-        Mockito.when(Utils.getTrustAllClient())
-                .thenReturn(createClientHttpClient)
+        PowerMockito.mockStatic(AuthUtils.class);
+        Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(getExistingCredentialsHttpClient);
 
         CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
         celleryAuthProvider.isTokenValid("test token 10", mockPermission);
     }
 
+    /**
+     * Expect a get namespaces call and return namespaces list.
+     *
+     * @param namespaces The namespaces to return
+     */
+    private void expectAndReturnNamespaces(String ...namespaces) {
+        NamespaceListBuilder namespaceListBuilder = new NamespaceListBuilder();
+        for (String namespace : namespaces) {
+            namespaceListBuilder.addNewItem()
+                    .withMetadata(new ObjectMetaBuilder()
+                            .withName(namespace)
+                            .build())
+                    .endItem();
+        }
+        k8sServer.expect()
+                .withPath("/api/namespaces/")
+                .andReturn(200, namespaceListBuilder.build());
+    }
 }

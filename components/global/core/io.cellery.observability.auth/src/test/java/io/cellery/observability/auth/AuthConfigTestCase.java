@@ -18,6 +18,7 @@
 
 package io.cellery.observability.auth;
 
+import io.cellery.observability.auth.internal.AuthConfig;
 import io.cellery.observability.auth.internal.ServiceHolder;
 import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
@@ -60,9 +61,14 @@ public class AuthConfigTestCase {
         AuthConfig authConfig = AuthConfig.getInstance();
         Assert.assertNotNull(authConfig);
         Assert.assertEquals("https://idp.cellery-system", authConfig.getIdpUrl());
-        Assert.assertEquals("http://cellery-dashboard", authConfig.getCallbackUrl());
         Assert.assertEquals("testadmin", authConfig.getIdpUsername());
         Assert.assertEquals("testpass", authConfig.getIdpPassword());
+        Assert.assertEquals("http://cellery-dashboard", authConfig.getPortalHomeUrl());
+        Assert.assertEquals("celleryobs_0001", authConfig.getDcrClientId());
+        Assert.assertEquals("cellery-observability-portal", authConfig.getDcrClientName());
+        Assert.assertEquals("/api/identity/oauth2/dcr/v1.1/register", authConfig.getIdpDcrRegisterEndpoint());
+        Assert.assertEquals("/oauth2/introspect", authConfig.getIdpOidcIntrospectEndpoint());
+        Assert.assertEquals("/oauth2/token", authConfig.getIdpOidcTokenEndpoint());
         Assert.assertEquals("io.cellery.observability.auth.CelleryAuthProvider", authConfig.getAuthProvider());
     }
 
