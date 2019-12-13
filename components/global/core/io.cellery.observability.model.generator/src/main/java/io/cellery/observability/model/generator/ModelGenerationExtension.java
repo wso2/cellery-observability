@@ -71,33 +71,36 @@ public class ModelGenerationExtension extends StreamProcessor {
     @Override
     protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
                            StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater) {
-        while (streamEventChunk.hasNext()) {
-            try {
-                StreamEvent incomingStreamEvent = streamEventChunk.next();
-                String runtime = (String) runtimeExecutor.execute(incomingStreamEvent);
-                String sourceNamespace = (String) sourceNamespaceExecutor.execute(incomingStreamEvent);
-                String sourceInstance = (String) sourceInstanceExecutor.execute(incomingStreamEvent);
-                String sourceComponent = (String) sourceComponentExecutor.execute(incomingStreamEvent);
-                String sourceInstanceKind = (String) sourceInstanceKindExecutor.execute(incomingStreamEvent);
-                String destinationNamespace = (String) destinationNamespaceExecutor.execute(incomingStreamEvent);
-                String destinationInstance = (String) destinationInstanceExecutor.execute(incomingStreamEvent);
-                String destinationComponent = (String) destinationComponentExecutor.execute(incomingStreamEvent);
-                String destinationInstanceKind = (String) destinationInstanceKindExecutor.execute(incomingStreamEvent);
+        synchronized (this) {
+            while (streamEventChunk.hasNext()) {
+                try {
+                    StreamEvent incomingStreamEvent = streamEventChunk.next();
+                    String runtime = (String) runtimeExecutor.execute(incomingStreamEvent);
+                    String sourceNamespace = (String) sourceNamespaceExecutor.execute(incomingStreamEvent);
+                    String sourceInstance = (String) sourceInstanceExecutor.execute(incomingStreamEvent);
+                    String sourceComponent = (String) sourceComponentExecutor.execute(incomingStreamEvent);
+                    String sourceInstanceKind = (String) sourceInstanceKindExecutor.execute(incomingStreamEvent);
+                    String destinationNamespace = (String) destinationNamespaceExecutor.execute(incomingStreamEvent);
+                    String destinationInstance = (String) destinationInstanceExecutor.execute(incomingStreamEvent);
+                    String destinationComponent = (String) destinationComponentExecutor.execute(incomingStreamEvent);
+                    String destinationInstanceKind =
+                            (String) destinationInstanceKindExecutor.execute(incomingStreamEvent);
 
-                Node sourceNode = this.getOrGenerateNode(runtime, sourceNamespace, sourceInstance, sourceComponent,
-                        sourceInstanceKind);
-                Node destinationNode = this.getOrGenerateNode(runtime, destinationNamespace, destinationInstance,
-                        destinationComponent, destinationInstanceKind);
-                ServiceHolder.getModelManager().addEdge(runtime, sourceNode, destinationNode);
-            } catch (Throwable throwable) {
-                log.error("Unexpected error occurred while processing the event in the model processor",
-                        throwable);
+                    Node sourceNode = this.getOrGenerateNode(runtime, sourceNamespace, sourceInstance, sourceComponent,
+                            sourceInstanceKind);
+                    Node destinationNode = this.getOrGenerateNode(runtime, destinationNamespace, destinationInstance,
+                            destinationComponent, destinationInstanceKind);
+                    ServiceHolder.getModelManager().addEdge(runtime, sourceNode, destinationNode);
+                } catch (Throwable throwable) {
+                    log.error("Unexpected error occurred while processing the event in the model processor",
+                            throwable);
+                }
             }
-        }
-        try {
-            ServiceHolder.getModelStoreManager().storeCurrentModel();
-        } catch (GraphStoreException e) {
-            log.error("Failed to persist current dependency model", e);
+            try {
+                ServiceHolder.getModelStoreManager().storeCurrentModel();
+            } catch (GraphStoreException e) {
+                log.error("Failed to persist current dependency model", e);
+            }
         }
         if (streamEventChunk.getFirst() != null) {
             nextProcessor.process(streamEventChunk);
