@@ -43,6 +43,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Cellery default local auth provider.
@@ -63,7 +64,23 @@ public class CelleryAuthProvider implements AuthProvider {
     @Override
     public boolean isTokenValid(String token, Permission requiredPermission) throws AuthProviderException {
         // The required permission is ignored as all actions are allowed by default by Cellery Auth Provider
-        return this.isTokenValid(token);
+        List<Action> actions = requiredPermission.getActions();
+        if (actions.size() == 1 && Objects.equals(actions.get(0), (Action.DATA_PUBLISH))) {
+            // Data publishing is unauthorized by default
+            if (logger.isDebugEnabled()) {
+                logger.debug("Allowing anonymous data publish request from runtime "
+                        + requiredPermission.getRuntime());
+            }
+            return true;
+        } else {
+            boolean isValid = this.isTokenValid(token);
+            if (logger.isDebugEnabled()) {
+                logger.debug((isValid ? "Allowing " : "Blocking ") + requiredPermission.getActions().toString()
+                        + " for runtime: " + requiredPermission.getRuntime() + ", namespace: "
+                        + requiredPermission.getNamespace());
+            }
+            return isValid;
+        }
     }
 
     @Override

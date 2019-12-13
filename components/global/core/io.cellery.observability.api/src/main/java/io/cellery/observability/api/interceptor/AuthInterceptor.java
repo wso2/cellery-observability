@@ -96,10 +96,10 @@ public class AuthInterceptor implements RequestInterceptor {
         String namespace = StringUtils.EMPTY;
         if (matcher.find()) {
             if (matcher.groupCount() >= 1) {
-                runtime = matcher.group(0);
+                runtime = matcher.group(1);
             }
             if (matcher.groupCount() >= 2) {
-                namespace = matcher.group(1);
+                namespace = matcher.group(2);
             }
         }
         return new Permission(runtime, namespace, Collections.singletonList(Permission.Action.API_GET));
