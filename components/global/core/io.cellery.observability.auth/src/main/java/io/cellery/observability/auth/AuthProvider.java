@@ -30,6 +30,9 @@ public interface AuthProvider {
     /**
      * Validate the token.
      *
+     * Empty string as runtime in the required permission represents access to all runtimes.
+     * Empty string as namespace in the required permission represents access to all namespaces.
+     *
      * @param token The token of which the validity should be checked
      * @param requiredPermission The permission required by the user
      * @return True if the token is valid
@@ -39,6 +42,10 @@ public interface AuthProvider {
 
     /**
      * Get an array of all the permissions allowed for a user.
+     *
+     * This is called once per each portal load.
+     * This should return all the authorized namespaces in all the authorized runtimes.
+     * This is used to ensure that the relevant sections are shown to the user.
      *
      * @param accessToken The access token sent for the action
      * @return The map of authorized runtime namespaces

@@ -30,6 +30,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.cellery.observability</groupId>
+            <artifactId>io.cellery.observability.auth</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.wso2.siddhi</groupId>
             <artifactId>siddhi-core</artifactId>
         </dependency>

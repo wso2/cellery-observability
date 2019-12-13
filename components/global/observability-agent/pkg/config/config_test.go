@@ -26,7 +26,40 @@ import (
 )
 
 var (
-	testStr = "{\r\n  \"mixer\": {\r\n    \"tls\": {\r\n      \"certificate\": \"\",\r\n      \"privateKey\": \"\",\r\n      \"caCertificate\": \"\"\r\n    }\r\n  },\r\n  \"spEndpoint\": {\r\n    \"url\": \"http://wso2sp-worker.cellery-system.svc.cluster.local:9091\",\r\n    \"sendIntervalSeconds\": 60\r\n  },\r\n  \"store\": {\r\n    \"fileStorage\": {\r\n      \"path\": \"/mnt/observability-metrics\"\r\n    },\r\n    \"database\": {\r\n      \"host\": \"wso2apim-with-analytics-rdbms-service.cellery-system.svc.cluster.local\",\r\n      \"port\": 3306,\r\n      \"protocol\": \"tcp\",\r\n      \"username\": \"root\",\r\n      \"password\": \"root\",\r\n      \"name\": \"PERSISTENCE\"\r\n    },\r\n    \"inMemory\": {}\r\n  },\r\n  \"advanced\": {\r\n    \"maxRecordsForSingleWrite\": 100,\r\n    \"bufferSizeFactor\": 100,\r\n    \"bufferTimeoutSeconds\": 60\r\n  }\r\n}"
+	testStr = "{" +
+		"\r\n  \"mixer\": {" +
+		"\r\n    \"tls\": {" +
+		"\r\n      \"certificate\": \"\"," +
+		"\r\n      \"privateKey\": \"\"," +
+		"\r\n      \"caCertificate\": \"\"" +
+		"\r\n    }" +
+		"\r\n  }," +
+		"\r\n  \"spEndpoint\": {" +
+		"\r\n    \"url\": \"http://wso2sp-worker.cellery-system.svc.cluster.local:9091\"," +
+		"\r\n    \"sendIntervalSeconds\": 60" +
+		"\r\n  }," +
+		"\r\n  \"store\": {" +
+		"\r\n    \"fileStorage\": {" +
+		"\r\n      \"path\": \"/mnt/observability-metrics\"" +
+		"\r\n    }," +
+		"\r\n    \"database\": {" +
+		"\r\n      \"host\": \"wso2apim-with-analytics-rdbms-service.cellery-system.svc.cluster.local\"," +
+		"\r\n      \"port\": 3306," +
+		"\r\n      \"protocol\": \"tcp\"," +
+		"\r\n      \"username\": \"root\"," +
+		"\r\n      \"password\": \"root\"," +
+		"\r\n      \"name\": \"PERSISTENCE\"" +
+		"\r\n    }," +
+		"\r\n    \"inMemory\": {}" +
+		"\r\n  }," +
+		"\r\n  \"advanced\": {" +
+		"\r\n    \"accessToken\": \"test-token\"," +
+		"\r\n    \"runtimeId\": \"cellery-test\"," +
+		"\r\n    \"maxRecordsForSingleWrite\": 100," +
+		"\r\n    \"bufferSizeFactor\": 100," +
+		"\r\n    \"bufferTimeoutSeconds\": 60" +
+		"\r\n  }" +
+		"\r\n}"
 )
 
 func TestNewWithCorrectFile(t *testing.T) {

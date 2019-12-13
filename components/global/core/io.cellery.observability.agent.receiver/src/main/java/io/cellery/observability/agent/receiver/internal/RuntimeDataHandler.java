@@ -26,7 +26,9 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import io.cellery.observability.auth.Permission;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
 
@@ -34,6 +36,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
@@ -41,19 +44,20 @@ import java.util.zip.GZIPInputStream;
 /**
  * This class is responsible for handling metrics received from the http server.
  */
-public class MetricsHandler implements HttpHandler {
+public class RuntimeDataHandler implements HttpHandler {
 
-    private static final Logger log = Logger.getLogger(MetricsHandler.class);
+    private static final Logger log = Logger.getLogger(RuntimeDataHandler.class);
     private SourceEventListener sourceEventListener;
     private final Gson gson = new Gson();
     private final JsonParser jsonParser = new JsonParser();
 
+    private static final String HEADER_AUTHORIZATION = "Authorization";
     private static final String TELEMETRY_ENTRY_RUNTIME_KEY = "runtime";
     private static final String TELEMETRY_ENTRY_DATA_KEY = "data";
 
     private static final String RUNTIME_ATTRIBUTE = "runtime";
 
-    public MetricsHandler(SourceEventListener sourceEventListener) {
+    public RuntimeDataHandler(SourceEventListener sourceEventListener) {
         this.sourceEventListener = sourceEventListener;
     }
 
@@ -73,19 +77,29 @@ public class MetricsHandler implements HttpHandler {
                         .getAsString();
                 JsonArray data = receivedTelemetryJsonObject.getAsJsonArray(TELEMETRY_ENTRY_DATA_KEY);
 
-                for (JsonElement datum : data) {
-                    JsonObject telemetryEntry = datum.getAsJsonObject();
-                    Map<String, Object> attributes = new HashMap<>();
-                    for (String key : telemetryEntry.keySet()) {
-                        attributes.put(key, this.getValue(telemetryEntry.get(key)));
+                String authorizationHeader = httpExchange.getRequestHeaders().getFirst(HEADER_AUTHORIZATION);
+                Permission requiredPermission = new Permission(runtime, StringUtils.EMPTY,
+                        Collections.singletonList(Permission.Action.DATA_PUBLISH));
+                if (ServiceHolder.getAuthProvider().isTokenValid(authorizationHeader, requiredPermission)) {
+                    for (JsonElement datum : data) {
+                        JsonObject telemetryEntry = datum.getAsJsonObject();
+                        Map<String, Object> attributes = new HashMap<>();
+                        for (String key : telemetryEntry.keySet()) {
+                            attributes.put(key, this.getValue(telemetryEntry.get(key)));
+                        }
+                        // Runtime should be set last to avoid security issues
+                        attributes.put(RUNTIME_ATTRIBUTE, runtime);
+                        sourceEventListener.onEvent(attributes, new String[0]);
                     }
-                    attributes.put(RUNTIME_ATTRIBUTE, runtime); // Runtime should be set last to avoid security issues
-                    sourceEventListener.onEvent(attributes, new String[0]);
+                    httpExchange.sendResponseHeaders(200, -1);
+                } else {
+                    log.warn("Blocked unauthorized data publish attempt from "
+                            + (runtime == null ? " unknown runtime " : "runtime " + runtime));
+                    httpExchange.sendResponseHeaders(401, -1);
                 }
-                httpExchange.sendResponseHeaders(200, -1);
             } catch (Throwable t) {
-                log.warn("Failed to process received data"
-                        + (runtime == null ? "" : " from runtime " + runtime), t);
+                log.error("Failed to process received data from "
+                        + (runtime == null ? " unknown runtime " : "runtime " + runtime), t);
                 httpExchange.sendResponseHeaders(500, -1);
             }
         } else {

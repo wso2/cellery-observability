@@ -20,7 +20,7 @@
 package io.cellery.observability.agent.receiver;
 
 import com.sun.net.httpserver.HttpServer;
-import io.cellery.observability.agent.receiver.internal.MetricsHandler;
+import io.cellery.observability.agent.receiver.internal.RuntimeDataHandler;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
@@ -64,6 +64,7 @@ import java.util.Map;
 )
 public class RuntimeAgentEventSource extends Source {
     private static final Logger log = Logger.getLogger(RuntimeAgentEventSource.class);
+    private static final String PORT_EVENT_SOURCE_OPTION_KEY = "port";
 
     private SourceEventListener sourceEventListener;
     private int port;
@@ -73,8 +74,7 @@ public class RuntimeAgentEventSource extends Source {
     public void init(SourceEventListener sourceEventListener, OptionHolder optionHolder, String[] strings,
                      ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
         this.sourceEventListener = sourceEventListener;
-        this.port = Integer.parseInt(optionHolder.validateAndGetStaticValue(Constants.PORT_EVENT_SOURCE_OPTION_KEY,
-                Constants.DEFAULT_RECEIVER_PORT));
+        this.port = Integer.parseInt(optionHolder.validateAndGetStaticValue(PORT_EVENT_SOURCE_OPTION_KEY));
     }
 
     @Override
@@ -86,7 +86,7 @@ public class RuntimeAgentEventSource extends Source {
     public void connect(ConnectionCallback connectionCallback) throws ConnectionUnavailableException {
         try {
             httpServer = HttpServer.create(new InetSocketAddress(port), 0);
-            httpServer.createContext("/", new MetricsHandler(sourceEventListener));
+            httpServer.createContext("/", new RuntimeDataHandler(sourceEventListener));
             httpServer.setExecutor(null); // creates a default executor
             httpServer.start();
             log.info("Http server started on port : " + port);

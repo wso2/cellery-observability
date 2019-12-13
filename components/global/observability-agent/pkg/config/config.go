@@ -41,6 +41,7 @@ type (
 			*memory.Memory     `json:"inMemory"`
 		} `json:"store"`
 		Advanced struct {
+			AccessToken              string `json:"accessToken"`
 			RuntimeId                string `json:"runtimeId"`
 			MaxRecordsForSingleWrite int    `json:"maxRecordsForSingleWrite"`
 			BufferSizeFactor         int    `json:"bufferSizeFactor"`

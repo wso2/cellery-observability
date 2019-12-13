@@ -53,7 +53,7 @@ import org.wso2.siddhi.core.SiddhiManager;
  * other components can use them.
  */
 @Component(
-        name = "org.wso2.carbon.governance.dependency.model.internal.ObservabilityDS",
+        service = ApiServiceComponent.class,
         immediate = true
 )
 public class ApiServiceComponent {
