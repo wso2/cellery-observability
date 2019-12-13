@@ -64,7 +64,7 @@ public class DcrProviderTestCase {
     private static final String CALLBACK_URL = "http://cellery-dashboard";
     private static final String CLIENT_ID = "celleryobs_0001";
     private static final String CLIENT_NAME = "cellery-observability-portal";
-    private static final String AUTH_PROVIDER = CelleryAuthProvider.class.getName();
+    private static final String AUTH_PROVIDER = CelleryLocalAuthProvider.class.getName();
 
     @ObjectFactory
     public IObjectFactory getObjectFactory() {

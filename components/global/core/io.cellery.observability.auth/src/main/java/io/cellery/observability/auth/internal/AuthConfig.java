@@ -17,12 +17,14 @@
  */
 package io.cellery.observability.auth.internal;
 
-import io.cellery.observability.auth.CelleryAuthProvider;
+import io.cellery.observability.auth.CelleryLocalAuthProvider;
 import io.cellery.observability.auth.exception.AuthProviderException;
 import org.apache.commons.lang3.StringUtils;
 import org.wso2.carbon.config.ConfigurationException;
 import org.wso2.carbon.config.annotation.Configuration;
 import org.wso2.carbon.config.annotation.Element;
+
+import java.util.Objects;
 
 /**
  * This bean class is used to read cellery auth config.
@@ -63,7 +65,10 @@ public class AuthConfig {
     private String idpOidcTokenEndpoint = StringUtils.EMPTY;
 
     @Element(description = "authProvider")
-    private String authProvider = CelleryAuthProvider.class.getName();
+    private String authProvider = CelleryLocalAuthProvider.class.getName();
+
+    @Element(description = "defaultLocalAuthProviderToken")
+    private String defaultLocalAuthProviderToken = "";
 
     public String getIdpUrl() {
         return idpUrl;
@@ -105,6 +110,10 @@ public class AuthConfig {
         return authProvider;
     }
 
+    public String getDefaultLocalAuthProviderToken() {
+        return defaultLocalAuthProviderToken;
+    }
+
     public static synchronized AuthConfig getInstance() throws ConfigurationException, AuthProviderException {
         if (authConfig == null) {
             authConfig = ServiceHolder.getConfigProvider().getConfigurationObject(AuthConfig.class);
@@ -144,6 +153,13 @@ public class AuthConfig {
         }
         if (StringUtils.isEmpty(this.idpOidcIntrospectEndpoint)) {
             throw new AuthProviderException("IdP OIDC introspect endpoint is empty, expected the proper endpoint");
+        }
+
+        if (Objects.equals(this.authProvider, CelleryLocalAuthProvider.class.getName())) {
+            // Validating Cellery Local Auth Provider related configurations
+            if (StringUtils.isEmpty(this.defaultLocalAuthProviderToken)) {
+                throw new AuthProviderException("Default Local Auth Provider Token is empty, expected a proper token");
+            }
         }
     }
 }

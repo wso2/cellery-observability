@@ -78,9 +78,25 @@ public class RuntimeDataHandler implements HttpHandler {
                 JsonArray data = receivedTelemetryJsonObject.getAsJsonArray(TELEMETRY_ENTRY_DATA_KEY);
 
                 String authorizationHeader = httpExchange.getRequestHeaders().getFirst(HEADER_AUTHORIZATION);
+                String accessToken = null;
+                if (StringUtils.isNotEmpty(authorizationHeader)) {
+                    String[] authorizationHeaderSplit = authorizationHeader.split(" ");
+                    if (authorizationHeaderSplit.length == 2) {
+                        accessToken = authorizationHeaderSplit[1];
+                    } else {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Received token format seems to be invalid; does not contain exactly one space");
+                        }
+                    }
+                } else {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Received empty authorization header");
+                    }
+                }
+
                 Permission requiredPermission = new Permission(runtime, StringUtils.EMPTY,
                         Collections.singletonList(Permission.Action.DATA_PUBLISH));
-                if (ServiceHolder.getAuthProvider().isTokenValid(authorizationHeader, requiredPermission)) {
+                if (ServiceHolder.getAuthProvider().isTokenValid(accessToken, requiredPermission)) {
                     for (JsonElement datum : data) {
                         JsonObject telemetryEntry = datum.getAsJsonObject();
                         Map<String, Object> attributes = new HashMap<>();

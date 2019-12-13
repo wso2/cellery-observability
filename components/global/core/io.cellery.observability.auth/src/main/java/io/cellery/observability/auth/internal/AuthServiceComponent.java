@@ -20,7 +20,7 @@ package io.cellery.observability.auth.internal;
 
 import io.cellery.observability.auth.AuthProvider;
 import io.cellery.observability.auth.AuthUtils;
-import io.cellery.observability.auth.CelleryAuthProvider;
+import io.cellery.observability.auth.CelleryLocalAuthProvider;
 import io.cellery.observability.auth.DcrProvider;
 import org.apache.log4j.Logger;
 import org.osgi.framework.BundleContext;
@@ -59,7 +59,7 @@ public class AuthServiceComponent {
                 authProvider = (AuthProvider) authProviderObject;
                 log.info("Using " + authProviderClass.getName() + " as the Auth Provider");
             } else {
-                authProvider = new CelleryAuthProvider();
+                authProvider = new CelleryLocalAuthProvider();
                 log.warn("Using default Cellery Auth Provider since " + authProviderClass.getName()
                         + " is not an instance of " + AuthProvider.class);
             }

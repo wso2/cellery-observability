@@ -114,7 +114,7 @@ func (publisher *Publisher) publish(jsonArr string) error {
 	client := publisher.HttpClient
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
-	req.Header.Set("Authorization", publisher.AccessToken)
+	req.Header.Set("Authorization", "Bearer "+publisher.AccessToken)
 	res, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("could not receive a response from the server : %v", err)
