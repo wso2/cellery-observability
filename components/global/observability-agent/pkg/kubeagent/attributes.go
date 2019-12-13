@@ -30,11 +30,9 @@ const (
 	AttributeComponent         Attribute = "component"
 	AttributeCreationTimestamp Attribute = "creationTimestamp"
 	AttributeIngressTypes      Attribute = "ingressTypes"
-	AttributePodName           Attribute = "podName"
 	AttributeDeletionTimestamp Attribute = "deletionTimestamp"
 	AttributeCurrentTimestamp  Attribute = "currentTimestamp"
 	AttributeNodeName          Attribute = "nodeName"
-	AttributeStatus            Attribute = "status"
 )
 
 type Attributes map[Attribute]interface{}
