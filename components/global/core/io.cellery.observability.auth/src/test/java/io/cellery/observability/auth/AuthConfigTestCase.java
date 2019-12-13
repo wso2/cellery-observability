@@ -69,7 +69,7 @@ public class AuthConfigTestCase {
         Assert.assertEquals("/api/identity/oauth2/dcr/v1.1/register", authConfig.getIdpDcrRegisterEndpoint());
         Assert.assertEquals("/oauth2/introspect", authConfig.getIdpOidcIntrospectEndpoint());
         Assert.assertEquals("/oauth2/token", authConfig.getIdpOidcTokenEndpoint());
-        Assert.assertEquals("io.cellery.observability.auth.CelleryAuthProvider", authConfig.getAuthProvider());
+        Assert.assertEquals("io.cellery.observability.auth.CelleryLocalAuthProvider", authConfig.getAuthProvider());
     }
 
     @Test

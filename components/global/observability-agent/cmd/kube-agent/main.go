@@ -170,6 +170,7 @@ func main() {
 		HttpClient:  &http.Client{},
 		Persister:   ps,
 		RuntimeId:   configuration.Advanced.RuntimeId,
+		AccessToken: configuration.Advanced.AccessToken,
 	}
 	go func() {
 		waitGroup.Add(1)

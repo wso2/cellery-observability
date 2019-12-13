@@ -49,8 +49,8 @@ import java.util.Objects;
  * Cellery default local auth provider.
  * This assumes that the user has access to all the namespaces.
  */
-public class CelleryAuthProvider implements AuthProvider {
-    private static final Logger logger = Logger.getLogger(CelleryAuthProvider.class);
+public class CelleryLocalAuthProvider implements AuthProvider {
+    private static final Logger logger = Logger.getLogger(CelleryLocalAuthProvider.class);
     private static final JsonParser jsonParser = new JsonParser();
 
     private static final String LOCAL_RUNTIME_ID = "cellery-default";
@@ -66,20 +66,27 @@ public class CelleryAuthProvider implements AuthProvider {
         // The required permission is ignored as all actions are allowed by default by Cellery Auth Provider
         List<Action> actions = requiredPermission.getActions();
         if (actions.size() == 1 && Objects.equals(actions.get(0), (Action.DATA_PUBLISH))) {
-            // Data publishing is unauthorized by default
+            boolean isAllowed;
+            try {
+                isAllowed = Objects.equals(AuthConfig.getInstance().getDefaultLocalAuthProviderToken(), token);
+            } catch (ConfigurationException e) {
+                logger.error("Failed to validate data publish request access token from runtime "
+                        + requiredPermission.getRuntime(), e);
+                isAllowed = false;
+            }
             if (logger.isDebugEnabled()) {
-                logger.debug("Allowing anonymous data publish request from runtime "
+                logger.debug((isAllowed ? "Allowing" : "Blocking") + " data publish request from runtime "
                         + requiredPermission.getRuntime());
             }
-            return true;
+            return isAllowed;
         } else {
-            boolean isValid = this.isTokenValid(token);
+            boolean isAllowed = this.isTokenValid(token);
             if (logger.isDebugEnabled()) {
-                logger.debug((isValid ? "Allowing " : "Blocking ") + requiredPermission.getActions().toString()
+                logger.debug((isAllowed ? "Allowing " : "Blocking ") + requiredPermission.getActions().toString()
                         + " for runtime: " + requiredPermission.getRuntime() + ", namespace: "
                         + requiredPermission.getNamespace());
             }
-            return isValid;
+            return isAllowed;
         }
     }
 

@@ -55,16 +55,16 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 
-@PrepareForTest({AuthUtils.class, CelleryAuthProvider.class, EntityUtils.class})
+@PrepareForTest({AuthUtils.class, CelleryLocalAuthProvider.class, EntityUtils.class})
 @PowerMockIgnore({"org.apache.log4j.*", "sun.security.ssl.*", "io.fabric8.*"})
-public class CelleryAuthProviderTestCase {
-    private static final Logger logger = Logger.getLogger(CelleryAuthProviderTestCase.class.getName());
+public class CelleryLocalAuthProviderTestCase {
+    private static final Logger logger = Logger.getLogger(CelleryLocalAuthProviderTestCase.class.getName());
 
     private static final String CALLBACK_URL = "http://cellery-dashboard";
     private static final String IDP_URL = "http://idp.cellery-system:9443";
     private static final String IDP_USERNAME = "testadminuser";
     private static final String IDP_PASSWORD = "testadminpass";
-    private static final String AUTH_PROVIDER = CelleryAuthProvider.class.getName();
+    private static final String AUTH_PROVIDER = CelleryLocalAuthProvider.class.getName();
 
     private Permission mockPermission;
     private KubernetesClient k8sClient;
@@ -119,7 +119,7 @@ public class CelleryAuthProviderTestCase {
     public void testValidateToken() throws Exception {
         expectAndReturnNamespaces("test-namespace-a", "test-namespace-b");
 
-        CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
+        CelleryLocalAuthProvider celleryLocalAuthProvider = new CelleryLocalAuthProvider();
 
         HttpClient validationHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(validationHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -149,7 +149,7 @@ public class CelleryAuthProviderTestCase {
         Mockito.when(AuthUtils.generateBasicAuthHeaderValue(Mockito.anyString(), Mockito.anyString()))
                 .thenCallRealMethod();
 
-        Assert.assertTrue(celleryAuthProvider.isTokenValid("test token 1", mockPermission));
+        Assert.assertTrue(celleryLocalAuthProvider.isTokenValid("test token 1", mockPermission));
     }
 
     @Test
@@ -169,7 +169,7 @@ public class CelleryAuthProviderTestCase {
         PowerMockito.mockStatic(AuthUtils.class);
         Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient);
-        CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
+        CelleryLocalAuthProvider celleryLocalAuthProvider = new CelleryLocalAuthProvider();
 
         HttpClient validationHttpClient = Mockito.mock(HttpClient.class);
         Mockito.when(validationHttpClient.execute(Mockito.any(HttpPost.class)))
@@ -182,7 +182,7 @@ public class CelleryAuthProviderTestCase {
         Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(validationHttpClient);
 
-        Assert.assertFalse(celleryAuthProvider.isTokenValid("test token 2", mockPermission));
+        Assert.assertFalse(celleryLocalAuthProvider.isTokenValid("test token 2", mockPermission));
     }
 
     @Test
@@ -202,7 +202,7 @@ public class CelleryAuthProviderTestCase {
         PowerMockito.mockStatic(AuthUtils.class);
         Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient);
-        CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
+        CelleryLocalAuthProvider celleryLocalAuthProvider = new CelleryLocalAuthProvider();
 
         int[] statusCodes = new int[]{100, 102};
         for (int i = 0; i < statusCodes.length; i++) {
@@ -216,7 +216,7 @@ public class CelleryAuthProviderTestCase {
             PowerMockito.mockStatic(AuthUtils.class);
             Mockito.when(AuthUtils.getTrustAllClient())
                     .thenReturn(validationHttpClient);
-            Assert.assertFalse(celleryAuthProvider.isTokenValid("test token 3-" + i, mockPermission));
+            Assert.assertFalse(celleryLocalAuthProvider.isTokenValid("test token 3-" + i, mockPermission));
         }
     }
 
@@ -237,7 +237,7 @@ public class CelleryAuthProviderTestCase {
         PowerMockito.mockStatic(AuthUtils.class);
         Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient);
-        CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
+        CelleryLocalAuthProvider celleryLocalAuthProvider = new CelleryLocalAuthProvider();
 
         int[] statusCodes = new int[]{200, 202, 302, 304};
         for (int i = 0; i < statusCodes.length; i++) {
@@ -252,7 +252,7 @@ public class CelleryAuthProviderTestCase {
             PowerMockito.mockStatic(AuthUtils.class);
             Mockito.when(AuthUtils.getTrustAllClient())
                     .thenReturn(validationHttpClient);
-            Assert.assertFalse(celleryAuthProvider.isTokenValid("test token 4-" + i, mockPermission));
+            Assert.assertFalse(celleryLocalAuthProvider.isTokenValid("test token 4-" + i, mockPermission));
         }
     }
 
@@ -273,7 +273,7 @@ public class CelleryAuthProviderTestCase {
         PowerMockito.mockStatic(AuthUtils.class);
         Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(createClientHttpClient);
-        CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
+        CelleryLocalAuthProvider celleryLocalAuthProvider = new CelleryLocalAuthProvider();
 
         int[] statusCodes = new int[]{400, 404, 500, 502};
         for (int i = 0; i < statusCodes.length; i++) {
@@ -287,7 +287,7 @@ public class CelleryAuthProviderTestCase {
             PowerMockito.mockStatic(AuthUtils.class);
             Mockito.when(AuthUtils.getTrustAllClient())
                     .thenReturn(validationHttpClient);
-            Assert.assertFalse(celleryAuthProvider.isTokenValid("test token 5-" + i, mockPermission));
+            Assert.assertFalse(celleryLocalAuthProvider.isTokenValid("test token 5-" + i, mockPermission));
         }
     }
 
@@ -302,8 +302,8 @@ public class CelleryAuthProviderTestCase {
         PowerMockito.mockStatic(AuthUtils.class);
         Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(validationHttpClient);
-        CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
-        celleryAuthProvider.isTokenValid("test token 6", mockPermission);
+        CelleryLocalAuthProvider celleryLocalAuthProvider = new CelleryLocalAuthProvider();
+        celleryLocalAuthProvider.isTokenValid("test token 6", mockPermission);
     }
 
     @Test(expectedExceptions = AuthProviderException.class)
@@ -313,8 +313,8 @@ public class CelleryAuthProviderTestCase {
         PowerMockito.mockStatic(AuthUtils.class);
         Mockito.when(AuthUtils.getTrustAllClient())
                 .thenThrow(new KeyManagementException("Test Exception"));
-        CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
-        celleryAuthProvider.isTokenValid("test token 7", mockPermission);
+        CelleryLocalAuthProvider celleryLocalAuthProvider = new CelleryLocalAuthProvider();
+        celleryLocalAuthProvider.isTokenValid("test token 7", mockPermission);
     }
 
     @Test(expectedExceptions = AuthProviderException.class)
@@ -326,8 +326,8 @@ public class CelleryAuthProviderTestCase {
         PowerMockito.mockStatic(AuthUtils.class);
         Mockito.when(AuthUtils.getTrustAllClient())
                 .thenThrow(new NoSuchAlgorithmException("Test Exception"));
-        CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
-        celleryAuthProvider.isTokenValid("test token 8", mockPermission);
+        CelleryLocalAuthProvider celleryLocalAuthProvider = new CelleryLocalAuthProvider();
+        celleryLocalAuthProvider.isTokenValid("test token 8", mockPermission);
     }
 
     @Test(expectedExceptions = AuthProviderException.class)
@@ -351,8 +351,8 @@ public class CelleryAuthProviderTestCase {
         PowerMockito.mockStatic(AuthUtils.class);
         Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(getExistingCredentialsHttpClient);
-        CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
-        celleryAuthProvider.isTokenValid("test token 9", mockPermission);
+        CelleryLocalAuthProvider celleryLocalAuthProvider = new CelleryLocalAuthProvider();
+        celleryLocalAuthProvider.isTokenValid("test token 9", mockPermission);
     }
 
     @Test(expectedExceptions = AuthProviderException.class)
@@ -380,8 +380,8 @@ public class CelleryAuthProviderTestCase {
         Mockito.when(AuthUtils.getTrustAllClient())
                 .thenReturn(getExistingCredentialsHttpClient);
 
-        CelleryAuthProvider celleryAuthProvider = new CelleryAuthProvider();
-        celleryAuthProvider.isTokenValid("test token 10", mockPermission);
+        CelleryLocalAuthProvider celleryLocalAuthProvider = new CelleryLocalAuthProvider();
+        celleryLocalAuthProvider.isTokenValid("test token 10", mockPermission);
     }
 
     /**
