@@ -110,10 +110,6 @@
             <artifactId>io.cellery.observability.model.generator</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.cellery.observability</groupId>
-            <artifactId>io.cellery.observability.k8s.client</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.oltu.oauth2</groupId>
             <artifactId>org.apache.oltu.oauth2.client</artifactId>
         </dependency>
@@ -181,9 +177,9 @@
                                 io.cellery.observability.agent.receiver, commons-io,
                                 io.cellery.observability.tracing.receiver, io.cellery.observability.api,
                                 io.cellery.observability.auth, io.cellery.observability.model.generator, siddhi-io-http,
-                                siddhi-store-rdbms, io.cellery.observability.k8s.client, joda-time, zipkin, client-java,
-                                client-java-api, guava, commons-codec, commons-compress, commons-lang3,
-                                bcpkix-jdk15on, bcprov-ext-jdk15on, io.cellery.observability.telemetry.deduplicator
+                                siddhi-store-rdbms, joda-time, zipkin, client-java, client-java-api, guava,
+                                commons-codec, commons-compress, commons-lang3, bcpkix-jdk15on, bcprov-ext-jdk15on,
+                                io.cellery.observability.telemetry.deduplicator
                             </excludeArtifactIds>
                             <excludeTransitive>true</excludeTransitive>
                         </configuration>
