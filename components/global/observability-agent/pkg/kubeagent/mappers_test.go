@@ -123,9 +123,6 @@ func TestMappers(t *testing.T) {
 				Spec: corev1.PodSpec{
 					NodeName: "node1",
 				},
-				Status: corev1.PodStatus{
-					Phase: corev1.PodRunning,
-				},
 			},
 			mapperFn: PodMapper,
 			want: Attributes{
@@ -139,7 +136,6 @@ func TestMappers(t *testing.T) {
 				"namespace":         "pod-namespace",
 				"nodeName":          "node1",
 				"resourceKind":      "Pod",
-				"status":            corev1.PodRunning,
 			},
 			wantErr: nil,
 		},

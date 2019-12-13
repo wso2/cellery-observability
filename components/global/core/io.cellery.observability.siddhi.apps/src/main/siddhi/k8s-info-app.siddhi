@@ -19,59 +19,73 @@
 @App:name("k8s-info-app")
 @App:description("This collects Kubernetes related information from runtime agents and stores them in the relevant data sources")
 
-@source(type="k8s-component-pods", @map(type="keyvalue", fail.on.missing.attribute="false"))
-define stream K8sPodEventSourceStream(namespace string, instance string, component string, podName string,
-                                      instanceKind string, creationTimestamp long, deletionTimestamp long,
-                                      nodeName string, status string, action string);
-
-@source(type="k8s-components", @map(type="keyvalue", fail.on.missing.attribute="false"))
-define stream K8sComponentEventSourceStream(namespace string, instance String, component string, instanceKind string,
-                                            creationTimestamp long, ingressTypes string, action string);
+@source(type="runtime-agent", port="9815", @map(type="keyvalue", fail.on.missing.attribute="false"))
+define stream K8sEventSource(resourceKind string, currentTimestamp long, action string, runtime string,
+                             namespace string, instance string, component string, instanceKind string,
+                             creationTimestamp long, name string, deletionTimestamp long, nodeName string,
+                             ingressTypes string);
 
 @Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB")
 @PrimaryKey("runtime", "namespace", "instance", "component", "podName")
 @purge(enable="false")
-define table K8sPodInfoTable(runtime string, namespace string, instance string, component string, podName string,
-                             creationTimestamp long, lastKnownAliveTimestamp long, nodeName string);
+define table K8sPodInfoTable(runtime string, namespace string, instance string, component string,
+                             creationTimestamp long, podName string, lastKnownAliveTimestamp long, nodeName string);
 
 @Store(type="rdbms", datasource="CELLERY_OBSERVABILITY_DB")
 @PrimaryKey("runtime", "namespace", "instance","component")
 @purge(enable="false")
 define table K8sComponentInfoTable(runtime string, namespace string, instance string, component string,
-                                   instanceKind string, creationTimestamp long, lastKnownAliveTimestamp long,
+                                   creationTimestamp long, lastKnownAliveTimestamp long, instanceKind string,
                                    ingressTypes string);
 
-define stream K8sComponentPodStream(runtime string, namespace string, instance string, component string, podName string,
-                                    instanceKind string, creationTimestamp long, lastKnownAliveTimestamp long,
-                                    nodeName string, status string, action string);
+-- Stream definition for the Pod related information extracted from K8sEventSource
+define stream K8sPodStream(currentTimestamp long, action string, runtime string, namespace string,
+                           instance string, component string, creationTimestamp long,
+                           deletionTimestamp long, podName string, nodeName string);
 
+-- Stream definition for the Component related information extracted from K8sComponentStream
+define stream K8sComponentStream(currentTimestamp long, action string, runtime string, namespace string,
+                                 instance String, component string, creationTimestamp long, instanceKind string,
+                                 ingressTypes string);
+
+--
+-- Separating Events according to resource kind
+--
+
+from K8sEventSource[resourceKind == "Pod"]
+select
+    currentTimestamp, action, runtime, namespace, instance, component, creationTimestamp, deletionTimestamp,
+    name as podName, nodeName
+insert into K8sPodStream;
+
+from K8sEventSource[resourceKind == "Component"]
+select
+    currentTimestamp, action, runtime, namespace, instance, component, creationTimestamp, instanceKind, ingressTypes
+insert into K8sComponentStream;
+
+--
 -- Collecting Pod info
+--
 
-from K8sPodEventSourceStream
+from K8sPodStream[action == "Add"]
 select
-    "cellery-default" as runtime, namespace, instance, component, podName, instanceKind, creationTimestamp,
-    deletionTimestamp as lastKnownAliveTimestamp, nodeName, status, action
-insert into K8sComponentPodStream;
-
-from K8sComponentPodStream[action == "" or action == "DELETED"]
-select
-    runtime, namespace, instance, component, podName, creationTimestamp, lastKnownAliveTimestamp, nodeName
-insert into K8sPodInfoStream;
-
-from K8sComponentPodStream[action == "CREATED"]
-select
-    runtime, namespace, instance, component, podName, creationTimestamp, creationTimestamp as lastKnownAliveTimestamp,
+    runtime, namespace, instance, component, creationTimestamp, podName, creationTimestamp as lastKnownAliveTimestamp,
     nodeName
 insert into K8sPodInfoStream;
 
-from K8sComponentPodStream[action == "MODIFIED" or action == "ERROR"]
+from K8sPodStream[action == "Update"]
 select
-    runtime, namespace, instance, component, podName, creationTimestamp,
-    time:timestampInMilliseconds() as lastKnownAliveTimestamp, nodeName
+    runtime, namespace, instance, component, creationTimestamp, podName, currentTimestamp as lastKnownAliveTimestamp,
+    nodeName
+insert into K8sPodInfoStream;
+
+from K8sPodStream[action == "Delete"]
+select
+    runtime, namespace, instance, component, creationTimestamp, podName, deletionTimestamp as lastKnownAliveTimestamp,
+    nodeName
 insert into K8sPodInfoStream;
 
 -- Inserting Pod info to the K8sPodInfoTable
-
 from K8sPodInfoStream
 update or insert into K8sPodInfoTable
     set K8sPodInfoTable.creationTimestamp = creationTimestamp,
@@ -83,12 +97,24 @@ update or insert into K8sPodInfoTable
         and K8sPodInfoTable.component == component
         and K8sPodInfoTable.podName == podName;
 
--- Collecting Component Info and inserting info to the K8sComponentInfoTable
+--
+-- Collecting Component Info
+--
 
-from K8sComponentEventSourceStream
+from K8sComponentStream[action == "Add"]
 select
-    "cellery-default" as runtime, namespace, instance, component, instanceKind, creationTimestamp,
-    time:timestampInMilliseconds() as lastKnownAliveTimestamp, ingressTypes
+    runtime, namespace, instance, component, creationTimestamp, creationTimestamp as lastKnownAliveTimestamp,
+    instanceKind, ingressTypes
+insert into K8sComponentInfoStream;
+
+from K8sComponentStream[action == "Update" or action == "Delete"]
+select
+    runtime, namespace, instance, component, creationTimestamp, currentTimestamp as lastKnownAliveTimestamp,
+    instanceKind, ingressTypes
+insert into K8sComponentInfoStream;
+
+-- Inserting Component info to the K8sComponentInfoTable
+from K8sComponentInfoStream
 update or insert into K8sComponentInfoTable
     set K8sComponentInfoTable.instanceKind = instanceKind,
         K8sComponentInfoTable.creationTimestamp = creationTimestamp,

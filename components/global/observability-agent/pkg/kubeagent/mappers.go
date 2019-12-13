@@ -37,8 +37,6 @@ const (
 	ingressTypeGRPC = "GRPC"
 	ingressTypeTCP  = "TCP"
 
-	kindCell      = "Cell"
-	kindComposite = "Composite"
 	kindComponent = "Component"
 	kindPod       = "Pod"
 )
@@ -54,7 +52,6 @@ func PodMapper(obj interface{}) (Attributes, error) {
 	attr[AttributeInstance] = pod.Labels[meta.ObservabilityInstanceLabelKey]
 	attr[AttributeInstanceKind] = pod.Labels[meta.ObservabilityInstanceKindLabelKey]
 	attr[AttributeNodeName] = pod.Spec.NodeName
-	attr[AttributeStatus] = pod.Status.Phase
 	attr[AttributeComponent] = func() string {
 		if name, ok := pod.Labels[meta.ObservabilityComponentLabelKey]; ok {
 			return name
@@ -179,5 +176,5 @@ func unixTimestamp(t *metav1.Time) int64 {
 	if t == nil {
 		return -1
 	}
-	return t.Unix()
+	return t.UnixNano() / (1000 * 1000)
 }
