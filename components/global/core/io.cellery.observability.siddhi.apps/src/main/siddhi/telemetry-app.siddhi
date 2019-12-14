@@ -57,7 +57,7 @@ group by
     destinationComponent, httpResponseGroup
 aggregate every sec...year;
 
-from TelemetryStreamIn[not str:regexp(reporterUID, "kubernetes:\\/\\/[a-z0-9]+(-[a-z0-9]+)*--gateway-deployment-[^\\.-]+-[^\\.-]+\\.[^\\.]+")]
+from TelemetryStreamIn[not regex:matches("^kubernetes://[a-z0-9]+(?:-[a-z0-9]+)*--gateway-deployment-[^\.-]+-[^\.-]+\.[^\.]+$", reporterUID)]
 select
     runtime,
     traceId,
