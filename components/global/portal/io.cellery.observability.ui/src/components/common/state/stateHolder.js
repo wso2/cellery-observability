@@ -17,12 +17,15 @@
 import AuthUtils from "../../../utils/api/authUtils";
 import Constants from "../../../utils/constants";
 import HttpUtils from "../../../utils/api/httpUtils";
+import Logger from "js-logger";
 import moment from "moment";
 
 /**
  * Configuration holder.
  */
 class StateHolder {
+
+    static logger = Logger.get("components/common/state/stateHolder");
 
     static USER = "user";
     static USER_PERMISSIONS = "userPermissions";
@@ -261,12 +264,14 @@ class StateHolder {
                         });
                         resolve();
                     }).catch((error) => {
+                        StateHolder.logger.error("Failed to load User Permissions", error);
                         reject(error);
                     });
                 } else {
                     resolve();
                 }
             }).catch((error) => {
+                StateHolder.logger.error("Failed to load Portal Configuration", error);
                 reject(error);
             });
         });

@@ -18,6 +18,7 @@ import AccessTime from "@material-ui/icons/AccessTime";
 import Constants from "../../../utils/constants";
 import Grid from "@material-ui/core/Grid/Grid";
 import HttpUtils from "../../../utils/api/httpUtils";
+import Logger from "js-logger";
 import NotFound from "../../common/error/NotFound";
 import NotificationUtils from "../../../utils/common/notificationUtils";
 import Paper from "@material-ui/core/Paper/Paper";
@@ -108,6 +109,8 @@ const styles = (theme) => ({
 });
 
 class TracesList extends React.PureComponent {
+
+    static logger = Logger.get("components/tracing/search/TracesList");
 
     constructor(props) {
         super(props);
@@ -267,7 +270,8 @@ class TracesList extends React.PureComponent {
                     isLoading: false
                 });
             }
-        }).catch(() => {
+        }).catch((error) => {
+            TracesList.logger.error("Failed to search for traces", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState({

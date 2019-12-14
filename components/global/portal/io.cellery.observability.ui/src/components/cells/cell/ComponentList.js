@@ -19,6 +19,7 @@ import DataTable from "../../common/DataTable";
 import HealthIndicator from "../../common/HealthIndicator";
 import HttpUtils from "../../../utils/api/httpUtils";
 import {Link} from "react-router-dom";
+import Logger from "js-logger";
 import NotFound from "../../common/error/NotFound";
 import NotificationUtils from "../../../utils/common/notificationUtils";
 import QueryUtils from "../../../utils/common/queryUtils";
@@ -29,6 +30,8 @@ import {withStyles} from "@material-ui/core";
 import * as PropTypes from "prop-types";
 
 class ComponentList extends React.Component {
+
+    static logger = Logger.get("components/cells/cell/ComponentList");
 
     constructor(props) {
         super(props);
@@ -98,7 +101,8 @@ class ComponentList extends React.Component {
                     isLoading: false
                 });
             }
-        }).catch(() => {
+        }).catch((error) => {
+            ComponentList.logger.error("Failed to load component HTTP request information", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState({

@@ -18,6 +18,7 @@ import DependencyDiagram from "./DependencyDiagram";
 import ErrorBoundary from "../../common/error/ErrorBoundary";
 import Grey from "@material-ui/core/colors/grey";
 import HttpUtils from "../../../utils/api/httpUtils";
+import Logger from "js-logger";
 import NotFound from "../../common/error/NotFound";
 import NotificationUtils from "../../../utils/common/notificationUtils";
 import Paper from "@material-ui/core/Paper/Paper";
@@ -50,6 +51,8 @@ const styles = (theme) => ({
 });
 
 class View extends React.Component {
+
+    static logger = Logger.get("components/tracing/view/index");
 
     constructor(props) {
         super(props);
@@ -142,7 +145,8 @@ class View extends React.Component {
             self.setState({
                 isLoading: false
             });
-        }).catch(() => {
+        }).catch((error) => {
+            View.logger.error(`Failed to load trace ${traceId}`, error);
             NotificationUtils.hideLoadingOverlay(globalState);
             self.setState({
                 isLoading: false

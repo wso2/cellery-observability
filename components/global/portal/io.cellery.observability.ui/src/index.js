@@ -18,10 +18,49 @@
 
 import "./index.css";
 import App from "./components/App";
+import Constants from "./utils/constants";
+import Logger from "js-logger";
 import React from "react";
 import ReactDOM from "react-dom";
+import * as moment from "moment";
 import * as serviceWorker from "./serviceWorker";
 
+// Resolving the Log Level
+const LOG_LEVEL_KEY = "LOG_LEVEL";
+let logLevel;
+switch (localStorage.getItem(LOG_LEVEL_KEY)) {
+    case "TRACE":
+        logLevel = Logger.TRACE;
+        break;
+    case "DEBUG":
+        logLevel = Logger.DEBUG;
+        break;
+    case "INFO":
+        logLevel = Logger.INFO;
+        break;
+    case "WARN":
+        logLevel = Logger.WARN;
+        break;
+    case "ERROR":
+        logLevel = Logger.ERROR;
+        break;
+    case "OFF":
+        logLevel = Logger.OFF;
+        break;
+    default:
+        logLevel = Logger.ERROR;
+}
+Logger.useDefaults({
+    defaultLevel: logLevel,
+    formatter: (messages, context) => {
+        messages.unshift(`[${moment().format(Constants.Pattern.PRECISE_DATE_TIME)}] ${
+            context.level.name}${context.name ? ` {${context.name}}` : ""} -`);
+    }
+});
+const logger = Logger.get("index");
+logger.info(`Initialized logging with Log Level ${logLevel.name}`);
+
+logger.info("Rendering Observability Portal");
 ReactDOM.render((<App/>), document.getElementById("root"));
 
 /*

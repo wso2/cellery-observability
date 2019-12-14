@@ -19,6 +19,7 @@ import Constants from "../../../utils/constants";
 import DataTable from "../../common/DataTable";
 import HttpUtils from "../../../utils/api/httpUtils";
 import IconButton from "@material-ui/core/IconButton/IconButton";
+import Logger from "js-logger";
 import Menu from "@material-ui/core/Menu/Menu";
 import MenuItem from "@material-ui/core/MenuItem/MenuItem";
 import NotFound from "../../common/error/NotFound";
@@ -32,6 +33,8 @@ import {withStyles} from "@material-ui/core";
 import * as PropTypes from "prop-types";
 
 class K8sPodsList extends React.Component {
+
+    static logger = Logger.get("components/cells/component/K8sPodsList");
 
     constructor(props) {
         super(props);
@@ -100,7 +103,8 @@ class K8sPodsList extends React.Component {
                     isLoading: false
                 });
             }
-        }).catch(() => {
+        }).catch((error) => {
+            K8sPodsList.logger.error("Failed to load K8s pods information", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState({

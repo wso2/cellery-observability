@@ -20,6 +20,7 @@ import Details from "./Details";
 import Grey from "@material-ui/core/colors/grey";
 import HttpUtils from "../../../utils/api/httpUtils";
 import {Link} from "react-router-dom";
+import Logger from "js-logger";
 import Metrics from "./Metrics";
 import NotificationUtils from "../../../utils/common/notificationUtils";
 import Paper from "@material-ui/core/Paper/Paper";
@@ -59,6 +60,8 @@ const styles = (theme) => ({
 });
 
 class Cell extends React.Component {
+
+    static logger = Logger.get("components/cells/cell/index");
 
     constructor(props) {
         super(props);
@@ -138,14 +141,15 @@ class Cell extends React.Component {
                     isLoading: false
                 });
             }
-        }).catch(() => {
+        }).catch((error) => {
+            Cell.logger.error("Failed to load instance information", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState({
                     isLoading: false
                 });
                 NotificationUtils.showNotification(
-                    "Failed to load cell information",
+                    "Failed to load instance information",
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );

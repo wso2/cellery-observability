@@ -21,6 +21,7 @@
 import CircularProgress from "@material-ui/core/CircularProgress/CircularProgress";
 import Grid from "@material-ui/core/Grid/Grid";
 import HttpUtils from "../../../utils/api/httpUtils";
+import Logger from "js-logger";
 import NotFound from "../error/NotFound";
 import React from "react";
 import StateHolder from "./stateHolder";
@@ -39,6 +40,8 @@ const styles = () => ({
 });
 
 class UnStyledStateProvider extends React.Component {
+
+    static logger = Logger.get("components/common/state/index");
 
     constructor(props) {
         super(props);
@@ -81,7 +84,8 @@ class UnStyledStateProvider extends React.Component {
                     });
                 }
             })
-            .catch(() => {
+            .catch((error) => {
+                UnStyledStateProvider.logger.error("Failed to initialize State Holder", error);
                 if (self.mounted) {
                     self.setState({
                         isLoading: false

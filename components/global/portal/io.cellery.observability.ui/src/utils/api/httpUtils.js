@@ -15,10 +15,13 @@
  */
 
 import AuthUtils from "./authUtils";
+import Logger from "js-logger";
 import {StateHolder} from "../../components/common/state";
 import axios from "axios";
 
 class HttpUtils {
+
+    static logger = Logger.get("utils/api/httpUtils");
 
     /**
      * Parse the query param string and get an object of key value pairs.
@@ -131,6 +134,8 @@ class HttpUtils {
                 if (error.response) {
                     const errorResponse = error.response;
                     if (errorResponse.status === 401) {
+                        HttpUtils.logger.error("Received unauthorized response from server", error);
+
                         // Redirect to home page since the user is not authorised
                         if (globalState) {
                             AuthUtils.redirectForTokenRefresh(globalState);
