@@ -57,7 +57,7 @@ group by
     destinationComponent, httpResponseGroup
 aggregate every sec...year;
 
-from TelemetryStreamIn[not regex:matches("^kubernetes://[a-z0-9]+(?:-[a-z0-9]+)*--gateway-deployment-[^\.-]+-[^\.-]+\.[^\.]+$", reporterUID)]
+from TelemetryStreamIn[(not regex:matches("^kubernetes://[a-z0-9]+(?:-[a-z0-9]+)*--gateway-deployment-[^\.-]+-[^\.-]+\.[^\.]+$", reporterUID)) and destinationNamespace != "istio-system"]
 select
     runtime,
     traceId,
@@ -100,9 +100,9 @@ insert into DeDuplicatedTelemetryStream;
 
 -- Removing duplications of the metrics.
 from NonGatewayRequestsStream#telemetry:deduplicate(60 sec, runtime, traceId, spanId, parentSpanId, sourceNamespace,
-                                                      sourceInstance, sourceComponent, destinationNamespace,
-                                                      destinationInstance, destinationComponent, requestSizeBytes,
-                                                      responseDurationNanoSec, responseSizeBytes)
+                                                    sourceInstance, sourceComponent, destinationNamespace,
+                                                    destinationInstance, destinationComponent, requestSizeBytes,
+                                                    responseDurationNanoSec, responseSizeBytes)
 select
     runtime,
     sourceNamespace,

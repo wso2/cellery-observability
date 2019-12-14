@@ -292,24 +292,28 @@ class Overview extends React.Component {
             // Calculating metrics
             const metrics = {
                 overall: self.calculateOverallMetrics(data[2].map((datum) => ({
-                    sourceInstance: datum[0],
-                    sourceInstanceKind: datum[1],
-                    destinationInstance: datum[2],
-                    destinationInstanceKind: datum[3],
-                    httpResponseGroup: datum[4],
-                    totalResponseTimeMilliSec: datum[5],
-                    requestCount: datum[6]
+                    sourceNamespace: datum[0],
+                    sourceInstance: datum[1],
+                    sourceInstanceKind: datum[2],
+                    destinationNamespace: datum[3],
+                    destinationInstance: datum[4],
+                    destinationInstanceKind: datum[5],
+                    httpResponseGroup: datum[6],
+                    totalResponseTimeMilliSec: datum[7],
+                    requestCount: datum[8]
                 })))
             };
             if (selectedInstance && data.length === 4) { // An instance had been selected
                 metrics.selectedInstance = self.calculateInstanceMetrics(data[3].map((datum) => ({
-                    sourceInstance: datum[0],
-                    sourceComponent: datum[1],
-                    destinationInstance: datum[2],
-                    destinationComponent: datum[3],
-                    httpResponseGroup: datum[4],
-                    totalResponseTimeMilliSec: datum[5],
-                    requestCount: datum[6]
+                    sourceNamespace: datum[0],
+                    sourceInstance: datum[1],
+                    sourceComponent: datum[2],
+                    destinationNamespace: datum[3],
+                    destinationInstance: datum[4],
+                    destinationComponent: datum[5],
+                    httpResponseGroup: datum[6],
+                    totalResponseTimeMilliSec: datum[7],
+                    requestCount: datum[8]
                 })));
             } else {
                 metrics.selectedInstance = {};
@@ -347,22 +351,31 @@ class Overview extends React.Component {
         });
     };
 
-    calculateOverallMetrics = (metricsEntries) => metricsEntries
-        .filter((metricsEntry) => metricsEntry.destinationInstance)
-        .reduce((aggregatedMetrics, currentEntry) => {
-            let aggregatedMetricsEntry = aggregatedMetrics[currentEntry.destinationInstance];
-            if (!aggregatedMetricsEntry) {
-                aggregatedMetricsEntry = this.generateEmptyMetricsEntry();
-                aggregatedMetrics[currentEntry.destinationInstance] = aggregatedMetricsEntry;
-            }
-            aggregatedMetricsEntry.totalIncomingRequests += currentEntry.requestCount;
-            aggregatedMetricsEntry.responseCounts[currentEntry.httpResponseGroup] += currentEntry.requestCount;
-            return aggregatedMetrics;
-        }, {});
+    calculateOverallMetrics = (metricsEntries) => {
+        const {globalState} = this.props;
+        const selectedNamespace = globalState.get(StateHolder.GLOBAL_FILTER).namespace;
+        return metricsEntries
+            .filter((metricsEntry) => metricsEntry.destinationNamespace === selectedNamespace
+                && metricsEntry.destinationInstance)
+            .reduce((aggregatedMetrics, currentEntry) => {
+                let aggregatedMetricsEntry = aggregatedMetrics[currentEntry.destinationInstance];
+                if (!aggregatedMetricsEntry) {
+                    aggregatedMetricsEntry = this.generateEmptyMetricsEntry();
+                    aggregatedMetrics[currentEntry.destinationInstance] = aggregatedMetricsEntry;
+                }
+                aggregatedMetricsEntry.totalIncomingRequests += currentEntry.requestCount;
+                aggregatedMetricsEntry.responseCounts[currentEntry.httpResponseGroup] += currentEntry.requestCount;
+                return aggregatedMetrics;
+            }, {});
+    };
 
     calculateInstanceMetrics = (metricsEntries) => {
+        const {globalState} = this.props;
         const {selectedInstance} = this.state;
-        return metricsEntries.filter((metricsDatum) => metricsDatum.destinationInstance === selectedInstance)
+        const selectedNamespace = globalState.get(StateHolder.GLOBAL_FILTER).namespace;
+        return metricsEntries
+            .filter((metricsDatum) => metricsDatum.destinationNamespace === selectedNamespace
+                && metricsDatum.destinationInstance === selectedInstance && metricsDatum.destinationComponent)
             .reduce((aggregatedMetrics, currentEntry) => {
                 let aggregatedMetricsEntry = aggregatedMetrics[currentEntry.destinationComponent];
                 if (!aggregatedMetricsEntry) {

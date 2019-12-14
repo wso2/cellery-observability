@@ -71,13 +71,15 @@ class CellList extends React.Component {
             globalState
         ).then((data) => {
             const instanceInfo = data.map((dataItem) => ({
-                sourceInstance: dataItem[0],
-                sourceInstanceKind: dataItem[1],
-                destinationInstance: dataItem[2],
-                destinationInstanceKind: dataItem[3],
-                httpResponseGroup: dataItem[4],
-                totalResponseTimeMilliSec: dataItem[5],
-                requestCount: dataItem[6]
+                sourceNamespace: dataItem[0],
+                sourceInstance: dataItem[1],
+                sourceInstanceKind: dataItem[2],
+                destinationNamespace: dataItem[3],
+                destinationInstance: dataItem[4],
+                destinationInstanceKind: dataItem[5],
+                httpResponseGroup: dataItem[6],
+                totalResponseTimeMilliSec: dataItem[7],
+                requestCount: dataItem[8]
             }));
 
             self.setState({
@@ -105,8 +107,9 @@ class CellList extends React.Component {
     };
 
     render = () => {
-        const {classes, match} = this.props;
+        const {classes, match, globalState} = this.props;
         const {instanceInfo, isLoading} = this.state;
+        const selectedNamespace = globalState.get(StateHolder.GLOBAL_FILTER).namespace;
         const columns = [
             {
                 name: "Health",
@@ -152,7 +155,7 @@ class CellList extends React.Component {
                 }
             },
             {
-                name: "Average Inbound Request Count (requests/s)",
+                name: "Total Inbound Request Count",
                 options: {
                     filter: false
                 }
@@ -170,24 +173,32 @@ class CellList extends React.Component {
                 dataTableMap[instance] = {
                     instanceKind: instanceKind,
                     inboundErrorCount: 0,
+                    inboundRequestCount: 0,
+                    totalResponseTimeMilliSec: 0,
                     outboundErrorCount: 0,
-                    requestCount: 0,
-                    totalResponseTimeMilliSec: 0
+                    outboundRequestCount: 0
                 };
             }
         };
+        const isInstanceRelevant = (namespace) => namespace === selectedNamespace;
         for (const instanceDatum of instanceInfo) {
-            initializeDataTableMapEntryIfNotPresent(instanceDatum.sourceInstance, instanceDatum.sourceInstanceKind);
-            initializeDataTableMapEntryIfNotPresent(instanceDatum.destinationInstance,
-                instanceDatum.destinationInstanceKind);
-
-            if (instanceDatum.httpResponseGroup === "5xx") {
-                dataTableMap[instanceDatum.destinationInstance].inboundErrorCount += instanceDatum.requestCount;
-                dataTableMap[instanceDatum.sourceInstance].outboundErrorCount += instanceDatum.requestCount;
+            if (isInstanceRelevant(instanceDatum.sourceNamespace)) {
+                initializeDataTableMapEntryIfNotPresent(instanceDatum.sourceInstance, instanceDatum.sourceInstanceKind);
+                if (instanceDatum.httpResponseGroup === "5xx") {
+                    dataTableMap[instanceDatum.sourceInstance].outboundErrorCount += instanceDatum.requestCount;
+                }
+                dataTableMap[instanceDatum.sourceInstance].outboundRequestCount += instanceDatum.requestCount;
             }
-            dataTableMap[instanceDatum.destinationInstance].requestCount += instanceDatum.requestCount;
-            dataTableMap[instanceDatum.destinationInstance].totalResponseTimeMilliSec
-                += instanceDatum.totalResponseTimeMilliSec;
+            if (isInstanceRelevant(instanceDatum.destinationNamespace)) {
+                initializeDataTableMapEntryIfNotPresent(instanceDatum.destinationInstance,
+                    instanceDatum.destinationInstanceKind);
+                if (instanceDatum.httpResponseGroup === "5xx") {
+                    dataTableMap[instanceDatum.destinationInstance].inboundErrorCount += instanceDatum.requestCount;
+                }
+                dataTableMap[instanceDatum.destinationInstance].inboundRequestCount += instanceDatum.requestCount;
+                dataTableMap[instanceDatum.destinationInstance].totalResponseTimeMilliSec
+                    += instanceDatum.totalResponseTimeMilliSec;
+            }
         }
 
         // Transforming the objects into 2D array accepted by the Table library
@@ -196,17 +207,21 @@ class CellList extends React.Component {
             if (dataTableMap.hasOwnProperty(instance) && Boolean(instance)) {
                 const instanceData = dataTableMap[instance];
                 tableData.push([
-                    instanceData.requestCount === 0
+                    instanceData.inboundRequestCount === 0
                         ? -1
-                        : 1 - instanceData.inboundErrorCount / instanceData.requestCount,
+                        : 1 - instanceData.inboundErrorCount / instanceData.inboundRequestCount,
                     instance,
                     instanceData.instanceKind,
-                    instanceData.requestCount === 0 ? 0 : instanceData.inboundErrorCount / instanceData.requestCount,
-                    instanceData.requestCount === 0 ? 0 : instanceData.outboundErrorCount / instanceData.requestCount,
-                    instanceData.requestCount === 0
+                    instanceData.inboundRequestCount === 0
                         ? 0
-                        : instanceData.totalResponseTimeMilliSec / instanceData.requestCount,
-                    instanceData.requestCount
+                        : instanceData.inboundErrorCount / instanceData.inboundRequestCount,
+                    instanceData.outboundRequestCount === 0
+                        ? 0
+                        : instanceData.outboundErrorCount / instanceData.outboundRequestCount,
+                    instanceData.inboundRequestCount === 0
+                        ? 0
+                        : instanceData.totalResponseTimeMilliSec / instanceData.inboundRequestCount,
+                    instanceData.inboundRequestCount
                 ]);
             }
         }

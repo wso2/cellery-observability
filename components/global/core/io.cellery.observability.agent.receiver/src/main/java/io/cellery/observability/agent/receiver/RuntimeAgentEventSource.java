@@ -82,8 +82,8 @@ public class RuntimeAgentEventSource extends Source {
                      ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
         this.sourceEventListener = sourceEventListener;
         this.port = Integer.parseInt(optionHolder.validateAndGetStaticValue(PORT_EVENT_SOURCE_OPTION_KEY));
-        this.logPrefix = "[" + optionHolder.validateAndGetStaticValue(AGENT_TYPE_SOURCE_OPTION_KEY)
-                + " Runtime Agent Receiver] ";
+        this.logPrefix = optionHolder.validateAndGetStaticValue(AGENT_TYPE_SOURCE_OPTION_KEY)
+                + " Runtime Agent Receiver - ";
     }
 
     @Override
