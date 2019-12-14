@@ -81,8 +81,7 @@ class Details extends React.Component {
             queryStartTime: queryStartTime.valueOf(),
             queryEndTime: queryEndTime.valueOf(),
             destinationInstance: cell,
-            destinationComponent: component,
-            includeIntraInstance: true
+            destinationComponent: component
         });
         const componentMetricPromise = HttpUtils.callObservabilityAPI(
             {

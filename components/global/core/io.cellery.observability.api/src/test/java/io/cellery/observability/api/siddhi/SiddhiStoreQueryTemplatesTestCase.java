@@ -48,14 +48,15 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
-                "on runtime == \"" + runtime + "\" and sourceNamespace == \"" + namespace + "\" " +
-                "and destinationNamespace == \"" + namespace +  "\"\n" +
+                "on runtime == \"" + runtime + "\" and (sourceNamespace == \"" + namespace + "\" " +
+                "or destinationNamespace == \"" + namespace +  "\")\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
                 "per \"" + timeGranularity + "\"\n" +
-                "select sourceInstance, sourceInstanceKind, destinationInstance, destinationInstanceKind, " +
-                "httpResponseGroup, sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, " +
-                "sum(requestCount) as requestCount\n" +
-                "group by sourceInstance, destinationInstance, httpResponseGroup");
+                "select sourceNamespace, sourceInstance, sourceInstanceKind, destinationNamespace, " +
+                "destinationInstance, destinationInstanceKind, httpResponseGroup, " +
+                "sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, sum(requestCount) as requestCount\n" +
+                "group by sourceNamespace, sourceInstance, destinationNamespace, destinationInstance, " +
+                "httpResponseGroup");
         SiddhiCompiler.parseStoreQuery(resultantQuery);
     }
 
@@ -75,19 +76,21 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
-                "on runtime == \"" + runtime + "\" and sourceNamespace == \"" + namespace + "\" " +
-                "and destinationNamespace == \"" + namespace +  "\"\n" +
+                "on runtime == \"" + runtime + "\" " +
+                "and (sourceNamespace == \"" + namespace + "\" " +
+                "or destinationNamespace == \"" + namespace + "\")\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
                 "per \"seconds\"\n" +
-                "select sourceInstance, destinationInstance\n" +
-                "group by sourceInstance, destinationInstance");
+                "select sourceNamespace, sourceInstance, destinationNamespace, destinationInstance\n" +
+                "group by sourceNamespace, sourceInstance, destinationNamespace, destinationInstance");
         SiddhiCompiler.parseStoreQuery(resultantQuery);
     }
 
     @Test
     public void testRequestAggregationInstancesMetricsTemplate() {
         final String runtime = "test-runtime";
-        final String namespace = "test-namespace";
+        final String sourceNamespace = "test-source-namespace";
+        final String destinationNamespace = "test-destination-namespace";
         final long queryStartTime = 6784356;
         final long queryEndTime = 83465265;
         final String timeGranularity = "seconds";
@@ -97,21 +100,25 @@ public class SiddhiStoreQueryTemplatesTestCase {
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES_METRICS.builder()
                 .setArg(Params.RUNTIME, runtime)
-                .setArg(Params.NAMESPACE, namespace)
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
                 .setArg(Params.QUERY_END_TIME, queryEndTime)
                 .setArg(Params.TIME_GRANULARITY, timeGranularity)
+                .setArg(Params.SOURCE_NAMESPACE, sourceNamespace)
                 .setArg(Params.SOURCE_INSTANCE, sourceInstance)
+                .setArg(Params.DESTINATION_NAMESPACE, destinationNamespace)
                 .setArg(Params.DESTINATION_INSTANCE, destinationInstance)
                 .setArg(Params.CONDITION, condition)
                 .build();
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
-                "on runtime == \"" + runtime + "\" and sourceNamespace == \"" + namespace + "\" " +
-                "and destinationNamespace == \"" + namespace +  "\" " +
-                "and (\"" + sourceInstance + "\" == \"\" or sourceInstance == \"" + sourceInstance + "\") and " +
-                "(\"" + destinationInstance + "\" == \"\" or destinationInstance == \"" + destinationInstance + "\") " +
+                "on runtime == \"" + runtime + "\" " +
+                "and (\"" + sourceNamespace + "\" == \"\" or sourceNamespace == \"" + sourceNamespace + "\") " +
+                "and (\"" + sourceInstance + "\" == \"\" or sourceInstance == \"" + sourceInstance + "\") " +
+                "and (\"" + destinationNamespace + "\" == \"\" " +
+                "or destinationNamespace == \"" + destinationNamespace + "\") " +
+                "and (\"" + destinationInstance + "\" == \"\" " +
+                "or destinationInstance == \"" + destinationInstance + "\") " +
                 "and (sourceInstance != destinationInstance)\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
                 "per \"" + timeGranularity + "\"\n" +
@@ -143,16 +150,16 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
-                "on runtime == \"" + runtime + "\" and sourceNamespace == \"" + namespace + "\" " +
-                "and destinationNamespace == \"" + namespace +  "\" " +
+                "on runtime == \"" + runtime + "\" and (sourceNamespace == \"" + namespace + "\" " +
+                "or destinationNamespace == \"" + namespace +  "\") " +
                 "and (sourceInstance == \"" + instance + "\" or destinationInstance == \"" + instance + "\")\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
                 "per \"" + timeGranularity + "\"\n" +
-                "select sourceInstance, sourceComponent, destinationInstance, destinationComponent, " +
-                "httpResponseGroup, sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, " +
-                "sum(requestCount) as requestCount\n" +
-                "group by sourceInstance, sourceComponent, destinationInstance, destinationComponent, " +
-                "httpResponseGroup");
+                "select sourceNamespace, sourceInstance, sourceComponent, destinationNamespace, destinationInstance, " +
+                "destinationComponent, httpResponseGroup, " +
+                "sum(totalResponseTimeMilliSec) as totalResponseTimeMilliSec, sum(requestCount) as requestCount\n" +
+                "group by sourceNamespace, sourceInstance, sourceComponent, destinationNamespace, " +
+                "destinationInstance, destinationComponent, httpResponseGroup");
         SiddhiCompiler.parseStoreQuery(resultantQuery);
     }
 
@@ -172,19 +179,22 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
-                "on runtime == \"" + runtime + "\" and sourceNamespace == \"" + namespace + "\" " +
-                "and destinationNamespace == \"" + namespace +  "\"\n" +
+                "on runtime == \"" + runtime + "\" and (sourceNamespace == \"" + namespace + "\" " +
+                "or destinationNamespace == \"" + namespace +  "\")\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
                 "per \"seconds\"\n" +
-                "select sourceInstance, sourceComponent, destinationInstance, destinationComponent\n" +
-                "group by sourceInstance, sourceComponent, destinationInstance, destinationComponent");
+                "select sourceNamespace, sourceInstance, sourceComponent, destinationNamespace, " +
+                "destinationInstance, destinationComponent\n" +
+                "group by sourceNamespace, sourceInstance, sourceComponent, destinationNamespace, " +
+                "destinationInstance, destinationComponent");
         SiddhiCompiler.parseStoreQuery(resultantQuery);
     }
 
     @Test
     public void testRequestAggregationComponentsMetricsTemplate() {
         final String runtime = "test-runtime";
-        final String namespace = "test-namespace";
+        final String sourceNamespace = "test-source-namespace";
+        final String destinationNamespace = "test-destination-namespace";
         final long queryStartTime = 54362342;
         final long queryEndTime = 63452342;
         final String timeGranularity = "seconds";
@@ -192,31 +202,32 @@ public class SiddhiStoreQueryTemplatesTestCase {
         final String sourceComponent = "portal";
         final String destinationInstance = "pet-be";
         final String destinationComponent = "controller";
-        final String condition = "sourceInstance != destinationInstance";
 
         SiddhiStoreQuery siddhiStoreQuery = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_COMPONENTS_METRICS.builder()
                 .setArg(Params.RUNTIME, runtime)
-                .setArg(Params.NAMESPACE, namespace)
                 .setArg(Params.QUERY_START_TIME, queryStartTime)
                 .setArg(Params.QUERY_END_TIME, queryEndTime)
                 .setArg(Params.TIME_GRANULARITY, timeGranularity)
+                .setArg(Params.SOURCE_NAMESPACE, sourceNamespace)
                 .setArg(Params.SOURCE_INSTANCE, sourceInstance)
                 .setArg(Params.SOURCE_COMPONENT, sourceComponent)
+                .setArg(Params.DESTINATION_NAMESPACE, destinationNamespace)
                 .setArg(Params.DESTINATION_INSTANCE, destinationInstance)
                 .setArg(Params.DESTINATION_COMPONENT, destinationComponent)
-                .setArg(Params.CONDITION, condition)
                 .build();
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from RequestAggregation\n" +
-                "on runtime == \"" + runtime + "\" and sourceNamespace == \"" + namespace + "\" " +
-                "and destinationNamespace == \"" + namespace +  "\" " +
+                "on runtime == \"" + runtime + "\" " +
+                "and (\"" + sourceNamespace + "\" == \"\" or sourceNamespace == \"" + sourceNamespace + "\") " +
                 "and (\"" + sourceInstance + "\" == \"\" or sourceInstance == \"" + sourceInstance + "\") " +
                 "and (\"" + sourceComponent + "\" == \"\" or sourceComponent == \"" + sourceComponent + "\") " +
+                "and (\"" + destinationNamespace + "\" == \"\" " +
+                "or destinationNamespace == \"" + destinationNamespace + "\") " +
                 "and (\"" + destinationInstance + "\" == \"\" " +
                 "or destinationInstance == \"" + destinationInstance + "\")\n" +
                 "and (\"" + destinationComponent + "\" == \"\" or " +
-                "destinationComponent == \"" + destinationComponent + "\") and (" + condition + ")\n" +
+                "destinationComponent == \"" + destinationComponent + "\")\n" +
                 "within " + queryStartTime + "L, " + queryEndTime + "L\n" +
                 "per \"seconds\"\n" +
                 "select AGG_TIMESTAMP, httpResponseGroup, " +
@@ -431,8 +442,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from K8sPodInfoTable\n" +
-                "on (\"" + runtime + "\" == \"\" or runtime == \"" + runtime + "\") " +
-                "and (\"" + namespace + "\" == \"\" or namespace == \"" + namespace + "\") " +
+                "on runtime == \"" + runtime + "\" and namespace == \"" + namespace + "\" " +
                 "and (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
                 "and (\"" + component + "\" == \"\" or component == \"catalog\") " +
                 "and ((" + queryStartTime + "L == -1L and " + queryEndTime + "L == -1L) " +
@@ -464,8 +474,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from K8sComponentInfoTable\n" +
-                "on (\"" + runtime + "\" == \"\" or runtime == \"" + runtime + "\") " +
-                "and (\"" + namespace + "\" == \"\" or namespace == \"" + namespace + "\") " +
+                "on runtime == \"" + runtime + "\" and namespace == \"" + namespace + "\" " +
                 "and (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
                 "and ((" + queryStartTime + "L == -1L and " + queryEndTime + "L == -1L) " +
                 "or ((creationTimestamp >= " + queryStartTime + "L " +
@@ -499,8 +508,7 @@ public class SiddhiStoreQueryTemplatesTestCase {
         String resultantQuery = Whitebox.getInternalState(siddhiStoreQuery, "query");
 
         Assert.assertEquals(resultantQuery, "from K8sComponentInfoTable\n" +
-                "on (\"" + runtime + "\" == \"\" or runtime == \"" + runtime + "\") " +
-                "and (\"" + namespace + "\" == \"\" or namespace == \"" + namespace + "\") " +
+                "on runtime == \"" + runtime + "\" and namespace == \"" + namespace + "\" " +
                 "and (\"" + instance + "\" == \"\" or instance == \"" + instance + "\") " +
                 "and (\"" + component + "\" == \"\" or component == \"" + component + "\") " +
                 "and ((" + queryStartTime + "L == -1L and " + queryEndTime + "L == -1L) " +

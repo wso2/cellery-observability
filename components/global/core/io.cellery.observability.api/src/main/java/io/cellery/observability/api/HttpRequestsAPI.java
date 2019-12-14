@@ -21,8 +21,10 @@ package io.cellery.observability.api;
 import com.google.gson.JsonObject;
 import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryTemplates;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -84,11 +86,14 @@ public class HttpRequestsAPI {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES_METRICS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
-                    .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
+                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_NAMESPACE,
+                            StringUtils.isEmpty(sourceInstance) ? "" : namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_INSTANCE, sourceInstance)
+                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_NAMESPACE,
+                            StringUtils.isEmpty(destinationInstance) ? "" : namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_INSTANCE, destinationInstance)
                     .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
                             includeIntraInstance
@@ -122,8 +127,12 @@ public class HttpRequestsAPI {
 
             Set<String> instances = new HashSet<>();
             for (Object[] result : results) {
-                instances.add((String) result[0]);
-                instances.add((String) result[1]);
+                if (Objects.equals(namespace, result[0])) {
+                    instances.add((String) result[1]);
+                }
+                if (Objects.equals(namespace, result[2])) {
+                    instances.add((String) result[3]);
+                }
             }
 
             return Response.ok().entity(instances).build();
@@ -183,19 +192,17 @@ public class HttpRequestsAPI {
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_COMPONENTS_METRICS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
-                    .setArg(SiddhiStoreQueryTemplates.Params.NAMESPACE, namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_START_TIME, queryStartTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.QUERY_END_TIME, queryEndTime)
                     .setArg(SiddhiStoreQueryTemplates.Params.TIME_GRANULARITY, timeGranularity)
+                    .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_NAMESPACE,
+                            StringUtils.isEmpty(sourceInstance) ? "" : namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_INSTANCE, sourceInstance)
                     .setArg(SiddhiStoreQueryTemplates.Params.SOURCE_COMPONENT, sourceComponent)
+                    .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_NAMESPACE,
+                            StringUtils.isEmpty(destinationInstance) ? "" : namespace)
                     .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_INSTANCE, destinationInstance)
                     .setArg(SiddhiStoreQueryTemplates.Params.DESTINATION_COMPONENT, destinationComponent)
-                    .setArg(SiddhiStoreQueryTemplates.Params.CONDITION,
-                            includeIntraInstance
-                                    ? "sourceComponent != destinationComponent"
-                                    : "sourceInstance != destinationInstance " +
-                                    "or sourceComponent != destinationComponent")
                     .build()
                     .execute();
             return Response.ok().entity(results).build();
@@ -224,10 +231,16 @@ public class HttpRequestsAPI {
 
             Set<JsonObject> components = new HashSet<>();
             for (Object[] result : results) {
-                for (int i = 0; i < 2; i++) {
+                if (Objects.equals(namespace, result[0])) {
                     JsonObject component = new JsonObject();
-                    component.addProperty("instance", (String) result[i * 2]);
-                    component.addProperty("component", (String) result[i * 2 + 1]);
+                    component.addProperty("instance", (String) result[1]);
+                    component.addProperty("component", (String) result[2]);
+                    components.add(component);
+                }
+                if (Objects.equals(namespace, result[3])) {
+                    JsonObject component = new JsonObject();
+                    component.addProperty("instance", (String) result[4]);
+                    component.addProperty("component", (String) result[5]);
                     components.add(component);
                 }
             }

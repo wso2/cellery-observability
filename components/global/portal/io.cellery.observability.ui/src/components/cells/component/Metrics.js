@@ -180,8 +180,7 @@ class Metrics extends React.Component {
         // Creating the search params
         const search = {
             queryStartTime: queryStartTime,
-            queryEndTime: queryEndTime,
-            includeIntraInstance: false
+            queryEndTime: queryEndTime
         };
         if (selectedCell !== Constants.Dashboard.ALL_VALUE) {
             if (selectedType === Constants.Dashboard.INBOUND) {
