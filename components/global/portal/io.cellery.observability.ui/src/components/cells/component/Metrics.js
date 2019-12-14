@@ -18,6 +18,7 @@ import Constants from "../../../utils/constants";
 import FormControl from "@material-ui/core/FormControl";
 import HttpUtils from "../../../utils/api/httpUtils";
 import InputLabel from "@material-ui/core/InputLabel";
+import Logger from "js-logger";
 import MetricsGraphs from "../metricsGraphs";
 import NotFound from "../../common/error/NotFound";
 import NotificationUtils from "../../../utils/common/notificationUtils";
@@ -47,6 +48,8 @@ const styles = (theme) => ({
 });
 
 class Metrics extends React.Component {
+
+    static logger = Logger.get("components/cells/component/Metrics");
 
     constructor(props) {
         super(props);
@@ -158,7 +161,8 @@ class Metrics extends React.Component {
                     loadingCount: prevState.loadingCount - 1
                 }));
             }
-        }).catch(() => {
+        }).catch((error) => {
+            Metrics.logger.error("Failed to load component HTTP request metadata", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState((prevState) => ({
@@ -238,7 +242,8 @@ class Metrics extends React.Component {
                     loadingCount: prevState.loadingCount - 1
                 }));
             }
-        }).catch(() => {
+        }).catch((error) => {
+            Metrics.logger.error("Failed to load component HTTP request metrics", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState((prevState) => ({

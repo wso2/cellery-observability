@@ -22,6 +22,7 @@ import Divider from "@material-ui/core/Divider";
 import ErrorBoundary from "../../common/error/ErrorBoundary";
 import HttpUtils from "../../../utils/api/httpUtils";
 import InfoOutlined from "@material-ui/icons/InfoOutlined";
+import Logger from "js-logger";
 import NotificationUtils from "../../../utils/common/notificationUtils";
 import QueryUtils from "../../../utils/common/queryUtils";
 import React from "react";
@@ -72,6 +73,8 @@ const styles = (theme) => ({
 });
 
 class ComponentDependencyView extends React.Component {
+
+    static logger = Logger.get("components/cells/component/ComponentDependencyView");
 
     constructor(props) {
         super(props);
@@ -293,7 +296,8 @@ class ComponentDependencyView extends React.Component {
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
             }
-        }).catch(() => {
+        }).catch((error) => {
+            ComponentDependencyView.logger.error("Failed to load component dependency model", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 NotificationUtils.showNotification(

@@ -31,6 +31,7 @@ import Fade from "@material-ui/core/Fade";
 import Grey from "@material-ui/core/colors/grey";
 import HttpUtils from "../../utils/api/httpUtils";
 import IconButton from "@material-ui/core/IconButton";
+import Logger from "js-logger";
 import MoreIcon from "@material-ui/icons/MoreHoriz";
 import NotFound from "../common/error/NotFound";
 import NotificationUtils from "../../utils/common/notificationUtils";
@@ -151,6 +152,8 @@ const styles = (theme) => ({
 });
 
 class Overview extends React.Component {
+
+    static logger = Logger.get("components/overview/index");
 
     constructor(props) {
         super(props);
@@ -336,7 +339,10 @@ class Overview extends React.Component {
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
             }
-        }).catch(() => {
+        }).catch((error) => {
+            Overview.logger.error(`${"Failed to load namespace dependency model, ingress types, "
+                + "instance HTTP request information"}${
+                apiCalls.length === 4 ? ", component HTTP request information" : ""}`, error);
             self.setState({
                 isLoading: false
             });

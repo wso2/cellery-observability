@@ -18,6 +18,7 @@ import CellDependencyView from "./CellDependencyView";
 import ColorGenerator from "../../common/color/colorGenerator";
 import HealthIndicator from "../../common/HealthIndicator";
 import HttpUtils from "../../../utils/api/httpUtils";
+import Logger from "js-logger";
 import NotificationUtils from "../../../utils/common/notificationUtils";
 import QueryUtils from "../../../utils/common/queryUtils";
 import React from "react";
@@ -46,6 +47,8 @@ const styles = () => ({
 });
 
 class Details extends React.Component {
+
+    static logger = Logger.get("components/cells/cell/Details");
 
     constructor(props) {
         super(props);
@@ -127,7 +130,8 @@ class Details extends React.Component {
                     isLoading: false
                 });
             }
-        }).catch(() => {
+        }).catch((error) => {
+            Details.logger.error("Failed to load instance HTTP request metrics and ingress types", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState({

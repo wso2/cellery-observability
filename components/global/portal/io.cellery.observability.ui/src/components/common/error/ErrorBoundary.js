@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
+import Logger from "js-logger";
 import React from "react";
 import UnknownError from "./UnknownError";
 import * as PropTypes from "prop-types";
-
-/* eslint no-console: ["off"] */
 
 /**
  * Error Boundary to catch error in React Components.
@@ -32,6 +31,8 @@ import * as PropTypes from "prop-types";
  * @returns {React.Component} Error Boundary React Component
  */
 class ErrorBoundary extends React.Component {
+
+    static logger = Logger.get("components/common/error/ErrorBoundary");
 
     constructor(props) {
         super(props);
@@ -48,7 +49,7 @@ class ErrorBoundary extends React.Component {
      * @returns {Object} New state
      */
     static getDerivedStateFromError = (error) => {
-        console.error(error);
+        ErrorBoundary.logger.error("Failed to render Observability Portal", error);
         return {
             hasError: true
         };

@@ -21,6 +21,7 @@ import FormControl from "@material-ui/core/FormControl/FormControl";
 import Grid from "@material-ui/core/Grid/Grid";
 import HttpUtils from "../../../utils/api/httpUtils";
 import InputLabel from "@material-ui/core/InputLabel/InputLabel";
+import Logger from "js-logger";
 import MenuItem from "@material-ui/core/MenuItem/MenuItem";
 import NotFound from "../../common/error/NotFound";
 import NotificationUtils from "../../../utils/common/notificationUtils";
@@ -57,6 +58,8 @@ const styles = (theme) => ({
 });
 
 class TraceSearch extends React.Component {
+
+    static logger = Logger.get("components/tracing/search/index");
 
     constructor(props) {
         super(props);
@@ -345,7 +348,8 @@ class TraceSearch extends React.Component {
                     isLoading: false
                 });
             }
-        }).catch(() => {
+        }).catch((error) => {
+            TraceSearch.logger.error("Failed to load tracing metadata", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState({

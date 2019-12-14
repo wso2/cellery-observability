@@ -18,6 +18,7 @@ import DataTable from "../common/DataTable";
 import HealthIndicator from "../common/HealthIndicator";
 import HttpUtils from "../../utils/api/httpUtils";
 import {Link} from "react-router-dom";
+import Logger from "js-logger";
 import NotFound from "../common/error/NotFound";
 import NotificationUtils from "../../utils/common/notificationUtils";
 import Paper from "@material-ui/core/Paper";
@@ -36,6 +37,8 @@ const styles = (theme) => ({
 });
 
 class CellList extends React.Component {
+
+    static logger = Logger.get("components/cells/CellList");
 
     constructor(props) {
         super(props);
@@ -91,7 +94,8 @@ class CellList extends React.Component {
                     isLoading: false
                 });
             }
-        }).catch(() => {
+        }).catch((error) => {
+            CellList.logger.error("Failed to load instance HTTP request information", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState({

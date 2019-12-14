@@ -18,6 +18,7 @@
 
 import Constants from "../constants";
 import HttpUtils from "./httpUtils";
+import Logger from "js-logger";
 import NotificationUtils from "../common/notificationUtils";
 import {StateHolder} from "../../components/common/state";
 import jwtDecode from "jwt-decode";
@@ -27,6 +28,8 @@ import jwtDecode from "jwt-decode";
  */
 
 class AuthUtils {
+
+    static logger = Logger.get("utils/api/authUtils");
 
     /**
      * Sign in the user.
@@ -59,8 +62,9 @@ class AuthUtils {
                 = `${globalState.get(StateHolder.CONFIG).idp.idpURL}${Constants.Dashboard.AUTHORIZATION_EP}`
                 + `&client_id=${resp}&`
                 + `redirect_uri=${globalState.get(StateHolder.CONFIG).idp.callBackURL}&nonce=auth&scope=openid`;
-        }).catch((err) => {
-            throw Error(`Failed to redirect to Identity Provider for Authentication. ${err}`);
+        }).catch((error) => {
+            AuthUtils.logger.error("Failed to get Observability Portal client ID", error);
+            throw Error(`Failed to redirect to Identity Provider for Authentication. ${error}`);
         });
     }
 
@@ -96,7 +100,8 @@ class AuthUtils {
                 idToken: resp.id_token
             };
             AuthUtils.signIn(user, globalState);
-        }).catch(() => {
+        }).catch((error) => {
+            AuthUtils.logger.error("Failed to exchange access token for auth code", error);
             NotificationUtils.showNotification("Authentication Failed", NotificationUtils.Levels.ERROR, globalState);
         });
     }
