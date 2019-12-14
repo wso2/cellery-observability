@@ -45,11 +45,12 @@ import java.util.zip.GZIPInputStream;
  * This class is responsible for handling metrics received from the http server.
  */
 public class RuntimeDataHandler implements HttpHandler {
+    private static final Logger logger = Logger.getLogger(RuntimeDataHandler.class);
 
-    private static final Logger log = Logger.getLogger(RuntimeDataHandler.class);
     private SourceEventListener sourceEventListener;
     private final Gson gson = new Gson();
     private final JsonParser jsonParser = new JsonParser();
+    private final String logPrefix;
 
     private static final String HEADER_AUTHORIZATION = "Authorization";
     private static final String TELEMETRY_ENTRY_RUNTIME_KEY = "runtime";
@@ -57,8 +58,9 @@ public class RuntimeDataHandler implements HttpHandler {
 
     private static final String RUNTIME_ATTRIBUTE = "runtime";
 
-    public RuntimeDataHandler(SourceEventListener sourceEventListener) {
+    public RuntimeDataHandler(SourceEventListener sourceEventListener, String logPrefix) {
         this.sourceEventListener = sourceEventListener;
+        this.logPrefix = logPrefix;
     }
 
     @Override
@@ -68,8 +70,8 @@ public class RuntimeDataHandler implements HttpHandler {
             try (GZIPInputStream gis = new GZIPInputStream(httpExchange.getRequestBody());
                     BufferedReader bf = new BufferedReader(new InputStreamReader(gis, StandardCharsets.UTF_8))) {
                 String json = IOUtils.toString(bf);
-                if (log.isDebugEnabled()) {
-                    log.debug("Received metrics from the adapter : " + json);
+                if (logger.isDebugEnabled()) {
+                    logger.debug(logPrefix + "Received metrics from the agent : " + json);
                 }
 
                 JsonObject receivedTelemetryJsonObject = jsonParser.parse(json).getAsJsonObject();
@@ -84,13 +86,14 @@ public class RuntimeDataHandler implements HttpHandler {
                     if (authorizationHeaderSplit.length == 2) {
                         accessToken = authorizationHeaderSplit[1];
                     } else {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Received token format seems to be invalid; does not contain exactly one space");
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(logPrefix
+                                    + "Received token format seems to be invalid; does not contain exactly one space");
                         }
                     }
                 } else {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Received empty authorization header");
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(logPrefix + "Received empty authorization header");
                     }
                 }
 
@@ -109,17 +112,17 @@ public class RuntimeDataHandler implements HttpHandler {
                     }
                     httpExchange.sendResponseHeaders(200, -1);
                 } else {
-                    log.warn("Blocked unauthorized data publish attempt from "
+                    logger.warn(logPrefix + "Blocked unauthorized data publish attempt from "
                             + (runtime == null ? " unknown runtime " : "runtime " + runtime));
                     httpExchange.sendResponseHeaders(401, -1);
                 }
             } catch (Throwable t) {
-                log.error("Failed to process received data from "
+                logger.error(logPrefix + "Failed to process received data from "
                         + (runtime == null ? " unknown runtime " : "runtime " + runtime), t);
                 httpExchange.sendResponseHeaders(500, -1);
             }
         } else {
-            log.warn("Ignoring received request with empty data");
+            logger.warn(logPrefix + "Ignoring received request with empty data");
             httpExchange.sendResponseHeaders(500, -1);
         }
         httpExchange.close();

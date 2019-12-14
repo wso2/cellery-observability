@@ -49,6 +49,11 @@ import java.util.Map;
                         name = "port",
                         description = "The port which the service should be started on. Default is 9091",
                         type = {DataType.INT}
+                ),
+                @Parameter(
+                        name = "agent.type",
+                        description = "The agent type which this source listens to. This is used for logging",
+                        type = {DataType.STRING}
                 )
         },
         examples = {
@@ -63,10 +68,12 @@ import java.util.Map;
         }
 )
 public class RuntimeAgentEventSource extends Source {
-    private static final Logger log = Logger.getLogger(RuntimeAgentEventSource.class);
+    private static final Logger logger = Logger.getLogger(RuntimeAgentEventSource.class);
     private static final String PORT_EVENT_SOURCE_OPTION_KEY = "port";
+    private static final String AGENT_TYPE_SOURCE_OPTION_KEY = "agent.type";
 
     private SourceEventListener sourceEventListener;
+    private String logPrefix;
     private int port;
     private HttpServer httpServer;
 
@@ -75,6 +82,8 @@ public class RuntimeAgentEventSource extends Source {
                      ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
         this.sourceEventListener = sourceEventListener;
         this.port = Integer.parseInt(optionHolder.validateAndGetStaticValue(PORT_EVENT_SOURCE_OPTION_KEY));
+        this.logPrefix = "[" + optionHolder.validateAndGetStaticValue(AGENT_TYPE_SOURCE_OPTION_KEY)
+                + " Runtime Agent Receiver] ";
     }
 
     @Override
@@ -86,19 +95,19 @@ public class RuntimeAgentEventSource extends Source {
     public void connect(ConnectionCallback connectionCallback) throws ConnectionUnavailableException {
         try {
             httpServer = HttpServer.create(new InetSocketAddress(port), 0);
-            httpServer.createContext("/", new RuntimeDataHandler(sourceEventListener));
+            httpServer.createContext("/", new RuntimeDataHandler(sourceEventListener, this.logPrefix));
             httpServer.setExecutor(null); // creates a default executor
             httpServer.start();
-            log.info("Http server started on port : " + port);
+            logger.info(logPrefix + "HTTP Server listening on port : " + port);
         } catch (IOException e) {
-            throw new ConnectionUnavailableException("Unable to start the http server on port: " + port, e);
+            throw new ConnectionUnavailableException(logPrefix + "Unable to start the HTTP Server on port: " + port, e);
         }
     }
 
     @Override
     public void disconnect() {
         if (this.httpServer != null) {
-            log.info("Shutting down the http server");
+            logger.info(logPrefix + "Shutting down the HTTP Server");
             this.httpServer.stop(0);
         }
     }
