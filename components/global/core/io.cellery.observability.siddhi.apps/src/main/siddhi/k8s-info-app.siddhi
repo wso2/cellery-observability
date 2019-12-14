@@ -19,7 +19,8 @@
 @App:name("k8s-info-app")
 @App:description("This collects Kubernetes related information from runtime agents and stores them in the relevant data sources")
 
-@source(type="runtime-agent", port="9815", @map(type="keyvalue", fail.on.missing.attribute="false"))
+@source(type="runtime-agent", port="9815", agent.type="Kube",
+    @map(type="keyvalue", fail.on.missing.attribute="false"))
 define stream K8sEventSource(resourceKind string, currentTimestamp long, action string, runtime string,
                              namespace string, instance string, component string, instanceKind string,
                              creationTimestamp long, name string, deletionTimestamp long, nodeName string,

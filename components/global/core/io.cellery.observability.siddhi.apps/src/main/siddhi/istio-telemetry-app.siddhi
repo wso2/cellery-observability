@@ -19,7 +19,8 @@
 @App:name("istio-telemetry-app")
 @App:description("This receives the attributes generally received by the Istio Mixer")
 
-@source(type="runtime-agent", port="9091", @map(type="keyvalue", fail.on.missing.attribute="false"))
+@source(type="runtime-agent", port="9091", agent.type="Telemetry",
+    @map(type="keyvalue", fail.on.missing.attribute="false"))
 define stream TelemetryStream(runtime string, requestId string, traceId string, spanId string,  parentSpanId string,
                               sourceNamespace string, sourceInstance string, sourceInstanceKind string,
                               sourceComponent string, sourcePod string, destinationNamespace string,
