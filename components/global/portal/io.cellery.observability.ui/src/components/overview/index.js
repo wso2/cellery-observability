@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* eslint max-lines: ["error", 800] */
+/* eslint max-lines: ["error", 900] */
 
 import ArrowRightAltSharp from "@material-ui/icons/ArrowRightAltSharp";
 import Button from "@material-ui/core/Button";
@@ -188,6 +188,8 @@ class Overview extends React.Component {
         const self = this;
         const {globalState} = self.props;
         const {selectedInstance} = self.state;
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const selectedNamespace = globalFilter.namespace;
         const dependencyDiagramFilter = HttpUtils.generateQueryParamString({
             queryStartTime: startTime.valueOf(),
             queryEndTime: endTime.valueOf()
@@ -204,8 +206,7 @@ class Overview extends React.Component {
         self.setState({
             isLoading: true
         });
-        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
-        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${selectedNamespace}`;
         const apiCalls = [
             HttpUtils.callObservabilityAPI(
                 {
@@ -252,7 +253,8 @@ class Overview extends React.Component {
                 component: datum[1],
                 ingressTypes: datum[3]
             }));
-            const nodeData = data[0].nodes.filter((nodeDatum) => Boolean(nodeDatum.instance))
+            const nodeData = data[0].nodes
+                .filter((nodeDatum) => nodeDatum.instance && nodeDatum.namespace === selectedNamespace)
                 .map((nodeDatum) => {
                     // Extracting the ingress type for the relevant node
                     nodeDatum.ingressTypes = ingressTypes
@@ -279,7 +281,10 @@ class Overview extends React.Component {
 
             // Extracting unique edge data map
             const edgeDataMap = {};
-            data[0].edges.filter((edgeDatum) => edgeDatum.source.instance !== edgeDatum.target.instance)
+            data[0].edges
+                .filter((edgeDatum) => edgeDatum.source.instance && edgeDatum.source.namespace === selectedNamespace
+                    && edgeDatum.target.instance && edgeDatum.target.namespace === selectedNamespace
+                    && edgeDatum.source.instance !== edgeDatum.target.instance)
                 .forEach((edgeDatum) => {
                     edgeDataMap[`${edgeDatum.source.instance} --> ${edgeDatum.target.instance}`] = {
                         source: edgeDatum.source.instance,
