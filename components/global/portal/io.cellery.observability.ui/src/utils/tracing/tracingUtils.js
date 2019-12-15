@@ -63,7 +63,7 @@ class TracingUtils {
             let hasSameServiceChild = false;
             for (let j = 0; j < spansList.length; j++) {
                 const consideredSpan = spansList[j];
-                if (i !== j && !span.isFromSideCar() && span.cell === consideredSpan.cell
+                if (i !== j && !span.isFromSideCar() && span.instance === consideredSpan.instance
                     && span.serviceName === consideredSpan.serviceName) {
                     if (span.parentId === consideredSpan.spanId) {
                         hasSameServiceParent = true;

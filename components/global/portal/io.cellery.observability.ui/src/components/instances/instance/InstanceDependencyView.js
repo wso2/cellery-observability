@@ -73,9 +73,9 @@ const styles = (theme) => ({
     }
 });
 
-class CellDependencyView extends React.Component {
+class InstanceDependencyView extends React.Component {
 
-    static logger = Logger.get("components/cells/cell/CellDependencyView");
+    static logger = Logger.get("components/instances/instance/InstanceDependencyView");
 
     constructor(props) {
         super(props);
@@ -141,9 +141,9 @@ class CellDependencyView extends React.Component {
         const newStartTime = nextProps.globalState.get(StateHolder.GLOBAL_FILTER).startTime;
         const newEndTime = nextProps.globalState.get(StateHolder.GLOBAL_FILTER).endTime;
 
-        // Check if user inputs (cell, component, time range) hand changed
+        // Check if user inputs (instance, component, time range) had changed
         let shouldComponentUpdate = startTime !== newStartTime || endTime !== newEndTime
-            || this.props.cell !== nextProps.cell;
+            || this.props.instance !== nextProps.instance;
 
         if (!shouldComponentUpdate) {
             // Check if the number of items in the data had changed
@@ -174,7 +174,7 @@ class CellDependencyView extends React.Component {
     };
 
     update = (isUserAction, queryStartTime, queryEndTime) => {
-        const {globalState, cell} = this.props;
+        const {globalState, instance} = this.props;
         const self = this;
 
         const search = {
@@ -189,7 +189,7 @@ class CellDependencyView extends React.Component {
         const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `${pathPrefix}/dependency-model/instances/${cell}${HttpUtils.generateQueryParamString(search)}`,
+                url: `${pathPrefix}/dependency-model/instances/${instance}${HttpUtils.generateQueryParamString(search)}`,
                 method: "GET"
             },
             globalState
@@ -223,7 +223,7 @@ class CellDependencyView extends React.Component {
                 NotificationUtils.hideLoadingOverlay(globalState);
             }
         }).catch((error) => {
-            CellDependencyView.logger.error("Failed to load instance dependency model", error);
+            InstanceDependencyView.logger.error("Failed to load instance dependency model", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 NotificationUtils.showNotification(
@@ -242,7 +242,7 @@ class CellDependencyView extends React.Component {
     };
 
     render = () => {
-        const {classes, cell, colorGenerator} = this.props;
+        const {classes, instance, colorGenerator} = this.props;
         const dependedNodeCount = this.state.data.nodes.length;
 
         const viewGenerator = (nodeId, opacity, instanceKind) => {
@@ -255,7 +255,7 @@ class CellDependencyView extends React.Component {
                     <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
                         x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14"
                         style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
-                        <path fill={color} stroke={cell === nodeId ? "#444" : outlineColor}
+                        <path fill={color} stroke={instance === nodeId ? "#444" : outlineColor}
                             strokeOpacity={1 - opacity} strokeWidth="0.5px"
                             d={"M8.92.84H5a1.45,1.45,0,0,0-1,.42L1.22,4a1.43,1.43,0,0,0-.43,1V9a1.43,"
                                 + "1.43,0,0,0,.43,1L4,12.75a1.4,1.4,0,0,0,1,.41H8.92a1.4,1.4,0,0,0,1-.41L12.72,"
@@ -270,7 +270,7 @@ class CellDependencyView extends React.Component {
                     <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
                         x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14"
                         style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
-                        <circle cx="6.4" cy="6.7" r="6.1" fill={color} stroke={cell === nodeId ? "#444" : outlineColor}
+                        <circle cx="6.4" cy="6.7" r="6.1" fill={color} stroke={instance === nodeId ? "#444" : outlineColor}
                             strokeOpacity={1 - opacity} strokeDasharray="1.9772,0.9886" strokeWidth="0.5px"/>
                     </svg>
                 );
@@ -288,7 +288,7 @@ class CellDependencyView extends React.Component {
             view = (
                 <ErrorBoundary title={"Unable to Render"} description={"Unable to Render due to Invalid Data"}>
                     <div className={classes.dependencyGraph}>
-                        <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges} selectedInstance={cell}
+                        <DependencyGraph id="graph-id" nodeData={dataNodes} edgeData={dataEdges} selectedInstance={instance}
                             onClickNode={this.onClickInstance} viewGenerator={viewGenerator} graphType="dependency" />
                     </div>
                 </ErrorBoundary>
@@ -298,7 +298,7 @@ class CellDependencyView extends React.Component {
                 <div>
                     <InfoOutlined className={classes.infoIcon} color="action"/>
                     <Typography variant="subtitle2" color="textSecondary" className={classes.info}>
-                        {`"${cell}"`} instance does not depend on any other Cell
+                        {`"${instance}"`} instance does not depend on any other Instance
                     </Typography>
                 </div>
             );
@@ -320,9 +320,9 @@ class CellDependencyView extends React.Component {
 
 }
 
-CellDependencyView.propTypes = {
+InstanceDependencyView.propTypes = {
     classes: PropTypes.object.isRequired,
-    cell: PropTypes.string.isRequired,
+    instance: PropTypes.string.isRequired,
     globalState: PropTypes.instanceOf(StateHolder).isRequired,
     colorGenerator: PropTypes.instanceOf(ColorGenerator).isRequired,
     history: PropTypes.shape({
@@ -330,4 +330,4 @@ CellDependencyView.propTypes = {
     }).isRequired
 };
 
-export default withStyles(styles, {withTheme: true})(withColor(withGlobalState(withRouter(CellDependencyView))));
+export default withStyles(styles, {withTheme: true})(withColor(withGlobalState(withRouter(InstanceDependencyView))));

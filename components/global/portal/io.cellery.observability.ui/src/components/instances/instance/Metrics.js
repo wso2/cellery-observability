@@ -49,7 +49,7 @@ const styles = (theme) => ({
 
 class Metrics extends React.Component {
 
-    static logger = Logger.get("components/cells/cell/Metrics");
+    static logger = Logger.get("components/instances/instance/Metrics");
 
     constructor(props) {
         super(props);
@@ -58,11 +58,11 @@ class Metrics extends React.Component {
             selectedType: props.globalFilterOverrides && props.globalFilterOverrides.selectedType
                 ? props.globalFilterOverrides.selectedType
                 : Constants.Dashboard.INBOUND,
-            selectedCell: props.globalFilterOverrides && props.globalFilterOverrides.selectedCell
-                ? props.globalFilterOverrides.selectedCell
+            selectedInstance: props.globalFilterOverrides && props.globalFilterOverrides.selectedInstance
+                ? props.globalFilterOverrides.selectedInstance
                 : Constants.Dashboard.ALL_VALUE,
-            cells: [],
-            cellData: [],
+            instances: [],
+            instanceData: [],
             loadingCount: 0
         };
     }
@@ -77,22 +77,22 @@ class Metrics extends React.Component {
         );
     };
 
-    update = (isUserAction, startTime, endTime, selectedTypeOverride, selectedCellOverride) => {
-        const {selectedType, selectedCell} = this.state;
+    update = (isUserAction, startTime, endTime, selectedTypeOverride, selectedInstanceOverride) => {
+        const {selectedType, selectedInstance} = this.state;
         const queryStartTime = startTime.valueOf();
         const queryEndTime = endTime.valueOf();
 
         this.loadMetrics(
             isUserAction, queryStartTime, queryEndTime,
             selectedTypeOverride ? selectedTypeOverride : selectedType,
-            selectedCellOverride ? selectedCellOverride : selectedCell
+            selectedInstanceOverride ? selectedInstanceOverride : selectedInstance
         );
-        this.loadCellMetadata(isUserAction, queryStartTime, queryEndTime);
+        this.loadInstanceMetadata(isUserAction, queryStartTime, queryEndTime);
     };
 
     getFilterChangeHandler = (name) => (event) => {
         const {globalState, onFilterUpdate} = this.props;
-        const {selectedType, selectedCell} = this.state;
+        const {selectedType, selectedInstance} = this.state;
 
         const newValue = event.target.value;
         this.setState({
@@ -102,7 +102,7 @@ class Metrics extends React.Component {
         if (onFilterUpdate) {
             onFilterUpdate({
                 selectedType: selectedType,
-                selectedCell: selectedCell,
+                selectedInstance: selectedInstance,
                 [name]: newValue
             });
         }
@@ -112,12 +112,12 @@ class Metrics extends React.Component {
             QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).startTime),
             QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).endTime),
             name === "selectedType" ? newValue : null,
-            name === "selectedCell" ? newValue : null,
+            name === "selectedInstance" ? newValue : null,
         );
     };
 
-    loadCellMetadata = (isUserAction, queryStartTime, queryEndTime) => {
-        const {globalState, cell} = this.props;
+    loadInstanceMetadata = (isUserAction, queryStartTime, queryEndTime) => {
+        const {globalState, instance} = this.props;
         const self = this;
 
         const search = {
@@ -126,7 +126,7 @@ class Metrics extends React.Component {
         };
 
         if (isUserAction) {
-            NotificationUtils.showLoadingOverlay("Loading Cell Info", globalState);
+            NotificationUtils.showLoadingOverlay("Loading Instance Metadata", globalState);
             self.setState((prevState) => ({
                 loadingCount: prevState.loadingCount + 1
             }));
@@ -141,7 +141,7 @@ class Metrics extends React.Component {
             globalState
         ).then((data) => {
             self.setState({
-                cells: data.filter((datum) => Boolean(datum) && datum !== cell)
+                instances: data.filter((datum) => Boolean(datum) && datum !== instance)
             });
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
@@ -157,7 +157,7 @@ class Metrics extends React.Component {
                     loadingCount: prevState.loadingCount - 1
                 }));
                 NotificationUtils.showNotification(
-                    "Failed to load cell information",
+                    "Failed to load Instance Metadata",
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );
@@ -165,8 +165,8 @@ class Metrics extends React.Component {
         });
     };
 
-    loadMetrics = (isUserAction, queryStartTime, queryEndTime, selectedType, selectedCell) => {
-        const {globalState, cell} = this.props;
+    loadMetrics = (isUserAction, queryStartTime, queryEndTime, selectedType, selectedInstance) => {
+        const {globalState, instance} = this.props;
         const self = this;
 
         // Creating the search params
@@ -175,21 +175,21 @@ class Metrics extends React.Component {
             queryEndTime: queryEndTime,
             includeIntraInstance: false
         };
-        if (selectedCell !== Constants.Dashboard.ALL_VALUE) {
+        if (selectedInstance !== Constants.Dashboard.ALL_VALUE) {
             if (selectedType === Constants.Dashboard.INBOUND) {
-                search.sourceInstance = selectedCell;
+                search.sourceInstance = selectedInstance;
             } else {
-                search.destinationInstance = selectedCell;
+                search.destinationInstance = selectedInstance;
             }
         }
         if (selectedType === Constants.Dashboard.INBOUND) {
-            search.destinationInstance = cell;
+            search.destinationInstance = instance;
         } else {
-            search.sourceInstance = cell;
+            search.sourceInstance = instance;
         }
 
         if (isUserAction) {
-            NotificationUtils.showLoadingOverlay("Loading Cell Metrics", globalState);
+            NotificationUtils.showLoadingOverlay("Loading Instance Metrics", globalState);
             self.setState((prevState) => ({
                 loadingCount: prevState.loadingCount + 1
             }));
@@ -203,7 +203,7 @@ class Metrics extends React.Component {
             },
             globalState
         ).then((data) => {
-            const cellData = data.map((datum) => ({
+            const instanceData = data.map((datum) => ({
                 timestamp: datum[0],
                 httpResponseGroup: datum[1],
                 totalResponseTimeMilliSec: datum[2],
@@ -213,7 +213,7 @@ class Metrics extends React.Component {
             }));
 
             self.setState({
-                cellData: cellData
+                instanceData: instanceData
             });
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
@@ -229,7 +229,7 @@ class Metrics extends React.Component {
                     loadingCount: prevState.loadingCount - 1
                 }));
                 NotificationUtils.showNotification(
-                    "Failed to load cell metrics",
+                    "Failed to load Instance Metrics",
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );
@@ -238,8 +238,8 @@ class Metrics extends React.Component {
     };
 
     render = () => {
-        const {classes, cell} = this.props;
-        const {selectedType, selectedCell, cells, cellData, loadingCount} = this.state;
+        const {classes, instance} = this.props;
+        const {selectedType, selectedInstance, instances, instanceData, loadingCount} = this.state;
 
         const targetSourcePrefix = selectedType === Constants.Dashboard.INBOUND ? "Source" : "Target";
 
@@ -262,35 +262,36 @@ class Metrics extends React.Component {
                                 </Select>
                             </FormControl>
                             <FormControl className={classes.formControl}>
-                                <InputLabel htmlFor="selected-cell">{targetSourcePrefix} Cell</InputLabel>
-                                <Select value={selectedCell}
-                                    onChange={this.getFilterChangeHandler("selectedCell")}
+                                <InputLabel htmlFor="selected-instance">{targetSourcePrefix} Instance</InputLabel>
+                                <Select value={selectedInstance}
+                                    onChange={this.getFilterChangeHandler("selectedInstance")}
                                     inputProps={{
-                                        name: "selected-cell",
-                                        id: "selected-cell"
+                                        name: "selected-instance",
+                                        id: "selected-instance"
                                     }}>
                                     <option value={Constants.Dashboard.ALL_VALUE}>
                                         {Constants.Dashboard.ALL_VALUE}
                                     </option>
                                     {
-                                        cells.map((cell) => (<option key={cell} value={cell}>{cell}</option>))
+                                        instances.map((instance) => (
+                                            <option key={instance} value={instance}>{instance}</option>))
                                     }
                                 </Select>
                             </FormControl>
                         </div>
                         <div className={classes.graphs}>
                             {
-                                cellData.length > 0
+                                instanceData.length > 0
                                     ? (
-                                        <MetricsGraphs cell={cell} data={cellData}
+                                        <MetricsGraphs instance={instance} data={instanceData}
                                             direction={selectedType === Constants.Dashboard.INBOUND ? "In" : "Out"}/>
                                     )
                                     : (
                                         <NotFound title={"No Metrics Found"}
                                             description={
                                                 selectedType === Constants.Dashboard.INBOUND
-                                                    ? `No Requests from the selected cell to "${cell}" cell`
-                                                    : `No Requests from "${cell}" cell to the selected cell`
+                                                    ? `No Requests from the selected instance to "${instance}" instance`
+                                                    : `No Requests from "${instance}" instance to the selected instance`
                                             }/>
                                     )
                             }
@@ -305,11 +306,11 @@ class Metrics extends React.Component {
 Metrics.propTypes = {
     classes: PropTypes.object.isRequired,
     globalState: PropTypes.instanceOf(StateHolder).isRequired,
-    cell: PropTypes.string.isRequired,
+    instance: PropTypes.string.isRequired,
     onFilterUpdate: PropTypes.func.isRequired,
     globalFilterOverrides: PropTypes.shape({
         selectedType: PropTypes.string,
-        selectedCell: PropTypes.string
+        selectedInstance: PropTypes.string
     })
 };
 

@@ -180,7 +180,7 @@ class Overview extends React.Component {
         const queryParams = HttpUtils.parseQueryParams(props.location.search);
         return {
             ...state,
-            selectedInstance: queryParams ? queryParams.cell : null
+            selectedInstance: queryParams ? queryParams.instance : null
         };
     };
 
@@ -411,7 +411,7 @@ class Overview extends React.Component {
         // Updating the Browser URL
         const queryParamsString = HttpUtils.generateQueryParamString({
             ...HttpUtils.parseQueryParams(location.search),
-            cell: nodeId
+            instance: nodeId
         });
         history.replace(match.url + queryParamsString, {
             ...location.state
@@ -487,7 +487,7 @@ class Overview extends React.Component {
 
             let instanceView;
             if (instanceKind === Constants.InstanceKind.CELL) {
-                const successCell = (
+                const successInstance = (
                     <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
                         x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14"
                         style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
@@ -500,7 +500,7 @@ class Overview extends React.Component {
                     </svg>
                 );
 
-                const errorCell = (
+                const errorInstance = (
                     <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
                         x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14"
                         style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
@@ -523,7 +523,7 @@ class Overview extends React.Component {
                     </svg>
                 );
 
-                const warningCell = (
+                const warningInstance = (
                     <svg version="1.1" xmlns="http://www.w3.org/2000/svg"
                         xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="14px" height="14px"
                         viewBox="0 0 14 14" style={{enableBackground: "new 0 0 14 14"}} xmlSpace="preserve">
@@ -549,11 +549,11 @@ class Overview extends React.Component {
 
                 if (state === Constants.Status.Success || state === Constants.Status.Unknown) {
                     // Not to show any indicators if it is success threshold or status is unknown
-                    instanceView = successCell;
+                    instanceView = successInstance;
                 } else if (state === Constants.Status.Warning) {
-                    instanceView = warningCell;
+                    instanceView = warningInstance;
                 } else {
-                    instanceView = errorCell;
+                    instanceView = errorInstance;
                 }
             } else if (instanceKind === Constants.InstanceKind.COMPOSITE) {
                 const successComposite = (
@@ -751,7 +751,7 @@ class Overview extends React.Component {
                                                         </IconButton>
                                                         <Typography color="textSecondary"
                                                             className={classes.sideBarHeading}>
-                                                            {selectedInstance ? "Cell Details" : "Overview"}
+                                                            {selectedInstance ? "Instance Details" : "Overview"}
                                                         </Typography>
                                                     </div>
                                                     <Divider/>

@@ -34,7 +34,7 @@ import * as PropTypes from "prop-types";
 
 class K8sPodsList extends React.Component {
 
-    static logger = Logger.get("components/cells/component/K8sPodsList");
+    static logger = Logger.get("components/instances/component/K8sPodsList");
 
     constructor(props) {
         super(props);
@@ -62,13 +62,13 @@ class K8sPodsList extends React.Component {
     };
 
     loadPodInfo = (isUserAction, queryStartTime, queryEndTime) => {
-        const {globalState, cell, component} = this.props;
+        const {globalState, instance, component} = this.props;
         const self = this;
 
         const search = {
             queryStartTime: queryStartTime.valueOf(),
             queryEndTime: queryEndTime.valueOf(),
-            instance: cell,
+            instance: instance,
             component: component
         };
 
@@ -246,7 +246,7 @@ class K8sPodsList extends React.Component {
 
 K8sPodsList.propTypes = {
     globalState: PropTypes.instanceOf(StateHolder).isRequired,
-    cell: PropTypes.string.isRequired,
+    instance: PropTypes.string.isRequired,
     component: PropTypes.string.isRequired
 };
 

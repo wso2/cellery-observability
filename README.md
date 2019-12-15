@@ -9,7 +9,7 @@ Mesh Observability
 
 **Note**: If you just wish to get started with trying out Cellery, you can start your journey at [wso2/cellery](https://github.com/wso2/cellery) repository.  
 
-Cellery Observability brings along the capability to observe the Cells deployed on Cellery Mesh. This combines the [Siddhi](https://siddhi-io.github.io/siddhi) Stream Processing Capabilities of [WSO2 Stream Processor](https://wso2.com/analytics-and-stream-processing/) and observability agents deployed along with the Cells to collect and process metrics and tracing data from the Cells.
+Cellery Observability brings along the capability to observe the Instances deployed on Cellery Mesh. This combines the [Siddhi](https://siddhi-io.github.io/siddhi) Stream Processing Capabilities of [WSO2 Stream Processor](https://wso2.com/analytics-and-stream-processing/) and observability agents deployed along with the Instances to collect and process metrics and tracing data from the Instances.
 
 
 ## High Level Architecture
@@ -21,7 +21,7 @@ The observability data such as telemetry and request traces is collected from al
 * Global Gateway
 * Cell Gateway
 * Sidecars (Envoy)
-* Components of Cells (E.g: Microservices) 
+* Components of Instances (E.g: Microservices) 
 
 All collected data will be processed by WSO2 Stream processor, and will be stored in the database to show the historical information. By default, the Cellery Mesh is deployed with MySQL database, and hence the telemetry data is also stored in the same database server. 
 
@@ -34,7 +34,7 @@ The Observability Portal can depict the below information. It will show the curr
 * Metrics
   * Application Metrics (Success/Failure rate, Request/sec, Response/sec, Response time)
     * Data Plane
-      * Cell based metrics
+      * Instance based metrics
       * Component based metrics
       * Overall Deployment based metrics
   * System Metrics
@@ -42,7 +42,7 @@ The Observability Portal can depict the below information. It will show the curr
       * CPU, Memory, Disk Consumption.
       * Network Usage
 * Runtime Dependency Model
-  * Dependency models of cells and components
+  * Dependency models of Instances and Components
 
 ## Repo Structure
 

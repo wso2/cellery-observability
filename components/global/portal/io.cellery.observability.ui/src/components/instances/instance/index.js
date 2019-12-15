@@ -59,9 +59,9 @@ const styles = (theme) => ({
     }
 });
 
-class Cell extends React.Component {
+class Instance extends React.Component {
 
-    static logger = Logger.get("components/cells/cell/index");
+    static logger = Logger.get("components/instances/instance/index");
 
     constructor(props) {
         super(props);
@@ -111,10 +111,10 @@ class Cell extends React.Component {
     loadInstanceInfo = (isUserAction, queryStartTime, queryEndTime) => {
         const self = this;
         const {globalState, match} = self.props;
-        const cellName = match.params.cellName;
+        const instanceName = match.params.instanceName;
 
         if (isUserAction) {
-            NotificationUtils.showLoadingOverlay("Loading Cell Information", globalState);
+            NotificationUtils.showLoadingOverlay("Loading Instance Information", globalState);
             self.setState({
                 isLoading: true
             });
@@ -127,7 +127,7 @@ class Cell extends React.Component {
         const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `${pathPrefix}/instances/${cellName}${searchQueryParams}`,
+                url: `${pathPrefix}/instances/${instanceName}${searchQueryParams}`,
                 method: "GET"
             },
             globalState
@@ -142,7 +142,7 @@ class Cell extends React.Component {
                 });
             }
         }).catch((error) => {
-            Cell.logger.error("Failed to load instance information", error);
+            Instance.logger.error("Failed to load instance information", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState({
@@ -174,7 +174,7 @@ class Cell extends React.Component {
         const {classes, location, match} = this.props;
         const {isLoading, instanceType, selectedTabIndex} = this.state;
 
-        const cellName = match.params.cellName;
+        const instanceName = match.params.instanceName;
 
         const tabContent = [Details, ComponentList, Metrics];
         const SelectedTabContent = tabContent[selectedTabIndex];
@@ -182,11 +182,11 @@ class Cell extends React.Component {
         const queryParams = HttpUtils.parseQueryParams(location.search);
 
         const traceSearch = {
-            cell: cellName
+            instance: instanceName
         };
         return (
             <React.Fragment>
-                <TopToolbar title={`${cellName}`} subTitle={!isLoading && instanceType ? `- ${instanceType}` : null}
+                <TopToolbar title={`${instanceName}`} subTitle={!isLoading && instanceType ? `- ${instanceType}` : null}
                     onUpdate={this.handleOnUpdate}/>
                 <Paper className={classes.root}>
                     <div className={classes.tabBar}>
@@ -201,7 +201,7 @@ class Cell extends React.Component {
                             <Timeline/><span className={classes.viewTracesContent}>View Traces</span>
                         </Button>
                     </div>
-                    <SelectedTabContent innerRef={this.tabContentRef} cell={cellName}
+                    <SelectedTabContent innerRef={this.tabContentRef} instance={instanceName}
                         onFilterUpdate={this.onFilterUpdate} globalFilterOverrides={queryParams}/>
                 </Paper>
             </React.Fragment>
@@ -210,11 +210,11 @@ class Cell extends React.Component {
 
 }
 
-Cell.propTypes = {
+Instance.propTypes = {
     classes: PropTypes.object.isRequired,
     match: PropTypes.shape({
         params: PropTypes.shape({
-            cellName: PropTypes.string.isRequired
+            instanceName: PropTypes.string.isRequired
         }).isRequired
     }).isRequired,
     history: PropTypes.shape({
@@ -226,4 +226,4 @@ Cell.propTypes = {
     globalState: PropTypes.instanceOf(StateHolder)
 };
 
-export default withStyles(styles)(withGlobalState(Cell));
+export default withStyles(styles)(withGlobalState(Instance));

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import CellsIcon from "../../icons/CellsIcon";
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import Constants from "../../utils/constants";
 import Divider from "@material-ui/core/Divider/Divider";
 import Drawer from "@material-ui/core/Drawer/Drawer";
 import IconButton from "@material-ui/core/IconButton/IconButton";
+import InstancesIcon from "../../icons/InstancesIcon";
 import List from "@material-ui/core/List/List";
 import ListItem from "@material-ui/core/ListItem/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon/ListItemIcon";
@@ -150,7 +150,7 @@ class SideNavBar extends React.Component {
                                 this.handleNavItemClick(pages[1], event);
                             }}>
                             <ListItemIcon className={classes.listIcon}>
-                                <CellsIcon className={classNames({[classes.active]: selectedIndex === 1})}/>
+                                <InstancesIcon className={classNames({[classes.active]: selectedIndex === 1})}/>
                             </ListItemIcon>
                             <ListItemText primary="Instances"
                                 classes={{primary: classNames({[classes.active]: selectedIndex === 1})}}/>

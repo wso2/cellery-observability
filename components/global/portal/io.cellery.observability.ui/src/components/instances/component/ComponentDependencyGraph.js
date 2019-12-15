@@ -40,7 +40,7 @@ class ComponentDependencyGraph extends React.Component {
         GATEWAY: "gateway"
     };
 
-    static CELL_COMPONENT_SEPARATOR = ":";
+    static INSTANCE_COMPONENT_SEPARATOR = ":";
 
     static GRAPH_OPTIONS = {
         nodes: {

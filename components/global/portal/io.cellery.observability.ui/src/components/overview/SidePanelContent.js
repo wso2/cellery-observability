@@ -20,7 +20,6 @@ import "react-vis/dist/style.css";
 import "./index.css";
 import Avatar from "@material-ui/core/Avatar";
 import CellIcon from "../../icons/CellIcon";
-import CellsIcon from "../../icons/CellsIcon";
 import CheckCircleOutline from "@material-ui/icons/CheckCircleOutline";
 import ComponentIcon from "../../icons/ComponentIcon";
 import CompositeIcon from "../../icons/CompositeIcon";
@@ -36,6 +35,7 @@ import HelpOutlineIcon from "@material-ui/icons/HelpOutline";
 import HttpTrafficIcon from "../../icons/HttpTrafficIcon";
 import HttpUtils from "../../utils/api/httpUtils";
 import IconButton from "@material-ui/core/IconButton";
+import InstancesIcon from "../../icons/InstancesIcon";
 import {Link} from "react-router-dom";
 import MUIDataTable from "mui-datatables";
 import React from "react";
@@ -88,7 +88,7 @@ const styles = () => ({
         borderBottomStyle: "solid",
         borderBottomColor: Grey[300]
     },
-    cellIcon: {
+    expansionPanelSummaryIcon: {
         verticalAlign: "middle"
     },
     panel: {
@@ -109,11 +109,11 @@ const styles = () => ({
         fontSize: 12
 
     },
-    cellNameContainer: {
+    instanceNameContainer: {
         marginTop: 10,
         marginBottom: 25
     },
-    cellName: {
+    instanceName: {
         display: "inline-flex",
         paddingLeft: 10
     },
@@ -203,11 +203,11 @@ class SidePanelContent extends React.Component {
             {
                 options: {
                     customBodyRender: (datum) => {
-                        const {cell, component} = datum;
+                        const {instance, component} = datum;
                         return (
                             <Typography component={Link} className={classes.sidebarListTableText}
-                                to={`/instances/${cell}${component ? `/components/${component}` : ""}`}>
-                                {component ? component : cell}
+                                to={`/instances/${instance}${component ? `/components/${component}` : ""}`}>
+                                {component ? component : instance}
                             </Typography>
                         );
                     }
@@ -279,7 +279,7 @@ class SidePanelContent extends React.Component {
             nodeSummary[status] > 0
                 ? (
                     <Typography className={classes.secondaryHeading}>
-                        <Icon className={classes.cellIcon} style={{color: color}}/>
+                        <Icon className={classes.expansionPanelSummaryIcon} style={{color: color}}/>
                         &nbsp;{nodeSummary[status]}
                     </Typography>
                 )
@@ -291,7 +291,7 @@ class SidePanelContent extends React.Component {
                     {
                         selectedInstance
                             ? (
-                                <div className={classes.cellNameContainer}>
+                                <div className={classes.instanceNameContainer}>
                                     {
                                         selectedInstanceKind === Constants.InstanceKind.CELL
                                             ? <CellIcon className={classes.titleIcon} fontSize="small"/>
@@ -302,7 +302,7 @@ class SidePanelContent extends React.Component {
                                         {selectedInstanceKind}
                                     </Typography>
                                     <Typography component={Link} to={`/instances/${selectedInstance}`}
-                                        className={classes.cellName}>
+                                        className={classes.instanceName}>
                                         {selectedInstance}
                                     </Typography>
                                 </div>
@@ -315,7 +315,7 @@ class SidePanelContent extends React.Component {
                     <Table className={classes.table}>
                         <TableHead>
                             <TableRow>
-                                <TableCell className={classes.sidebarTableCell}>Requests/s</TableCell>
+                                <TableCell className={classes.sidebarTableCell}>Requests</TableCell>
                                 {generateBadgeTableCell("OK", "2xx", successColor)}
                                 {generateBadgeTableCell("3xx", "3xx", redirectionColor)}
                                 {generateBadgeTableCell("4xx", "4xx", warningColor)}
@@ -368,7 +368,7 @@ class SidePanelContent extends React.Component {
                     {
                         selectedInstance
                             ? <ComponentIcon className={classes.titleIcon} fontSize="small"/>
-                            : <CellsIcon className={classes.titleIcon} fontSize="small"/>
+                            : <InstancesIcon className={classes.titleIcon} fontSize="small"/>
                     }
                     <Typography color="inherit" className={classes.sideBarContentTitle}>
                         {selectedInstance ? "Components" : "Instances"} ({Object.keys(metrics).length})
@@ -402,12 +402,12 @@ class SidePanelContent extends React.Component {
                                                     / metrics[nodeName].totalIncomingRequests)
                                             : -1),
                                         {
-                                            cell: selectedInstance ? selectedInstance : nodeName,
+                                            instance: selectedInstance ? selectedInstance : nodeName,
                                             component: selectedInstance ? nodeName : null
 
                                         },
                                         {
-                                            cell: selectedInstance ? selectedInstance : nodeName,
+                                            instance: selectedInstance ? selectedInstance : nodeName,
                                             component: selectedInstance ? nodeName : null
                                         }
                                     ])}/>

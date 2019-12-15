@@ -17,10 +17,10 @@
  */
 
 import AppLayout from "./appLayout";
-import Cells from "./cells";
 import {ColorProvider} from "./common/color";
 import CssBaseline from "@material-ui/core/CssBaseline/CssBaseline";
 import ErrorBoundary from "./common/error/ErrorBoundary";
+import Instances from "./instances";
 import NotFound from "./common/error/NotFound";
 import Overview from "./overview";
 import React from "react";
@@ -55,7 +55,7 @@ class StatelessProtectedPortal extends React.Component {
                     <ErrorBoundary showNavigationButtons={true}>
                         <Switch>
                             <Route exact path="/" component={Overview}/>
-                            <Route path="/instances" component={Cells}/>
+                            <Route path="/instances" component={Instances}/>
                             <Route path="/tracing" component={Tracing}/>
                             <Route path="/*" render={(props) => <NotFound {...props} showNavigationButtons={true}/>}/>
                         </Switch>

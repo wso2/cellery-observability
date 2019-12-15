@@ -84,7 +84,7 @@ class SequenceDiagram extends React.Component {
         super(props);
         this.state = {
             sequenceDiagramData: "",
-            selectedCell: SequenceDiagram.GLOBAL,
+            selectedInstance: SequenceDiagram.GLOBAL,
             selectedActionId: ""
         };
         this.mermaidDivRef = React.createRef();
@@ -92,15 +92,15 @@ class SequenceDiagram extends React.Component {
 
     render() {
         const {classes} = this.props;
-        const {selectedCell, selectedActionId, sequenceDiagramData} = this.state;
+        const {selectedInstance, selectedActionId, sequenceDiagramData} = this.state;
         return (
             <div>
                 <div className={classes.breadcrumbs}>
                     <span className={classes.breadcrumbItemContainer}>
-                        <Typography color={"textSecondary"} onClick={this.drawCellLevelSequenceDiagram}
+                        <Typography color={"textSecondary"} onClick={this.drawInstanceLevelSequenceDiagram}
                             className={classNames(classes.breadcrumbItem,
                                 {[classes.clickableBreadcrumbItem]: Boolean(selectedActionId)})}>
-                        Cells
+                        Instances
                         </Typography>
                     </span>
                     <span className={classes.breadcrumbItemContainer}>
@@ -111,7 +111,7 @@ class SequenceDiagram extends React.Component {
                         <Typography color={"textSecondary"}
                             className={classNames(classes.breadcrumbItem,
                                 {[classes.hidden]: !selectedActionId})}>
-                            Call {selectedCell} Cell [{selectedActionId}]
+                            Call {selectedInstance} Instance [{selectedActionId}]
                         </Typography>
                     </span>
                 </div>
@@ -135,12 +135,12 @@ class SequenceDiagram extends React.Component {
     componentDidMount() {
         const {selectedActionId} = this.state;
         const self = this;
-        self.drawCellLevelSequenceDiagram();
+        self.drawInstanceLevelSequenceDiagram();
         interact(`.${SequenceDiagram.Classes.ACTION_MESSAGE_TEXT}`).on("tap", (event) => {
             if (event.currentTarget.innerHTML.match(SequenceDiagram.ACTION_LABEL_PATTERN) && !selectedActionId) {
                 const matches = (SequenceDiagram.ACTION_LABEL_PATTERN).exec(event.currentTarget.innerHTML);
                 this.setState({
-                    selectedCell: matches[1]
+                    selectedInstance: matches[1]
                 });
                 this.drawComponentLevelSequenceDiagram(Number(matches[2]));
             }
@@ -181,16 +181,16 @@ class SequenceDiagram extends React.Component {
      */
     updateActorStyle(isComponentLevel) {
         const {colorGenerator} = this.props;
-        const {selectedCell} = this.state;
+        const {selectedInstance} = this.state;
         const elementArray = this.mermaidDivRef.current.getElementsByClassName(SequenceDiagram.Classes.ACTOR);
         const elementWidth = elementArray[0].getAttribute("width");
         if (isComponentLevel) {
-            const cellName = selectedCell;
+            const instanceName = selectedInstance;
             let color;
-            if (cellName === SequenceDiagram.GLOBAL) {
+            if (instanceName === SequenceDiagram.GLOBAL) {
                 color = colorGenerator.getColor(ColorGenerator.SYSTEM);
             } else {
-                color = colorGenerator.getColor(SequenceDiagram.getActorIdFromSanitizedName(cellName));
+                color = colorGenerator.getColor(SequenceDiagram.getActorIdFromSanitizedName(instanceName));
             }
 
             for (let i = 1; i < elementArray.length; i += 2) {
@@ -213,7 +213,7 @@ class SequenceDiagram extends React.Component {
                     this.hideTooltip();
                 });
 
-                // Truncating cell name when cellName is too long
+                // Truncating instance name when instanceName is too long
                 const letterLength = elementArray[i].getBBox().width / elementArray[i].textContent.length;
                 const lettersLength = Math.round(elementWidth / letterLength);
                 if (elementArray[i].getBBox().width > elementWidth) {
@@ -228,13 +228,13 @@ class SequenceDiagram extends React.Component {
             // For loop with iteration by factor 2 to skip SVG `rect` element and get the text in each actor.
             for (let i = 1; i < elementArray.length; i += 2) {
                 if (elementArray[i].firstElementChild !== null) {
-                    const cellName = SequenceDiagram.getActorIdFromSanitizedName(
+                    const instanceName = SequenceDiagram.getActorIdFromSanitizedName(
                         elementArray[i].firstElementChild.innerHTML);
                     let color;
-                    if (cellName === SequenceDiagram.GLOBAL_GATEWAY) {
+                    if (instanceName === SequenceDiagram.GLOBAL_GATEWAY) {
                         color = colorGenerator.getColor(ColorGenerator.SYSTEM);
                     } else {
-                        color = colorGenerator.getColor(cellName);
+                        color = colorGenerator.getColor(instanceName);
                     }
                     // Index of i-1 is given to set the style to the respective SVG `rect` element.
                     elementArray[i - 1].style.stroke = color;
@@ -243,24 +243,24 @@ class SequenceDiagram extends React.Component {
 
                     // Show and hide actor tooltip on hover to text
                     elementArray[i].addEventListener("mouseenter", (event) => {
-                        this.showTooltip(event, cellName);
+                        this.showTooltip(event, instanceName);
                     });
                     elementArray[i].addEventListener("mouseleave", () => {
                         this.hideTooltip();
                     });
                     // Show and hide actor tooltip on hover to rectangle
                     elementArray[i - 1].addEventListener("mouseenter", (event) => {
-                        this.showTooltip(event, cellName);
+                        this.showTooltip(event, instanceName);
                     });
                     elementArray[i - 1].addEventListener("mouseleave", () => {
                         this.hideTooltip();
                     });
 
-                    // Truncating cell name when cellName is too long
+                    // Truncating instance name when instanceName is too long
                     const letterLength = elementArray[i].getBBox().width / elementArray[i].textContent.length;
                     const lettersLength = Math.round(elementWidth / letterLength);
                     if (elementArray[i].getBBox().width > elementWidth) {
-                        elementArray[i].textContent = `${cellName.substring(0, lettersLength - 5)}...`;
+                        elementArray[i].textContent = `${instanceName.substring(0, lettersLength - 5)}...`;
                     }
                 }
             }
@@ -292,18 +292,18 @@ class SequenceDiagram extends React.Component {
     };
 
     /**
-     * Draw the Cell level Sequence Sequence.
+     * Draw the Instance level Sequence Sequence.
      */
-    drawCellLevelSequenceDiagram = () => {
+    drawInstanceLevelSequenceDiagram = () => {
         const {spans} = this.props;
         const tree = TracingUtils.getTreeRoot(spans);
 
         const resolveActorName = (span) => SequenceDiagram.sanitizeActorName(
-            span.cell ? span.cell.name : SequenceDiagram.GLOBAL_GATEWAY);
+            span.instance ? span.instance.name : SequenceDiagram.GLOBAL_GATEWAY);
         const resolveCallingId = (id) => id;
 
         this.setState({
-            selectedCell: "",
+            selectedInstance: "",
             selectedActionId: ""
         });
         this.drawSequenceDiagram(tree, resolveActorName, resolveCallingId);
@@ -312,7 +312,7 @@ class SequenceDiagram extends React.Component {
     /**
      * Draw the Component level Sequence Sequence.
      *
-     * @param {number} actionId The Id of the selected Cell Level action
+     * @param {number} actionId The Id of the selected Instance Level action
      */
     drawComponentLevelSequenceDiagram = (actionId) => {
         const {spans} = this.props;
@@ -321,8 +321,9 @@ class SequenceDiagram extends React.Component {
         if (subTree) {
             const resolveActorName = (span) => SequenceDiagram.sanitizeActorName(span.serviceName);
             const resolveCallingId = (id) => `${actionId}.${id}`;
-            const shouldTerminate = (span) => (subTree.cell !== null || span.cell !== null)
-                && (span.cell === null || subTree.cell === null || subTree.cell.name !== span.cell.name);
+            const shouldTerminate = (span) => (subTree.instance !== null || span.instance !== null)
+                && (span.instance === null || subTree.instance === null
+                    || subTree.instance.name !== span.instance.name);
 
             this.setState({
                 selectedActionId: actionId

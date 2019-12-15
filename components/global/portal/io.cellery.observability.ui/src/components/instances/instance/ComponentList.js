@@ -31,7 +31,7 @@ import * as PropTypes from "prop-types";
 
 class ComponentList extends React.Component {
 
-    static logger = Logger.get("components/cells/cell/ComponentList");
+    static logger = Logger.get("components/instances/instance/ComponentList");
 
     constructor(props) {
         super(props);
@@ -57,7 +57,7 @@ class ComponentList extends React.Component {
     };
 
     loadComponentInfo = (isUserAction, queryStartTime, queryEndTime) => {
-        const {globalState, cell} = this.props;
+        const {globalState, instance} = this.props;
         const self = this;
 
         const searchQueryParams = HttpUtils.generateQueryParamString({
@@ -75,7 +75,7 @@ class ComponentList extends React.Component {
         const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
         HttpUtils.callObservabilityAPI(
             {
-                url: `${pathPrefix}/http-requests/instances/${cell}/components${searchQueryParams}`,
+                url: `${pathPrefix}/http-requests/instances/${instance}/components${searchQueryParams}`,
                 method: "GET"
             },
             globalState
@@ -118,7 +118,7 @@ class ComponentList extends React.Component {
     };
 
     render = () => {
-        const {cell, globalState} = this.props;
+        const {instance, globalState} = this.props;
         const {componentInfo, isLoading} = this.state;
         const selectedNamespace = globalState.get(StateHolder.GLOBAL_FILTER).namespace;
         const columns = [
@@ -131,7 +131,7 @@ class ComponentList extends React.Component {
             {
                 name: "Component",
                 options: {
-                    customBodyRender: (value) => <Link to={`/instances/${cell}/components/${value}`}>{value}</Link>
+                    customBodyRender: (value) => <Link to={`/instances/${instance}/components/${value}`}>{value}</Link>
                 }
             },
             {
@@ -173,9 +173,9 @@ class ComponentList extends React.Component {
                 };
             }
         };
-        const isComponentRelevant = (namespace, instance, component) => (
+        const isComponentRelevant = (namespace, parentInstance, component) => (
             namespace === selectedNamespace && !Constants.System.GLOBAL_GATEWAY_NAME_PATTERN.test(component)
-                && instance === cell
+                && parentInstance === instance
         );
         for (const componentDatum of componentInfo) {
             if (isComponentRelevant(componentDatum.sourceNamespace, componentDatum.sourceInstance,
@@ -229,8 +229,8 @@ class ComponentList extends React.Component {
             listView = <DataTable columns={columns} options={options} data={tableData}/>;
         } else {
             listView = (
-                <NotFound title={"No Components Found"} description={`No Components found in "${cell}" cell.`
-                    + `This is because no requests were found between components in "${cell}" cell in the `
+                <NotFound title={"No Components Found"} description={`No Components found in "${instance}" instance.`
+                    + `This is because no requests were found between components in "${instance}" instance in the `
                     + "selected time range"}/>
             );
         }
@@ -242,7 +242,7 @@ class ComponentList extends React.Component {
 
 ComponentList.propTypes = {
     globalState: PropTypes.instanceOf(StateHolder).isRequired,
-    cell: PropTypes.string.isRequired
+    instance: PropTypes.string.isRequired
 };
 
 export default withStyles({})(withGlobalState(ComponentList));

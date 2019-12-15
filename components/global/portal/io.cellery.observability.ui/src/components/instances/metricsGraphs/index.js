@@ -193,7 +193,7 @@ class MetricsGraphs extends React.Component {
     };
 
     render = () => {
-        const {classes, colorGenerator, cell, component} = this.props;
+        const {classes, colorGenerator, instance, component} = this.props;
         const {statusTooltip, trafficTooltip} = this.state;
 
         const successColor = colorGenerator.getColor(ColorGenerator.SUCCESS);
@@ -209,7 +209,7 @@ class MetricsGraphs extends React.Component {
         } = this.calculateMetrics();
 
         const traceSearchFilter = {
-            cell: cell,
+            instance: instance,
             component: component
         };
         return (
@@ -483,7 +483,7 @@ MetricsGraphs.propTypes = {
         totalResponseTimeMilliSec: PropTypes.number.isRequired,
         requestCount: PropTypes.number.isRequired
     })).isRequired,
-    cell: PropTypes.string.isRequired,
+    instance: PropTypes.string.isRequired,
     component: PropTypes.string,
     direction: PropTypes.string.isRequired
 };

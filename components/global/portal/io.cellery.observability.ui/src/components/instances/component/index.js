@@ -115,7 +115,7 @@ class Component extends React.Component {
         const {classes, location, match} = this.props;
         const {selectedTabIndex} = this.state;
 
-        const cellName = match.params.cellName;
+        const instanceName = match.params.instanceName;
         const componentName = match.params.componentName;
 
         const tabContent = [Details, K8sPodsList, Metrics];
@@ -124,7 +124,7 @@ class Component extends React.Component {
         const queryParams = HttpUtils.parseQueryParams(location.search);
 
         const traceSearch = {
-            cell: cellName,
+            instance: instanceName,
             component: componentName
         };
         return (
@@ -143,7 +143,7 @@ class Component extends React.Component {
                             <Timeline/><span className={classes.viewTracesContent}>View Traces</span>
                         </Button>
                     </div>
-                    <SelectedTabContent innerRef={this.tabContentRef} cell={cellName} component={componentName}
+                    <SelectedTabContent innerRef={this.tabContentRef} instance={instanceName} component={componentName}
                         onFilterUpdate={this.onFilterUpdate} globalFilterOverrides={queryParams}/>
                 </Paper>
             </React.Fragment>
@@ -156,7 +156,7 @@ Component.propTypes = {
     classes: PropTypes.object.isRequired,
     match: PropTypes.shape({
         params: PropTypes.shape({
-            cellName: PropTypes.string.isRequired,
+            instanceName: PropTypes.string.isRequired,
             componentName: PropTypes.string.isRequired
         }).isRequired
     }).isRequired,

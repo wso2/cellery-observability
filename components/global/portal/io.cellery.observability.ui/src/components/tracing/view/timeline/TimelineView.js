@@ -45,7 +45,7 @@ const styles = (theme) => ({
         boxSizing: "border-box",
         display: "inline-block"
     },
-    cellName: {
+    instanceName: {
         fontWeight: 500,
         fontSize: "normal"
     },
@@ -199,7 +199,7 @@ class TimelineView extends React.Component {
         this.trace.treeHeight = 0;
         let minLimit = Number.MAX_VALUE;
         let maxLimit = 0;
-        const cellNames = [];
+        const instanceNames = [];
         tree.walk((span) => {
             if (span.treeDepth > this.trace.treeHeight) {
                 this.trace.treeHeight = span.treeDepth;
@@ -210,8 +210,8 @@ class TimelineView extends React.Component {
             if (span.startTime + span.duration > maxLimit) {
                 maxLimit = span.startTime + span.duration;
             }
-            if (span.cell.name && !cellNames.includes(span.cell.name)) {
-                cellNames.push(span.cell.name);
+            if (span.instance.name && !instanceNames.includes(span.instance.name)) {
+                instanceNames.push(span.instance.name);
             }
         });
         this.trace.treeHeight += 1;
@@ -249,7 +249,7 @@ class TimelineView extends React.Component {
         const minLimit = this.trace.minTime - duration * 0.05;
         const maxLimit = this.trace.maxTime + duration * 0.12;
         const addSelectedSpanClass = (element, span) => {
-            if (selectedComponent && (!span.cell.name || span.cell.name === selectedComponent.cellName)
+            if (selectedComponent && (!span.instance.name || span.instance.name === selectedComponent.instanceName)
                 && span.serviceName === selectedComponent.serviceName) {
                 element.classList.add(TimelineView.Classes.SELECTED_SPAN);
             }
@@ -280,9 +280,11 @@ class TimelineView extends React.Component {
                                 width: `${(self.spanLabelWidth > 0 ? self.spanLabelWidth : null)}px`
                             }} className={classes.spanLabelContainer}>
                                 {
-                                    item.span.cell && item.span.cell.name
+                                    item.span.instance && item.span.instance.name
                                         ? (
-                                            <span className={classes.cellName}>{`${item.span.cell.name}:`}</span>
+                                            <span className={classes.instanceName}>
+                                                {`${item.span.instance.name}:`}
+                                            </span>
                                         )
                                         : null
                                 }
@@ -308,7 +310,7 @@ class TimelineView extends React.Component {
                     content = <span>{item.span.duration} ms</span>;
 
                     // Finding the proper color for this item
-                    let colorKey = item.span.cell.name;
+                    let colorKey = item.span.instance.name;
                     if (!colorKey) {
                         if (item.span.componentType === Constants.CelleryType.SYSTEM) {
                             colorKey = ColorGenerator.SYSTEM;
@@ -603,7 +605,7 @@ TimelineView.propTypes = {
         PropTypes.instanceOf(Span).isRequired
     ).isRequired,
     selectedComponent: PropTypes.shape({
-        cellName: PropTypes.string,
+        instanceName: PropTypes.string,
         serviceName: PropTypes.string.isRequired
     }),
     colorGenerator: PropTypes.instanceOf(ColorGenerator)
