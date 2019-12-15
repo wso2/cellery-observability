@@ -20,6 +20,7 @@ package io.cellery.observability.model.generator;
 import io.cellery.observability.model.generator.exception.GraphStoreException;
 import io.cellery.observability.model.generator.internal.ServiceHolder;
 import io.cellery.observability.model.generator.model.Node;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
@@ -41,22 +42,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This is the Siddhi extension which generates the dependency graph using request source and target information.
+ * This is the Siddhi extension which add edges to the dependency model. If the source and destination nodes
+ * in the edge does not exist, they will be added as well.
  */
 @Extension(
-        name = "modelGenerator",
-        namespace = "observe",
-        description = "This generates the dependency model based on request source and target information",
-        examples = @Example(description = "This updates the dependency model based on the request"
-                , syntax = "observe:modelGenerator(sourceNamespace, sourceInstance, sourceComponent, "
-                + "sourceInstanceKind, destinationNamespace, destinationInstance, destinationComponent,"
-                + "destinationInstanceKind)\n"
-                + "select *\n"
-                + "insert into outputStream;")
+        name = "addEdge",
+        namespace = "model",
+        description = "This add edges to the dependency model",
+        examples = @Example(
+                description = "This updates the dependency model based on the request",
+                syntax = "model:addEdge(runtime, sourceNamespace, sourceInstance, sourceComponent, "
+                        + "sourceInstanceKind, destinationNamespace, destinationInstance, destinationComponent,"
+                        + "destinationInstanceKind)\n"
+                        + "select *\n"
+                        + "insert into outputStream;"
+        )
 )
-public class ModelGenerationExtension extends StreamProcessor {
-
-    private static final Logger log = Logger.getLogger(ModelGenerationExtension.class);
+public class ModelAddEdgeStreamProcessor extends StreamProcessor {
+    private static final Logger logger = Logger.getLogger(ModelAddEdgeStreamProcessor.class);
 
     private ExpressionExecutor runtimeExecutor;
     private ExpressionExecutor sourceNamespaceExecutor;
@@ -86,20 +89,29 @@ public class ModelGenerationExtension extends StreamProcessor {
                     String destinationInstanceKind =
                             (String) destinationInstanceKindExecutor.execute(incomingStreamEvent);
 
-                    Node sourceNode = this.getOrGenerateNode(runtime, sourceNamespace, sourceInstance, sourceComponent,
-                            sourceInstanceKind);
-                    Node destinationNode = this.getOrGenerateNode(runtime, destinationNamespace, destinationInstance,
-                            destinationComponent, destinationInstanceKind);
-                    ServiceHolder.getModelManager().addEdge(runtime, sourceNode, destinationNode);
+                    Node sourceNode = null;
+                    if (isValidNode(runtime, sourceNamespace, sourceInstance, sourceComponent, sourceInstanceKind)) {
+                        sourceNode = this.getOrGenerateNode(runtime, sourceNamespace, sourceInstance, sourceComponent,
+                                sourceInstanceKind);
+                    }
+                    Node destinationNode = null;
+                    if (isValidNode(runtime, destinationNamespace, destinationInstance, destinationComponent,
+                            destinationInstanceKind)) {
+                        destinationNode = this.getOrGenerateNode(runtime, destinationNamespace, destinationInstance,
+                                destinationComponent, destinationInstanceKind);
+                    }
+                    if (sourceNode != null && destinationNode != null) {
+                        ServiceHolder.getModelManager().addEdge(runtime, sourceNode, destinationNode);
+                    }
                 } catch (Throwable throwable) {
-                    log.error("Unexpected error occurred while processing the event in the model processor",
-                            throwable);
+                    logger.error("Unexpected error occurred while processing the event " +
+                            "in the model add edge processor", throwable);
                 }
             }
             try {
                 ServiceHolder.getModelStoreManager().storeCurrentModel();
             } catch (GraphStoreException e) {
-                log.error("Failed to persist current dependency model", e);
+                logger.error("Failed to persist current dependency model", e);
             }
         }
         if (streamEventChunk.getFirst() != null) {
@@ -107,6 +119,16 @@ public class ModelGenerationExtension extends StreamProcessor {
         }
     }
 
+    /**
+     * Get an existing node in the dependency model or generate and add new one.
+     *
+     * @param runtime The runtime the node should belong to
+     * @param namespace The namespace the node should belong to
+     * @param instance The instance the node should belong to
+     * @param component The component name of hte node
+     * @param instanceKind The instance kind of the instance the node belongs to
+     * @return The existing or generated node
+     */
     private Node getOrGenerateNode(String runtime, String namespace, String instance, String component,
                                    String instanceKind) {
         Node node = ServiceHolder.getModelManager().getOrGenerateNode(runtime, namespace, instance, component);
@@ -114,11 +136,27 @@ public class ModelGenerationExtension extends StreamProcessor {
         return node;
     }
 
+    /**
+     * Check if node details are valid.
+     *
+     * @param runtime The runtime the namespace belongs to
+     * @param namespace The namespace the instance belongs to
+     * @param instance The instance the node belongs to
+     * @param component The name of the node
+     * @param instanceKind The instance kind
+     * @return True if node details are correct.
+     */
+    private boolean isValidNode(String runtime, String namespace, String instance, String component,
+                                String instanceKind) {
+        return StringUtils.isNotEmpty(runtime) && StringUtils.isNotEmpty(namespace) && StringUtils.isNotEmpty(instance)
+                && StringUtils.isNotEmpty(component) && StringUtils.isNotEmpty(instanceKind);
+    }
+
     @Override
     protected List<Attribute> init(AbstractDefinition abstractDefinition, ExpressionExecutor[] expressionExecutors,
                                    ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
         if (expressionExecutors.length != 9) {
-            throw new SiddhiAppCreationException("Eight arguments are required");
+            throw new SiddhiAppCreationException("Nine arguments are required");
         } else {
             if (expressionExecutors[0].getReturnType() == Attribute.Type.STRING) {
                 runtimeExecutor = expressionExecutors[0];

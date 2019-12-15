@@ -44,6 +44,7 @@ public class Constants {
 
     public static final Pattern CELLERY_ID_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
     public static final Pattern TRACE_ID_PATTERN = Pattern.compile("^[a-z0-9-]+$");
-    public static final Pattern TIME_GRANULARITY_PATTERN = Pattern.compile("^(?:second|minute|hour|day|month|year)$");
+    public static final Pattern TIME_GRANULARITY_PATTERN
+            = Pattern.compile("^(?:seconds|minutes|hours|days|months|years)$");
     public static final Pattern SIMPLE_STRING_PATTERN = Pattern.compile("^[^\"']+$");
 }
