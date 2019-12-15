@@ -136,6 +136,7 @@ select
     responseSizeBytes
 insert into ProcessedRequestsStream;
 
-from ProcessedRequestsStream#observe:modelGenerator(runtime, sourceNamespace, sourceInstance, sourceComponent,
+-- Adding edges to the Dependency Model
+from ProcessedRequestsStream#model:addEdge(runtime, sourceNamespace, sourceInstance, sourceComponent,
     sourceInstanceKind, destinationNamespace, destinationInstance, destinationComponent, destinationInstanceKind)
 insert into DummyStream;

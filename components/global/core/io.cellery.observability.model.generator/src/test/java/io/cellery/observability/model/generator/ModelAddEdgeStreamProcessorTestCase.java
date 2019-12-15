@@ -58,9 +58,9 @@ import java.util.Set;
 /**
  * This is the unit test case for the model generation use cases.
  */
-public class ModelGenerationExtensionTestCase {
+public class ModelAddEdgeStreamProcessorTestCase {
 
-    private static final Logger logger = Logger.getLogger(ModelGenerationExtensionTestCase.class.getName());
+    private static final Logger logger = Logger.getLogger(ModelAddEdgeStreamProcessorTestCase.class.getName());
     private static final String CARBON_HOME_ENV = "carbon.home";
     private static final String WSO2_RUNTIME_ENV = "wso2.runtime";
     private static final String INPUT_STREAM = "inputStream";
@@ -999,7 +999,7 @@ public class ModelGenerationExtensionTestCase {
         String inStreamDefinition = "define stream inputStream(" + streamDefinitionAttributes + ");";
         String outStreamDefinition = "define stream outputStream(" + streamDefinitionAttributes + ");";
         String query = "@info(name = \"query\")\n" +
-                "from inputStream#observe:modelGenerator(" + params + ")\n" +
+                "from inputStream#model:addEdge(" + params + ")\n" +
                 "select *\n" +
                 "insert into outputStream;";
         SiddhiManager siddhiManager = new SiddhiManager();
@@ -1059,7 +1059,7 @@ public class ModelGenerationExtensionTestCase {
         String inStreamDefinition = "define stream inputStream(" + streamDefinitionAttributes + ");";
         String outStreamDefinition = "define stream outputStream(" + streamDefinitionAttributes + ");";
         String query = "@info(name = \"query\")\n" +
-                "from inputStream#observe:modelGenerator(runtime, sourceNamespace, sourceInstance, sourceComponent, " +
+                "from inputStream#model:addEdge(runtime, sourceNamespace, sourceInstance, sourceComponent, " +
                 "sourceInstanceKind, destinationNamespace, destinationInstance, destinationComponent, " +
                 "destinationInstanceKind)\n" +
                 "select *\n" +

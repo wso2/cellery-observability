@@ -64,7 +64,7 @@ public class Utils {
      * @param text The trace ID to validate
      * @throws InvalidParamException if the trace ID is invalid
      */
-    public static void validateTimeGranularityParam(String text) {
+    public static void validateTimeGranularityParam(String text) throws InvalidParamException {
         if (!Constants.TIME_GRANULARITY_PATTERN.matcher(text).matches()) {
             throw new InvalidParamException("timeGranularity", "one of [second, minute, hour, day, month, year]");
         }
@@ -77,7 +77,7 @@ public class Utils {
      * @param text The text to validate
      * @throws InvalidParamException if the text is invalid
      */
-    public static void validateSimpleStringParam(String paramName, String text) {
+    public static void validateSimpleStringParam(String paramName, String text) throws InvalidParamException {
         if (!Constants.SIMPLE_STRING_PATTERN.matcher(text).matches()) {
             throw new InvalidParamException(paramName, "not to contain illegal characters [\", ']");
         }
