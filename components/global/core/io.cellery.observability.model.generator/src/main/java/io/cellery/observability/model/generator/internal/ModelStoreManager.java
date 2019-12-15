@@ -41,6 +41,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.sql.DataSource;
 
 /**
@@ -58,10 +61,12 @@ public class ModelStoreManager {
     private static final Type STRING_SET_TYPE = new TypeToken<HashSet<Edge>>() {
     }.getType();
 
+    private final ReadWriteLock lock;
     private DataSource dataSource;
     private Map<String, Model> lastModels;
 
     public ModelStoreManager() {
+        this.lock = new ReentrantReadWriteLock();
         try {
             this.dataSource = (DataSource) ServiceHolder.getDataSourceService().getDataSource(DATASOURCE_NAME);
             createTable();
@@ -210,6 +215,8 @@ public class ModelStoreManager {
      * @throws GraphStoreException If storing the model failed
      */
     public void storeModel(Map<String, Model> models) throws GraphStoreException {
+        Lock writeLock = lock.writeLock();
+        writeLock.lock();
         try {
             Connection connection = getConnection();
             PreparedStatement statement = connection.prepareStatement("INSERT INTO " + TABLE_NAME
@@ -238,6 +245,8 @@ public class ModelStoreManager {
             this.lastModels = newRuntimeModels;
         } catch (SQLException ex) {
             throw new GraphStoreException("Unable to persist the graph to the datasource: " + DATASOURCE_NAME, ex);
+        } finally {
+            writeLock.unlock();
         }
     }
 
@@ -247,6 +256,8 @@ public class ModelStoreManager {
      * @throws GraphStoreException If a failure occurs while storing
      */
     public void storeCurrentModel() throws GraphStoreException {
+        Lock writeLock = lock.writeLock();
+        writeLock.lock();
         try {
             Map<String, Model> currentRuntimeModels = ServiceHolder.getModelManager().getCurrentRuntimeModels();
             if (this.lastModels == null) {
@@ -261,6 +272,8 @@ public class ModelStoreManager {
         } catch (GraphStoreException e) {
             log.error("Error occurred while handling the dependency graph persistence", e);
             throw e;
+        } finally {
+            writeLock.unlock();
         }
     }
 
@@ -268,6 +281,8 @@ public class ModelStoreManager {
      * Clear the stored model.
      */
     public void clear() throws GraphStoreException {
+        Lock writeLock = lock.writeLock();
+        writeLock.lock();
         try {
             Connection connection = getConnection();
             PreparedStatement statement = connection.prepareStatement("DELETE FROM " + TABLE_NAME);
@@ -277,6 +292,8 @@ public class ModelStoreManager {
             this.lastModels = null;
         } catch (SQLException e) {
             throw new GraphStoreException("Failed to clear stored models", e);
+        } finally {
+            writeLock.unlock();
         }
     }
 }

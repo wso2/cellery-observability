@@ -31,6 +31,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -38,12 +42,15 @@ import java.util.stream.Collectors;
  * This is the Manager, singleton class which performs the operations in the in memory dependency tree.
  */
 public class ModelManager {
-    private Map<String, MutableNetwork<Node, Edge>> dependencyGraphs;
-    private Map<String, Map<String, Node>> nodeCache = new HashMap<>();
+    private final ReadWriteLock lock;
+    private final Map<String, MutableNetwork<Node, Edge>> dependencyGraphs;
+    private final Map<String, Map<String, Node>> nodeCache;
 
     public ModelManager() throws ModelException {
         try {
-            this.dependencyGraphs = new HashMap<>();
+            this.lock = new ReentrantReadWriteLock();
+            this.dependencyGraphs = new ConcurrentHashMap<>();
+            this.nodeCache = new ConcurrentHashMap<>();
 
             Map<String, Model> models = ServiceHolder.getModelStoreManager().loadLastModels();
             if (models != null) {
@@ -122,22 +129,28 @@ public class ModelManager {
      * @return The node in the dependency graph or null if not present
      */
     public Node getNode(String runtime, String namespace, String instance, String component) {
-        String nodeFQN = Model.getNodeFQN(namespace, instance, component);
-        Node cachedNode = this.nodeCache.computeIfAbsent(runtime, k -> new HashMap<>()).get(nodeFQN);
-        if (cachedNode == null) {
-            Optional<Node> requiredNode = this.getOrGenerateDependencyGraph(runtime).nodes()
-                    .stream()
-                    .filter(node -> Objects.equals(node.getFQN(), nodeFQN))
-                    .findAny();
-            if (requiredNode.isPresent()) {
-                Map<String, Node> runtimeNodes = this.nodeCache.computeIfAbsent(runtime, k -> new HashMap<>());
-                runtimeNodes.put(requiredNode.get().getFQN(), requiredNode.get());
-                return requiredNode.get();
-            } else {
-                return null;
+        Lock readLock = this.lock.readLock();
+        readLock.lock();
+        try {
+            String nodeFQN = Model.getNodeFQN(namespace, instance, component);
+            Node cachedNode = this.nodeCache.computeIfAbsent(runtime, k -> new HashMap<>()).get(nodeFQN);
+            if (cachedNode == null) {
+                Optional<Node> requiredNode = this.getOrGenerateDependencyGraph(runtime).nodes()
+                        .stream()
+                        .filter(node -> Objects.equals(node.getFQN(), nodeFQN))
+                        .findAny();
+                if (requiredNode.isPresent()) {
+                    Map<String, Node> runtimeNodes = this.nodeCache.computeIfAbsent(runtime, k -> new HashMap<>());
+                    runtimeNodes.put(requiredNode.get().getFQN(), requiredNode.get());
+                    return requiredNode.get();
+                } else {
+                    return null;
+                }
             }
+            return cachedNode;
+        } finally {
+            readLock.unlock();
         }
-        return cachedNode;
     }
 
     /**
@@ -150,12 +163,18 @@ public class ModelManager {
      * @return The node in the dependency graph or the generated node
      */
     public Node getOrGenerateNode(String runtime, String namespace, String instance, String component) {
-        Node node = this.getNode(runtime, namespace, instance, component);
-        if (node == null) {
-            node = new Node(namespace, instance, component);
-            this.addNode(runtime, node);
+        Lock writeLock = lock.writeLock();
+        writeLock.lock();
+        try {
+            Node node = this.getNode(runtime, namespace, instance, component);
+            if (node == null) {
+                node = new Node(namespace, instance, component);
+                this.addNode(runtime, node);
+            }
+            return node;
+        } finally {
+            writeLock.unlock();
         }
-        return node;
     }
 
     /**
@@ -165,9 +184,15 @@ public class ModelManager {
      * @param node    The node to be added
      */
     public void addNode(String runtime, Node node) {
-        this.getOrGenerateDependencyGraph(runtime).addNode(node);
-        Map<String, Node> runtimeNodes = this.nodeCache.computeIfAbsent(runtime, k -> new HashMap<>());
-        runtimeNodes.put(node.getFQN(), node);
+        Lock writeLock = lock.writeLock();
+        writeLock.lock();
+        try {
+            this.getOrGenerateDependencyGraph(runtime).addNode(node);
+            Map<String, Node> runtimeNodes = this.nodeCache.computeIfAbsent(runtime, k -> new HashMap<>());
+            runtimeNodes.put(node.getFQN(), node);
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     /**
@@ -177,11 +202,50 @@ public class ModelManager {
      * @param target The target node of the edge
      */
     public void addEdge(String runtime, Node source, Node target) {
-        EdgeNode sourceEdgeNode = new EdgeNode(source.getNamespace(), source.getInstance(),
-                source.getComponent());
-        EdgeNode targetEdgeNode = new EdgeNode(target.getNamespace(), target.getInstance(),
-                target.getComponent());
-        this.getOrGenerateDependencyGraph(runtime).addEdge(source, target, new Edge(sourceEdgeNode, targetEdgeNode));
+        Lock writeLock = lock.writeLock();
+        writeLock.lock();
+        try {
+            EdgeNode sourceEdgeNode = new EdgeNode(source.getNamespace(), source.getInstance(),
+                    source.getComponent());
+            EdgeNode targetEdgeNode = new EdgeNode(target.getNamespace(), target.getInstance(),
+                    target.getComponent());
+            this.getOrGenerateDependencyGraph(runtime).addEdge(source, target,
+                    new Edge(sourceEdgeNode, targetEdgeNode));
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    /**
+     * Remove a node from the dependency graph.
+     *
+     * @param runtime The runtime to which the node belongs to
+     * @param namespace The namespace the node belongs to
+     * @param instance The instance the node belongs to
+     * @param component The component name of the node
+     * @return True if the network was modified as a result of this call
+     */
+    public boolean removeNode(String runtime, String namespace, String instance, String component) {
+        Lock writeLock = lock.writeLock();
+        writeLock.lock();
+        try {
+            boolean wasModified = false;
+            MutableNetwork<Node, Edge> dependencyGraph = this.dependencyGraphs.get(runtime);
+            if (dependencyGraph != null) {
+                Node nodeToBeRemoved = null;
+                Map<String, Node> nodeMap = this.nodeCache.get(runtime);
+                if (nodeMap != null) {
+                    nodeToBeRemoved = nodeMap.remove(runtime);
+                }
+                if (nodeToBeRemoved == null) {
+                    nodeToBeRemoved = new Node(namespace, instance, component);
+                }
+                wasModified = dependencyGraph.removeNode(nodeToBeRemoved);
+            }
+            return wasModified;
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     /**
@@ -190,13 +254,19 @@ public class ModelManager {
      * @return The edges in the current dependency model used by the Model Manager.
      */
     public Map<String, Model> getCurrentRuntimeModels() {
-        Map<String, Model> runtimeModels = new HashMap<>();
-        for (Map.Entry<String, MutableNetwork<Node, Edge>> dependencyGraphEntry : dependencyGraphs.entrySet()) {
-            MutableNetwork<Node, Edge> dependencyGraph = dependencyGraphEntry.getValue();
-            runtimeModels.put(dependencyGraphEntry.getKey(),
-                    new Model(dependencyGraph.nodes(), dependencyGraph.edges()));
+        Lock readLock = this.lock.readLock();
+        readLock.lock();
+        try {
+            Map<String, Model> runtimeModels = new HashMap<>();
+            for (Map.Entry<String, MutableNetwork<Node, Edge>> dependencyGraphEntry : dependencyGraphs.entrySet()) {
+                MutableNetwork<Node, Edge> dependencyGraph = dependencyGraphEntry.getValue();
+                runtimeModels.put(dependencyGraphEntry.getKey(),
+                        new Model(dependencyGraph.nodes(), dependencyGraph.edges()));
+            }
+            return runtimeModels;
+        } finally {
+            readLock.unlock();
         }
-        return runtimeModels;
     }
 
     /**

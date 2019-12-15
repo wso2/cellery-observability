@@ -130,8 +130,18 @@ update or insert into K8sComponentInfoTable
 -- Adding nodes to the Dependency Model
 --
 
-from K8sComponentStream[action == "Add"]
+from K8sComponentStream[action == "Add" or action == "Update"]
 insert into FilteredNodeUpdatesStream;
 
 from FilteredNodeUpdatesStream#model:addNode(runtime, namespace, instance, component, instanceKind)
+insert into DummyStream;
+
+--
+-- Removing nodes from the Dependency Model
+--
+
+from K8sComponentStream[action == "Delete"]
+insert into FilteredNodeDeletesStream;
+
+from FilteredNodeDeletesStream#model:removeNode(runtime, namespace, instance, component)
 insert into DummyStream;
