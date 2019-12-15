@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.OPTIONS;
@@ -55,6 +56,9 @@ public class DistributedTracingAPI {
                                 @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                 @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         try {
             Object[][] results = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_METADATA.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
@@ -85,9 +89,20 @@ public class DistributedTracingAPI {
                            @DefaultValue("25") @QueryParam("limit") int limit,
                            @DefaultValue("0") @QueryParam("offset") int offset)
             throws APIInvocationException {
-
-        if (limit > 100) {
-            throw new InvalidParamException("limit", "value less than or equal to 100");
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateCelleryIdParam("instance", instance);
+        Utils.validateCelleryIdParam("serviceName", serviceName);
+        Utils.validateSimpleStringParam("operationName", operationName);
+        if (minDuration >= maxDuration) {
+            throw new InvalidParamException("maxDuration", "value greater than minDuration");
+        }
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
+        if (limit > 100 || limit <= 0) {
+            throw new InvalidParamException("limit", "value less than or equal to 100 and greater than zero");
+        }
+        if (offset < 0) {
+            throw new InvalidParamException("limit", "value greater than or equal to zero");
         }
         try {
             Map<String, String> queryTags = new HashMap<>();
@@ -171,7 +186,7 @@ public class DistributedTracingAPI {
 
                                     JsonElement traceTagValueJsonElement = traceTags.get(tagKey);
                                     if (traceTagValueJsonElement != null && traceTagValueJsonElement.isJsonPrimitive()
-                                            && tagValue.equals(traceTagValueJsonElement.getAsString())) {
+                                            && Objects.equals(tagValue, traceTagValueJsonElement.getAsString())) {
                                         isMatch = true;
                                         break;
                                     }
@@ -245,6 +260,11 @@ public class DistributedTracingAPI {
     public Response getTraceByTraceId(@PathParam("runtime") String runtime,
                                       @PathParam("namespace") String namespace,
                                       @PathParam("traceId") String traceId) throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        if (!Constants.TRACE_ID_PATTERN.matcher(traceId).matches()) {
+            throw new InvalidParamException("traceId", "a string of lowercase letters and numbers");
+        }
         try {
             Object[][] results = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_GET_TRACE.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)

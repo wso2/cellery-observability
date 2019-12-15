@@ -44,6 +44,9 @@ public class DependencyModelAPI {
                                         @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
                                         @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         try {
             Model model = ServiceHolder.getModelManager().getNamespaceDependencyModel(queryStartTime, queryEndTime,
                     runtime, namespace);
@@ -63,6 +66,10 @@ public class DependencyModelAPI {
                                               @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
                                               @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateCelleryIdParam("instanceName", instanceName);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         try {
             Model model = ServiceHolder.getModelManager().getInstanceDependencyModel(queryStartTime, queryEndTime,
                     runtime, namespace, instanceName);
@@ -83,6 +90,11 @@ public class DependencyModelAPI {
                                                @DefaultValue("0") @QueryParam("queryStartTime") Long queryStartTime,
                                                @DefaultValue("0") @QueryParam("queryEndTime") Long queryEndTime)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateCelleryIdParam("instanceName", instanceName);
+        Utils.validateCelleryIdParam("componentName", componentName);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         try {
             Model model = ServiceHolder.getModelManager().getComponentDependencyModel(queryStartTime, queryEndTime,
                     runtime, namespace, instanceName, componentName);
