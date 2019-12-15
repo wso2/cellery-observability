@@ -47,6 +47,11 @@ public class KubernetesAPI {
                                @DefaultValue("") @QueryParam("instance") String instance,
                                @DefaultValue("") @QueryParam("component") String component)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateCelleryIdParam("instance", instance);
+        Utils.validateCelleryIdParam("component", component);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         try {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_PODS_FOR_COMPONENT.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
@@ -72,6 +77,9 @@ public class KubernetesAPI {
                                         @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                         @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         return getInstancesAndComponentsInfo(runtime, namespace, "", "", queryStartTime, queryEndTime);
     }
 
@@ -84,6 +92,10 @@ public class KubernetesAPI {
                                     @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                     @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateCelleryIdParam("instance", instance);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         return getInstancesAndComponentsInfo(runtime, namespace, instance, "", queryStartTime, queryEndTime);
     }
 
@@ -97,6 +109,11 @@ public class KubernetesAPI {
                                      @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                      @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateCelleryIdParam("instance", instance);
+        Utils.validateCelleryIdParam("component", component);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         return getInstancesAndComponentsInfo(runtime, namespace, instance, component, queryStartTime, queryEndTime);
     }
 

@@ -46,6 +46,9 @@ public class InstanceAPI {
                                      @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                      @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         try {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_INSTANCES.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
@@ -70,6 +73,10 @@ public class InstanceAPI {
                                           @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                           @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateCelleryIdParam("instanceName", instanceName);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         try {
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_COMPONENTS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
@@ -95,6 +102,10 @@ public class InstanceAPI {
                                 @DefaultValue("-1") @QueryParam("queryStartTime") long queryStartTime,
                                 @DefaultValue("-1") @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateCelleryIdParam("instanceName", instanceName);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         try {
             JsonObject instanceInfo = new JsonObject();
             Object[][] results = SiddhiStoreQueryTemplates.K8S_GET_INSTANCES.builder()

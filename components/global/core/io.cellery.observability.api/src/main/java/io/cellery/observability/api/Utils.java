@@ -18,10 +18,70 @@
 
 package io.cellery.observability.api;
 
+import io.cellery.observability.api.exception.InvalidParamException;
+
 /**
  * Common utilities for the API.
  */
 public class Utils {
+
+    /**
+     * Validate and check if a text is a valid Cellery ID.
+     *
+     * @param paramName The name of the parameter
+     * @param text The text to test for
+     * @throws InvalidParamException if the text is not a valid Cellery ID
+     */
+    public static void validateCelleryIdParam(String paramName, String text) throws InvalidParamException {
+        if (!Constants.CELLERY_ID_PATTERN.matcher(text).matches()) {
+            throw new InvalidParamException(paramName, "a string of lower case letters, " +
+                    "numbers and dashes with not leading or trailing dashes");
+        }
+    }
+
+    /**
+     * Validate and check if a query range is correct.
+     *
+     * @param queryStartTime Start timestamp of the query range
+     * @param queryEndTime End timestamp of the query range
+     * @throws InvalidParamException if the query range is invalid
+     */
+    public static void validateQueryRangeParam(long queryStartTime, long queryEndTime) throws InvalidParamException {
+        if (queryStartTime <= 0) {
+            throw new InvalidParamException("queryStartTime", "value greater than zero");
+        }
+        if (queryEndTime <= 0) {
+            throw new InvalidParamException("queryEndTime", "value greater than zero");
+        }
+        if (queryStartTime >= queryEndTime) {
+            throw new InvalidParamException("queryEndTime", "value greater than queryStartTime");
+        }
+    }
+
+    /**
+     * Validate and check if a trace ID is correct.
+     *
+     * @param text The trace ID to validate
+     * @throws InvalidParamException if the trace ID is invalid
+     */
+    public static void validateTimeGranularityParam(String text) {
+        if (!Constants.TIME_GRANULARITY_PATTERN.matcher(text).matches()) {
+            throw new InvalidParamException("timeGranularity", "one of [second, minute, hour, day, month, year]");
+        }
+    }
+
+    /**
+     * Validate and check if a simple string is acceptable for the API.
+     *
+     * @param paramName The name of the parameter
+     * @param text The text to validate
+     * @throws InvalidParamException if the text is invalid
+     */
+    public static void validateSimpleStringParam(String paramName, String text) {
+        if (!Constants.SIMPLE_STRING_PATTERN.matcher(text).matches()) {
+            throw new InvalidParamException(paramName, "not to contain illegal characters [\", ']");
+        }
+    }
 
     /**
      * Generate a Siddhi match condition to match a set of values for a particular attribute.

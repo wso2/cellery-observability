@@ -52,6 +52,10 @@ public class HttpRequestsAPI {
                                                       @DefaultValue("seconds") @QueryParam("timeGranularity")
                                                                   String timeGranularity)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
+        Utils.validateTimeGranularityParam(timeGranularity);
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
@@ -83,6 +87,12 @@ public class HttpRequestsAPI {
                                            @DefaultValue("false") @QueryParam("includeIntraInstance")
                                                        boolean includeIntraInstance)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateCelleryIdParam("sourceInstance", sourceInstance);
+        Utils.validateCelleryIdParam("destinationInstance", destinationInstance);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
+        Utils.validateTimeGranularityParam(timeGranularity);
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES_METRICS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
@@ -116,6 +126,9 @@ public class HttpRequestsAPI {
                                             @QueryParam("queryStartTime") long queryStartTime,
                                             @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCES_METADATA.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
@@ -153,6 +166,11 @@ public class HttpRequestsAPI {
                                                        @DefaultValue("seconds") @QueryParam("timeGranularity")
                                                                    String timeGranularity)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateCelleryIdParam("instanceName", instanceName);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
+        Utils.validateTimeGranularityParam(timeGranularity);
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_INSTANCE_COMPONENTS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
@@ -185,10 +203,16 @@ public class HttpRequestsAPI {
                                             @DefaultValue("") @QueryParam("destinationInstance")
                                                         String destinationInstance,
                                             @DefaultValue("") @QueryParam("destinationComponent")
-                                                        String destinationComponent,
-                                            @DefaultValue("false") @QueryParam("includeIntraInstance")
-                                                        boolean includeIntraInstance)
+                                                        String destinationComponent)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateCelleryIdParam("sourceInstance", sourceInstance);
+        Utils.validateCelleryIdParam("sourceComponent", sourceComponent);
+        Utils.validateCelleryIdParam("destinationInstance", destinationInstance);
+        Utils.validateCelleryIdParam("destinationComponent", destinationComponent);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
+        Utils.validateTimeGranularityParam(timeGranularity);
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_COMPONENTS_METRICS.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)
@@ -220,6 +244,9 @@ public class HttpRequestsAPI {
                                              @QueryParam("queryStartTime") long queryStartTime,
                                              @QueryParam("queryEndTime") long queryEndTime)
             throws APIInvocationException {
+        Utils.validateCelleryIdParam("runtime", runtime);
+        Utils.validateCelleryIdParam("namespace", namespace);
+        Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         try {
             Object[][] results = SiddhiStoreQueryTemplates.REQUEST_AGGREGATION_COMPONENTS_METADATA.builder()
                     .setArg(SiddhiStoreQueryTemplates.Params.RUNTIME, runtime)

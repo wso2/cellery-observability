@@ -17,6 +17,8 @@
  */
 package io.cellery.observability.api;
 
+import java.util.regex.Pattern;
+
 /**
  * This class defines the constants that are used by the observability API component.
  */
@@ -39,4 +41,9 @@ public class Constants {
     public static final String ACCESS_TOKEN = "access_token";
     public static final String ID_TOKEN = "id_token";
     public static final String HTTP_ONLY_SESSION_COOKIE = "oasid";
+
+    public static final Pattern CELLERY_ID_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
+    public static final Pattern TRACE_ID_PATTERN = Pattern.compile("^[a-z0-9-]+$");
+    public static final Pattern TIME_GRANULARITY_PATTERN = Pattern.compile("^(?:second|minute|hour|day|month|year)$");
+    public static final Pattern SIMPLE_STRING_PATTERN = Pattern.compile("^[^\"']+$");
 }
