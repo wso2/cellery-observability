@@ -125,3 +125,13 @@ update or insert into K8sComponentInfoTable
         and K8sComponentInfoTable.namespace == namespace
         and K8sComponentInfoTable.instance == instance
         and K8sComponentInfoTable.component == component;
+
+--
+-- Adding nodes to the Dependency Model
+--
+
+from K8sComponentStream[action == "Add"]
+insert into FilteredNodeUpdatesStream;
+
+from FilteredNodeUpdatesStream#model:addNode(runtime, namespace, instance, component, instanceKind)
+insert into DummyStream;
