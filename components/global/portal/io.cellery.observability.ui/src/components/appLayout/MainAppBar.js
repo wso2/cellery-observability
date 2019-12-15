@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import AccountCircle from "@material-ui/icons/AccountCircle";
 import AppBar from "@material-ui/core/AppBar/AppBar";
 import AuthUtils from "../../utils/api/authUtils";
 import Avatar from "@material-ui/core/Avatar/Avatar";
@@ -27,6 +26,8 @@ import FormatColorFillOutlined from "@material-ui/icons/FormatColorFillOutlined"
 import HttpUtils from "../../utils/api/httpUtils";
 import IconButton from "@material-ui/core/IconButton/IconButton";
 import InputBase from "@material-ui/core/InputBase/InputBase";
+import ListItem from "@material-ui/core/ListItem";
+import ListItemText from "@material-ui/core/ListItemText";
 import Menu from "@material-ui/core/Menu/Menu";
 import MenuIcon from "@material-ui/icons/Menu";
 import MenuItem from "@material-ui/core/MenuItem/MenuItem";
@@ -40,6 +41,7 @@ import Toolbar from "@material-ui/core/Toolbar/Toolbar";
 import Tooltip from "@material-ui/core/Tooltip/Tooltip";
 import Typography from "@material-ui/core/Typography/Typography";
 import classNames from "classnames";
+import jwtDecode from "jwt-decode";
 import withColor from "../common/color";
 import withGlobalState from "../common/state";
 import {withRouter} from "react-router-dom";
@@ -101,6 +103,16 @@ const styles = (theme) => ({
     celleryLogo: {
         width: 100,
         marginRight: theme.spacing.unit
+    },
+    leftIcon: {
+        marginRight: theme.spacing.unit * 1.5
+    },
+    logoutMenuItem: {
+        paddingLeft: theme.spacing.unit * 4
+    },
+    userMenuItem: {
+        pointerEvents: "none",
+        height: "auto"
     }
 });
 
@@ -192,6 +204,26 @@ class MainAppBar extends React.Component {
         const isAccountPopoverOpen = Boolean(accountPopoverElement);
         const isDashboardSharePopoverOpen = Boolean(dashBoardSharePopoverElement);
         const loggedInUser = globalState.get(StateHolder.USER);
+        const decodedJwt = jwtDecode(loggedInUser.idToken);
+        const config = globalState.get(StateHolder.CONFIG);
+
+        function getFirstElement(value) {
+            if (value !== null) {
+                const jwtValue = decodedJwt[value];
+                if (jwtValue !== null) {
+                    return jwtValue;
+                }
+            }
+            return null;
+        }
+
+        let username = config.idp.idTokenAttributes.name.map(getFirstElement);
+        if ((username === "") || (username.length === 0) || (username.length === undefined)) {
+            username = decodedJwt.sub;
+        }
+        const avatarUrl1 = config.idp.idTokenAttributes.avatar.map(getFirstElement);
+        const avatarUrl = avatarUrl1.toString().replace(/,/g, "");
+        const email = decodedJwt.email;
 
         return (
             <AppBar position="fixed"
@@ -212,7 +244,7 @@ class MainAppBar extends React.Component {
                     {
                         loggedInUser
                             ? (
-                                <div>
+                                <React.Fragment>
                                     <Tooltip title="Change color scheme" placement="bottom">
                                         <IconButton onClick={this.resetColorScheme} color="inherit">
                                             <FormatColorFillOutlined/>
@@ -261,31 +293,56 @@ class MainAppBar extends React.Component {
                                     <IconButton
                                         aria-owns={isAccountPopoverOpen ? "user-info-appbar" : undefined}
                                         color="inherit" aria-haspopup="true" onClick={this.handleAccountPopoverOpen}>
-                                        <AccountCircle/>
+                                        {
+                                            avatarUrl
+                                                ? (
+                                                    <Avatar src={avatarUrl} className={classes.leftIcon}
+                                                    />
+                                                )
+                                                : <Avatar className={classes.leftIcon}>
+                                                    {username.toString().charAt(0).toLocaleUpperCase()}
+                                                </Avatar>
+                                        }
                                     </IconButton>
-                                    <Menu id="user-info-appbar" anchorEl={accountPopoverElement}
-                                        anchorOrigin={{
-                                            vertical: "top",
-                                            horizontal: "right"
-                                        }}
-                                        transformOrigin={{
-                                            vertical: "top",
-                                            horizontal: "right"
-                                        }}
-                                        open={isAccountPopoverOpen}
-                                        onClose={this.handleAccountPopoverClose}>
-                                        <MenuItem onClick={this.handleAccountPopoverClose}
-                                            className={classes.avatarContainer}>
-                                            <Avatar className={classes.userAvatar}>
-                                                {loggedInUser.username.substr(0, 1).toUpperCase()}
-                                            </Avatar>
-                                            {loggedInUser.username}
+                                    <Menu id="user-info-appbar" anchorEl={accountPopoverElement} anchorOrigin={{
+                                        vertical: "top",
+                                        horizontal: "right"
+                                    }} transformOrigin={{
+                                        vertical: "top",
+                                        horizontal: "right"
+                                    }} open={isAccountPopoverOpen} onClose={this.handleAccountPopoverClose}>
+                                        <MenuItem onClick={this.handleAccountPopoverClose} className=
+                                            {classes.userMenuItem}>
+                                            <ListItem component="div" disableGutters>
+                                                {
+                                                    avatarUrl
+                                                        ? (
+                                                            <Avatar src={avatarUrl} className=
+                                                                {classes.leftIcon}/>
+                                                        )
+                                                        : <Avatar className={classes.leftIcon}>
+                                                            {username.toString().charAt(0).toUpperCase()}
+                                                        </Avatar>
+                                                }
+                                                <ListItemText
+                                                    primary={username}
+                                                    secondary={
+                                                        <Typography component={"div"} variant={"body2"} color=
+                                                            {"textSecondary"}>
+                                                            {email}
+                                                        </Typography>
+                                                    }
+                                                />
+                                            </ListItem>
+
                                         </MenuItem>
-                                        <MenuItem onClick={() => AuthUtils.signOut(globalState)}>
+                                        <Divider/>
+                                        <MenuItem onClick={() => AuthUtils.signOut(globalState)} className=
+                                            {classes.logoutMenuItem}>
                                             Sign Out
                                         </MenuItem>
                                     </Menu>
-                                </div>
+                                </React.Fragment>
                             )
                             : null
                     }
