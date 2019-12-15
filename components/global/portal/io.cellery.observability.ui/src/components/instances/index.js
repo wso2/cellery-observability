@@ -16,28 +16,28 @@
  * under the License.
  */
 
-import Cell from "./cell";
-import CellList from "./CellList";
 import Component from "./component";
+import Instance from "./instance";
+import InstanceList from "./InstanceList";
 import NotFound from "../common/error/NotFound";
 import React from "react";
 import {Route, Switch, withRouter} from "react-router-dom";
 import * as PropTypes from "prop-types";
 
-const Cells = ({match}) => (
+const Instances = ({match}) => (
     <Switch>
-        <Route exact path={`${match.path}/`} component={CellList}/>
-        <Route exact path={`${match.path}/:cellName`} component={Cell}/>
-        <Route exact path={`${match.path}/:cellName/components/:componentName`} component={Component}/>
+        <Route exact path={`${match.path}/`} component={InstanceList}/>
+        <Route exact path={`${match.path}/:instanceName`} component={Instance}/>
+        <Route exact path={`${match.path}/:instanceName/components/:componentName`} component={Component}/>
         <Route path={`${match.url}/*`} render={(props) => <NotFound {...props} showNavigationButtons={true}/>}/>
     </Switch>
 );
 
-Cells.propTypes = {
+Instances.propTypes = {
     match: PropTypes.object.isRequired,
     location: PropTypes.shape({
         state: PropTypes.object
     }).isRequired
 };
 
-export default withRouter(Cells);
+export default withRouter(Instances);

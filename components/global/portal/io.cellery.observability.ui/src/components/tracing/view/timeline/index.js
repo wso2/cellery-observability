@@ -165,7 +165,7 @@ Timeline.propTypes = {
     ).isRequired,
     clicked: PropTypes.bool,
     selectedComponent: PropTypes.shape({
-        cellName: PropTypes.string.isRequired,
+        instanceName: PropTypes.string.isRequired,
         serviceName: PropTypes.string.isRequired
     })
 };

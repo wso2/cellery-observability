@@ -1,7 +1,23 @@
+/*
+ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import React from "react";
 import SvgIcon from "@material-ui/core/SvgIcon";
 
-const CellsIcon = (props) => (
+const InstancesIcon = (props) => (
     <SvgIcon viewBox="0 0 14 14" {...props}>
         <path d="M3.3,14l-3.1-1.8V8.6l3.1-1.8l3.1,1.8v3.6L3.3,14z M1.4,11.5l1.9,1.1l1.9-1.1V9.3L3.3,8.2L1.4,9.3V11.5z"/>
         <path d="M7,7.6c-0.2,0-0.4,0-0.6,0l0.2-1c0.4,0.1,0.9,0,1.3-0.1l0.3,1C7.8,7.5,7.4,7.6,7,7.6z M5.9,7.4C5.3,7.2,4.8,6.9,4.4,6.5
@@ -16,4 +32,4 @@ C6.4,0.2,7,0.2,7.6,0.3l-0.1,1C7,1.2,6.6,1.2,6.2,1.4z"/>
 
 );
 
-export default CellsIcon;
+export default InstancesIcon;

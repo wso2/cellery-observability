@@ -1029,7 +1029,7 @@ describe("Span", () => {
         traceId: "trace-x-id",
         spanId: "span-b-id",
         parentId: "span-a-id",
-        cell: "hr",
+        instance: "hr",
         serviceName: "gateway",
         operationName: "call-hr-cell",
         kind: Constants.Span.Kind.SERVER,
@@ -1041,7 +1041,7 @@ describe("Span", () => {
         traceId: "trace-x-id",
         spanId: "span-c-id",
         parentId: "span-b-id",
-        cell: "hr",
+        instance: "hr",
         serviceName: "hr--employee-service",
         operationName: "get-employee-data",
         kind: Constants.Span.Kind.SERVER,
@@ -1263,7 +1263,7 @@ describe("Span", () => {
             span.addSpanReference(childSpanA);
             span.addSpanReference(childSpanB);
             span.componentType = Constants.CelleryType.SYSTEM;
-            span.cell = {
+            span.instance = {
                 name: "cell-a"
             };
 
@@ -1292,9 +1292,9 @@ describe("Span", () => {
                 }
             }
             expect(clone.componentType).toBe(span.componentType);
-            expect(clone.cell).not.toBeNull();
-            expect(clone.cell).not.toBe(span.cell);
-            expect(clone.cell.name).toBe(span.cell.name);
+            expect(clone.instance).not.toBeNull();
+            expect(clone.instance).not.toBe(span.instance);
+            expect(clone.instance.name).toBe(span.instance.name);
 
             expect(clone.parent).toBeNull();
             expect(clone.sibling).toBeNull();

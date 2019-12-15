@@ -113,7 +113,7 @@ class View extends React.Component {
                 spanId: dataItem[1],
                 parentId: dataItem[2],
                 namespace: dataItem[3],
-                cell: dataItem[4],
+                instance: dataItem[4],
                 instanceKind: dataItem[5],
                 serviceName: dataItem[6],
                 pod: dataItem[7],
@@ -204,7 +204,7 @@ class View extends React.Component {
             <React.Fragment>
                 <TopToolbar
                     title={traceTree
-                        ? (traceTree.instance ? `${traceTree.instance}:` : "") + traceTree.serviceName
+                        ? (traceTree.instance ? `${traceTree.instance.name}:` : "") + traceTree.serviceName
                         : "Distributed Tracing"}
                     subTitle={traceTree ? traceTree.operationName : ""} hideNamespaceSelector={true}/>
                 <Paper className={classes.container}>
@@ -237,7 +237,7 @@ View.propTypes = {
         search: PropTypes.string.isRequired,
         state: PropTypes.shape({
             selectedComponent: PropTypes.shape({
-                cellName: PropTypes.string.isRequired,
+                instanceName: PropTypes.string.isRequired,
                 serviceName: PropTypes.string.isRequired
             })
         })

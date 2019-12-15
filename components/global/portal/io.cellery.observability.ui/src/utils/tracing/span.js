@@ -53,7 +53,7 @@ class Span {
         this.componentType = "";
 
         /** @type {{name: string, version: string}} **/
-        this.cell = (spanData.cell ? {name: spanData.cell, version: null} : null);
+        this.instance = (spanData.instance ? {name: spanData.instance, version: null} : null);
 
         /** @type {Span} **/
         this.parent = null;
@@ -193,12 +193,13 @@ class Span {
     getUniqueId = () => `${this.traceId}--${this.spanId}${this.kind ? `--${this.kind}` : ""}`;
 
     /**
-     * Check whether a span belongs to the cell gateway.
+     * Check whether a span belongs to the Cell gateway.
      *
-     * @returns {boolean} True if the component to which the span belongs to is a cell gateway
+     * @returns {boolean} True if the component to which the span belongs to is a Cell gateway
      */
     isFromCellGateway = () => (
-        Boolean(this.cell) && Boolean(this.cell.name) && Constants.Cell.GATEWAY_NAME_PATTERN.test(this.serviceName)
+        Boolean(this.instance) && Boolean(this.instance.name)
+            && Constants.Instance.GATEWAY_NAME_PATTERN.test(this.serviceName)
     );
 
     /**
@@ -251,7 +252,7 @@ class Span {
         });
         span.tags = {...this.tags};
         span.componentType = this.componentType;
-        span.cell = {...this.cell};
+        span.instance = {...this.instance};
         return span;
     };
 

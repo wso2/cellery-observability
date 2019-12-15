@@ -50,7 +50,7 @@ const styles = (theme) => ({
         fontSize: "small",
         textAlign: "right"
     },
-    cellName: {
+    instanceName: {
         fontWeight: 500,
         fontSize: "normal"
     },
@@ -79,7 +79,7 @@ const styles = (theme) => ({
         paddingLeft: theme.spacing.unit * 2,
         color: "#666"
     },
-    tagCellName: {
+    tagInstanceName: {
         color: "#666",
         paddingLeft: Number(theme.spacing.unit) / 2
     },
@@ -163,12 +163,12 @@ class TracesList extends React.PureComponent {
      *
      * @param {MouseEvent} event Event for the click event
      * @param {string} traceId The trace ID of the selected trace
-     * @param {string} cellName The name of the cell the component belongs to if a component was selected
+     * @param {string} instanceName The name of the instance the component belongs to if a component was selected
      * @param {string} component The component name if a component was selected
      */
-    loadTracePage = (event, traceId, cellName = "", component = "") => {
+    loadTracePage = (event, traceId, instanceName = "", component = "") => {
         event.stopPropagation();
-        this.props.onTraceClick(traceId, cellName, component);
+        this.props.onTraceClick(traceId, instanceName, component);
     };
 
     /**
@@ -180,8 +180,8 @@ class TracesList extends React.PureComponent {
     getColorForComponent = (component) => {
         const {colorGenerator} = this.props;
         let colorKey = ColorGenerator.UNKNOWN;
-        if (component.cellName) {
-            colorKey = component.cellName;
+        if (component.instanceName) {
+            colorKey = component.instanceName;
         } else if (Constants.System.GLOBAL_GATEWAY_NAME_PATTERN.test(component.serviceName)
             || Constants.System.ISTIO_MIXER_NAME_PATTERN.test(component.serviceName)) {
             colorKey = ColorGenerator.SYSTEM;
@@ -196,7 +196,7 @@ class TracesList extends React.PureComponent {
         const {globalState, filter, globalFilterOverrides} = self.props;
         const {page, rowsPerPage} = this.state;
         const {
-            cell, component, operation, tags, minDuration, minDurationMultiplier, maxDuration, maxDurationMultiplier
+            instance, component, operation, tags, minDuration, minDurationMultiplier, maxDuration, maxDurationMultiplier
         } = filter;
 
         // Build search object
@@ -213,7 +213,7 @@ class TracesList extends React.PureComponent {
                 search[key] = value;
             }
         };
-        addSearchParam("instance", cell);
+        addSearchParam("instance", instance);
         addSearchParam("serviceName", component);
         addSearchParam("operationName", operation);
         addSearchParam("tags", JSON.stringify(tags && Object.keys(tags).length > 0 ? tags : {}));
@@ -249,7 +249,7 @@ class TracesList extends React.PureComponent {
                 searchResults: {
                     rootSpans: data.rootSpans.map((dataItem) => ({
                         traceId: dataItem[0],
-                        rootCellName: dataItem[1],
+                        rootInstanceName: dataItem[1],
                         rootServiceName: dataItem[2],
                         rootOperationName: dataItem[3],
                         rootStartTime: dataItem[4],
@@ -257,7 +257,7 @@ class TracesList extends React.PureComponent {
                     })),
                     spanCounts: data.spanCounts.map((dataItem) => ({
                         traceId: dataItem[0],
-                        cellName: dataItem[1],
+                        instanceName: dataItem[1],
                         serviceName: dataItem[2],
                         count: dataItem[3]
                     })),
@@ -335,10 +335,10 @@ class TracesList extends React.PureComponent {
                                             <Grid container className={classes.traceHeader}>
                                                 <Grid item xs={8}>
                                                     {
-                                                        result.rootCellName
+                                                        result.rootInstanceName
                                                             ? (
-                                                                <span className={classes.cellName}>
-                                                                    {`${result.rootCellName}:`}
+                                                                <span className={classes.instanceName}>
+                                                                    {`${result.rootInstanceName}:`}
                                                                 </span>
                                                             )
                                                             : null
@@ -387,18 +387,18 @@ class TracesList extends React.PureComponent {
                                                             return 0;
                                                         })
                                                         .map((service) => (
-                                                            <div key={`${service.cellName}-${service.serviceName}`}
+                                                            <div key={`${service.instanceName}-${service.serviceName}`}
                                                                 className={classes.serviceTag}
                                                                 onClick={
                                                                     (event) => this.loadTracePage(event, result.traceId,
-                                                                        service.cellName, service.serviceName)}>
+                                                                        service.instanceName, service.serviceName)}>
                                                                 <div className={classes.serviceTagColor} style={{
                                                                     backgroundColor: this.getColorForComponent(service)
                                                                 }}/>
                                                                 <div className={classes.serviceTagContent}>
-                                                                    <span className={classes.tagCellName}>
-                                                                        {service.cellName
-                                                                            ? `${service.cellName}: `
+                                                                    <span className={classes.tagInstanceName}>
+                                                                        {service.instanceName
+                                                                            ? `${service.instanceName}: `
                                                                             : null} </span>
                                                                     <span className={classes.tagServiceName}>
                                                                         {service.serviceName} ({service.count})
@@ -439,7 +439,7 @@ TracesList.propTypes = {
     loadTracesOnMount: PropTypes.bool,
     onTraceClick: PropTypes.func.isRequired,
     filter: PropTypes.shape({
-        cell: PropTypes.string,
+        instance: PropTypes.string,
         component: PropTypes.string,
         operation: PropTypes.string,
         tags: PropTypes.object,

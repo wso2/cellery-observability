@@ -39,7 +39,7 @@ const Constants = {
         CELL: "Cell",
         COMPOSITE: "Composite"
     },
-    Cell: {
+    Instance: {
         GATEWAY_NAME_PATTERN: /^gateway$/,
         COMPONENT_NAME_PATTERN: /^(.+)--(.+)$/
     },

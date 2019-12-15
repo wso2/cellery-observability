@@ -103,7 +103,7 @@ TracesDialog.propTypes = {
     classes: PropTypes.object.isRequired,
     selectedArea: PropTypes.any,
     filter: PropTypes.shape({
-        cell: PropTypes.string,
+        instance: PropTypes.string,
         component: PropTypes.string,
         operation: PropTypes.string,
         tags: PropTypes.object,

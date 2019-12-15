@@ -36,9 +36,9 @@ const styles = (theme) => ({
     }
 });
 
-class CellList extends React.Component {
+class InstanceList extends React.Component {
 
-    static logger = Logger.get("components/cells/CellList");
+    static logger = Logger.get("components/instances/InstanceList");
 
     constructor(props) {
         super(props);
@@ -49,7 +49,7 @@ class CellList extends React.Component {
         };
     }
 
-    loadCellInfo = (isUserAction, queryStartTime, queryEndTime) => {
+    loadInstanceInfo = (isUserAction, queryStartTime, queryEndTime) => {
         const {globalState} = this.props;
         const self = this;
 
@@ -95,7 +95,7 @@ class CellList extends React.Component {
                 });
             }
         }).catch((error) => {
-            CellList.logger.error("Failed to load instance HTTP request information", error);
+            InstanceList.logger.error("Failed to load instance HTTP request information", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState({
@@ -232,7 +232,7 @@ class CellList extends React.Component {
 
         return (
             <React.Fragment>
-                <TopToolbar title={"Instances"} onUpdate={this.loadCellInfo}/>
+                <TopToolbar title={"Instances"} onUpdate={this.loadInstanceInfo}/>
                 {
                     isLoading
                         ? null
@@ -256,7 +256,7 @@ class CellList extends React.Component {
 
 }
 
-CellList.propTypes = {
+InstanceList.propTypes = {
     classes: PropTypes.object.isRequired,
     globalState: PropTypes.instanceOf(StateHolder).isRequired,
     match: PropTypes.shape({
@@ -264,4 +264,4 @@ CellList.propTypes = {
     }).isRequired
 };
 
-export default withStyles(styles)(withGlobalState(CellList));
+export default withStyles(styles)(withGlobalState(InstanceList));

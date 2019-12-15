@@ -109,12 +109,12 @@ class DependencyDiagram extends React.Component {
         const nodes = [];
         const links = [];
         const getUniqueNodeId = (span) => (
-            `${span.cell && span.cell.name ? `${span.cell.name}:` : ""}${span.serviceName}`
+            `${span.instance && span.instance.name ? `${span.instance.name}:` : ""}${span.serviceName}`
         );
         const addNodeIfNotPresent = (span) => {
             if (!nodeIdList.includes(getUniqueNodeId(span))) {
                 // Finding the proper color for this item
-                let colorKey = span.cell ? span.cell.name : null;
+                let colorKey = span.instance ? span.instance.name : null;
                 if (!colorKey) {
                     if (span.componentType === Constants.CelleryType.SYSTEM) {
                         colorKey = ColorGenerator.SYSTEM;
@@ -144,8 +144,9 @@ class DependencyDiagram extends React.Component {
             links.push(link);
         };
         rootSpan.walk((span, data) => {
-            const isFromSameComponent = (spanA, spanB) => ((!spanA.cell && !spanB.cell)
-                || (!(spanA.cell && !spanB.cell) && !(!spanA.cell && spanB.cell) && spanA.cell.name === spanB.cell.name))
+            const isFromSameComponent = (spanA, spanB) => ((!spanA.instance && !spanB.instance)
+                || (!(spanA.instance && !spanB.instance) && !(!spanA.instance && spanB.instance)
+                    && spanA.instance.name === spanB.instance.name))
                 && spanA.serviceName === spanB.serviceName;
             let linkSource = data;
             if (!Constants.System.SIDECAR_AUTH_FILTER_OPERATION_NAME_PATTERN.test(span.operationName)
@@ -227,8 +228,8 @@ class DependencyDiagram extends React.Component {
                     <React.Fragment>
                         <div className={classes.graphContainer}>
                             <div className={classes.diagram}>
-                                <DependencyGraph id="graph-id" nodeData={nodes} edgeData={links} graphType="trace-dependency"
-                                    onClickNode={this.onClickCell} viewGenerator={viewGenerator}/>
+                                <DependencyGraph id="graph-id" nodeData={nodes} edgeData={links}
+                                    graphType="trace-dependency" viewGenerator={viewGenerator}/>
                             </div>
                         </div>
                         <Button

@@ -38,6 +38,9 @@ switch (localStorage.getItem(LOG_LEVEL_KEY)) {
     case "INFO":
         logLevel = Logger.INFO;
         break;
+    case "TIME":
+        logLevel = Logger.TIME;
+        break;
     case "WARN":
         logLevel = Logger.WARN;
         break;

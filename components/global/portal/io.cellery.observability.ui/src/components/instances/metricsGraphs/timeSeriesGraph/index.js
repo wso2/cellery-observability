@@ -230,7 +230,7 @@ TimeSeriesGraph.propTypes = {
         unit: PropTypes.string.isRequired
     }).isRequired,
     traceSearchFilter: PropTypes.shape({
-        cell: PropTypes.string,
+        instance: PropTypes.string,
         component: PropTypes.string,
         operation: PropTypes.string,
         tags: PropTypes.object,

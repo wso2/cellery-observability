@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import CellDependencyView from "./CellDependencyView";
-import ColorGenerator from "../../common/color/colorGenerator";
+import ComponentDependencyView from "./ComponentDependencyView";
 import HealthIndicator from "../../common/HealthIndicator";
 import HttpUtils from "../../../utils/api/httpUtils";
+import {Link} from "react-router-dom";
 import Logger from "js-logger";
 import NotificationUtils from "../../../utils/common/notificationUtils";
 import QueryUtils from "../../../utils/common/queryUtils";
@@ -28,15 +28,11 @@ import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import Typography from "@material-ui/core/Typography/Typography";
-import withColor from "../../common/color";
 import withGlobalState from "../../common/state";
 import {withStyles} from "@material-ui/core/styles";
 import * as PropTypes from "prop-types";
 
 const styles = () => ({
-    root: {
-        display: "flex"
-    },
     table: {
         width: "30%",
         marginTop: 25
@@ -48,7 +44,7 @@ const styles = () => ({
 
 class Details extends React.Component {
 
-    static logger = Logger.get("components/cells/cell/Details");
+    static logger = Logger.get("components/instances/component/Details");
 
     constructor(props) {
         super(props);
@@ -73,57 +69,50 @@ class Details extends React.Component {
     };
 
     update = (isUserAction, queryStartTime, queryEndTime) => {
-        const {globalState, cell} = this.props;
+        const {globalState, instance, component} = this.props;
         const self = this;
 
-        const search = {
-            queryStartTime: queryStartTime.valueOf(),
-            queryEndTime: queryEndTime.valueOf(),
-            destinationInstance: cell,
-            includeIntraInstance: true
-        };
-
-        const ingressQueryParams = {
-            queryStartTime: queryStartTime.valueOf(),
-            queryEndTime: queryEndTime.valueOf()
-        };
-
-        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
-        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
-        const cellMetricsPromise = HttpUtils.callObservabilityAPI(
-            {
-                url: `${pathPrefix}/http-requests/instances/metrics${HttpUtils.generateQueryParamString(search)}`,
-                method: "GET"
-            }, globalState);
-
-        const ingressDataPromise = HttpUtils.callObservabilityAPI(
-            {
-                url: `${pathPrefix}/k8s/instances/${cell}${HttpUtils.generateQueryParamString(ingressQueryParams)}`,
-                method: "GET"
-            }, this.props.globalState);
-
         if (isUserAction) {
-            NotificationUtils.showLoadingOverlay("Loading Cell Info", globalState);
+            NotificationUtils.showLoadingOverlay("Loading Component Info", globalState);
             self.setState({
                 isLoading: true
             });
         }
-        Promise.all([cellMetricsPromise, ingressDataPromise]).then((data) => {
-            const cellInfoData = data[1];
-            self.loadCellMetrics(data[0]);
-            const ingressTypesSet = new Set();
-            for (let i = 0; i < cellInfoData.length; i++) {
-                const ingressDatum = cellInfoData[i];
-                if (ingressDatum[3]) {
-                    const ingressTypeArray = ingressDatum[3].split(",");
-                    ingressTypeArray.forEach((ingressValue) => {
-                        ingressTypesSet.add(ingressValue);
-                    });
-                }
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
+        const httpRequestQueryParams = HttpUtils.generateQueryParamString({
+            queryStartTime: queryStartTime.valueOf(),
+            queryEndTime: queryEndTime.valueOf(),
+            destinationInstance: instance,
+            destinationComponent: component
+        });
+        const componentMetricPromise = HttpUtils.callObservabilityAPI(
+            {
+                url: `${pathPrefix}/http-requests/instances/components/metrics${httpRequestQueryParams}`,
+                method: "GET"
+            },
+            globalState
+        );
+        const ingressQueryParams = HttpUtils.generateQueryParamString({
+            queryStartTime: queryStartTime.valueOf(),
+            queryEndTime: queryEndTime.valueOf()
+        });
+        const ingressDataPromise = HttpUtils.callObservabilityAPI(
+            {
+                url: `${pathPrefix}/k8s/instances/${instance}/components/${component}${ingressQueryParams}`,
+                method: "GET"
+            },
+            globalState
+        );
+        Promise.all([componentMetricPromise, ingressDataPromise]).then((data) => {
+            self.loadComponentInfo(data[0]);
+            const ingressData = data[1];
+            for (let i = 0; i < ingressData.length; i++) {
+                const responseData = ingressData[i];
+                self.setState({
+                    ingressTypes: responseData[3].split(",")
+                });
             }
-            self.setState({
-                ingressTypes: Array.from(ingressTypesSet)
-            });
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState({
@@ -131,14 +120,14 @@ class Details extends React.Component {
                 });
             }
         }).catch((error) => {
-            Details.logger.error("Failed to load instance HTTP request metrics and ingress types", error);
+            Details.logger.error("Failed to load component HTTP request metrics and ingress types", error);
             if (isUserAction) {
                 NotificationUtils.hideLoadingOverlay(globalState);
                 self.setState({
                     isLoading: false
                 });
                 NotificationUtils.showNotification(
-                    "Failed to load instance information",
+                    "Failed to load component information",
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );
@@ -146,7 +135,7 @@ class Details extends React.Component {
         });
     };
 
-    loadCellMetrics = (data) => {
+    loadComponentInfo = (data) => {
         const self = this;
         const aggregatedData = data.map((datum) => ({
             isError: datum[1] === "5xx",
@@ -168,16 +157,17 @@ class Details extends React.Component {
         } else {
             health = -1;
         }
-
         self.setState({
             health: health,
             isDataAvailable: aggregatedData.total > 0
         });
     };
 
-    render = () => {
-        const {classes, cell} = this.props;
+    render() {
+        const {classes, instance, component} = this.props;
         const {health, isLoading, ingressTypes} = this.state;
+        const ingressListStr = ingressTypes.toString().replace(/,/g, ", ");
+
         const view = (
             <Table className={classes.table}>
                 <TableBody>
@@ -194,11 +184,21 @@ class Details extends React.Component {
                     <TableRow>
                         <TableCell className={classes.tableCell}>
                             <Typography color="textSecondary">
+                                Instance
+                            </Typography>
+                        </TableCell>
+                        <TableCell className={classes.tableCell}>
+                            <Link to={`/instances/${instance}`}>{instance}</Link>
+                        </TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell className={classes.tableCell}>
+                            <Typography color="textSecondary">
                                 Ingress Types
                             </Typography>
                         </TableCell>
                         <TableCell className={classes.tableCell}>
-                            <p>{ingressTypes.length > 0 ? ingressTypes.join(", ") : "Not Available"}</p>
+                            <p>{ingressListStr ? ingressListStr : "Not Available"}</p>
                         </TableCell>
                     </TableRow>
                 </TableBody>
@@ -208,7 +208,7 @@ class Details extends React.Component {
         return (
             <React.Fragment>
                 {isLoading ? null : view}
-                <CellDependencyView cell={cell} className={classes.root}/>
+                <ComponentDependencyView instance={instance} component={component}/>
             </React.Fragment>
         );
     }
@@ -217,10 +217,9 @@ class Details extends React.Component {
 
 Details.propTypes = {
     classes: PropTypes.object.isRequired,
-    colorGenerator: PropTypes.instanceOf(ColorGenerator).isRequired,
-    globalState: PropTypes.instanceOf(StateHolder).isRequired,
-    cell: PropTypes.string.isRequired
+    instance: PropTypes.string.isRequired,
+    component: PropTypes.string.isRequired,
+    globalState: PropTypes.instanceOf(StateHolder).isRequired
 };
 
-export default withStyles(styles)(withColor(withGlobalState(Details)));
-
+export default withStyles(styles)(withGlobalState(Details));

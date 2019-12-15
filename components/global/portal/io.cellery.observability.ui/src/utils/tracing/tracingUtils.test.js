@@ -64,7 +64,7 @@ describe("TracingUtils", () => {
             traceId: "trace-x-id",
             spanId: "span-b-id",
             parentId: "trace-x-id",
-            cell: "hr",
+            instance: "hr",
             serviceName: "gateway",
             operationName: "call-hr-cell",
             kind: Constants.Span.Kind.SERVER,
@@ -76,7 +76,7 @@ describe("TracingUtils", () => {
             traceId: "trace-x-id",
             spanId: "span-c-id",
             parentId: "span-b-id",
-            cell: "hr",
+            instance: "hr",
             serviceName: "gateway",
             operationName: "get-employee-data",
             kind: Constants.Span.Kind.CLIENT,
@@ -88,7 +88,7 @@ describe("TracingUtils", () => {
             traceId: "trace-x-id",
             spanId: "span-c-id",
             parentId: "span-b-id",
-            cell: "hr",
+            instance: "hr",
             serviceName: "employee-service",
             operationName: "get-employee-data",
             kind: Constants.Span.Kind.SERVER,
@@ -100,7 +100,7 @@ describe("TracingUtils", () => {
             traceId: "trace-x-id",
             spanId: "span-d-id",
             parentId: "span-c-id",
-            cell: "hr",
+            instance: "hr",
             serviceName: "employee-service",
             operationName: "is-authorized",
             kind: Constants.Span.Kind.CLIENT,
@@ -133,7 +133,7 @@ describe("TracingUtils", () => {
             traceId: "trace-x-id",
             spanId: "span-f-id",
             parentId: "span-c-id",
-            cell: "hr",
+            instance: "hr",
             serviceName: "employee-service",
             operationName: "get-reviews",
             kind: Constants.Span.Kind.CLIENT,
@@ -145,7 +145,7 @@ describe("TracingUtils", () => {
             traceId: "trace-x-id",
             spanId: "span-f-id",
             parentId: "span-c-id",
-            cell: "hr",
+            instance: "hr",
             serviceName: "reviews-service",
             operationName: "get-reviews",
             kind: Constants.Span.Kind.SERVER,
@@ -157,7 +157,7 @@ describe("TracingUtils", () => {
             traceId: "trace-x-id",
             spanId: "span-g-id",
             parentId: "span-c-id",
-            cell: "hr",
+            instance: "hr",
             serviceName: "employee-service",
             operationName: "get-employee-stock-options",
             kind: Constants.Span.Kind.CLIENT,
@@ -169,7 +169,7 @@ describe("TracingUtils", () => {
             traceId: "trace-x-id",
             spanId: "span-g-id",
             parentId: "span-c-id",
-            cell: "stock-options",
+            instance: "stock-options",
             serviceName: "gateway",
             operationName: "get-employee-stock-options",
             kind: Constants.Span.Kind.SERVER,
@@ -181,7 +181,7 @@ describe("TracingUtils", () => {
             traceId: "trace-x-id",
             spanId: "span-h-id",
             parentId: "span-g-id",
-            cell: "stock-options",
+            instance: "stock-options",
             serviceName: "gateway",
             operationName: "get-employee-stock-options",
             kind: Constants.Span.Kind.CLIENT,
@@ -193,7 +193,7 @@ describe("TracingUtils", () => {
             traceId: "trace-x-id",
             spanId: "span-h-id",
             parentId: "span-g-id",
-            cell: "stock-options",
+            instance: "stock-options",
             serviceName: "stock-options-service",
             operationName: "get-employee-stock-options",
             kind: Constants.Span.Kind.SERVER,
@@ -556,7 +556,7 @@ describe("TracingUtils", () => {
                 traceId: hrCellGatewayClientSpan.traceId,
                 spanId: `${hrCellGatewayClientSpan.spanId}-1`,
                 parentId: hrCellGatewayClientSpan.parentId,
-                cell: hrCellGatewayClientSpan.cell.name,
+                instance: hrCellGatewayClientSpan.instance.name,
                 serviceName: hrCellGatewayClientSpan.serviceName,
                 operationName: `${hrCellGatewayClientSpan.serviceName}:additional-operation-1`,
                 kind: Constants.Span.Kind.CLIENT,
@@ -676,7 +676,7 @@ describe("TracingUtils", () => {
     describe("labelSpanTree()", () => {
         beforeEach(setup);
 
-        it("should label the necessary nodes according to cell, component type", () => {
+        it("should label the necessary nodes according to instance, component type", () => {
             storeInitialSpanData();
 
             const rootSpan = TracingUtils.buildTree(orderedSpanList);
@@ -684,71 +684,71 @@ describe("TracingUtils", () => {
 
             validateInitialSpanData();
 
-            expect(globalGatewayServerSpan.cell).toBeNull();
+            expect(globalGatewayServerSpan.instance).toBeNull();
             expect(globalGatewayServerSpan.componentType).toBe(Constants.CelleryType.SYSTEM);
             expect(globalGatewayServerSpan.treeDepth).toBe(0);
 
-            expect(globalGatewayClientSpan.cell).toBeNull();
+            expect(globalGatewayClientSpan.instance).toBeNull();
             expect(globalGatewayClientSpan.componentType).toBe(Constants.CelleryType.SYSTEM);
             expect(globalGatewayClientSpan.treeDepth).toBe(1);
 
-            expect(hrCellGatewayServerSpan.cell).not.toBeNull();
-            expect(hrCellGatewayServerSpan.cell.name).toBe("hr");
+            expect(hrCellGatewayServerSpan.instance).not.toBeNull();
+            expect(hrCellGatewayServerSpan.instance.name).toBe("hr");
             expect(hrCellGatewayServerSpan.componentType).toBe(Constants.CelleryType.SYSTEM);
             expect(hrCellGatewayServerSpan.treeDepth).toBe(2);
 
-            expect(hrCellGatewayClientSpan.cell).not.toBeNull();
-            expect(hrCellGatewayClientSpan.cell.name).toBe("hr");
+            expect(hrCellGatewayClientSpan.instance).not.toBeNull();
+            expect(hrCellGatewayClientSpan.instance.name).toBe("hr");
             expect(hrCellGatewayClientSpan.componentType).toBe(Constants.CelleryType.SYSTEM);
             expect(hrCellGatewayClientSpan.treeDepth).toBe(3);
 
-            expect(employeeServiceServerSpan.cell).not.toBeNull();
-            expect(employeeServiceServerSpan.cell.name).toBe("hr");
+            expect(employeeServiceServerSpan.instance).not.toBeNull();
+            expect(employeeServiceServerSpan.instance.name).toBe("hr");
             expect(employeeServiceServerSpan.componentType).toBe(Constants.CelleryType.COMPONENT);
             expect(employeeServiceServerSpan.treeDepth).toBe(4);
 
-            expect(employeeServiceToIstioMixerClientSpan.cell).not.toBeNull();
-            expect(employeeServiceToIstioMixerClientSpan.cell.name).toBe("hr");
+            expect(employeeServiceToIstioMixerClientSpan.instance).not.toBeNull();
+            expect(employeeServiceToIstioMixerClientSpan.instance.name).toBe("hr");
             expect(employeeServiceToIstioMixerClientSpan.componentType).toBe(Constants.CelleryType.COMPONENT);
             expect(employeeServiceToIstioMixerClientSpan.treeDepth).toBe(5);
 
-            expect(istioMixerServerSpan.cell).toBeNull();
+            expect(istioMixerServerSpan.instance).toBeNull();
             expect(istioMixerServerSpan.componentType).toBe(Constants.CelleryType.SYSTEM);
             expect(istioMixerServerSpan.treeDepth).toBe(6);
 
-            expect(istioMixerWorkerSpan.cell).toBeNull();
+            expect(istioMixerWorkerSpan.instance).toBeNull();
             expect(istioMixerWorkerSpan.componentType).toBe(Constants.CelleryType.SYSTEM);
             expect(istioMixerWorkerSpan.treeDepth).toBe(7);
 
-            expect(employeeServiceToReviewsServiceClientSpan.cell).not.toBeNull();
-            expect(employeeServiceToReviewsServiceClientSpan.cell.name).toBe("hr");
+            expect(employeeServiceToReviewsServiceClientSpan.instance).not.toBeNull();
+            expect(employeeServiceToReviewsServiceClientSpan.instance.name).toBe("hr");
             expect(employeeServiceToReviewsServiceClientSpan.componentType)
                 .toBe(Constants.CelleryType.COMPONENT);
             expect(employeeServiceToReviewsServiceClientSpan.treeDepth).toBe(5);
 
-            expect(reviewsServiceServerSpan.cell).not.toBeNull();
-            expect(reviewsServiceServerSpan.cell.name).toBe("hr");
+            expect(reviewsServiceServerSpan.instance).not.toBeNull();
+            expect(reviewsServiceServerSpan.instance.name).toBe("hr");
             expect(reviewsServiceServerSpan.componentType).toBe(Constants.CelleryType.COMPONENT);
             expect(reviewsServiceServerSpan.treeDepth).toBe(6);
 
-            expect(employeeServiceToStockOptionsCellClientSpan.cell).not.toBeNull();
-            expect(employeeServiceToStockOptionsCellClientSpan.cell.name).toBe("hr");
+            expect(employeeServiceToStockOptionsCellClientSpan.instance).not.toBeNull();
+            expect(employeeServiceToStockOptionsCellClientSpan.instance.name).toBe("hr");
             expect(employeeServiceToStockOptionsCellClientSpan.componentType)
                 .toBe(Constants.CelleryType.COMPONENT);
             expect(employeeServiceToStockOptionsCellClientSpan.treeDepth).toBe(5);
 
-            expect(stockOptionsCellGatewayServerSpan.cell).not.toBeNull();
-            expect(stockOptionsCellGatewayServerSpan.cell.name).toBe("stock-options");
+            expect(stockOptionsCellGatewayServerSpan.instance).not.toBeNull();
+            expect(stockOptionsCellGatewayServerSpan.instance.name).toBe("stock-options");
             expect(stockOptionsCellGatewayServerSpan.componentType).toBe(Constants.CelleryType.SYSTEM);
             expect(stockOptionsCellGatewayServerSpan.treeDepth).toBe(6);
 
-            expect(stockOptionsCellGatewayClientSpan.cell).not.toBeNull();
-            expect(stockOptionsCellGatewayClientSpan.cell.name).toBe("stock-options");
+            expect(stockOptionsCellGatewayClientSpan.instance).not.toBeNull();
+            expect(stockOptionsCellGatewayClientSpan.instance.name).toBe("stock-options");
             expect(stockOptionsCellGatewayClientSpan.componentType).toBe(Constants.CelleryType.SYSTEM);
             expect(stockOptionsCellGatewayClientSpan.treeDepth).toBe(7);
 
-            expect(stockOptionsServiceServerSpan.cell).not.toBeNull();
-            expect(stockOptionsServiceServerSpan.cell.name).toBe("stock-options");
+            expect(stockOptionsServiceServerSpan.instance).not.toBeNull();
+            expect(stockOptionsServiceServerSpan.instance.name).toBe("stock-options");
             expect(stockOptionsServiceServerSpan.componentType).toBe(Constants.CelleryType.COMPONENT);
             expect(stockOptionsServiceServerSpan.treeDepth).toBe(8);
         });

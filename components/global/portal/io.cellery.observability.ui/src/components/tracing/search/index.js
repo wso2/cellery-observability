@@ -68,12 +68,12 @@ class TraceSearch extends React.Component {
         const queryParams = HttpUtils.parseQueryParams(location.search);
         this.state = {
             data: {
-                cells: [],
+                instances: [],
                 components: [],
                 operations: []
             },
             filter: {
-                cell: queryParams.cell ? queryParams.cell : Constants.Dashboard.ALL_VALUE,
+                instance: queryParams.instance ? queryParams.instance : Constants.Dashboard.ALL_VALUE,
                 component: queryParams.component ? queryParams.component : Constants.Dashboard.ALL_VALUE,
                 operation: queryParams.operation ? queryParams.operation : Constants.Dashboard.ALL_VALUE,
                 tags: queryParams.tags ? JSON.parse(queryParams.tags) : {},
@@ -137,14 +137,14 @@ class TraceSearch extends React.Component {
                                         <Grid item xs={3}>
                                             <FormControl className={classes.formControl} fullWidth={true}>
                                                 <InputLabel htmlFor="instance" shrink={true}>Instance</InputLabel>
-                                                <Select value={filter.cell}
+                                                <Select value={filter.instance}
                                                     inputProps={{name: "instance", id: "instance"}}
-                                                    onChange={this.getChangeHandlerForString("cell")}>
+                                                    onChange={this.getChangeHandlerForString("instance")}>
                                                     <MenuItem key={Constants.Dashboard.ALL_VALUE}
                                                         value={Constants.Dashboard.ALL_VALUE}>
                                                         {Constants.Dashboard.ALL_VALUE}
                                                     </MenuItem>
-                                                    {createMenuItemsForSelect(data.cells)}
+                                                    {createMenuItemsForSelect(data.instances)}
                                                 </Select>
                                             </FormControl>
                                         </Grid>
@@ -203,11 +203,11 @@ class TraceSearch extends React.Component {
                                     </Grid>
                                 </Grid>
                                 <Button variant="contained" color="primary" onClick={this.onSearchButtonClick}
-                                    disabled={data.cells.length === 0}>
+                                    disabled={data.instances.length === 0}>
                                     Search
                                 </Button>
                                 {
-                                    data.cells.length > 0
+                                    data.instances.length > 0
                                         ? (
                                             <div className={classes.resultContainer}>
                                                 <TracesList innerRef={this.tracesListRef} filter={filter}
@@ -229,12 +229,12 @@ class TraceSearch extends React.Component {
         );
     };
 
-    onTraceClick = (traceId, selectedCellName, selectedComponent) => {
+    onTraceClick = (traceId, selectedInstanceName, selectedComponent) => {
         this.props.history.push({
             pathname: `./id/${traceId}`,
             state: {
                 selectedComponent: {
-                    cellName: selectedCellName,
+                    instanceName: selectedInstanceName,
                     serviceName: selectedComponent
                 }
             }
@@ -262,7 +262,7 @@ class TraceSearch extends React.Component {
         if (this.state.hasSearchCompleted) {
             this.search(isUserAction);
         }
-        this.loadCellData(isUserAction && !this.state.hasSearchCompleted, queryStartTime, queryEndTime);
+        this.loadInstanceData(isUserAction && !this.state.hasSearchCompleted, queryStartTime, queryEndTime);
     };
 
     /**
@@ -273,7 +273,7 @@ class TraceSearch extends React.Component {
      * @param {number} queryStartTime Start time of the global filter
      * @param {number} queryEndTime End time of the global filter
      */
-    loadCellData = (isUserAction, queryStartTime, queryEndTime) => {
+    loadInstanceData = (isUserAction, queryStartTime, queryEndTime) => {
         const {globalState} = this.props;
         const self = this;
         const filter = {
@@ -282,7 +282,7 @@ class TraceSearch extends React.Component {
         };
 
         if (isUserAction) {
-            NotificationUtils.showLoadingOverlay("Loading Cell Information", globalState);
+            NotificationUtils.showLoadingOverlay("Loading Tracing Metadata", globalState);
             self.setState({
                 isLoading: true
             });
@@ -296,39 +296,39 @@ class TraceSearch extends React.Component {
             },
             globalState
         ).then((data) => {
-            const cells = [];
+            const instances = [];
             const components = [];
             const operations = [];
 
-            const cellData = data.map((dataItem) => ({
-                cell: dataItem[0],
+            const instanceData = data.map((dataItem) => ({
+                instance: dataItem[0],
                 serviceName: dataItem[1],
                 operationName: dataItem[2]
             }));
 
-            for (let i = 0; i < cellData.length; i++) {
-                const span = new Span(cellData[i]);
-                const cell = span.cell;
+            for (let i = 0; i < instanceData.length; i++) {
+                const span = new Span(instanceData[i]);
+                const instance = span.instance;
 
-                const cellName = (cell ? cell.name : null);
+                const instanceName = (instance ? instance.name : null);
                 const serviceName = span.serviceName;
                 const operationName = span.operationName;
 
-                if (cellName) {
-                    if (!cells.includes(cellName)) {
-                        cells.push(cellName);
+                if (instanceName) {
+                    if (!instances.includes(instanceName)) {
+                        instances.push(instanceName);
                     }
                     if (!components.map((service) => service.name).includes(serviceName)) {
                         components.push({
                             name: serviceName,
-                            cell: cellName
+                            instance: instanceName
                         });
                     }
                     if (!operations.map((operation) => operation.name).includes(operationName)) {
                         operations.push({
                             name: operationName,
                             component: serviceName,
-                            cell: cellName
+                            instance: instanceName
                         });
                     }
                 }
@@ -337,7 +337,7 @@ class TraceSearch extends React.Component {
             self.setState((prevState) => ({
                 ...prevState,
                 data: {
-                    cells: cells,
+                    instances: instances,
                     components: components,
                     operations: operations
                 }
@@ -356,7 +356,7 @@ class TraceSearch extends React.Component {
                     isLoading: false
                 });
                 NotificationUtils.showNotification(
-                    "Failed to load Cell Data",
+                    "Failed to load Tracing Metadata",
                     NotificationUtils.Levels.ERROR,
                     globalState
                 );
@@ -425,12 +425,14 @@ class TraceSearch extends React.Component {
         const {data, filter, metaData} = state;
 
         // Finding the available components to be selected
-        const selectedCells = (filter.cell === Constants.Dashboard.ALL_VALUE ? data.cells : [filter.cell]);
+        const selectedInstances = (filter.instance === Constants.Dashboard.ALL_VALUE
+            ? data.instances
+            : [filter.instance]);
         const availableComponents = data.components
-            .filter((component) => selectedCells.includes(component.cell))
+            .filter((component) => selectedInstances.includes(component.instance))
             .map((component) => component.name);
 
-        const selectedComponent = data.cells.length === 0 || (filter.component
+        const selectedComponent = data.instances.length === 0 || (filter.component
             && availableComponents.includes(filter.component))
             ? filter.component
             : Constants.Dashboard.ALL_VALUE;
@@ -443,7 +445,7 @@ class TraceSearch extends React.Component {
             .filter((operation) => selectedComponents.includes(operation.component))
             .map((operation) => operation.name);
 
-        const selectedOperation = data.cells.length === 0 || (filter.operation
+        const selectedOperation = data.instances.length === 0 || (filter.operation
             && availableOperations.includes(filter.operation))
             ? filter.operation
             : Constants.Dashboard.ALL_VALUE;

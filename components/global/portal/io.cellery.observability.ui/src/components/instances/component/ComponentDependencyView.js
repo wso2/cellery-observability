@@ -74,7 +74,7 @@ const styles = (theme) => ({
 
 class ComponentDependencyView extends React.Component {
 
-    static logger = Logger.get("components/cells/component/ComponentDependencyView");
+    static logger = Logger.get("components/instances/component/ComponentDependencyView");
 
     constructor(props) {
         super(props);
@@ -141,9 +141,9 @@ class ComponentDependencyView extends React.Component {
         const newStartTime = nextProps.globalState.get(StateHolder.GLOBAL_FILTER).startTime;
         const newEndTime = nextProps.globalState.get(StateHolder.GLOBAL_FILTER).endTime;
 
-        // Check if user inputs (cell, component, time range) hand changed
+        // Check if user inputs (instance, component, time range) hand changed
         let shouldComponentUpdate = startTime !== newStartTime || endTime !== newEndTime
-            || this.props.cell !== nextProps.cell || this.props.component !== nextProps.component;
+            || this.props.instance !== nextProps.instance || this.props.component !== nextProps.component;
 
         if (!shouldComponentUpdate) {
             // Check if the number of items in the data had changed
@@ -174,7 +174,7 @@ class ComponentDependencyView extends React.Component {
     };
 
     update = (isUserAction, queryStartTime, queryEndTime) => {
-        const {globalState, cell, component} = this.props;
+        const {globalState, instance, component} = this.props;
         const self = this;
 
         const search = {
@@ -187,7 +187,7 @@ class ComponentDependencyView extends React.Component {
         }
         const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
         const pathPrefix = `/runtimes/${globalFilter.runtime}/namespaces/${globalFilter.namespace}`;
-        let url = `${pathPrefix}/dependency-model/instances/${cell}/components/${component}`;
+        let url = `${pathPrefix}/dependency-model/instances/${instance}/components/${component}`;
         url += `${HttpUtils.generateQueryParamString(search)}`;
         HttpUtils.callObservabilityAPI(
             {
@@ -196,12 +196,12 @@ class ComponentDependencyView extends React.Component {
             },
             globalState
         ).then((data) => {
-            // Update node,edge data to show external cell dependencies
+            // Update node,edge data to show external instance dependencies
             const nodes = [];
             const edges = [];
 
             // Get selected component
-            const selectedNode = this.generateNodeFQN({instance: cell, component: component});
+            const selectedNode = this.generateNodeFQN({instance: instance, component: component});
 
             // Adding distinct nodes
             const addNodeIfNotPresent = (nodeToBeAdded) => {
@@ -216,7 +216,7 @@ class ComponentDependencyView extends React.Component {
             sanitizedEdges.forEach((edge) => {
                 const targetKind = data.nodes.find((node) => node.instance === edge.target.instance).instanceKind;
                 // Draw dependencies for the selected node
-                if (cell === edge.source.instance) {
+                if (instance === edge.source.instance) {
                     // If the selected node is gateway add gateway node or else add it as component
                     if (edge.source.component === ComponentDependencyGraph.NodeType.GATEWAY) {
                         addNodeIfNotPresent({
@@ -232,7 +232,7 @@ class ComponentDependencyView extends React.Component {
                         });
                     }
 
-                    // If the dependent node is a cell gateway node add cell node or else add it as component
+                    // If the dependent node is a instance gateway node add instance node or else add it as component
                     if (targetKind === Constants.InstanceKind.CELL) {
                         if (edge.target.component === ComponentDependencyGraph.NodeType.GATEWAY) {
                             addNodeIfNotPresent({
@@ -249,7 +249,7 @@ class ComponentDependencyView extends React.Component {
                         }
 
                     /*
-                     * If the dependent node is a composite and in the same cell add it as component or else add it
+                     * If the dependent node is a composite and in the same instance add it as component or else add it
                      * as composite
                      */
                     } else if (targetKind === Constants.InstanceKind.COMPOSITE) {
@@ -270,7 +270,7 @@ class ComponentDependencyView extends React.Component {
                 }
 
                 // Add the other dependencies in the selected node
-                if ((cell === edge.target.instance) && !(selectedNode === edge.source)) {
+                if ((instance === edge.target.instance) && !(selectedNode === edge.source)) {
                     addNodeIfNotPresent({
                         id: this.generateNodeFQN(edge.target),
                         label: edge.target.component,
@@ -284,7 +284,7 @@ class ComponentDependencyView extends React.Component {
                 });
             });
 
-            const sourceNode = data.nodes.find((node) => node.instance === cell && node.component === component);
+            const sourceNode = data.nodes.find((node) => node.instance === instance && node.component === component);
             self.setState({
                 data: {
                     nodes: nodes,
@@ -311,23 +311,23 @@ class ComponentDependencyView extends React.Component {
 
     onClickNode = (nodeId, nodeType) => {
         const {history} = this.props;
-        const cell = nodeId.split(":")[0];
+        const instance = nodeId.split(":")[0];
         const component = nodeId.split(":")[1];
         if ((nodeType === ComponentDependencyGraph.NodeType.CELL)
             || (nodeType === ComponentDependencyGraph.NodeType.COMPOSITE)) {
-            history.push(`/instances/${cell}`);
+            history.push(`/instances/${instance}`);
         } else {
-            history.push(`/instances/${cell}/components/${component}`);
+            history.push(`/instances/${instance}/components/${component}`);
         }
     };
 
-    generateNodeFQN = (node) => `${node.instance}${ComponentDependencyGraph.CELL_COMPONENT_SEPARATOR}${node.component}`;
+    generateNodeFQN = (node) => `${node.instance}${ComponentDependencyGraph.INSTANCE_COMPONENT_SEPARATOR}${node.component}`;
 
     render = () => {
-        const {classes, cell, component, colorGenerator} = this.props;
+        const {classes, instance, component, colorGenerator} = this.props;
         const {data, selectedInstanceKind} = this.state;
         const dependedNodeCount = data.nodes.length;
-        const selectedNode = this.generateNodeFQN({instance: cell, component: component});
+        const selectedNode = this.generateNodeFQN({instance: instance, component: component});
 
 
         const viewGenerator = (group, nodeId, opacity) => {
@@ -372,7 +372,7 @@ class ComponentDependencyView extends React.Component {
                     </svg>
                 );
             } else if (group === ComponentDependencyGraph.NodeType.COMPOSITE) {
-                if (nodeId === cell) {
+                if (nodeId === instance) {
                     nodeView = (
                         <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
                             x="0px" y="0px" width="14px" height="14px" viewBox="0 0 13 13"
@@ -391,7 +391,7 @@ class ComponentDependencyView extends React.Component {
                         </svg>
                     );
                 }
-            } else if (nodeId === cell) {
+            } else if (nodeId === instance) {
                 nodeView = (
                     <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
                         x="0px" y="0px" width="14px" height="14px" viewBox="0 0 14 14"
@@ -428,8 +428,7 @@ class ComponentDependencyView extends React.Component {
                             id="component-dependency-graph"
                             nodeData={data.nodes} edgeData={data.edges} selectedComponent={selectedNode}
                             onClickNode={this.onClickNode} viewGenerator={viewGenerator}
-                            graphType="dependency" cellColor={colorGenerator.getColor(cell)}
-                            selectedInstanceKind={selectedInstanceKind} instance={cell}/>
+                            graphType="dependency" selectedInstanceKind={selectedInstanceKind} instance={instance}/>
                     </div>
                 </ErrorBoundary>
             );
@@ -438,7 +437,7 @@ class ComponentDependencyView extends React.Component {
                 <div>
                     <InfoOutlined className={classes.infoIcon} color="action"/>
                     <Typography variant="subtitle2" color="textSecondary" className={classes.info}>
-                        {`"${component}"`} component in {`"${cell}"`} instance does not depend on any other Component
+                        {`"${component}"`} component in {`"${instance}"`} instance does not depend on any other Component
                     </Typography>
                 </div>
             );
@@ -462,7 +461,7 @@ class ComponentDependencyView extends React.Component {
 
 ComponentDependencyView.propTypes = {
     classes: PropTypes.object.isRequired,
-    cell: PropTypes.string.isRequired,
+    instance: PropTypes.string.isRequired,
     component: PropTypes.string.isRequired,
     globalState: PropTypes.instanceOf(StateHolder).isRequired,
     colorGenerator: PropTypes.instanceOf(ColorGenerator).isRequired,
