@@ -90,13 +90,12 @@ public class ModelAddEdgeStreamProcessor extends StreamProcessor {
                             (String) destinationInstanceKindExecutor.execute(incomingStreamEvent);
 
                     Node sourceNode = null;
-                    if (isValidNode(runtime, sourceNamespace, sourceInstance, sourceComponent, sourceInstanceKind)) {
+                    if (isValidNode(runtime, sourceNamespace, sourceInstance, sourceComponent)) {
                         sourceNode = this.getOrGenerateNode(runtime, sourceNamespace, sourceInstance, sourceComponent,
                                 sourceInstanceKind);
                     }
                     Node destinationNode = null;
-                    if (isValidNode(runtime, destinationNamespace, destinationInstance, destinationComponent,
-                            destinationInstanceKind)) {
+                    if (isValidNode(runtime, destinationNamespace, destinationInstance, destinationComponent)) {
                         destinationNode = this.getOrGenerateNode(runtime, destinationNamespace, destinationInstance,
                                 destinationComponent, destinationInstanceKind);
                     }
@@ -143,13 +142,11 @@ public class ModelAddEdgeStreamProcessor extends StreamProcessor {
      * @param namespace The namespace the instance belongs to
      * @param instance The instance the node belongs to
      * @param component The name of the node
-     * @param instanceKind The instance kind
      * @return True if node details are correct.
      */
-    private boolean isValidNode(String runtime, String namespace, String instance, String component,
-                                String instanceKind) {
+    private boolean isValidNode(String runtime, String namespace, String instance, String component) {
         return StringUtils.isNotEmpty(runtime) && StringUtils.isNotEmpty(namespace) && StringUtils.isNotEmpty(instance)
-                && StringUtils.isNotEmpty(component) && StringUtils.isNotEmpty(instanceKind);
+                && StringUtils.isNotEmpty(component);
     }
 
     @Override

@@ -80,8 +80,7 @@ public class ModelManagerTestCase {
         ServiceHolder.setModelStoreManager(modelStoreManager);
 
         ModelManager modelManager = new ModelManager();
-        HashMap<String, HashMap<String, Node>> nodeCache
-                = Whitebox.getInternalState(modelManager, "nodeCache");
+        Map<String, HashMap<String, Node>> nodeCache = Whitebox.getInternalState(modelManager, "nodeCache");
 
         Assert.assertEquals(modelManager.getCurrentRuntimeModels(), runtimeModels);
         Assert.assertNotNull(nodeCache);
@@ -109,7 +108,7 @@ public class ModelManagerTestCase {
         ServiceHolder.setModelStoreManager(modelStoreManager);
 
         ModelManager modelManager = new ModelManager();
-        HashMap<String, Node> nodeCache = Whitebox.getInternalState(modelManager, "nodeCache");
+        Map<String, Node> nodeCache = Whitebox.getInternalState(modelManager, "nodeCache");
         Assert.assertEquals(nodeCache.size(), 0);
     }
 
@@ -204,7 +203,7 @@ public class ModelManagerTestCase {
     public void testGetNodeFromCache() throws Exception {
         String runtime = "test-runtime";
         ModelManager modelManager = initEmptyModelManager();
-        HashMap<String, HashMap<String, Node>> nodeCache = Mockito.spy(
+        Map<String, HashMap<String, Node>> nodeCache = Mockito.spy(
                 Whitebox.<HashMap<String, HashMap<String, Node>>>getInternalState(modelManager, "nodeCache"));
         Whitebox.setInternalState(modelManager, "nodeCache", nodeCache);
 

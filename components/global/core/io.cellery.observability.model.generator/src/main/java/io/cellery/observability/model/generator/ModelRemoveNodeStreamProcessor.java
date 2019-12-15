@@ -20,7 +20,6 @@ package io.cellery.observability.model.generator;
 
 import io.cellery.observability.model.generator.exception.GraphStoreException;
 import io.cellery.observability.model.generator.internal.ServiceHolder;
-import io.cellery.observability.model.generator.model.Node;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
@@ -43,27 +42,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This is the Siddhi extension which add nodes to the dependency model.
+ * This is the Siddhi extension which remove nodes from the dependency model.
  */
 @Extension(
-        name = "addNode",
+        name = "removeNode",
         namespace = "model",
-        description = "This add nodes to the dependency model",
+        description = "This remove nodes from the dependency model",
         examples = @Example(
                 description = "This updates the dependency model based on the request",
-                syntax = "model:addNode(runtime, namespace, instance, component, instanceKind)\n"
+                syntax = "model:removeNode(runtime, namespace, instance, component)\n"
                         + "select *\n"
                         + "insert into outputStream;"
         )
 )
-public class ModelAddNodeStreamProcessor extends StreamProcessor {
+public class ModelRemoveNodeStreamProcessor extends StreamProcessor {
     private static final Logger logger = Logger.getLogger(ModelAddNodeStreamProcessor.class);
 
     private ExpressionExecutor runtimeExecutor;
     private ExpressionExecutor namespaceExecutor;
     private ExpressionExecutor instanceExecutor;
     private ExpressionExecutor componentExecutor;
-    private ExpressionExecutor instanceKindExecutor;
 
     @Override
     protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
@@ -76,13 +74,10 @@ public class ModelAddNodeStreamProcessor extends StreamProcessor {
                     String namespace = (String) namespaceExecutor.execute(incomingStreamEvent);
                     String instance = (String) instanceExecutor.execute(incomingStreamEvent);
                     String component = (String) componentExecutor.execute(incomingStreamEvent);
-                    String instanceKind = (String) instanceKindExecutor.execute(incomingStreamEvent);
 
                     if (StringUtils.isNotEmpty(runtime) && StringUtils.isNotEmpty(namespace)
                             && StringUtils.isNotEmpty(instance) && StringUtils.isNotEmpty(component)) {
-                        Node node = ServiceHolder.getModelManager()
-                                .getOrGenerateNode(runtime, namespace, instance, component);
-                        node.setInstanceKind(instanceKind);
+                        ServiceHolder.getModelManager().removeNode(runtime, namespace, instance, component);
                     }
                 } catch (Throwable throwable) {
                     logger.error("Unexpected error occurred while processing the event " +
@@ -103,8 +98,8 @@ public class ModelAddNodeStreamProcessor extends StreamProcessor {
     @Override
     protected List<Attribute> init(AbstractDefinition inputDefinition, ExpressionExecutor[] expressionExecutors,
                                    ConfigReader configReader, SiddhiAppContext siddhiAppContext) {
-        if (expressionExecutors.length != 5) {
-            throw new SiddhiAppCreationException("Five arguments are required");
+        if (expressionExecutors.length != 4) {
+            throw new SiddhiAppCreationException("Four arguments are required");
         } else {
             if (expressionExecutors[0].getReturnType() == Attribute.Type.STRING) {
                 runtimeExecutor = expressionExecutors[0];
@@ -136,14 +131,6 @@ public class ModelAddNodeStreamProcessor extends StreamProcessor {
                 throw new SiddhiAppCreationException("Expected a field with String return type for the component " +
                         "field, but found a field with return type - "
                         + expressionExecutors[3].getReturnType());
-            }
-
-            if (expressionExecutors[4].getReturnType() == Attribute.Type.STRING) {
-                instanceKindExecutor = expressionExecutors[4];
-            } else {
-                throw new SiddhiAppCreationException("Expected a field with Long return type for the instance kind " +
-                        "field, but found a field with return type - "
-                        + expressionExecutors[4].getReturnType());
             }
         }
         return new ArrayList<>(0);
