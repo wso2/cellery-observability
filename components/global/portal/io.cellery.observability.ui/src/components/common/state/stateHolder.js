@@ -225,6 +225,10 @@ class StateHolder {
                         }
 
                         const globalFilter = self.get(StateHolder.GLOBAL_FILTER);
+                        const config = self.get(StateHolder.CONFIG);
+                        const defaultRuntimeId = config.filter.defaultRuntimeId;
+                        const defaultNamespace = config.filter.defaultNamespace;
+
                         let selectedRuntime = globalFilter.runtime;
                         let selectedNamespace = globalFilter.namespace;
                         if (userPermissions) {
@@ -236,8 +240,8 @@ class StateHolder {
                                 if (queryParams.globalFilterRuntime
                                     && allowedRuntimes.includes(queryParams.globalFilterRuntime)) {
                                     selectedRuntime = queryParams.globalFilterRuntime;
-                                } else if (allowedRuntimes.includes(Constants.Runtime.LOCAL_RUNTIME_ID)) {
-                                    selectedRuntime = Constants.Runtime.LOCAL_RUNTIME_ID;
+                                } else if (allowedRuntimes.includes(defaultRuntimeId)) {
+                                    selectedRuntime = defaultRuntimeId;
                                 } else {
                                     selectedRuntime = allowedRuntimes[0];
                                 }
@@ -250,8 +254,8 @@ class StateHolder {
                                 if (queryParams.globalFilterNamespace
                                     && allowedNamespaces.includes(queryParams.globalFilterNamespace)) {
                                     selectedNamespace = queryParams.globalFilterNamespace;
-                                } else if (allowedNamespaces.includes(Constants.Runtime.DEFAULT_NAMESPACE)) {
-                                    selectedNamespace = Constants.Runtime.DEFAULT_NAMESPACE;
+                                } else if (allowedNamespaces.includes(defaultNamespace)) {
+                                    selectedNamespace = defaultNamespace;
                                 } else {
                                     selectedNamespace = allowedNamespaces[0];
                                 }

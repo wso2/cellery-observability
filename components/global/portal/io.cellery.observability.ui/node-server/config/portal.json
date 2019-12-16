@@ -9,6 +9,10 @@
             "email": ["email"]
         }
     },
+    "filter": {
+        "defaultRuntimeId": "cellery-default",
+        "defaultNamespace": "default"
+    },
     "percentageRangeMinValue": {
         "errorThreshold": 0.5,
         "warningThreshold": 0.7

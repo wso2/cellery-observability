@@ -56,6 +56,8 @@ cellery.observability.auth:
 
   # Token that should is checked for by the Cellery Local Auth Provider
   defaultLocalAuthProviderToken: YWdlbnQ6YWdlbnQtcGFzcw==
+  # The local runtime ID to which all permissions will be given by the Cellery Local Auth Provider
+  defaultLocalAuthProviderLocalRuntimeId: cellery-default
 
 # Datasource Configurations
 wso2.datasources:
