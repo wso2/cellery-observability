@@ -58,7 +58,7 @@ public class DcrProvider {
             retrieveClientCredentials();
         } catch (AuthProviderException | ConfigurationException e) {
             logger.warn("Fetching Client Credentials failed due to IDP unavailability, " +
-                    "will be re-attempted when a user logs in");
+                    "will be re-attempted when a user logs in", e);
         }
     }
 
@@ -102,9 +102,11 @@ public class DcrProvider {
         if (this.clientId == null || this.clientSecret == null) {
             JsonObject jsonObject = createNewClient();
             if (jsonObject.has(ERROR)) {
-                logger.info("Fetching the credentials of the already existing client "
-                        + AuthConfig.getInstance().getDcrClientName());
                 jsonObject = retrieveExistingClientCredentials();
+                logger.info("Fetched the credentials of the already existing client "
+                        + AuthConfig.getInstance().getDcrClientName());
+            } else {
+                logger.info("Created new Client " + AuthConfig.getInstance().getDcrClientName());
             }
 
             this.clientId = jsonObject.get(Constants.OIDC_CLIENT_ID_KEY).getAsString();
@@ -142,9 +144,6 @@ public class DcrProvider {
             request.setEntity(requestEntity);
 
             HttpClient client = AuthUtils.getTrustAllClient();
-            if (logger.isDebugEnabled()) {
-                logger.debug("Creating new Client " + AuthConfig.getInstance().getDcrClientName());
-            }
             HttpResponse response = client.execute(request);
             return jsonParser.parse(EntityUtils.toString(response.getEntity())).getAsJsonObject();
         } catch (IOException | ParseException | NoSuchAlgorithmException | KeyManagementException |

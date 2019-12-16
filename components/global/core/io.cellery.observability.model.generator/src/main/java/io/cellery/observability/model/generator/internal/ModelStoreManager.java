@@ -50,7 +50,7 @@ import javax.sql.DataSource;
  * This handles the communication between the Model datasource, and the rest of the other components.
  */
 public class ModelStoreManager {
-    private static final Logger log = Logger.getLogger(ModelStoreManager.class);
+    private static final Logger logger = Logger.getLogger(ModelStoreManager.class);
 
     private static final String TABLE_NAME = "DependencyModelTable";
     private static final String DATASOURCE_NAME = "CELLERY_OBSERVABILITY_DB";
@@ -71,8 +71,12 @@ public class ModelStoreManager {
             this.dataSource = (DataSource) ServiceHolder.getDataSourceService().getDataSource(DATASOURCE_NAME);
             createTable();
             this.lastModels = loadLastModels();
+            logger.info("Initialized Model Store Manager with " + (
+                    this.lastModels == null
+                            ? "no stored runtime models"
+                            : "models from " + this.lastModels.size() + " runtime(s)"));
         } catch (DataSourceException | GraphStoreException | SQLException e) {
-            log.error("Unable to load the datasource : " + DATASOURCE_NAME +
+            logger.error("Unable to load the datasource : " + DATASOURCE_NAME +
                     " , and hence unable to schedule the periodic dependency persistence.", e);
         }
     }
@@ -189,21 +193,21 @@ public class ModelStoreManager {
             try {
                 rs.close();
             } catch (SQLException e) {
-                log.error("Error on closing resultSet " + e.getMessage(), e);
+                logger.error("Error on closing resultSet " + e.getMessage(), e);
             }
         }
         if (stmt != null) {
             try {
                 stmt.close();
             } catch (SQLException e) {
-                log.error("Error on closing statement " + e.getMessage(), e);
+                logger.error("Error on closing statement " + e.getMessage(), e);
             }
         }
         if (conn != null) {
             try {
                 conn.close();
             } catch (SQLException e) {
-                log.error("Error on closing connection " + e.getMessage(), e);
+                logger.error("Error on closing connection " + e.getMessage(), e);
             }
         }
     }
@@ -265,12 +269,24 @@ public class ModelStoreManager {
             }
             if (currentRuntimeModels.size() != 0) {
                 if (this.lastModels != null && Objects.equals(this.lastModels, currentRuntimeModels)) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Ignoring store current Dependency Model " +
+                                "since last saved model and current model is equal");
+                    }
                     return;
                 }
                 this.storeModel(currentRuntimeModels);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Stored current Dependency Model for " + currentRuntimeModels.size() + " runtime(s)");
+                }
+            } else {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Ignoring store current Dependency models request " +
+                            "since no runtime models are present");
+                }
             }
         } catch (GraphStoreException e) {
-            log.error("Error occurred while handling the dependency graph persistence", e);
+            logger.error("Error occurred while handling the dependency graph persistence", e);
             throw e;
         } finally {
             writeLock.unlock();
@@ -290,6 +306,9 @@ public class ModelStoreManager {
             connection.commit();
             cleanupConnection(null, statement, connection);
             this.lastModels = null;
+            if (logger.isDebugEnabled()) {
+                logger.debug("Cleared all the stored models");
+            }
         } catch (SQLException e) {
             throw new GraphStoreException("Failed to clear stored models", e);
         } finally {
