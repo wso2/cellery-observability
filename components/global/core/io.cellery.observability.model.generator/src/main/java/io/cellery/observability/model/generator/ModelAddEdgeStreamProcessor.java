@@ -19,6 +19,7 @@ package io.cellery.observability.model.generator;
 
 import io.cellery.observability.model.generator.exception.GraphStoreException;
 import io.cellery.observability.model.generator.internal.ServiceHolder;
+import io.cellery.observability.model.generator.model.Model;
 import io.cellery.observability.model.generator.model.Node;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
@@ -93,14 +94,33 @@ public class ModelAddEdgeStreamProcessor extends StreamProcessor {
                     if (isValidNode(runtime, sourceNamespace, sourceInstance, sourceComponent)) {
                         sourceNode = this.getOrGenerateNode(runtime, sourceNamespace, sourceInstance, sourceComponent,
                                 sourceInstanceKind);
+                    } else {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Ignoring add invalid node event: "
+                                    + Model.getNodeFQN(sourceNamespace, sourceInstance, sourceComponent)
+                                    + " from runtime " + runtime);
+                        }
                     }
                     Node destinationNode = null;
                     if (isValidNode(runtime, destinationNamespace, destinationInstance, destinationComponent)) {
                         destinationNode = this.getOrGenerateNode(runtime, destinationNamespace, destinationInstance,
                                 destinationComponent, destinationInstanceKind);
+                    } else {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Ignoring add invalid node event: "
+                                    + Model.getNodeFQN(destinationNamespace, destinationInstance, destinationComponent)
+                                    + " from runtime " + runtime);
+                        }
                     }
                     if (sourceNode != null && destinationNode != null) {
                         ServiceHolder.getModelManager().addEdge(runtime, sourceNode, destinationNode);
+                    } else {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Ignoring add invalid edge event: "
+                                    + Model.getNodeFQN(sourceNamespace, sourceInstance, sourceComponent) + " --> "
+                                    + Model.getNodeFQN(destinationNamespace, destinationInstance, destinationComponent)
+                                    + " from runtime " + runtime);
+                        }
                     }
                 } catch (Throwable throwable) {
                     logger.error("Unexpected error occurred while processing the event " +

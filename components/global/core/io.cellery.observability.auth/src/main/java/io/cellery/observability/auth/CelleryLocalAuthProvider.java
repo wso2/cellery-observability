@@ -100,8 +100,15 @@ public class CelleryLocalAuthProvider implements AuthProvider {
                     .stream()
                     .map(namespace -> new Permission(LOCAL_RUNTIME_ID, namespace.getMetadata().getName(), ALL_ACTIONS))
                     .toArray(Permission[]::new);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Providing all actions for all namespaces (" + namespaceList.getItems().size()
+                        + ") from " + LOCAL_RUNTIME_ID + " runtime as allowed permissions");
+            }
         } else {
             permissions = new Permission[0];
+            if (logger.isDebugEnabled()) {
+                logger.debug("Providing no allowed permissions as no namespaces are present");
+            }
         }
         return permissions;
     }
@@ -134,8 +141,7 @@ public class CelleryLocalAuthProvider implements AuthProvider {
                     return false;
                 }
             } else {
-                logger.error("Failed to connect to Introspect endpoint in Identity Provider server." +
-                        " Exited with Status Code " + statusCode);
+                logger.error("Failed to validate whether the token is valid with status code " + statusCode);
                 return false;
             }
         } catch (IOException | ParseException | NoSuchAlgorithmException | KeyManagementException |

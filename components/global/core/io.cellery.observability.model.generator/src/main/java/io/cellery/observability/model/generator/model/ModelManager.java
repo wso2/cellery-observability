@@ -22,6 +22,7 @@ import com.google.common.graph.NetworkBuilder;
 import io.cellery.observability.model.generator.exception.GraphStoreException;
 import io.cellery.observability.model.generator.exception.ModelException;
 import io.cellery.observability.model.generator.internal.ServiceHolder;
+import org.apache.log4j.Logger;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,6 +43,8 @@ import java.util.stream.Collectors;
  * This is the Manager, singleton class which performs the operations in the in memory dependency tree.
  */
 public class ModelManager {
+    private static final Logger logger = Logger.getLogger(ModelManager.class);
+
     private final ReadWriteLock lock;
     private final Map<String, MutableNetwork<Node, Edge>> dependencyGraphs;
     private final Map<String, Map<String, Node>> nodeCache;
@@ -58,6 +61,10 @@ public class ModelManager {
                     addNodes(modelEntry.getKey(), modelEntry.getValue().getNodes());
                     addEdges(modelEntry.getKey(), modelEntry.getValue().getEdges());
                 }
+                logger.info("Initialized Model Manager using models loaded from Store with " + models.size()
+                        + " runtime model(s)");
+            } else {
+                logger.info("Initialized Model Manager with no models");
             }
         } catch (GraphStoreException e) {
             throw new ModelException("Unable to load already persisted model", e);

@@ -58,7 +58,7 @@ import org.wso2.siddhi.core.SiddhiManager;
 )
 public class ApiServiceComponent {
 
-    private static final Logger log = Logger.getLogger(ApiServiceComponent.class);
+    private static final Logger logger = Logger.getLogger(ApiServiceComponent.class);
 
     private static final int DEFAULT_OBSERVABILITY_API_PORT = 9123;
 
@@ -81,7 +81,8 @@ public class ApiServiceComponent {
 
             // Deploying the micro-services
             int offset = ServiceHolder.getCarbonRuntime().getConfiguration().getPortsConfig().getOffset();
-            ServiceHolder.setMicroservicesRunner(new MicroservicesRunner(DEFAULT_OBSERVABILITY_API_PORT + offset)
+            int port = DEFAULT_OBSERVABILITY_API_PORT + offset;
+            ServiceHolder.setMicroservicesRunner(new MicroservicesRunner(port)
                     .addGlobalRequestInterceptor(new CORSInterceptor(), new AuthInterceptor())
                     .addExceptionMapper(
                             new APIInvocationException.Mapper(), new InvalidParamException.Mapper(),
@@ -93,8 +94,9 @@ public class ApiServiceComponent {
                     )
             );
             ServiceHolder.getMicroservicesRunner().start();
+            logger.info("Cellery Observability API Listening on port " + port);
         } catch (Throwable throwable) {
-            log.error("Error occured while activating the Observability API bundle", throwable);
+            logger.error("Error occurred while activating the Observability API bundle", throwable);
             throw throwable;
         }
     }
@@ -108,13 +110,13 @@ public class ApiServiceComponent {
     @Deactivate
     protected void stop() throws Exception {
         ServiceHolder.getMicroservicesRunner().stop();
-        if (log.isDebugEnabled()) {
-            log.debug("Successfully stopped Microservices");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Successfully stopped Microservices");
         }
 
         ServiceHolder.getSiddhiStoreQueryManager().stop();
-        if (log.isDebugEnabled()) {
-            log.debug("Successfully stopped Siddhi Query manager");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Successfully stopped Siddhi Query manager");
         }
     }
 

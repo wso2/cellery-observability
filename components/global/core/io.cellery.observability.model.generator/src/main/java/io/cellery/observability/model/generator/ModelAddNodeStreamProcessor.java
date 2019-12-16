@@ -20,6 +20,7 @@ package io.cellery.observability.model.generator;
 
 import io.cellery.observability.model.generator.exception.GraphStoreException;
 import io.cellery.observability.model.generator.internal.ServiceHolder;
+import io.cellery.observability.model.generator.model.Model;
 import io.cellery.observability.model.generator.model.Node;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
@@ -83,6 +84,11 @@ public class ModelAddNodeStreamProcessor extends StreamProcessor {
                         Node node = ServiceHolder.getModelManager()
                                 .getOrGenerateNode(runtime, namespace, instance, component);
                         node.setInstanceKind(instanceKind);
+                    } else {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Ignoring add invalid node event: "
+                                    + Model.getNodeFQN(namespace, instance, component) + " from runtime " + runtime);
+                        }
                     }
                 } catch (Throwable throwable) {
                     logger.error("Unexpected error occurred while processing the event " +

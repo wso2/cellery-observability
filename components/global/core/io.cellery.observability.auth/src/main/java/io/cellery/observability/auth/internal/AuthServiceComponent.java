@@ -41,7 +41,7 @@ import java.lang.reflect.Constructor;
         immediate = true
 )
 public class AuthServiceComponent {
-    private static final Logger log = Logger.getLogger(AuthServiceComponent.class);
+    private static final Logger logger = Logger.getLogger(AuthServiceComponent.class);
 
     @Activate
     protected void start(BundleContext bundleContext) throws Exception {
@@ -57,17 +57,17 @@ public class AuthServiceComponent {
             AuthProvider authProvider;
             if (authProviderObject instanceof AuthProvider) {
                 authProvider = (AuthProvider) authProviderObject;
-                log.info("Using " + authProviderClass.getName() + " as the Auth Provider");
+                logger.info("Using " + authProviderClass.getName() + " as the Auth Provider");
             } else {
                 authProvider = new CelleryLocalAuthProvider();
-                log.warn("Using default Cellery Auth Provider since " + authProviderClass.getName()
+                logger.warn("Using default Cellery Auth Provider since " + authProviderClass.getName()
                         + " is not an instance of " + AuthProvider.class);
             }
 
             bundleContext.registerService(DcrProvider.class.getName(), dcrProvider, null);
             bundleContext.registerService(AuthProvider.class.getName(), authProvider, null);
         } catch (Throwable throwable) {
-            log.error("Error occurred while activating the model generation bundle", throwable);
+            logger.error("Error occurred while activating the model generation bundle", throwable);
             throw throwable;
         }
     }

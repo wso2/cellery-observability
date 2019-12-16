@@ -20,6 +20,7 @@ package io.cellery.observability.model.generator;
 
 import io.cellery.observability.model.generator.exception.GraphStoreException;
 import io.cellery.observability.model.generator.internal.ServiceHolder;
+import io.cellery.observability.model.generator.model.Model;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
@@ -78,6 +79,11 @@ public class ModelRemoveNodeStreamProcessor extends StreamProcessor {
                     if (StringUtils.isNotEmpty(runtime) && StringUtils.isNotEmpty(namespace)
                             && StringUtils.isNotEmpty(instance) && StringUtils.isNotEmpty(component)) {
                         ServiceHolder.getModelManager().removeNode(runtime, namespace, instance, component);
+                    } else {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Ignoring remove invalid node event: "
+                                    + Model.getNodeFQN(namespace, instance, component) + " from runtime " + runtime);
+                        }
                     }
                 } catch (Throwable throwable) {
                     logger.error("Unexpected error occurred while processing the event " +

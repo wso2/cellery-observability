@@ -57,17 +57,41 @@ public class AuthInterceptor implements RequestInterceptor {
                         Permission requiredPermission = this.getRequiredPermission(request);
                         if (!ServiceHolder.getAuthProvider().isTokenValid(accessToken, requiredPermission)) {
                             response.setStatus(401);
+                            if (logger.isDebugEnabled()) {
+                                logger.debug("Blocking API Call " + request.getHttpMethod() + " " + request.getUri()
+                                        + " with invalid access token");
+                            }
                             return false;
+                        } else {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug("Allowing API Call " + request.getHttpMethod() + " " + request.getUri()
+                                        + " with valid access token");
+                            }
                         }
                     } catch (AuthProviderException e) {
                         logger.debug("Error occurred while authenticating the access token", e);
                         response.setStatus(401);
                         return false;
                     }
+                } else {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Allowing Open API Call " + request.getHttpMethod() + " " + request.getUri());
+                    }
                 }
             } else if (!this.isOpenApi(request)) {
+                logger.debug("Blocking API Call " + request.getHttpMethod() + " " + request.getUri()
+                        + " without access token");
                 response.setStatus(401);
                 return false;
+            } else {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Allowing Open API Call " + request.getHttpMethod() + " " + request.getUri()
+                            + " without access token");
+                }
+            }
+        } else {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Allowing " + HttpMethod.OPTIONS + " " + request.getUri());
             }
         }
         return true;
