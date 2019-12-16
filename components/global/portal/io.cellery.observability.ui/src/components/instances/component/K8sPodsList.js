@@ -124,8 +124,10 @@ class K8sPodsList extends React.Component {
         const {globalState} = self.props;
         const {metricsPopperElement, openMetricsPopoverPod} = self.state;
 
-        const podMetricsLinkTemplate = globalState.get(StateHolder.CONFIG).templates.kubernetesMetricsLinks.pod;
-        const nodeMetricsLinkTemplate = globalState.get(StateHolder.CONFIG).templates.kubernetesMetricsLinks.node;
+        const globalFilter = globalState.get(StateHolder.GLOBAL_FILTER);
+        const templates = globalState.get(StateHolder.CONFIG).templates.kubernetesMetricsLinks;
+        const podMetricsLinkTemplate = (templates && templates.pod ? templates.pod : "");
+        const nodeMetricsLinkTemplate = (templates && templates.node ? templates.node : "");
 
         const handleMetricsMenuOpen = (event) => {
             self.setState({
@@ -143,7 +145,9 @@ class K8sPodsList extends React.Component {
             const queryStartTIme = QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).startTime).valueOf();
             const queryEndTIme = QueryUtils.parseTime(globalState.get(StateHolder.GLOBAL_FILTER).endTime).valueOf();
 
-            return linkTemplate.replace(/\${pod}/g, value.podName)
+            return linkTemplate.replace(/\${runtime}/g, globalFilter.runtime)
+                .replace(/\${namespace}/g, globalFilter.namespace)
+                .replace(/\${pod}/g, value.podName)
                 .replace(/\${node}/g, value.nodeName)
                 .replace(/\${fromTime}/g, queryStartTIme)
                 .replace(/\${toTime}/g, queryEndTIme);
@@ -160,8 +164,7 @@ class K8sPodsList extends React.Component {
         const anchorEl = openMetricsPopoverPod === value.podName ? metricsPopperElement : null;
         return (
             <React.Fragment>
-                <IconButton size="small" color="inherit" onClick={handleMetricsMenuOpen}
-                    disabled={!podMetricsLinkTemplate && !nodeMetricsLinkTemplate}>
+                <IconButton size="small" color="inherit" onClick={handleMetricsMenuOpen}>
                     <BarChart/>
                 </IconButton>
                 {
@@ -187,9 +190,10 @@ class K8sPodsList extends React.Component {
     };
 
     render = () => {
-        const {component} = this.props;
+        const {component, globalState} = this.props;
         const {podInfo, isLoading} = this.state;
 
+        const templates = globalState.get(StateHolder.CONFIG).templates.kubernetesMetricsLinks;
         const columns = [
             {
                 name: "Pod"
@@ -208,30 +212,37 @@ class K8sPodsList extends React.Component {
             },
             {
                 name: "Node"
-            },
-            {
+            }
+        ];
+        if (templates) {
+            columns.push({
                 name: "",
                 options: {
                     customBodyRender: this.metricsButtonRenderer
                 }
-            }
-        ];
+            });
+        }
         const options = {
             filter: false
         };
 
         let listView;
         if (podInfo.length > 0) {
-            listView = <DataTable columns={columns} options={options} data={podInfo.map((podDatum) => [
-                podDatum.name,
-                podDatum.creationTimestamp,
-                podDatum.lastKnownAliveTimestamp,
-                podDatum.nodeName,
-                {
-                    podName: podDatum.name,
-                    nodeName: podDatum.nodeName
+            listView = <DataTable columns={columns} options={options} data={podInfo.map((podDatum) => {
+                const dataItem = [
+                    podDatum.name,
+                    podDatum.creationTimestamp,
+                    podDatum.lastKnownAliveTimestamp,
+                    podDatum.nodeName
+                ];
+                if (templates) {
+                    dataItem.push({
+                        podName: podDatum.name,
+                        nodeName: podDatum.nodeName
+                    });
                 }
-            ])}/>;
+                return dataItem;
+            })}/>;
         } else {
             listView = (
                 <NotFound title={"No Pods Found"} description={`No Pods found for "${component}" component `
