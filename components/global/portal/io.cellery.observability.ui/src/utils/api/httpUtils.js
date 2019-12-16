@@ -141,7 +141,7 @@ class HttpUtils {
                             AuthUtils.redirectForTokenRefresh(globalState);
                         }
                     }
-                    reject(new Error(errorResponse.data));
+                    reject(new Error(errorResponse.data ? errorResponse.data : errorResponse));
                 } else {
                     reject(error);
                 }

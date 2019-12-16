@@ -89,8 +89,12 @@ public class HttpRequestsAPI {
             throws APIInvocationException {
         Utils.validateCelleryIdParam("runtime", runtime);
         Utils.validateCelleryIdParam("namespace", namespace);
-        Utils.validateCelleryIdParam("sourceInstance", sourceInstance);
-        Utils.validateCelleryIdParam("destinationInstance", destinationInstance);
+        if (StringUtils.isNotBlank(sourceInstance)) {
+            Utils.validateCelleryIdParam("sourceInstance", sourceInstance);
+        }
+        if (StringUtils.isNotBlank(destinationInstance)) {
+            Utils.validateCelleryIdParam("destinationInstance", destinationInstance);
+        }
         Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         Utils.validateTimeGranularityParam(timeGranularity);
         try {
@@ -207,10 +211,18 @@ public class HttpRequestsAPI {
             throws APIInvocationException {
         Utils.validateCelleryIdParam("runtime", runtime);
         Utils.validateCelleryIdParam("namespace", namespace);
-        Utils.validateCelleryIdParam("sourceInstance", sourceInstance);
-        Utils.validateCelleryIdParam("sourceComponent", sourceComponent);
-        Utils.validateCelleryIdParam("destinationInstance", destinationInstance);
-        Utils.validateCelleryIdParam("destinationComponent", destinationComponent);
+        if (StringUtils.isNotBlank(sourceInstance)) {
+            Utils.validateCelleryIdParam("sourceInstance", sourceInstance);
+        }
+        if (StringUtils.isNotBlank(sourceComponent)) {
+            Utils.validateCelleryIdParam("sourceComponent", sourceComponent);
+        }
+        if (StringUtils.isNotBlank(destinationInstance)) {
+            Utils.validateCelleryIdParam("destinationInstance", destinationInstance);
+        }
+        if (StringUtils.isNotBlank(destinationComponent)) {
+            Utils.validateCelleryIdParam("destinationComponent", destinationComponent);
+        }
         Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         Utils.validateTimeGranularityParam(timeGranularity);
         try {

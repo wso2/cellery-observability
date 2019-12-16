@@ -25,6 +25,7 @@ import com.google.gson.JsonSyntaxException;
 import io.cellery.observability.api.exception.APIInvocationException;
 import io.cellery.observability.api.exception.InvalidParamException;
 import io.cellery.observability.api.siddhi.SiddhiStoreQueryTemplates;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -91,10 +92,16 @@ public class DistributedTracingAPI {
             throws APIInvocationException {
         Utils.validateCelleryIdParam("runtime", runtime);
         Utils.validateCelleryIdParam("namespace", namespace);
-        Utils.validateCelleryIdParam("instance", instance);
-        Utils.validateCelleryIdParam("serviceName", serviceName);
-        Utils.validateSimpleStringParam("operationName", operationName);
-        if (minDuration >= maxDuration) {
+        if (StringUtils.isNotBlank(instance)) {
+            Utils.validateCelleryIdParam("instance", instance);
+        }
+        if (StringUtils.isNotBlank(serviceName)) {
+            Utils.validateCelleryIdParam("serviceName", serviceName);
+        }
+        if (StringUtils.isNotBlank(operationName)) {
+            Utils.validateSimpleStringParam("operationName", operationName);
+        }
+        if (minDuration != -1 && maxDuration != 1 && minDuration >= maxDuration) {
             throw new InvalidParamException("maxDuration", "value greater than minDuration");
         }
         Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
