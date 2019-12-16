@@ -70,6 +70,9 @@ public class AuthConfig {
     @Element(description = "defaultLocalAuthProviderToken")
     private String defaultLocalAuthProviderToken = "";
 
+    @Element(description = "defaultLocalAuthProviderLocalRuntimeId")
+    private String defaultLocalAuthProviderLocalRuntimeId = "";
+
     public String getIdpUrl() {
         return idpUrl;
     }
@@ -112,6 +115,10 @@ public class AuthConfig {
 
     public String getDefaultLocalAuthProviderToken() {
         return defaultLocalAuthProviderToken;
+    }
+
+    public String getDefaultLocalAuthProviderLocalRuntimeId() {
+        return defaultLocalAuthProviderLocalRuntimeId;
     }
 
     public static synchronized AuthConfig getInstance() throws ConfigurationException, AuthProviderException {
@@ -159,6 +166,10 @@ public class AuthConfig {
             // Validating Cellery Local Auth Provider related configurations
             if (StringUtils.isEmpty(this.defaultLocalAuthProviderToken)) {
                 throw new AuthProviderException("Default Local Auth Provider Token is empty, expected a proper token");
+            }
+            if (StringUtils.isEmpty(this.defaultLocalAuthProviderLocalRuntimeId)) {
+                throw new AuthProviderException("Default Local Auth Provider Local Runtime ID is empty, " +
+                        "expected a proper runtime ID");
             }
         }
     }

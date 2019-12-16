@@ -25,6 +25,7 @@ import io.cellery.observability.auth.exception.AuthProviderException;
 import io.cellery.observability.auth.internal.AuthConfig;
 import io.cellery.observability.auth.internal.K8sClientHolder;
 import io.fabric8.kubernetes.api.model.NamespaceList;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.ParseException;
@@ -53,40 +54,58 @@ public class CelleryLocalAuthProvider implements AuthProvider {
     private static final Logger logger = Logger.getLogger(CelleryLocalAuthProvider.class);
     private static final JsonParser jsonParser = new JsonParser();
 
-    private static final String LOCAL_RUNTIME_ID = "cellery-default";
-    private static final String ACTIVE_STATUS = "active";
+    private final String localRuntimeId;
 
+    private static final String ACTIVE_STATUS = "active";
     private static final List<Action> ALL_ACTIONS = Arrays.asList(
             Action.API_GET,
             Action.DATA_PUBLISH
     );
 
+    public CelleryLocalAuthProvider() throws AuthProviderException {
+        try {
+            localRuntimeId = AuthConfig.getInstance().getDefaultLocalAuthProviderLocalRuntimeId();
+        } catch (ConfigurationException e) {
+            throw new AuthProviderException("Failed to get the local runtime ID", e);
+        }
+    }
+
     @Override
     public boolean isTokenValid(String token, Permission requiredPermission) throws AuthProviderException {
-        // The required permission is ignored as all actions are allowed by default by Cellery Auth Provider
-        List<Action> actions = requiredPermission.getActions();
-        if (actions.size() == 1 && Objects.equals(actions.get(0), (Action.DATA_PUBLISH))) {
-            boolean isAllowed;
-            try {
-                isAllowed = Objects.equals(AuthConfig.getInstance().getDefaultLocalAuthProviderToken(), token);
-            } catch (ConfigurationException e) {
-                logger.error("Failed to validate data publish request access token from runtime "
-                        + requiredPermission.getRuntime(), e);
-                isAllowed = false;
+        if (StringUtils.isBlank(requiredPermission.getRuntime())
+                || Objects.equals(requiredPermission.getRuntime(), localRuntimeId)) {
+            List<Action> actions = requiredPermission.getActions();
+            if (actions.size() == 1 && Objects.equals(actions.get(0), (Action.DATA_PUBLISH))) {
+                boolean isAllowed;
+                try {
+                    isAllowed = Objects.equals(AuthConfig.getInstance().getDefaultLocalAuthProviderToken(), token);
+                } catch (ConfigurationException e) {
+                    logger.error("Failed to validate data publish request access token from runtime "
+                            + requiredPermission.getRuntime(), e);
+                    isAllowed = false;
+                }
+                if (logger.isDebugEnabled()) {
+                    logger.debug((isAllowed ? "Allowing" : "Blocking") + " data publish request from runtime "
+                            + requiredPermission.getRuntime() + " since the token does not match the configured "
+                            + "data publish token");
+                }
+                return isAllowed;
+            } else {
+                boolean isAllowed = this.isTokenValid(token);
+                if (logger.isDebugEnabled()) {
+                    logger.debug((isAllowed ? "Allowing " : "Blocking ") + requiredPermission.getActions().toString()
+                            + " for runtime: " + requiredPermission.getRuntime() + ", namespace: "
+                            + requiredPermission.getNamespace() + " since the token is invalid");
+                }
+                return isAllowed;
             }
-            if (logger.isDebugEnabled()) {
-                logger.debug((isAllowed ? "Allowing" : "Blocking") + " data publish request from runtime "
-                        + requiredPermission.getRuntime());
-            }
-            return isAllowed;
         } else {
-            boolean isAllowed = this.isTokenValid(token);
             if (logger.isDebugEnabled()) {
-                logger.debug((isAllowed ? "Allowing " : "Blocking ") + requiredPermission.getActions().toString()
+                logger.debug("Blocking " + requiredPermission.getActions().toString()
                         + " for runtime: " + requiredPermission.getRuntime() + ", namespace: "
-                        + requiredPermission.getNamespace());
+                        + requiredPermission.getNamespace() + " since runtime ID does not match " + localRuntimeId);
             }
-            return isAllowed;
+            return false;
         }
     }
 
@@ -98,11 +117,11 @@ public class CelleryLocalAuthProvider implements AuthProvider {
         if (namespaceList != null) {
             permissions = namespaceList.getItems()
                     .stream()
-                    .map(namespace -> new Permission(LOCAL_RUNTIME_ID, namespace.getMetadata().getName(), ALL_ACTIONS))
+                    .map(namespace -> new Permission(localRuntimeId, namespace.getMetadata().getName(), ALL_ACTIONS))
                     .toArray(Permission[]::new);
             if (logger.isDebugEnabled()) {
                 logger.debug("Providing all actions for all namespaces (" + namespaceList.getItems().size()
-                        + ") from " + LOCAL_RUNTIME_ID + " runtime as allowed permissions");
+                        + ") from " + localRuntimeId + " runtime as allowed permissions");
             }
         } else {
             permissions = new Permission[0];

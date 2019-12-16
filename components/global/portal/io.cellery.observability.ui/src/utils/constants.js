@@ -64,10 +64,6 @@ const Constants = {
         OUTBOUND: "Outbound",
         SIDE_NAV_BAR_WIDTH: 240,
         AUTHORIZATION_EP: "/oauth2/authorize?response_type=code"
-    },
-    Runtime: {
-        LOCAL_RUNTIME_ID: "cellery-default",
-        DEFAULT_NAMESPACE: "default"
     }
 };
 
