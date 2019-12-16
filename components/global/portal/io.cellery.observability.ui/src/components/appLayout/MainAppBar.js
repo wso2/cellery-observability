@@ -207,23 +207,25 @@ class MainAppBar extends React.Component {
         const decodedJwt = jwtDecode(loggedInUser.idToken);
         const config = globalState.get(StateHolder.CONFIG);
 
-        function getFirstElement(value) {
-            if (value !== null) {
-                const jwtValue = decodedJwt[value];
+        function getJwtValue(key) {
+            if (key !== null) {
+                const jwtValue = decodedJwt[key];
                 if (jwtValue !== null) {
                     return jwtValue;
                 }
             }
             return null;
         }
-
-        let username = config.idp.idTokenAttributes.name.map(getFirstElement);
-        if ((username === "") || (username.length === 0) || (username.length === undefined)) {
-            username = decodedJwt.sub;
+        function isNotBlank(value) {
+            return Boolean(value);
         }
-        const avatarUrl1 = config.idp.idTokenAttributes.avatar.map(getFirstElement);
-        const avatarUrl = avatarUrl1.toString().replace(/,/g, "");
-        const email = decodedJwt.email;
+
+        const usernameJwtValues = config.idp.idTokenAttributes.username.map(getJwtValue);
+        const username = usernameJwtValues.find(isNotBlank);
+        const avatarUrlJwtValues = config.idp.idTokenAttributes.avatarUrl.map(getJwtValue);
+        const avatarUrl = avatarUrlJwtValues.find(isNotBlank);
+        const emailJwtValues = config.idp.idTokenAttributes.email.map(getJwtValue);
+        const email = emailJwtValues.find(isNotBlank);
 
         return (
             <AppBar position="fixed"
@@ -244,7 +246,7 @@ class MainAppBar extends React.Component {
                     {
                         loggedInUser
                             ? (
-                                <React.Fragment>
+                                <div>
                                     <Tooltip title="Change color scheme" placement="bottom">
                                         <IconButton onClick={this.resetColorScheme} color="inherit">
                                             <FormatColorFillOutlined/>
@@ -342,7 +344,7 @@ class MainAppBar extends React.Component {
                                             Sign Out
                                         </MenuItem>
                                     </Menu>
-                                </React.Fragment>
+                                </div>
                             )
                             : null
                     }

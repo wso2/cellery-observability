@@ -4,8 +4,9 @@
         "idpURL": "https://idp.cellery-system",
         "callBackURL": "http://cellery-dashboard",
         "idTokenAttributes": {
-            "name": ["name"],
-            "avatar": ["avatar_url", "google_pic_url"]
+            "username": ["name", "sub"],
+            "avatarUrl": ["avatar_url", "google_pic_url"],
+            "email": ["email"]
         }
     },
     "percentageRangeMinValue": {
