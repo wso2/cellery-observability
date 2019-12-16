@@ -136,7 +136,15 @@ select
     responseSizeBytes
 insert into ProcessedRequestsStream;
 
--- Adding edges to the Dependency Model
-from ProcessedRequestsStream#model:addEdge(runtime, sourceNamespace, sourceInstance, sourceComponent,
+--
+-- Adding edges to the Dependency Model.
+-- This is done in batches to reduce the number of table entries
+-- This will make sure that the model updates are done in 5 second batches.
+--
+
+from ProcessedRequestsStream#window.timeBatch(5 sec)
+insert expired events into BatchedProcessedRequestsStream;
+
+from BatchedProcessedRequestsStream#model:addEdge(runtime, sourceNamespace, sourceInstance, sourceComponent,
     sourceInstanceKind, destinationNamespace, destinationInstance, destinationComponent, destinationInstanceKind)
 insert into DummyStream;

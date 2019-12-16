@@ -127,10 +127,18 @@ update or insert into K8sComponentInfoTable
         and K8sComponentInfoTable.component == component;
 
 --
+-- Batching K8s Components Stream to reduce the number of Model entries.
+-- This will make sure that the model updates are done in 5 second batches.
+--
+
+from K8sComponentStream#window.timeBatch(5 sec)
+insert expired events into BatchedK8sComponentStream;
+
+--
 -- Adding nodes to the Dependency Model
 --
 
-from K8sComponentStream[action == "Add" or action == "Update"]
+from BatchedK8sComponentStream[action == "Add"]
 insert into FilteredNodeUpdatesStream;
 
 from FilteredNodeUpdatesStream#model:addNode(runtime, namespace, instance, component, instanceKind)
@@ -140,7 +148,7 @@ insert into DummyStream;
 -- Removing nodes from the Dependency Model
 --
 
-from K8sComponentStream[action == "Delete"]
+from BatchedK8sComponentStream[action == "Delete"]
 insert into FilteredNodeDeletesStream;
 
 from FilteredNodeDeletesStream#model:removeNode(runtime, namespace, instance, component)
