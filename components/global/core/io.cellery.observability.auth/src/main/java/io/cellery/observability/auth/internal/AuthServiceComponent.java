@@ -30,6 +30,7 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.config.provider.ConfigProvider;
+import org.wso2.carbon.datasource.core.api.DataSourceService;
 
 import java.lang.reflect.Constructor;
 
@@ -85,5 +86,20 @@ public class AuthServiceComponent {
 
     protected void unsetConfigProvider(ConfigProvider configProvider) {
         ServiceHolder.setConfigProvider(null);
+    }
+
+    @Reference(
+            name = "org.wso2.carbon.datasource.DataSourceService",
+            service = DataSourceService.class,
+            cardinality = ReferenceCardinality.AT_LEAST_ONE,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unregisterDataSourceService"
+    )
+    protected void registerDataSourceService(DataSourceService service) {
+        ServiceHolder.setDataSourceService(service);
+    }
+
+    protected void unregisterDataSourceService(DataSourceService service) {
+        ServiceHolder.setDataSourceService(null);
     }
 }

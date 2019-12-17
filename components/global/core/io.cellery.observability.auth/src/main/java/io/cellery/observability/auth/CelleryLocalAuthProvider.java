@@ -23,8 +23,7 @@ import com.google.gson.JsonParser;
 import io.cellery.observability.auth.Permission.Action;
 import io.cellery.observability.auth.exception.AuthProviderException;
 import io.cellery.observability.auth.internal.AuthConfig;
-import io.cellery.observability.auth.internal.K8sClientHolder;
-import io.fabric8.kubernetes.api.model.NamespaceList;
+import io.cellery.observability.auth.internal.ServiceHolder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -36,15 +35,21 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 import org.wso2.carbon.config.ConfigurationException;
+import org.wso2.carbon.datasource.core.exception.DataSourceException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import javax.sql.DataSource;
 
 /**
  * Cellery default local auth provider.
@@ -55,8 +60,11 @@ public class CelleryLocalAuthProvider implements AuthProvider {
     private static final JsonParser jsonParser = new JsonParser();
 
     private final String localRuntimeId;
+    private final DataSource dataSource;
 
     private static final String ACTIVE_STATUS = "active";
+    private static final String TABLE_NAME = "K8sComponentInfoTable";
+    private static final String DATASOURCE_NAME = "CELLERY_OBSERVABILITY_DB";
     private static final List<Action> ALL_ACTIONS = Arrays.asList(
             Action.API_GET,
             Action.DATA_PUBLISH
@@ -64,9 +72,10 @@ public class CelleryLocalAuthProvider implements AuthProvider {
 
     public CelleryLocalAuthProvider() throws AuthProviderException {
         try {
+            dataSource = (DataSource) ServiceHolder.getDataSourceService().getDataSource(DATASOURCE_NAME);
             localRuntimeId = AuthConfig.getInstance().getDefaultLocalAuthProviderLocalRuntimeId();
-        } catch (ConfigurationException e) {
-            throw new AuthProviderException("Failed to get the local runtime ID", e);
+        } catch (ConfigurationException | DataSourceException e) {
+            throw new AuthProviderException("Failed to initialize Cellery Local Auth Provider", e);
         }
     }
 
@@ -111,16 +120,21 @@ public class CelleryLocalAuthProvider implements AuthProvider {
 
     @Override
     public Permission[] getAllAllowedPermissions(String accessToken) {
-        // Granting all permissions to all the namespaces in the local runtime
-        NamespaceList namespaceList = K8sClientHolder.getClient().namespaces().list();
         Permission[] permissions;
-        if (namespaceList != null) {
-            permissions = namespaceList.getItems()
-                    .stream()
-                    .map(namespace -> new Permission(localRuntimeId, namespace.getMetadata().getName(), ALL_ACTIONS))
+        List<String> namespaces;
+        try {
+            namespaces = this.getAllNamespaces();
+        } catch (SQLException e) {
+            namespaces = new ArrayList<>(0);
+            logger.error("Providing no access to any namespace since failure occurred while getting " +
+                    "all the namespaces in " + this.localRuntimeId, e);
+        }
+        if (namespaces.size() > 0) {
+            permissions = namespaces.stream()
+                    .map(namespace -> new Permission(localRuntimeId, namespace, ALL_ACTIONS))
                     .toArray(Permission[]::new);
             if (logger.isDebugEnabled()) {
-                logger.debug("Providing all actions for all namespaces (" + namespaceList.getItems().size()
+                logger.debug("Providing all actions for all namespaces (" + namespaces.size()
                         + ") from " + localRuntimeId + " runtime as allowed permissions");
             }
         } else {
@@ -168,5 +182,53 @@ public class CelleryLocalAuthProvider implements AuthProvider {
             throw new AuthProviderException("Error occurred while calling the introspect endpoint", e);
         }
         return true;
+    }
+
+    /**
+     * Get all the namespaces in the tables for the local runtime.
+     *
+     * @return The list of namespaces in the local runtime ID
+     * @throws SQLException If fetching the namespaces list fails
+     */
+    private List<String> getAllNamespaces() throws SQLException {
+        List<String> namespaces = new ArrayList<>();
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+        try {
+            connection = this.dataSource.getConnection();
+            statement = connection.prepareStatement("SELECT DISTINCT namespace FROM " +
+                    TABLE_NAME + " WHERE runtime = ?");
+            statement.setString(1, localRuntimeId);
+            resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                String runtime = resultSet.getString(1);
+                namespaces.add(runtime);
+            }
+        } finally {
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    logger.error("Error on closing resultSet " + e.getMessage(), e);
+                }
+            }
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException e) {
+                    logger.error("Error on closing statement " + e.getMessage(), e);
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    logger.error("Error on closing connection " + e.getMessage(), e);
+                }
+            }
+        }
+        return namespaces;
     }
 }

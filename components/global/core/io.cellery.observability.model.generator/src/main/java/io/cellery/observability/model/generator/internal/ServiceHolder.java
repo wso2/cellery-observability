@@ -28,7 +28,7 @@ public class ServiceHolder {
     private static ModelStoreManager modelStoreManager;
     private static ModelManager modelManager;
 
-    private ServiceHolder() {
+    private ServiceHolder() {   // Prevent initialization
     }
 
     public static DataSourceService getDataSourceService() {
