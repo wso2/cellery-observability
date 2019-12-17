@@ -20,12 +20,14 @@ package io.cellery.observability.auth.internal;
 
 import io.cellery.observability.auth.DcrProvider;
 import org.wso2.carbon.config.provider.ConfigProvider;
+import org.wso2.carbon.datasource.core.api.DataSourceService;
 
 /**
  * This is a static class which holds the references of the OSGI services registered.
  */
 public class ServiceHolder {
     private static ConfigProvider configProvider;
+    private static DataSourceService dataSourceService;
     private static DcrProvider dcrProvider;
 
     public static ConfigProvider getConfigProvider() {
@@ -34,6 +36,14 @@ public class ServiceHolder {
 
     public static void setConfigProvider(ConfigProvider configProvider) {
         ServiceHolder.configProvider = configProvider;
+    }
+
+    public static DataSourceService getDataSourceService() {
+        return dataSourceService;
+    }
+
+    public static void setDataSourceService(DataSourceService dataSourceService) {
+        ServiceHolder.dataSourceService = dataSourceService;
     }
 
     public static DcrProvider getDcrProvider() {

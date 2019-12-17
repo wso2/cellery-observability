@@ -21,11 +21,7 @@ package io.cellery.observability.auth;
 import com.google.gson.JsonObject;
 import io.cellery.observability.auth.exception.AuthProviderException;
 import io.cellery.observability.auth.internal.AuthConfig;
-import io.cellery.observability.auth.internal.K8sClientHolder;
-import io.fabric8.kubernetes.api.model.NamespaceListBuilder;
-import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
+import io.cellery.observability.auth.internal.ServiceHolder;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -35,7 +31,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.util.EntityUtils;
-import org.apache.log4j.Logger;
 import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
@@ -49,26 +44,29 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.ObjectFactory;
 import org.testng.annotations.Test;
+import org.wso2.carbon.datasource.core.api.DataSourceService;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import javax.sql.DataSource;
 
 @PrepareForTest({AuthUtils.class, CelleryLocalAuthProvider.class, EntityUtils.class})
 @PowerMockIgnore({"org.apache.log4j.*", "sun.security.ssl.*", "io.fabric8.*"})
 public class CelleryLocalAuthProviderTestCase {
-    private static final Logger logger = Logger.getLogger(CelleryLocalAuthProviderTestCase.class.getName());
-
+    private static final String DATASOURCE_NAME = "CELLERY_OBSERVABILITY_DB";
     private static final String CALLBACK_URL = "http://cellery-dashboard";
     private static final String IDP_URL = "http://idp.cellery-system:9443";
     private static final String IDP_USERNAME = "testadminuser";
     private static final String IDP_PASSWORD = "testadminpass";
     private static final String AUTH_PROVIDER = CelleryLocalAuthProvider.class.getName();
 
+    private Connection mockConnection;
     private Permission mockPermission;
-    private KubernetesClient k8sClient;
-    private KubernetesServer k8sServer;
 
     @ObjectFactory
     public IObjectFactory getObjectFactory() {
@@ -89,30 +87,20 @@ public class CelleryLocalAuthProviderTestCase {
     }
 
     @BeforeMethod
-    public void init() {
-        k8sServer = new KubernetesServer(true, false);
-        k8sServer.before();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Started K8s Mock Server");
-        }
+    public void init() throws Exception {
+        mockConnection = Mockito.mock(Connection.class);
 
-        k8sClient = k8sServer.getClient();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Initialized the K8s Client for the K8s Mock Server");
-        }
-        Whitebox.setInternalState(K8sClientHolder.class, "client", k8sClient);
+        DataSource mockDataSource = Mockito.mock(DataSource.class);
+        Mockito.when(mockDataSource.getConnection()).thenReturn(mockConnection);
+
+        DataSourceService mockDataSourceService = Mockito.mock(DataSourceService.class);
+        Mockito.when(mockDataSourceService.getDataSource(DATASOURCE_NAME)).thenReturn(mockDataSource);
+        ServiceHolder.setDataSourceService(mockDataSourceService);
     }
 
     @AfterMethod
     public void cleanupBaseSiddhiExtensionTestCase() {
-        k8sClient.close();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Closed the K8s Client");
-        }
-        k8sServer.after();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Closed the K8s Mock Server");
-        }
+        ServiceHolder.setDataSourceService(null);
     }
 
     @Test
@@ -319,8 +307,6 @@ public class CelleryLocalAuthProviderTestCase {
 
     @Test(expectedExceptions = AuthProviderException.class)
     public void testValidateTokenWithTrustAllClientThrowingNoSuchAlgorithmException() throws Exception {
-        String clientId = "testClientId10";
-        String clientSecret = "niu43nfhref4f4";
         expectAndReturnNamespaces("test-namespace-a", "test-namespace-b");
 
         PowerMockito.mockStatic(AuthUtils.class);
@@ -389,17 +375,18 @@ public class CelleryLocalAuthProviderTestCase {
      *
      * @param namespaces The namespaces to return
      */
-    private void expectAndReturnNamespaces(String ...namespaces) {
-        NamespaceListBuilder namespaceListBuilder = new NamespaceListBuilder();
-        for (String namespace : namespaces) {
-            namespaceListBuilder.addNewItem()
-                    .withMetadata(new ObjectMetaBuilder()
-                            .withName(namespace)
-                            .build())
-                    .endItem();
-        }
-        k8sServer.expect()
-                .withPath("/api/namespaces/")
-                .andReturn(200, namespaceListBuilder.build());
+    private void expectAndReturnNamespaces(String ...namespaces) throws Exception {
+        ResultSet mockResultSet = Mockito.mock(ResultSet.class);
+        final int[] invocationCount = {0};
+        Mockito.when(mockResultSet.next()).then(invocationOnMock -> invocationCount[0] < namespaces.length);
+        Mockito.when(mockResultSet.getString(1)).then(invocationOnMock -> {
+            String namespace = namespaces[invocationCount[0]];
+            invocationCount[0]++;
+            return namespace;
+        });
+
+        PreparedStatement mockStatement = Mockito.mock(PreparedStatement.class);
+        Mockito.when(mockStatement.executeQuery()).thenReturn(mockResultSet);
+        Mockito.when(mockConnection.prepareStatement(Mockito.anyString())).thenReturn(mockStatement);
     }
 }
