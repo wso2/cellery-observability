@@ -64,11 +64,6 @@
                 <artifactId>io.cellery.observability.auth</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.cellery.observability</groupId>
-                <artifactId>io.cellery.observability.tracing.receiver</artifactId>
-                <version>${project.version}</version>
-            </dependency>
             <!-- Internal dependencies end here -->
 
             <!-- Siddhi extensions start here -->
