@@ -43,10 +43,6 @@
         </dependency>
         <dependency>
             <groupId>io.cellery.observability</groupId>
-            <artifactId>io.cellery.observability.tracing.receiver</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.cellery.observability</groupId>
             <artifactId>io.cellery.observability.telemetry.deduplicator</artifactId>
         </dependency>
         <dependency>
@@ -175,7 +171,7 @@
                             <outputDirectory>${project.build.directory}/files/non-osgi/</outputDirectory>
                             <excludeArtifactIds>
                                 io.cellery.observability.agent.receiver, commons-io,
-                                io.cellery.observability.tracing.receiver, io.cellery.observability.api,
+                                io.cellery.observability.api,
                                 io.cellery.observability.auth, io.cellery.observability.model.generator, siddhi-io-http,
                                 siddhi-store-rdbms, joda-time, zipkin, client-java, client-java-api, guava,
                                 commons-codec, commons-compress, commons-lang3, bcpkix-jdk15on, bcprov-ext-jdk15on,
