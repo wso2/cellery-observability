@@ -251,7 +251,7 @@ class Overview extends React.Component {
             const ingressTypes = data[1].map((datum) => ({
                 instance: datum[0],
                 component: datum[1],
-                ingressTypes: datum[3]
+                ingressTypes: datum[3] ? datum[3].split(",") : []
             }));
             const nodeData = data[0].nodes
                 .filter((nodeDatum) => nodeDatum.instance && nodeDatum.namespace === selectedNamespace)
@@ -261,9 +261,9 @@ class Overview extends React.Component {
                         .filter((ingressTypesDatum) => nodeDatum.instance === ingressTypesDatum.instance
                             && nodeDatum.component === ingressTypesDatum.component)
                         .reduce((ingressTypesSet, ingressTypesDatum) => {
-                            if (ingressTypesDatum.ingressTypes) {
-                                ingressTypesSet.add(ingressTypesDatum.ingressTypes);
-                            }
+                            ingressTypesDatum.ingressTypes.forEach((ingressType) => {
+                                ingressTypesSet.add(ingressType);
+                            });
                             return new Set(ingressTypesSet);
                         }, new Set());
                     return nodeDatum;
@@ -274,9 +274,15 @@ class Overview extends React.Component {
                     nodeDataMap[nodeDatum.instance] = {
                         id: nodeDatum.instance,
                         instanceKind: nodeDatum.instanceKind,
-                        ingressTypes: Array.from(nodeDatum.ingressTypes)
+                        ingressTypes: new Set()
                     };
                 }
+                nodeDatum.ingressTypes.forEach((ingressType) => {
+                    nodeDataMap[nodeDatum.instance].ingressTypes.add(ingressType);
+                });
+            });
+            Object.keys(nodeDataMap).forEach((key) => {
+                nodeDataMap[key].ingressTypes = Array.from(nodeDataMap[key].ingressTypes);
             });
 
             // Extracting unique edge data map
@@ -631,7 +637,7 @@ class Overview extends React.Component {
         const renderNodeLabel = (nodeId) => {
             const node = dependencyDiagram.nodes.find((nodeDatum) => nodeDatum.id === nodeId);
             let nodeLabel;
-            if (node && node.ingressTypes && node.ingressTypes.size > 0) {
+            if (node && node.ingressTypes && node.ingressTypes.length > 0) {
                 nodeLabel = `${nodeId}\n<b>(${node.ingressTypes.join(", ")})</b>`;
             } else {
                 nodeLabel = nodeId;
