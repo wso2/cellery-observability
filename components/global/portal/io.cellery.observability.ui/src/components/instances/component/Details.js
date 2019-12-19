@@ -166,8 +166,6 @@ class Details extends React.Component {
     render() {
         const {classes, instance, component} = this.props;
         const {health, isLoading, ingressTypes} = this.state;
-        const ingressListStr = ingressTypes.toString().replace(/,/g, ", ");
-
         const view = (
             <Table className={classes.table}>
                 <TableBody>
@@ -198,7 +196,7 @@ class Details extends React.Component {
                             </Typography>
                         </TableCell>
                         <TableCell className={classes.tableCell}>
-                            <p>{ingressListStr ? ingressListStr : "Not Available"}</p>
+                            <p>{ingressTypes.length > 0 ? ingressTypes.join(", ") : "Not Available"}</p>
                         </TableCell>
                     </TableRow>
                 </TableBody>
