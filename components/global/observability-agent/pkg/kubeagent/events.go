@@ -19,6 +19,8 @@
 package kubeagent
 
 import (
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -35,26 +37,37 @@ type LoggerFunc func(format string, args ...interface{})
 
 func HandleAll(mfn MapperFunc, wfn WriterFunc, logf LoggerFunc) cache.ResourceEventHandler {
 	return cache.ResourceEventHandlerFuncs{
-		AddFunc:    HandleEvent(EventAdd, mfn, wfn, logf),
-		UpdateFunc: PassNew(HandleEvent(EventUpdate, mfn, wfn, logf)),
-		DeleteFunc: HandleEvent(EventDelete, mfn, wfn, logf),
+		AddFunc:    PassNew(HandleEvent(EventAdd, mfn, wfn, logf)),
+		UpdateFunc: HandleEvent(EventUpdate, mfn, wfn, logf),
+		DeleteFunc: PassNew(HandleEvent(EventDelete, mfn, wfn, logf)),
 	}
 }
 
-func HandleEvent(e Event, mfn MapperFunc, wfn WriterFunc, logf LoggerFunc) func(interface{}) {
-	return func(obj interface{}) {
-		attr, err := mfn(obj)
+func HandleEvent(e Event, mfn MapperFunc, wfn WriterFunc, logf LoggerFunc) func(interface{}, interface{}) {
+	return func(old interface{}, new interface{}) {
+		newAttr, err := mfn(new)
 		if err != nil {
-			logf("Fail to handle event %s: %v", e, err)
+			logf("Fail to handle new event %s: %v", e, err)
 			return
 		}
-		attr[AttributeAction] = e
-		wfn(attr)
+		var oldAttr Attributes
+		if old != nil {
+			attr, err := mfn(old)
+			if err != nil {
+				logf("Fail to handle old event %s: %v", e, err)
+				return
+			}
+			oldAttr = attr
+		}
+		if diff := cmp.Diff(newAttr, oldAttr, cmpopts.IgnoreMapEntries(ignoreCurrentTimestampAttributeFunc)); old == nil || diff != "" {
+			newAttr[AttributeAction] = e
+			wfn(newAttr)
+		}
 	}
 }
 
-func PassNew(f func(interface{})) func(interface{}, interface{}) {
-	return func(first, second interface{}) {
-		f(second)
+func PassNew(f func(interface{}, interface{})) func(interface{}) {
+	return func(new interface{}) {
+		f(nil, new)
 	}
 }
