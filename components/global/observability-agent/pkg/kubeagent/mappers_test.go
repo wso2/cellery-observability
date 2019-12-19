@@ -253,14 +253,3 @@ func TestMappers(t *testing.T) {
 		})
 	}
 }
-
-func ignoreCurrentTimestampAttributeFunc(k, v interface{}) bool {
-	key, ok := k.(Attribute)
-	if !ok {
-		return false
-	}
-	if key == AttributeCurrentTimestamp {
-		return true
-	}
-	return false
-}

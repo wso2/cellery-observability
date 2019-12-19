@@ -178,3 +178,14 @@ func unixTimestamp(t *metav1.Time) int64 {
 	}
 	return t.UnixNano() / (1000 * 1000)
 }
+
+func ignoreCurrentTimestampAttributeFunc(k, v interface{}) bool {
+	key, ok := k.(Attribute)
+	if !ok {
+		return false
+	}
+	if key == AttributeCurrentTimestamp {
+		return true
+	}
+	return false
+}

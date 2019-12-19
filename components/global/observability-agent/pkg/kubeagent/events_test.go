@@ -34,33 +34,39 @@ func TestHandleEvent(t *testing.T) {
 	var gotLog string
 	tests := []struct {
 		name      string
-		obj       interface{}
+		old       interface{}
+		new       interface{}
 		event     Event
 		wantWrite Attributes
 		wantLog   string
 	}{
 		{
 			name:      "add event with empty object",
-			obj:       &fakeObject{},
+			old:       nil,
+			new:       &fakeObject{},
 			event:     EventAdd,
 			wantWrite: Attributes{"action": EventAdd, "field": ""},
 			wantLog:   "",
 		},
 		{
 			name: "update event with some object with field",
-			obj: &fakeObject{
+			old: &fakeObject{
 				fakeFiled: "some data",
 			},
+			new: &fakeObject{
+				fakeFiled: "some data 1",
+			},
 			event:     EventUpdate,
-			wantWrite: Attributes{"action": EventUpdate, "field": "some data"},
+			wantWrite: Attributes{"action": EventUpdate, "field": "some data 1"},
 			wantLog:   "",
 		},
 		{
 			name:      "delete event with incorrect object type",
-			obj:       fakeObject{},
+			old:       nil,
+			new:       fakeObject{},
 			event:     EventDelete,
 			wantWrite: nil,
-			wantLog:   "Fail to handle event Delete: some error",
+			wantLog:   "Fail to handle new event Delete: some error",
 		},
 	}
 	mfn := func(obj interface{}) (Attributes, error) {
@@ -83,7 +89,7 @@ func TestHandleEvent(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			gotWrite = nil
 			gotLog = ""
-			HandleEvent(test.event, mfn, wfn, logf)(test.obj)
+			HandleEvent(test.event, mfn, wfn, logf)(test.old, test.new)
 			if diff := cmp.Diff(test.wantWrite, gotWrite); diff != "" {
 				t.Errorf("Invalid write (-want, +got)\n%v", diff)
 			}
@@ -98,14 +104,17 @@ func TestHandleAll(t *testing.T) {
 	var gotWrites []Attributes
 	var wantWrites []Attributes
 	wantWrites = append(wantWrites, Attributes{"action": EventAdd})
-	wantWrites = append(wantWrites, Attributes{"action": EventUpdate})
+	wantWrites = append(wantWrites, Attributes{"action": EventUpdate, "field": "some data"})
 	wantWrites = append(wantWrites, Attributes{"action": EventDelete})
 	mfn := func(obj interface{}) (Attributes, error) {
-		_, ok := obj.(*fakeObject)
+		fakeObj, ok := obj.(*fakeObject)
 		if !ok {
 			return nil, fmt.Errorf("some error")
 		}
 		attr := Attributes{}
+		if fakeObj.fakeFiled != "" {
+			attr["field"] = fakeObj.fakeFiled
+		}
 		return attr, nil
 	}
 	wfn := func(attribute Attributes) {
@@ -113,7 +122,7 @@ func TestHandleAll(t *testing.T) {
 	}
 	logf := func(format string, args ...interface{}) {}
 	HandleAll(mfn, wfn, logf).OnAdd(&fakeObject{})
-	HandleAll(mfn, wfn, logf).OnUpdate(&fakeObject{}, &fakeObject{})
+	HandleAll(mfn, wfn, logf).OnUpdate(&fakeObject{}, &fakeObject{fakeFiled: "some data"})
 	HandleAll(mfn, wfn, logf).OnDelete(&fakeObject{})
 	if diff := cmp.Diff(wantWrites, gotWrites); diff != "" {
 		t.Errorf("Invalid writes (-want, +got)\n%v", diff)
