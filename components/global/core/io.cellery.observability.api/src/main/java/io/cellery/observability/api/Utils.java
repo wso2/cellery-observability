@@ -35,7 +35,7 @@ public class Utils {
     public static void validateCelleryIdParam(String paramName, String text) throws InvalidParamException {
         if (!Constants.CELLERY_ID_PATTERN.matcher(text).matches()) {
             throw new InvalidParamException(paramName, "a string of lower case letters, " +
-                    "numbers and dashes with not leading or trailing dashes");
+                    "numbers and dashes with not leading or trailing dashes", text);
         }
     }
 
@@ -48,13 +48,14 @@ public class Utils {
      */
     public static void validateQueryRangeParam(long queryStartTime, long queryEndTime) throws InvalidParamException {
         if (queryStartTime <= 0) {
-            throw new InvalidParamException("queryStartTime", "value greater than zero");
+            throw new InvalidParamException("queryStartTime", "value greater than zero", queryStartTime);
         }
         if (queryEndTime <= 0) {
-            throw new InvalidParamException("queryEndTime", "value greater than zero");
+            throw new InvalidParamException("queryEndTime", "value greater than zero", queryEndTime);
         }
         if (queryStartTime >= queryEndTime) {
-            throw new InvalidParamException("queryEndTime", "value greater than queryStartTime");
+            throw new InvalidParamException("queryEndTime", "value greater than queryStartTime",
+                    "queryStartTime: " + queryStartTime + " & queryEndTime: " + queryEndTime);
         }
     }
 
@@ -66,7 +67,7 @@ public class Utils {
      */
     public static void validateTimeGranularityParam(String text) throws InvalidParamException {
         if (!Constants.TIME_GRANULARITY_PATTERN.matcher(text).matches()) {
-            throw new InvalidParamException("timeGranularity", "one of [second, minute, hour, day, month, year]");
+            throw new InvalidParamException("timeGranularity", "one of [second, minute, hour, day, month, year]", text);
         }
     }
 
@@ -79,7 +80,7 @@ public class Utils {
      */
     public static void validateSimpleStringParam(String paramName, String text) throws InvalidParamException {
         if (!Constants.SIMPLE_STRING_PATTERN.matcher(text).matches()) {
-            throw new InvalidParamException(paramName, "not to contain illegal characters [\", ']");
+            throw new InvalidParamException(paramName, "not to contain illegal characters [\", ']", text);
         }
     }
 

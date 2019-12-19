@@ -30,8 +30,8 @@ public interface AuthProvider {
     /**
      * Validate the token.
      *
-     * Empty string as runtime in the required permission represents access to all runtimes.
-     * Empty string as namespace in the required permission represents access to all namespaces.
+     * Empty string as runtime in the required permission represents an action that is not runtime aware.
+     * Empty string as namespace in the required permission represents an action that is not namespace aware.
      *
      * @param token The token of which the validity should be checked
      * @param requiredPermission The permission required by the user
