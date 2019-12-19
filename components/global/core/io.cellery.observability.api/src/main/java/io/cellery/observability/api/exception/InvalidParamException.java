@@ -24,12 +24,14 @@ import javax.ws.rs.core.Response;
  * Exception thrown when invalid parameters (Query Params, Path Params, etc. are provided)
  */
 public class InvalidParamException extends RuntimeException {
-    public InvalidParamException(String parameter, String expected, Exception e) {
-        super("Invalid parameter " + parameter + " provided. Expected " + expected, e);
+    public InvalidParamException(String parameter, String expected, Object received, Exception e) {
+        super("Invalid parameter " + parameter + " provided. Expected " + expected
+                + ", received " + received.toString(), e);
     }
 
-    public InvalidParamException(String parameter, String expected) {
-        super("Invalid parameter " + parameter + " provided. Expected " + expected);
+    public InvalidParamException(String parameter, String expected, Object received) {
+        super("Invalid parameter " + parameter + " provided. Expected " + expected
+                + ", received " + received.toString());
     }
 
     /**

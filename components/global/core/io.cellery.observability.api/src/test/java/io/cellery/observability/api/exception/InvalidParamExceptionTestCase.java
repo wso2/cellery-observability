@@ -36,9 +36,10 @@ public class InvalidParamExceptionTestCase {
     @Test
     public void testMappingWithInvalidParamException() {
         String paramName = "paramName";
-        String paramValue = "paramValue";
+        String expectedParamValue = "paramValue";
+        String receivedParamValue = "paramValue1";
         InvalidParamException.Mapper apiExceptionMapper = new InvalidParamException.Mapper();
-        InvalidParamException exception = new InvalidParamException(paramName, paramValue);
+        InvalidParamException exception = new InvalidParamException(paramName, expectedParamValue, receivedParamValue);
 
         Response response = apiExceptionMapper.toResponse(exception);
         JsonObject responseBodyJson = jsonParser.parse(response.getEntity().toString()).getAsJsonObject();
@@ -48,7 +49,8 @@ public class InvalidParamExceptionTestCase {
         Assert.assertNotNull(response);
         Assert.assertEquals(responseBodyJson.get("status").getAsString(), "Error");
         Assert.assertEquals(responseBodyJson.get("message").getAsString(),
-                "Invalid parameter " + paramName + " provided. Expected " + paramValue);
+                "Invalid parameter " + paramName + " provided. Expected " + expectedParamValue
+                        + ", received " + receivedParamValue);
         Assert.assertEquals(response.getStatus(), Response.Status.PRECONDITION_FAILED.getStatusCode());
         Assert.assertEquals(contentTypeHeader.size(), 1);
         Assert.assertEquals(contentTypeHeader.get(0), MediaType.APPLICATION_JSON);

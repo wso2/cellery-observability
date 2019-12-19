@@ -102,14 +102,15 @@ public class DistributedTracingAPI {
             Utils.validateSimpleStringParam("operationName", operationName);
         }
         if (minDuration != -1 && maxDuration != 1 && minDuration >= maxDuration) {
-            throw new InvalidParamException("maxDuration", "value greater than minDuration");
+            throw new InvalidParamException("maxDuration", "value greater than minDuration",
+                    "minDuration: " + minDuration + " & maxDuration: " + maxDuration);
         }
         Utils.validateQueryRangeParam(queryStartTime, queryEndTime);
         if (limit > 100 || limit <= 0) {
-            throw new InvalidParamException("limit", "value less than or equal to 100 and greater than zero");
+            throw new InvalidParamException("limit", "value less than or equal to 100 and greater than zero", limit);
         }
         if (offset < 0) {
-            throw new InvalidParamException("limit", "value greater than or equal to zero");
+            throw new InvalidParamException("limit", "value greater than or equal to zero", offset);
         }
         try {
             Map<String, String> queryTags = new HashMap<>();
@@ -132,11 +133,12 @@ public class DistributedTracingAPI {
                                         queryTagsJsonObjectEntry.getValue().getAsString()
                                 );
                             } else {
-                                throw new InvalidParamException("tags", "JSON encoded object");
+                                throw new InvalidParamException("tagValue", "proper string",
+                                        queryTagsJsonObjectEntry.getValue().toString());
                             }
                         }
                     } else {
-                        throw new InvalidParamException("tags", "JSON encoded object");
+                        throw new InvalidParamException("tags", "JSON encoded object", jsonElement.toString());
                     }
                 } catch (JsonSyntaxException e) {
                     throw new InvalidParamException("tags", "JSON encoded object", e);
@@ -270,7 +272,7 @@ public class DistributedTracingAPI {
         Utils.validateCelleryIdParam("runtime", runtime);
         Utils.validateCelleryIdParam("namespace", namespace);
         if (!Constants.TRACE_ID_PATTERN.matcher(traceId).matches()) {
-            throw new InvalidParamException("traceId", "a string of lowercase letters and numbers");
+            throw new InvalidParamException("traceId", "a string of lowercase letters and numbers", traceId);
         }
         try {
             Object[][] results = SiddhiStoreQueryTemplates.DISTRIBUTED_TRACING_GET_TRACE.builder()
