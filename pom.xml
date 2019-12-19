@@ -28,7 +28,7 @@
     <groupId>io.cellery.observability</groupId>
     <artifactId>io.cellery.observability.parent</artifactId>
     <name>Cellery Observability</name>
-    <version>0.6.1-SNAPSHOT</version>
+    <version>0.6.1</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -447,7 +447,7 @@
         <url>https://github.com/wso2/cellery-observability.git</url>
         <developerConnection>scm:git:https://github.com/wso2/cellery-observability.git</developerConnection>
         <connection>scm:git:https://github.com/wso2/cellery-observability.git</connection>
-        <tag>HEAD</tag>
+        <tag>v0.6.1</tag>
     </scm>
 
     <repositories>
