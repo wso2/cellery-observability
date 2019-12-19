@@ -56,7 +56,7 @@ import java.sql.ResultSet;
 import javax.sql.DataSource;
 
 @PrepareForTest({AuthUtils.class, CelleryLocalAuthProvider.class, EntityUtils.class})
-@PowerMockIgnore({"org.apache.log4j.*", "sun.security.ssl.*", "io.fabric8.*"})
+@PowerMockIgnore({"org.apache.log4j.*", "sun.security.ssl.*"})
 public class CelleryLocalAuthProviderTestCase {
     private static final String DATASOURCE_NAME = "CELLERY_OBSERVABILITY_DB";
     private static final String CALLBACK_URL = "http://cellery-dashboard";

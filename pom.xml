@@ -142,16 +142,6 @@
                 <version>${equinox.osgi.services.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.fabric8</groupId>
-                <artifactId>kubernetes-model</artifactId>
-                <version>${fabric8.kubernetes.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.fabric8</groupId>
-                <artifactId>kubernetes-client</artifactId>
-                <version>${fabric8.kubernetes.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
@@ -291,12 +281,6 @@
                 <groupId>org.powermock</groupId>
                 <artifactId>powermock-module-testng</artifactId>
                 <version>${powermock.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.fabric8</groupId>
-                <artifactId>kubernetes-server-mock</artifactId>
-                <version>${fabric8.kubernetes.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -555,7 +539,6 @@
         <brave.open.tracing.version>0.29.0</brave.open.tracing.version>
         <zipkin.version>2.11.6</zipkin.version>
         <zipkin.reporter.version>2.5.0</zipkin.reporter.version>
-        <fabric8.kubernetes.version>4.3.0</fabric8.kubernetes.version>
         <com.squareup.okhttp3>3.14.1</com.squareup.okhttp3>
         <adal4j.version>1.6.0</adal4j.version>
         <joda.time.version>2.9.3</joda.time.version>
