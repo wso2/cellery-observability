@@ -529,7 +529,7 @@
         <msf4j.version>2.6.4</msf4j.version>
         <httpcore.version>4.4.11</httpcore.version>
         <oltu.oauth2.version>1.0.0</oltu.oauth2.version>
-        <synapse.core.version>2.1.7-wso2v80</synapse.core.version>
+        <synapse.core.version>3.0.1</synapse.core.version>
         <guava.version>25.1-jre</guava.version>
         <commons.lang.version>3.7</commons.lang.version>
         <commons.io.version>2.6</commons.io.version>
